@@ -56,7 +56,7 @@ function HomeNotLoggedIn() {
         className="pointer-events-none fixed right-0 top-0 -z-10 w-screen select-none md:h-screen md:object-cover"
       />
 
-      <section className="mx-auto max-w-6xl px-4 pt-8 md:px-6 md:pt-14">
+      <section className="mx-auto max-w-6xl px-4 pt-4 md:px-6 md:pt-4">
         <div className="max-w-xl mt-30 md:mt-0">
           <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] text-primary sm:text-5xl lg:text-6xl">
             Então,
@@ -86,7 +86,7 @@ function HomeNotLoggedIn() {
         </div>
       </section>
 
-      <section className="mx-auto mt-10 max-w-6xl px-4 md:px-6">
+      <section className="mx-auto mt-5 max-w-6xl px-4 md:px-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
             { icon: Armchair, title: "Reserve uma mesa", text: "Reserve sua mesa com facilidade." },
