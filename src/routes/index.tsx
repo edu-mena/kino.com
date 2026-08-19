@@ -1,20 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Armchair, ArrowRight, Bike, Clock, Search, Tag, UtensilsCrossed } from "lucide-react";
+import { Armchair, ArrowRight, Tag } from "lucide-react";
 import heroBg from "@/assets/hero.png";
 import icon from "@/assets/icon.png";
-import { DishCarousel } from "@/components/dish-carousel";
+import { DietaryPreferencesCard } from "@/components/dietary-preferences-card";
+import { DishRecommendationRow } from "@/components/dish-recommendation-row";
+import { HeaderSearch } from "@/components/header-search";
+import { PromoCarousel } from "@/components/promo-carousel";
+import { RestaurantAvatarRow } from "@/components/restaurant-avatar-row";
 import { PageShell, SiteHeader } from "@/components/site-shell";
-import { DishGrid } from "@/components/dish-grid";
+import { INITIAL_MENU_ITEMS } from "@/data/mockData";
 import { useAuth } from "@/lib/auth";
-import {
-  categories,
-  dishes,
-  formatKz,
-  gridDishes,
-  offers,
-  promoDishes,
-  restaurants,
-} from "@/lib/mock-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -106,137 +101,107 @@ function HomeNotLoggedIn() {
   );
 }
 
+function SectionHeading({
+  title,
+  to,
+  search,
+}: {
+  title: string;
+  to?: "/cardapio" | "/restaurantes";
+  search?: { categoria?: string | undefined };
+}) {
+  return (
+    <div className="flex items-end justify-between gap-4">
+      <h2 className="text-2xl font-extrabold text-primary">{title}</h2>
+      {to && (
+        <Link
+          to={to}
+          {...(search ? { search } : {})}
+          className="inline-flex items-center gap-1 text-sm font-semibold text-brand"
+        >
+          Ver mais <ArrowRight className="h-4 w-4" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+const fastFoodItems = INITIAL_MENU_ITEMS.filter((m) => m.category === "Fast-food");
+const grelhadosItems = INITIAL_MENU_ITEMS.filter((m) => m.category === "Grelhados");
+const trendingItems = [...INITIAL_MENU_ITEMS]
+  .filter((m) => m.isTrending || (m.orderCount ?? 0) > 0)
+  .sort((a, b) => (b.orderCount ?? 0) - (a.orderCount ?? 0));
+const recommendedItems = INITIAL_MENU_ITEMS.slice(0, 10);
+
 function HomeLoggedIn({ user }: { user: { name: string; email: string } }) {
   return (
     <PageShell>
-      {/* Welcome Section */}
+      {/* Welcome + busca */}
       <section className="mx-auto max-w-6xl px-4 pt-8 md:px-6 md:pt-14">
-        <div className="rounded-2xl bg-gradient-to-r from-primary to-brand p-8 text-primary-foreground">
-          <h1 className="text-3xl font-extrabold sm:text-4xl">
-            Bem-vindo de volta, <span className="capitalize">{user.name}</span>! 👋
-          </h1>
-          <p className="mt-2 text-primary-foreground/90">
-            O que quer pedir hoje? Escolha entre seus restaurantes favoritos ou explore novidades.
-          </p>
-          <Link
-            to="/cardapio"
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-background px-6 py-3 font-semibold text-primary transition-opacity hover:opacity-90"
-          >
-            <Search className="h-4 w-4" />
-            Buscar pratos
-          </Link>
+        <h1 className="text-2xl font-extrabold text-primary sm:text-3xl">
+          Olá, <span className="capitalize">{user.name}</span> 👋
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">O que quer pedir hoje?</p>
+        <div className="mt-5">
+          <HeaderSearch />
         </div>
       </section>
 
-      {/* Quick Actions */}
+      {/* Promoções */}
+      <section className="mx-auto mt-8 max-w-6xl px-4 md:px-6">
+        <PromoCarousel />
+      </section>
+
+      {/* Restaurantes próximos */}
       <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">Atalhos rápidos</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
-          <Link
-            to="/cardapio"
-            className="card-soft flex flex-col items-start gap-3 p-5 transition-colors hover:border-brand"
-          >
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand/15 text-brand">
-              <Search className="h-5 w-5" />
-            </span>
-            <h3 className="font-semibold text-foreground">Novo pedido</h3>
-            <p className="text-sm text-muted-foreground">Explore o cardápio</p>
-          </Link>
-          
-          <Link
-            to="/acompanhar"
-            className="card-soft flex flex-col items-start gap-3 p-5 transition-colors hover:border-brand"
-          >
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary/15 text-primary">
-              <Bike className="h-5 w-5" />
-            </span>
-            <h3 className="font-semibold text-foreground">Acompanhar</h3>
-            <p className="text-sm text-muted-foreground">Ver pedido em tempo real</p>
-          </Link>
-          
-          <Link
-            to="/perfil"
-            className="card-soft flex flex-col items-start gap-3 p-5 transition-colors hover:border-brand"
-          >
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-success/15 text-success">
-              <Clock className="h-5 w-5" />
-            </span>
-            <h3 className="font-semibold text-foreground">Meu perfil</h3>
-            <p className="text-sm text-muted-foreground">Gerenciar dados</p>
-          </Link>
-        </div>
-      </section>
-
-      {/* Recommended */}
-      <section className="mx-auto mt-16 max-w-6xl px-4 md:px-6">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="text-2xl font-extrabold text-primary">Recomendados para você</h2>
-          <Link
-            to="/cardapio"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-brand"
-          >
-            Ver mais <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
+        <SectionHeading title="Restaurantes perto de si" to="/restaurantes" />
         <div className="mt-5">
-          <DishCarousel dishes={dishes.slice(0, 8)} />
+          <RestaurantAvatarRow />
         </div>
       </section>
 
-      {/* Promos */}
-      <section className="mx-auto mt-16 max-w-6xl px-4 md:px-6">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="text-2xl font-extrabold text-primary">Em Promoção</h2>
-          <Link
-            to="/ofertas"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-brand"
-          >
-            Ver ofertas <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
+      {/* Recomendações */}
+      <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
+        <SectionHeading title="Recomendações pra si" to="/cardapio" />
         <div className="mt-5">
-          <DishCarousel dishes={promoDishes.slice(0, 8)} reverse />
+          <DishRecommendationRow items={recommendedItems} />
         </div>
       </section>
 
-      {/* Favorites */}
-      <section className="mx-auto mt-16 max-w-6xl px-4 md:px-6">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="text-2xl font-extrabold text-primary">Seus favoritos</h2>
-          <Link
-            to="/cardapio"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-brand"
-          >
-            Ver mais <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="mt-5">
-          <DishGrid dishes={gridDishes.slice(0, 8)} />
-        </div>
+      {/* Restrições alimentares */}
+      <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
+        <DietaryPreferencesCard />
       </section>
 
-      {/* Categories */}
-      <section className="mx-auto mt-16 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">Procurar por categoria</h2>
-        <div className="no-scrollbar mt-5 flex gap-4 overflow-x-auto pb-2">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              to="/cardapio"
-              search={{ categoria: cat.id }}
-              className="card-soft flex w-32 shrink-0 flex-col items-center gap-2 p-4 transition-colors hover:border-brand"
-            >
-              <img
-                src={cat.image}
-                alt={cat.label}
-                loading="lazy"
-                className="h-16 w-16 object-contain"
-              />
-              <span className="text-sm font-semibold text-foreground">{cat.label}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Fast-food */}
+      {fastFoodItems.length > 0 && (
+        <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
+          <SectionHeading title="Fast-food" to="/cardapio" search={{ categoria: "Fast-food" }} />
+          <div className="mt-5">
+            <DishRecommendationRow items={fastFoodItems} />
+          </div>
+        </section>
+      )}
+
+      {/* Grelhados */}
+      {grelhadosItems.length > 0 && (
+        <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
+          <SectionHeading title="Grelhados" to="/cardapio" search={{ categoria: "Grelhados" }} />
+          <div className="mt-5">
+            <DishRecommendationRow items={grelhadosItems} />
+          </div>
+        </section>
+      )}
+
+      {/* Em alta */}
+      {trendingItems.length > 0 && (
+        <section className="mx-auto mb-12 mt-12 max-w-6xl px-4 md:px-6">
+          <SectionHeading title="Em Alta" to="/cardapio" />
+          <div className="mt-5">
+            <DishRecommendationRow items={trendingItems} />
+          </div>
+        </section>
+      )}
     </PageShell>
   );
 }

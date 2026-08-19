@@ -16,7 +16,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import icon from "@/assets/icon.png";
 import chiefIllustration from "@/assets/kino/chief.png";
 import dateIllustration from "@/assets/kino/date.png";
@@ -118,6 +118,20 @@ function Kino() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(true);
+  const [videoInView, setVideoInView] = useState(false);
+
+  // Hide the spinning plate whenever the video is on screen — with both
+  // visible and both moving, the plate turns into a distracting element.
+  useEffect(() => {
+    const el = videoSectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => setVideoInView(entries[0]?.isIntersecting ?? false),
+      { threshold: 0.2 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const scrollToVideo = () => {
     videoSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -148,7 +162,10 @@ function Kino() {
         src={pratoBg}
         alt=""
         aria-hidden
-        className="pointer-events-none fixed right-0 top-1/2 -z-20 w-80 -translate-y-1/2 translate-x-1/2 select-none animate-[spin_20s_linear_infinite] sm:w-[28rem] md:w-[34rem] lg:w-[40rem]"
+        className={cn(
+          "pointer-events-none fixed right-0 top-1/2 -z-20 w-80 -translate-y-1/2 translate-x-1/2 select-none animate-[spin_20s_linear_infinite] transition-opacity duration-500 sm:w-[28rem] md:w-[34rem] lg:w-[40rem]",
+          videoInView ? "opacity-0" : "opacity-100",
+        )}
       />
 
       {/* Bento grid */}

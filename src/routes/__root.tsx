@@ -14,6 +14,7 @@ import iconImage from "../assets/icon.png";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CartProvider } from "../lib/cart";
 import { AuthProvider } from "../lib/auth";
+import { PreferencesProvider } from "../lib/preferences";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
@@ -143,11 +144,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <CartProvider>
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
-          <Toaster />
-        </CartProvider>
+        <PreferencesProvider>
+          <CartProvider>
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <Outlet />
+            <Toaster />
+          </CartProvider>
+        </PreferencesProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

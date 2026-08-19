@@ -1,10 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Check, ChevronLeft, Clock, MapPin } from "lucide-react";
+import { AlertCircle, Check, ChevronLeft, Clock, MapPin } from "lucide-react";
 import { useState } from "react";
 import icon from "@/assets/icon.png";
 import { PageShell } from "@/components/site-shell";
-import { useCart } from "@/lib/cart";
-import { addresses, formatKz, getDish, paymentMethods } from "@/lib/mock-data";
+import { getMenuItem } from "@/data/helpers";
+import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
+import { lineUnitPrice, useCart } from "@/lib/cart";
+import { formatKz } from "@/lib/format";
+import { paymentMethods } from "@/lib/mock-data";
+import { usePreferences } from "@/lib/preferences";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -28,7 +32,8 @@ const slots = ["O mais rápido possível", "Hoje, 19:00 - 19:30", "Hoje, 20:00 -
 function Checkout() {
   const navigate = useNavigate();
   const { lines, subtotal, deliveryFee, total, clear } = useCart();
-  const [address, setAddress] = useState(addresses[0]!.id);
+  const { dietaryRestrictions } = usePreferences();
+  const [address, setAddress] = useState(INITIAL_SAVED_ADDRESSES[0]!.id);
   const [slot, setSlot] = useState(slots[0]!);
   const [payment, setPayment] = useState(paymentMethods[0]!.id);
 
@@ -45,10 +50,20 @@ function Checkout() {
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
           <div className="space-y-6">
+            {dietaryRestrictions.length > 0 && (
+              <div className="flex items-start gap-3 rounded-xl border border-brand/30 bg-brand/5 p-4">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                <p className="text-sm text-foreground">
+                  <span className="font-bold">Avisaremos o restaurante:</span> o cliente tem
+                  restrições — {dietaryRestrictions.join(", ")}.
+                </p>
+              </div>
+            )}
+
             <section className="card-soft p-6">
               <h2 className="font-display text-lg font-bold text-primary">Endereço de entrega</h2>
               <div className="mt-4 space-y-2">
-                {addresses.map((a) => (
+                {INITIAL_SAVED_ADDRESSES.map((a) => (
                   <button
                     key={a.id}
                     type="button"
@@ -63,7 +78,7 @@ function Checkout() {
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-bold">{a.label}</span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {a.detail} · {a.area}
+                        {a.line1} · {a.line2}
                       </span>
                     </span>
                     {address === a.id && <Check className="h-4 w-4 shrink-0 text-brand" />}
@@ -127,13 +142,13 @@ function Checkout() {
             <h2 className="font-display text-lg font-bold text-primary">O seu pedido</h2>
             <ul className="mt-4 space-y-3">
               {lines.map((line) => {
-                const dish = getDish(line.dishId);
-                if (!dish) return null;
-                const unit = dish.price + line.addOns.reduce((s, a) => s + a.price, 0);
+                const item = getMenuItem(line.menuItemId);
+                if (!item) return null;
+                const unit = lineUnitPrice(line);
                 return (
                   <li key={line.key} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm">
                     <span className="min-w-0 truncate text-muted-foreground">
-                      {line.qty}× {dish.name}
+                      {line.qty}× {item.name}
                     </span>
                     <span className="shrink-0 font-semibold">{formatKz(unit * line.qty)}</span>
                   </li>

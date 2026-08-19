@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bike, Phone, MessageCircle } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { formatKz, getDish, trackingSteps } from "@/lib/mock-data";
+import { getMenuItem } from "@/data/helpers";
+import { formatKz } from "@/lib/format";
+import { trackingSteps } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/acompanhar")({
   head: () => ({
@@ -21,14 +23,14 @@ export const Route = createFileRoute("/acompanhar")({
 });
 
 const orderItems = [
-  { id: "combo-classico", qty: 1 },
-  { id: "batata-frita", qty: 2 },
-  { id: "coca-cola", qty: 1 },
+  { id: "menu-601", qty: 1 },
+  { id: "menu-905", qty: 2 },
+  { id: "menu-shared-agua-601", qty: 1 },
 ];
 
 function Acompanhar() {
   const items = orderItems
-    .map((i) => ({ dish: getDish(i.id), qty: i.qty }))
+    .map((i) => ({ dish: getMenuItem(i.id), qty: i.qty }))
     .filter((i) => i.dish);
   const subtotal = items.reduce((s, i) => s + (i.dish?.price ?? 0) * i.qty, 0);
 

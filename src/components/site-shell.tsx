@@ -1,18 +1,23 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
+  CalendarCheck,
   ChevronDown,
+  CircleHelp,
   Heart,
   Home,
   LogOut,
   MapPin,
   Menu,
-  Receipt,
+  MoreVertical,
+  Navigation,
   Search,
+  Settings,
   ShoppingCart,
   User,
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { LeftSidebar, tabs } from "./left-sidebar";
 import { Logo } from "./logo";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/lib/auth";
@@ -24,6 +29,19 @@ const navLinks = [
   { to: "/cardapio", label: "Cardápio" },
   { to: "/ofertas", label: "Ofertas" },
   { to: "/sobre", label: "Sobre nós" },
+] as const;
+
+/** Links do usuário logado — mostrados no painel "três pontos" do header. */
+const appNavLinks = [
+  { to: "/", label: "Início", icon: Home },
+  { to: "/cardapio", label: "Cardápio", icon: Search },
+  { to: "/restaurantes", label: "Restaurantes", icon: MapPin },
+  { to: "/carrinho", label: "Pedidos", icon: ShoppingCart },
+  { to: "/reservas", label: "Reservas", icon: CalendarCheck },
+  { to: "/favoritos", label: "Favoritos", icon: Heart },
+  { to: "/preferencias", label: "Preferências", icon: Settings },
+  { to: "/ajuda", label: "Ajuda", icon: CircleHelp },
+  { to: "/perfil", label: "Perfil", icon: User },
 ] as const;
 
 const guestNavLinks = [
@@ -51,14 +69,6 @@ function guestViewTransitionTypes({
   return ["back"];
 }
 
-const tabs = [
-  { to: "/", label: "Início", icon: Home },
-  { to: "/cardapio", label: "Buscar", icon: Search },
-  { to: "/carrinho", label: "Pedidos", icon: ShoppingCart },
-  { to: "/ofertas", label: "Ofertas", icon: Heart },
-  { to: "/perfil", label: "Perfil", icon: User },
-] as const;
-
 function CartButton() {
   const { count } = useCart();
   return (
@@ -79,8 +89,13 @@ function CartButton() {
 
 export function SiteHeader({ variant = "default" }: { variant?: "default" | "guestHome" } = {}) {
   const [open, setOpen] = useState(false);
-  const { isLoggedIn, user } = useAuth();
+  const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
+  const { isLoggedIn, user, logout } = useAuth();
+  const navigate = useNavigate();
   const isGuestHome = variant === "guestHome";
+  // Logged-in users get the "all links" panel at every width, not just mobile.
+  const panelAlwaysAvailable = isLoggedIn && !isGuestHome;
+  const panelLinks = isGuestHome ? guestNavLinks : isLoggedIn ? appNavLinks : navLinks;
 
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -123,7 +138,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           <Link to="/" className="shrink-0">
             <Logo />
           </Link>
-          {!isGuestHome && (
+          {!isGuestHome && !isLoggedIn && (
             <nav className="hidden items-center gap-6 lg:flex">
               {navLinks.map((link) => (
                 <Link
@@ -163,11 +178,19 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
 
         <div className="flex shrink-0 items-center gap-2 justify-self-end">
           {!isGuestHome && (
-            <span className="hidden items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs font-medium text-muted-foreground md:flex">
-              <MapPin className="h-3.5 w-3.5 text-primary" />
-              Luanda, Angola
+            <button
+              type="button"
+              onClick={() => setUsingCurrentLocation((v) => !v)}
+              className="hidden items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-primary md:flex"
+            >
+              {usingCurrentLocation ? (
+                <Navigation className="h-3.5 w-3.5 text-primary" />
+              ) : (
+                <MapPin className="h-3.5 w-3.5 text-primary" />
+              )}
+              {usingCurrentLocation ? "Localização atual" : "Luanda, Angola"}
               <ChevronDown className="h-3.5 w-3.5" />
-            </span>
+            </button>
           )}
           {!isGuestHome && <CartButton />}
 
@@ -195,16 +218,23 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           
           <button
             type="button"
-            aria-label="Abrir menu"
+            aria-label={panelAlwaysAvailable ? "Mais opções" : "Abrir menu"}
             onClick={() => setOpen((v) => !v)}
             className={cn(
-              "grid h-10 w-10 place-items-center rounded-xl lg:hidden",
+              "grid h-10 w-10 place-items-center rounded-xl",
+              !panelAlwaysAvailable && "lg:hidden",
               isGuestHome
                 ? "bg-brand text-brand-foreground"
                 : "border border-border bg-card text-foreground",
             )}
           >
-            {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            {open ? (
+              <X className="h-4 w-4" />
+            ) : panelAlwaysAvailable ? (
+              <MoreVertical className="h-4 w-4" />
+            ) : (
+              <Menu className="h-4 w-4" />
+            )}
           </button>
         </div>
       </div>
@@ -214,27 +244,30 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
         aria-hidden
         onClick={() => setOpen(false)}
         className={cn(
-          "fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 lg:hidden",
+          "fixed inset-0 z-40 bg-black/40 transition-opacity duration-300",
+          !panelAlwaysAvailable && "lg:hidden",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
 
-      {/* Mobile menu overlay */}
+      {/* Menu overlay — mobile-only for guests, available at every width once logged in */}
       <nav
         className={cn(
-          "fixed right-0 top-0 z-50 flex h-[100vh] w-full max-w-xs flex-col border-l border-border bg-card shadow-2xl transition-transform duration-300 ease-in-out lg:hidden",
+          "fixed right-0 top-0 z-50 flex h-[100vh] w-full max-w-xs flex-col border-l border-border bg-card shadow-2xl transition-transform duration-300 ease-in-out",
+          !panelAlwaysAvailable && "lg:hidden",
           open ? "translate-x-0" : "translate-x-full",
         )}
       >
         <div className="flex-1 overflow-y-auto px-4 py-3">
-          {(isGuestHome ? guestNavLinks : navLinks).map((link) => (
+          {panelLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              viewTransition={isGuestHome ? { types: guestViewTransitionTypes } : undefined}
+              {...(isGuestHome ? { viewTransition: { types: guestViewTransitionTypes } } : {})}
               onClick={() => setOpen(false)}
-              className="block rounded-lg px-2 py-3 text-lg font-medium text-foreground hover:bg-surface"
+              className="flex items-center gap-3 rounded-lg px-2 py-3 text-lg font-medium text-foreground hover:bg-surface"
             >
+              {"icon" in link && <link.icon className="h-4 w-4 shrink-0 text-primary" />}
               {link.label}
             </Link>
           ))}
@@ -242,13 +275,17 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
 
         <div className="shrink-0 border-t border-border px-4 py-3">
           {isLoggedIn ? (
-            <Link
-              to="/perfil"
-              onClick={() => setOpen(false)}
-              className="block rounded-xl bg-surface px-4 py-3 text-center text-lg font-semibold text-foreground"
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                logout();
+                navigate({ to: "/entrar" });
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-surface px-4 py-3 text-center text-lg font-semibold text-destructive"
             >
-              Meu perfil
-            </Link>
+              <LogOut className="h-4 w-4" /> Terminar sessão
+            </button>
           ) : (
             <Link
               to="/entrar"
@@ -352,11 +389,17 @@ export function PageShell({
   footer?: ReactNode;
   showMobileTabBar?: boolean;
 }) {
+  const { isLoggedIn } = useAuth();
   return (
-    <div className="flex min-h-screen flex-col">
-      {header ?? <SiteHeader />}
-      <main className={cn("flex-1", showMobileTabBar && "pb-20 md:pb-0")}>{children}</main>
-      {footer === undefined ? <SiteFooter /> : footer}
+    <div className="flex min-h-screen">
+      {isLoggedIn && <LeftSidebar />}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {header ?? <SiteHeader />}
+        <main className={cn("min-w-0 flex-1", showMobileTabBar && "pb-20 md:pb-0")}>
+          {children}
+        </main>
+        {footer === undefined ? <SiteFooter /> : footer}
+      </div>
       {showMobileTabBar && <MobileTabBar />}
     </div>
   );

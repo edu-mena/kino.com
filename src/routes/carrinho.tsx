@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { useCart } from "@/lib/cart";
-import { formatKz, getDish } from "@/lib/mock-data";
+import { getMenuItem } from "@/data/helpers";
+import { lineUnitPrice, useCart } from "@/lib/cart";
+import { formatKz } from "@/lib/format";
 
 export const Route = createFileRoute("/carrinho")({
   head: () => ({
@@ -44,23 +45,24 @@ function Carrinho() {
           )}
 
           {lines.map((line) => {
-            const dish = getDish(line.dishId);
-            if (!dish) return null;
-            const unit = dish.price + line.addOns.reduce((s, a) => s + a.price, 0);
+            const item = getMenuItem(line.menuItemId);
+            if (!item) return null;
+            const unit = lineUnitPrice(line);
+            const extrasOn = line.selectedIngredients.filter((s) => s.included);
             return (
               <div
                 key={line.key}
                 className="card-soft grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4 p-4"
               >
                 <div className="grid h-20 w-20 shrink-0 place-items-center rounded-xl bg-surface">
-                  <img src={dish.image} alt={dish.name} className="h-16 object-contain" />
+                  <img src={item.image} alt={item.name} className="h-16 object-contain" />
                 </div>
                 <div className="min-w-0">
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-                    <h2 className="truncate font-display text-base font-bold">{dish.name}</h2>
+                    <h2 className="truncate font-display text-base font-bold">{item.name}</h2>
                     <button
                       type="button"
-                      aria-label={`Remover ${dish.name}`}
+                      aria-label={`Remover ${item.name}`}
                       onClick={() => remove(line.key)}
                       className="shrink-0 text-muted-foreground hover:text-destructive"
                     >
@@ -68,7 +70,7 @@ function Carrinho() {
                     </button>
                   </div>
                   <p className="truncate text-xs text-muted-foreground">
-                    {line.addOns.length ? line.addOns.map((a) => a.name).join(", ") : dish.restaurant}
+                    {extrasOn.length ? extrasOn.map((s) => s.name).join(", ") : item.portionInfo}
                   </p>
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <p className="font-bold text-primary">{formatKz(unit * line.qty)}</p>

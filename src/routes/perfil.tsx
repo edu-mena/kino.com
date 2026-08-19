@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Bell,
+  CalendarCheck,
   CreditCard,
   ChevronRight,
   Heart,
@@ -8,12 +9,12 @@ import {
   MapPin,
   Receipt,
   Settings,
-  Star,
 } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { PageShell } from "@/components/site-shell";
+import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { useAuth } from "@/lib/auth";
-import { addresses, paymentMethods } from "@/lib/mock-data";
+import { paymentMethods } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
@@ -32,11 +33,11 @@ export const Route = createFileRoute("/perfil")({
 });
 
 const menu = [
-  { label: "Histórico de pedidos", icon: Receipt },
-  { label: "Favoritos", icon: Heart },
-  { label: "Avaliações", icon: Star },
-  { label: "Notificações", icon: Bell },
-  { label: "Configurações", icon: Settings },
+  { label: "Histórico de pedidos", icon: Receipt, to: "/acompanhar" as const },
+  { label: "Reservas", icon: CalendarCheck, to: "/reservas" as const },
+  { label: "Favoritos", icon: Heart, to: "/favoritos" as const },
+  { label: "Notificações", icon: Bell, to: undefined },
+  { label: "Preferências", icon: Settings, to: "/preferencias" as const },
 ];
 
 function Perfil() {
@@ -88,19 +89,33 @@ function Perfil() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <div className="card-soft divide-y divide-border">
-            {menu.map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 text-left"
-              >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface text-primary">
-                  <item.icon className="h-4 w-4" />
-                </span>
-                <span className="min-w-0 truncate text-sm font-semibold">{item.label}</span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </button>
-            ))}
+            {menu.map((item) =>
+              item.to ? (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 text-left"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface text-primary">
+                    <item.icon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 truncate text-sm font-semibold">{item.label}</span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Link>
+              ) : (
+                <button
+                  key={item.label}
+                  type="button"
+                  className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 text-left"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface text-primary">
+                    <item.icon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 truncate text-sm font-semibold">{item.label}</span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </button>
+              ),
+            )}
             <button
               type="button"
               onClick={handleLogout}
@@ -117,7 +132,7 @@ function Perfil() {
             <section className="card-soft p-6">
               <h2 className="font-display text-lg font-bold text-primary">Endereços guardados</h2>
               <div className="mt-4 space-y-2">
-                {addresses.map((a) => (
+                {INITIAL_SAVED_ADDRESSES.map((a) => (
                   <div
                     key={a.id}
                     className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border border-border p-3"
@@ -128,7 +143,7 @@ function Perfil() {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold">{a.label}</p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {a.detail} · {a.area}
+                        {a.line1} · {a.line2}
                       </p>
                     </div>
                   </div>

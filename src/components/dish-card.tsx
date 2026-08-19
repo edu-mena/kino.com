@@ -1,20 +1,24 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, Plus, Star } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
-import { formatKz, type Dish } from "@/lib/mock-data";
+import { getRestaurant } from "@/data/helpers";
+import type { MenuItem } from "@/data/types";
 import { useCart } from "@/lib/cart";
+import { formatKz } from "@/lib/format";
+import { usePreferences } from "@/lib/preferences";
 
-export function DishCard({ dish }: { dish: Dish }) {
+export function DishCard({ item }: { item: MenuItem }) {
   const { add } = useCart();
-  const [liked, setLiked] = useState(false);
+  const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
+  const restaurant = getRestaurant(item.restaurantId);
+  const liked = isFavoriteRestaurant(item.restaurantId);
 
   return (
     <div className="card-soft group relative flex flex-col overflow-hidden p-3">
       <button
         type="button"
-        aria-label="Guardar nos favoritos"
-        onClick={() => setLiked((v) => !v)}
+        aria-label="Guardar restaurante nos favoritos"
+        onClick={() => toggleFavoriteRestaurant(item.restaurantId)}
         className="absolute left-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/80 text-muted-foreground backdrop-blur transition-colors hover:text-brand"
       >
         <Heart className={`h-4 w-4 ${liked ? "fill-brand text-brand" : ""}`} />
@@ -22,12 +26,12 @@ export function DishCard({ dish }: { dish: Dish }) {
 
       <Link
         to="/prato/$dishId"
-        params={{ dishId: dish.id }}
+        params={{ dishId: item.id }}
         className="block rounded-xl bg-surface p-2"
       >
         <img
-          src={dish.image}
-          alt={dish.name}
+          src={item.image}
+          alt={item.name}
           loading="lazy"
           width={768}
           height={768}
@@ -38,28 +42,28 @@ export function DishCard({ dish }: { dish: Dish }) {
       <div className="mt-3 min-w-0">
         <Link
           to="/prato/$dishId"
-          params={{ dishId: dish.id }}
+          params={{ dishId: item.id }}
           className="block truncate font-display text-sm font-bold text-foreground"
         >
-          {dish.name}
+          {item.name}
         </Link>
-        <p className="truncate text-xs text-muted-foreground">{dish.restaurant}</p>
+        <p className="truncate text-xs text-muted-foreground">{restaurant?.name}</p>
       </div>
 
       <div className="mt-3 flex items-end justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-primary">{formatKz(dish.price)}</p>
+          <p className="truncate text-sm font-bold text-primary">{formatKz(item.price)}</p>
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
-            {dish.rating}
+            {restaurant?.rating ?? "—"}
             <Star className="h-3 w-3 fill-star text-star" />
           </p>
         </div>
         <button
           type="button"
-          aria-label={`Adicionar ${dish.name} ao carrinho`}
+          aria-label={`Adicionar ${item.name} ao carrinho`}
           onClick={() => {
-            add(dish.id, 1, []);
-            toast.success(`${dish.name} adicionado ao carrinho`);
+            add(item.id, 1, []);
+            toast.success(`${item.name} adicionado ao carrinho`);
           }}
           className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95"
         >

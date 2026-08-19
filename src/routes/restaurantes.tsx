@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Star } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { formatKz, restaurants } from "@/lib/mock-data";
+import { INITIAL_RESTAURANTS } from "@/data/mockData";
+import { formatKz } from "@/lib/format";
 
 export const Route = createFileRoute("/restaurantes")({
   head: () => ({
@@ -30,15 +31,16 @@ function Restaurantes() {
         description="Cozinhas selecionadas, avaliadas pelos nossos clientes em Luanda."
       />
       <div className="mx-auto mt-8 grid max-w-6xl gap-4 px-4 sm:grid-cols-2 md:px-6 lg:grid-cols-3">
-        {restaurants.map((r) => (
+        {INITIAL_RESTAURANTS.map((r) => (
           <Link
             key={r.id}
             to="/cardapio"
+            search={{ restaurante: r.id }}
             className="card-soft overflow-hidden transition-colors hover:border-brand"
           >
             <div className="h-40 overflow-hidden bg-surface">
               <img
-                src={r.image}
+                src={r.coverImage}
                 alt={`Interior do restaurante ${r.name}`}
                 loading="lazy"
                 width={1024}
@@ -54,9 +56,13 @@ function Restaurantes() {
                   {r.rating}
                 </span>
               </div>
-              <p className="truncate text-sm text-muted-foreground">{r.tags}</p>
+              <p className="truncate text-sm text-muted-foreground">
+                {r.cuisine} · {r.priceLevel}
+              </p>
               <p className="mt-3 text-xs text-muted-foreground">
-                {r.time} · Entrega {formatKz(r.fee)}
+                {r.isDeliveryAvailable
+                  ? `${r.estimatedDeliveryMinutes} min · Entrega ${formatKz(r.deliveryFee)}`
+                  : "Sem entrega — só no local"}
               </p>
             </div>
           </Link>

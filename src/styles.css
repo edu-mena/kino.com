@@ -5,6 +5,17 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
+ * Painéis fixos como o menu "três pontos" (site-shell.tsx) ficam fora do
+ * ecrã via `translate-x-full`, mas continuam a contar para a largura
+ * scrollável do documento em alguns navegadores — sem isto o body ganha
+ * scroll horizontal fantasma do tamanho do painel.
+ */
+html,
+body {
+  overflow-x: hidden;
+}
+
+/*
  * WhatsApp-style horizontal push transition for guest-site navigation
  * (see Link viewTransition prop in site-shell.tsx). Both the outgoing and
  * incoming page travel the same distance at the same time, so the leaving

@@ -5,14 +5,17 @@ import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { DishCard } from "@/components/dish-card";
 import { PageShell } from "@/components/site-shell";
+import { getMenuItem, getRestaurant, getRestaurantsOfferingDish } from "@/data/helpers";
+import { INITIAL_MENU_ITEMS } from "@/data/mockData";
+import type { SelectedIngredient } from "@/data/types";
 import { useCart } from "@/lib/cart";
-import { dishes, formatKz, getDish, type AddOn } from "@/lib/mock-data";
+import { formatKz } from "@/lib/format";
 
 export const Route = createFileRoute("/prato/$dishId")({
   loader: ({ params }) => {
-    const dish = getDish(params.dishId);
-    if (!dish) throw notFound();
-    return { dish };
+    const item = getMenuItem(params.dishId);
+    if (!item) throw notFound();
+    return { item };
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
@@ -20,14 +23,15 @@ export const Route = createFileRoute("/prato/$dishId")({
         meta: [{ title: "Prato indisponível — Kino.com" }, { name: "robots", content: "noindex" }],
       };
     }
-    const { dish } = loaderData;
+    const { item } = loaderData;
+    const restaurantName = getRestaurant(item.restaurantId)?.name ?? "Kino.com";
     return {
       meta: [
-        { title: `${dish.name} — ${dish.restaurant} | Kino.com` },
-        { name: "description", content: dish.description },
-        { property: "og:title", content: `${dish.name} — ${dish.restaurant}` },
-        { property: "og:description", content: dish.description },
-        { property: "og:image", content: dish.image },
+        { title: `${item.name} — ${restaurantName} | Kino.com` },
+        { name: "description", content: item.description },
+        { property: "og:title", content: `${item.name} — ${restaurantName}` },
+        { property: "og:description", content: item.description },
+        { property: "og:image", content: item.image },
       ],
     };
   },
@@ -35,21 +39,30 @@ export const Route = createFileRoute("/prato/$dishId")({
 });
 
 function DishDetail() {
-  const { dish } = Route.useLoaderData();
+  const { item } = Route.useLoaderData();
   const { add } = useCart();
   const navigate = useNavigate();
   const [qty, setQty] = useState(1);
-  const [selected, setSelected] = useState<AddOn[]>([]);
 
-  const toggle = (addOn: AddOn) =>
-    setSelected((prev) =>
-      prev.some((a) => a.id === addOn.id)
-        ? prev.filter((a) => a.id !== addOn.id)
-        : [...prev, addOn],
-    );
+  const removableFree = item.ingredients.filter((i) => i.removable && !i.extraPrice);
+  const extras = item.ingredients.filter((i) => i.extraPrice);
 
-  const unit = dish.price + selected.reduce((s, a) => s + a.price, 0);
-  const related = dishes.filter((d) => d.id !== dish.id).slice(0, 4);
+  const [selected, setSelected] = useState<SelectedIngredient[]>(() => [
+    ...removableFree.map((i) => ({ id: i.id, name: i.name, included: true })),
+    ...extras.map((i) => ({ id: i.id, name: i.name, included: false })),
+  ]);
+
+  const toggle = (id: string) =>
+    setSelected((prev) => prev.map((s) => (s.id === id ? { ...s, included: !s.included } : s)));
+
+  const extraTotal = extras.reduce((sum, i) => {
+    const isOn = selected.find((s) => s.id === i.id)?.included;
+    return isOn ? sum + (i.extraPrice ?? 0) : sum;
+  }, 0);
+  const unit = item.price + extraTotal;
+
+  const otherRestaurants = getRestaurantsOfferingDish(item.name, item.restaurantId);
+  const related = INITIAL_MENU_ITEMS.filter((m) => m.id !== item.id).slice(0, 4);
 
   return (
     <PageShell>
@@ -64,8 +77,8 @@ function DishDetail() {
         <div className="mt-6 grid gap-8 md:grid-cols-2">
           <div className="grid place-items-center rounded-[2rem] bg-surface p-8">
             <img
-              src={dish.image}
-              alt={dish.name}
+              src={item.image}
+              alt={item.name}
               width={768}
               height={768}
               className="h-64 w-full max-w-sm object-contain sm:h-80"
@@ -73,28 +86,57 @@ function DishDetail() {
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-brand">{dish.restaurant}</p>
-            <h1 className="mt-1 text-3xl font-extrabold text-primary sm:text-4xl">{dish.name}</h1>
+            <p className="text-sm font-semibold text-brand">
+              {getRestaurant(item.restaurantId)?.name}
+            </p>
+            <h1 className="mt-1 text-3xl font-extrabold text-primary sm:text-4xl">{item.name}</h1>
             <div className="mt-3 flex items-center gap-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1 font-semibold text-foreground">
                 <Star className="h-4 w-4 fill-star text-star" />
-                {dish.rating}
+                {getRestaurant(item.restaurantId)?.rating ?? "—"}
               </span>
-              <span>25 - 35 min</span>
+              <span>{item.prepTimeMinutes} min de preparo</span>
+              <span>{item.portionInfo}</span>
             </div>
-            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{dish.description}</p>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
 
-            {dish.addOns.length > 0 && (
+            {removableFree.length > 0 && (
+              <div className="mt-7">
+                <h2 className="font-display text-lg font-bold text-primary">Ingredientes</h2>
+                <p className="text-xs text-muted-foreground">Desmarque o que não quiser.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {removableFree.map((ing) => {
+                    const on = selected.find((s) => s.id === ing.id)?.included ?? true;
+                    return (
+                      <button
+                        key={ing.id}
+                        type="button"
+                        onClick={() => toggle(ing.id)}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                          on
+                            ? "border-brand bg-brand/5 text-foreground"
+                            : "border-border bg-card text-muted-foreground line-through"
+                        }`}
+                      >
+                        {ing.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {extras.length > 0 && (
               <div className="mt-7">
                 <h2 className="font-display text-lg font-bold text-primary">Adicionais</h2>
                 <div className="mt-3 space-y-2">
-                  {dish.addOns.map((addOn) => {
-                    const on = selected.some((a) => a.id === addOn.id);
+                  {extras.map((extra) => {
+                    const on = selected.find((s) => s.id === extra.id)?.included ?? false;
                     return (
                       <button
-                        key={addOn.id}
+                        key={extra.id}
                         type="button"
-                        onClick={() => toggle(addOn)}
+                        onClick={() => toggle(extra.id)}
                         className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
                           on ? "border-brand bg-brand/5" : "border-border bg-card"
                         }`}
@@ -106,9 +148,9 @@ function DishDetail() {
                         >
                           {on && <Plus className="h-3 w-3 rotate-45" />}
                         </span>
-                        <span className="min-w-0 truncate text-sm font-medium">{addOn.name}</span>
+                        <span className="min-w-0 truncate text-sm font-medium">{extra.name}</span>
                         <span className="shrink-0 text-sm font-semibold text-primary">
-                          +{formatKz(addOn.price)}
+                          +{formatKz(extra.extraPrice ?? 0)}
                         </span>
                       </button>
                     );
@@ -140,7 +182,7 @@ function DishDetail() {
               <button
                 type="button"
                 onClick={() => {
-                  add(dish.id, qty, selected);
+                  add(item.id, qty, selected);
                   toast.success("Adicionado ao carrinho");
                   navigate({ to: "/carrinho" });
                 }}
@@ -149,13 +191,33 @@ function DishDetail() {
                 Adicionar · {formatKz(unit * qty)}
               </button>
             </div>
+
+            {otherRestaurants.length > 0 && (
+              <div className="mt-8 rounded-xl border border-border bg-surface p-4">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Também disponível em:
+                </p>
+                <div className="mt-2 space-y-2">
+                  {otherRestaurants.map((r) => (
+                    <Link
+                      key={r.id}
+                      to="/cardapio"
+                      search={{ restaurante: r.id }}
+                      className="flex items-center gap-2 text-sm font-semibold text-brand hover:underline"
+                    >
+                      {r.name} <span className="text-muted-foreground">— ver aqui</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         <h2 className="mt-16 text-2xl font-extrabold text-primary">Também vai gostar</h2>
         <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {related.map((d) => (
-            <DishCard key={d.id} dish={d} />
+          {related.map((m) => (
+            <DishCard key={m.id} item={m} />
           ))}
         </div>
       </div>

@@ -18,11 +18,14 @@ import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as KinoRouteImport } from './routes/kino'
 import { Route as OfertasRouteImport } from './routes/ofertas'
 import { Route as ParceirosRouteImport } from './routes/parceiros'
 import { Route as PedidoConfirmadoRouteImport } from './routes/pedido-confirmado'
 import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as PreferenciasRouteImport } from './routes/preferencias'
+import { Route as ReservasRouteImport } from './routes/reservas'
 import { Route as RestaurantesRouteImport } from './routes/restaurantes'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as PratoDishIdRouteImport } from './routes/prato.$dishId'
@@ -72,6 +75,11 @@ const EntrarRoute = EntrarRouteImport.update({
   path: '/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FavoritosRoute = FavoritosRouteImport.update({
+  id: '/favoritos',
+  path: '/favoritos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KinoRoute = KinoRouteImport.update({
   id: '/kino',
   path: '/kino',
@@ -95,6 +103,16 @@ const PedidoConfirmadoRoute = PedidoConfirmadoRouteImport.update({
 const PerfilRoute = PerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreferenciasRoute = PreferenciasRouteImport.update({
+  id: '/preferencias',
+  path: '/preferencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReservasRoute = ReservasRouteImport.update({
+  id: '/reservas',
+  path: '/reservas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RestaurantesRoute = RestaurantesRouteImport.update({
@@ -123,11 +141,14 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
   '/entrar': typeof EntrarRoute
+  '/favoritos': typeof FavoritosRoute
   '/kino': typeof KinoRoute
   '/ofertas': typeof OfertasRoute
   '/parceiros': typeof ParceirosRoute
   '/pedido-confirmado': typeof PedidoConfirmadoRoute
   '/perfil': typeof PerfilRoute
+  '/preferencias': typeof PreferenciasRoute
+  '/reservas': typeof ReservasRoute
   '/restaurantes': typeof RestaurantesRoute
   '/sobre': typeof SobreRoute
   '/prato/$dishId': typeof PratoDishIdRoute
@@ -142,11 +163,14 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
   '/entrar': typeof EntrarRoute
+  '/favoritos': typeof FavoritosRoute
   '/kino': typeof KinoRoute
   '/ofertas': typeof OfertasRoute
   '/parceiros': typeof ParceirosRoute
   '/pedido-confirmado': typeof PedidoConfirmadoRoute
   '/perfil': typeof PerfilRoute
+  '/preferencias': typeof PreferenciasRoute
+  '/reservas': typeof ReservasRoute
   '/restaurantes': typeof RestaurantesRoute
   '/sobre': typeof SobreRoute
   '/prato/$dishId': typeof PratoDishIdRoute
@@ -162,11 +186,14 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
   '/entrar': typeof EntrarRoute
+  '/favoritos': typeof FavoritosRoute
   '/kino': typeof KinoRoute
   '/ofertas': typeof OfertasRoute
   '/parceiros': typeof ParceirosRoute
   '/pedido-confirmado': typeof PedidoConfirmadoRoute
   '/perfil': typeof PerfilRoute
+  '/preferencias': typeof PreferenciasRoute
+  '/reservas': typeof ReservasRoute
   '/restaurantes': typeof RestaurantesRoute
   '/sobre': typeof SobreRoute
   '/prato/$dishId': typeof PratoDishIdRoute
@@ -183,11 +210,14 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/contacto'
     | '/entrar'
+    | '/favoritos'
     | '/kino'
     | '/ofertas'
     | '/parceiros'
     | '/pedido-confirmado'
     | '/perfil'
+    | '/preferencias'
+    | '/reservas'
     | '/restaurantes'
     | '/sobre'
     | '/prato/$dishId'
@@ -202,11 +232,14 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/contacto'
     | '/entrar'
+    | '/favoritos'
     | '/kino'
     | '/ofertas'
     | '/parceiros'
     | '/pedido-confirmado'
     | '/perfil'
+    | '/preferencias'
+    | '/reservas'
     | '/restaurantes'
     | '/sobre'
     | '/prato/$dishId'
@@ -221,11 +254,14 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/contacto'
     | '/entrar'
+    | '/favoritos'
     | '/kino'
     | '/ofertas'
     | '/parceiros'
     | '/pedido-confirmado'
     | '/perfil'
+    | '/preferencias'
+    | '/reservas'
     | '/restaurantes'
     | '/sobre'
     | '/prato/$dishId'
@@ -241,11 +277,14 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   ContactoRoute: typeof ContactoRoute
   EntrarRoute: typeof EntrarRoute
+  FavoritosRoute: typeof FavoritosRoute
   KinoRoute: typeof KinoRoute
   OfertasRoute: typeof OfertasRoute
   ParceirosRoute: typeof ParceirosRoute
   PedidoConfirmadoRoute: typeof PedidoConfirmadoRoute
   PerfilRoute: typeof PerfilRoute
+  PreferenciasRoute: typeof PreferenciasRoute
+  ReservasRoute: typeof ReservasRoute
   RestaurantesRoute: typeof RestaurantesRoute
   SobreRoute: typeof SobreRoute
   PratoDishIdRoute: typeof PratoDishIdRoute
@@ -316,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/favoritos': {
+      id: '/favoritos'
+      path: '/favoritos'
+      fullPath: '/favoritos'
+      preLoaderRoute: typeof FavoritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/kino': {
       id: '/kino'
       path: '/kino'
@@ -349,6 +395,20 @@ declare module '@tanstack/react-router' {
       path: '/perfil'
       fullPath: '/perfil'
       preLoaderRoute: typeof PerfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preferencias': {
+      id: '/preferencias'
+      path: '/preferencias'
+      fullPath: '/preferencias'
+      preLoaderRoute: typeof PreferenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reservas': {
+      id: '/reservas'
+      path: '/reservas'
+      fullPath: '/reservas'
+      preLoaderRoute: typeof ReservasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/restaurantes': {
@@ -385,11 +445,14 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   ContactoRoute: ContactoRoute,
   EntrarRoute: EntrarRoute,
+  FavoritosRoute: FavoritosRoute,
   KinoRoute: KinoRoute,
   OfertasRoute: OfertasRoute,
   ParceirosRoute: ParceirosRoute,
   PedidoConfirmadoRoute: PedidoConfirmadoRoute,
   PerfilRoute: PerfilRoute,
+  PreferenciasRoute: PreferenciasRoute,
+  ReservasRoute: ReservasRoute,
   RestaurantesRoute: RestaurantesRoute,
   SobreRoute: SobreRoute,
   PratoDishIdRoute: PratoDishIdRoute,

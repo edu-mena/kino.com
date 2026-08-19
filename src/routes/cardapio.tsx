@@ -4,13 +4,15 @@ import { useState } from "react";
 import icon from "@/assets/icon.png";
 import { DishCard } from "@/components/dish-card";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { categories, dishes } from "@/lib/mock-data";
+import { getMenuCategories, getRestaurant } from "@/data/helpers";
+import { INITIAL_MENU_ITEMS } from "@/data/mockData";
 
-type CardapioSearch = { categoria?: string | undefined };
+type CardapioSearch = { categoria?: string | undefined; restaurante?: string | undefined };
 
 export const Route = createFileRoute("/cardapio")({
   validateSearch: (search: Record<string, unknown>): CardapioSearch => ({
     categoria: typeof search["categoria"] === "string" ? search["categoria"] : undefined,
+    restaurante: typeof search["restaurante"] === "string" ? search["restaurante"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -28,26 +30,36 @@ export const Route = createFileRoute("/cardapio")({
   component: Cardapio,
 });
 
+const categories = getMenuCategories().map((id) => ({ id, label: id }));
+
 function Cardapio() {
-  const { categoria } = Route.useSearch();
+  const { categoria, restaurante } = Route.useSearch();
   const [active, setActive] = useState<string>(categoria ?? "todos");
   const [query, setQuery] = useState("");
 
-  const filtered = dishes.filter((d) => {
-    const byCat = active === "todos" || d.category === active;
+  const restaurantFilter = restaurante ? getRestaurant(restaurante) : undefined;
+
+  const filtered = INITIAL_MENU_ITEMS.filter((item) => {
+    const byCat = active === "todos" || item.category === active;
+    const byRestaurant = !restaurante || item.restaurantId === restaurante;
+    const restaurantName = getRestaurant(item.restaurantId)?.name ?? "";
     const byQuery =
       !query ||
-      d.name.toLowerCase().includes(query.toLowerCase()) ||
-      d.restaurant.toLowerCase().includes(query.toLowerCase());
-    return byCat && byQuery;
+      item.name.toLowerCase().includes(query.toLowerCase()) ||
+      restaurantName.toLowerCase().includes(query.toLowerCase());
+    return byCat && byRestaurant && byQuery;
   });
 
   return (
     <PageShell>
       <PageHeading
         eyebrow="Cardápio"
-        title="Escolha o seu próximo prato"
-        description="Filtre por categoria ou pesquise pelo nome do prato ou restaurante."
+        title={restaurantFilter ? restaurantFilter.name : "Escolha o seu próximo prato"}
+        description={
+          restaurantFilter
+            ? `Cardápio de ${restaurantFilter.name} — ${restaurantFilter.cuisine}.`
+            : "Filtre por categoria ou pesquise pelo nome do prato ou restaurante."
+        }
       />
 
       <div className="mx-auto max-w-6xl px-4 md:px-6">
@@ -87,8 +99,8 @@ function Cardapio() {
         <p className="mt-6 text-sm text-muted-foreground">{filtered.length} resultados</p>
 
         <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {filtered.map((dish) => (
-            <DishCard key={dish.id} dish={dish} />
+          {filtered.map((item) => (
+            <DishCard key={item.id} item={item} />
           ))}
         </div>
 
