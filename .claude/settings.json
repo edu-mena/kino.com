@@ -9,7 +9,10 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8081/)",
       "Bash(sed -i 's/localhost:8080/localhost:8082/' shot7.mjs)",
       "Bash(node shot7.mjs)",
-      "Bash(taskkill //PID 24768 //F)"
+      "Bash(taskkill //PID 24768 //F)",
+      "Bash(break)",
+      "Bash(node shot8.mjs)",
+      "Bash(taskkill //PID 20896 //F)"
     ]
   }
 }

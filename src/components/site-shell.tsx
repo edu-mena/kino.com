@@ -53,6 +53,23 @@ const guestNavLinks = [
 
 const guestNavOrder = guestNavLinks.map((link) => link.to as string);
 
+/** "Bom dia"/"Boa tarde"/"Boa noite" conforme a hora local. */
+function greetingForHour(hour: number) {
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
+/** Ex: "quarta-feira, 19 de agosto" — capitalizado. */
+function formatTodayPt(date: Date) {
+  const text = date.toLocaleDateString("pt-AO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 // Slides "forward" (left) when moving right along the guest nav order
 // (e.g. Início -> Kino), "back" (right) when moving left (e.g. Kino -> Início).
 // Matched by the html:active-view-transition-type(back) rule in styles.css.
@@ -116,10 +133,17 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
     };
   }, [open]);
 
+  // Logado (fora da home de convidado): header realmente `fixed`, não só
+  // `sticky` — alinhado ao lado direito da leftbar fixa (LeftSidebar).
+  const isFixedDashboardHeader = isLoggedIn && !isGuestHome;
+
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b transition-colors duration-300",
+        "z-40 border-b transition-colors duration-300",
+        isFixedDashboardHeader
+          ? "fixed inset-x-0 top-0 h-16 lg:left-24 xl:left-64"
+          : "sticky top-0",
         isGuestHome
           ? scrolled
             ? "border-border/70 bg-white"
@@ -135,9 +159,17 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
         )}
       >
         <div className={cn("flex min-w-0 items-center", isGuestHome ? "" : "gap-8")}>
-          <Link to="/" className="shrink-0">
+          <Link to="/" className={cn("shrink-0", isFixedDashboardHeader && "lg:hidden")}>
             <Logo />
           </Link>
+          {isFixedDashboardHeader && user && (
+            <div className="hidden min-w-0 lg:block">
+              <p className="truncate text-sm font-bold text-primary">
+                {greetingForHour(new Date().getHours())}, <span className="capitalize">{user.name}</span> 👋
+              </p>
+              <p className="truncate text-xs text-muted-foreground">{formatTodayPt(new Date())}</p>
+            </div>
+          )}
           {!isGuestHome && !isLoggedIn && (
             <nav className="hidden items-center gap-6 lg:flex">
               {navLinks.map((link) => (
@@ -195,7 +227,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           {!isGuestHome && <CartButton />}
 
           {isLoggedIn && user ? (
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="hidden items-center gap-2 sm:flex lg:hidden">
               <span className="text-sm font-medium text-muted-foreground">
                 {user.name}
               </span>
@@ -393,9 +425,20 @@ export function PageShell({
   return (
     <div className="flex min-h-screen">
       {isLoggedIn && <LeftSidebar />}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 flex-col",
+          isLoggedIn && "lg:ml-24 xl:ml-64",
+        )}
+      >
         {header ?? <SiteHeader />}
-        <main className={cn("min-w-0 flex-1", showMobileTabBar && "pb-20 md:pb-0")}>
+        <main
+          className={cn(
+            "min-w-0 flex-1",
+            isLoggedIn && "pt-16",
+            showMobileTabBar && "pb-20 md:pb-0",
+          )}
+        >
           {children}
         </main>
         {footer === undefined ? <SiteFooter /> : footer}

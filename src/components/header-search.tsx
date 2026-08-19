@@ -43,14 +43,23 @@ export function HeaderSearch() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex w-full items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary"
-      >
-        <Search className="h-4 w-4 shrink-0" />
-        Pesquisar pratos, restaurantes, locais...
-      </button>
+      <div className="flex items-center gap-[5px]">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Buscar"
+          className="grid shrink-0 place-items-center rounded-full bg-primary p-4 text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="w-full rounded-2xl border border-primary bg-card px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary"
+        >
+          Pesquisar pratos, restaurantes, locais...
+        </button>
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl rounded-[2rem] border-none bg-card p-8">

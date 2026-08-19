@@ -35,7 +35,7 @@ function Home() {
   const { isLoggedIn, user } = useAuth();
 
   if (isLoggedIn && user) {
-    return <HomeLoggedIn user={user} />;
+    return <HomeLoggedIn />;
   }
 
   return <HomeNotLoggedIn />;
@@ -133,18 +133,12 @@ const trendingItems = [...INITIAL_MENU_ITEMS]
   .sort((a, b) => (b.orderCount ?? 0) - (a.orderCount ?? 0));
 const recommendedItems = INITIAL_MENU_ITEMS.slice(0, 10);
 
-function HomeLoggedIn({ user }: { user: { name: string; email: string } }) {
+function HomeLoggedIn() {
   return (
     <PageShell>
-      {/* Welcome + busca */}
-      <section className="mx-auto max-w-6xl px-4 pt-8 md:px-6 md:pt-14">
-        <h1 className="text-2xl font-extrabold text-primary sm:text-3xl">
-          Olá, <span className="capitalize">{user.name}</span> 👋
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">O que quer pedir hoje?</p>
-        <div className="mt-5">
-          <HeaderSearch />
-        </div>
+      {/* Busca (mensagem de boas-vindas mudou pro header — ver SiteHeader) */}
+      <section className="mx-auto max-w-6xl px-4 pt-3 md:px-6">
+        <HeaderSearch />
       </section>
 
       {/* Promoções */}

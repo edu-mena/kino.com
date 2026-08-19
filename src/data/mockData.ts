@@ -630,8 +630,6 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
     isAvailable: true,
     portionInfo: 'Prato individual',
     prepTimeMinutes: 20,
-    isPromoted: true,
-    promotionLabel: 'Mais Pedido da Casa',
     orderCount: 190,
     ingredients: [
       { id: 'ing-301', name: 'Tagliatelle Artesanal', removable: false },
