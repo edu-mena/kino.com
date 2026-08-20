@@ -32,21 +32,23 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
               key={item.id}
               type="button"
               onClick={() => setActive(item)}
-              className="card-soft flex w-40 shrink-0 flex-col overflow-hidden p-3 text-left transition-colors hover:border-brand"
+              className="card-soft flex w-40 shrink-0 flex-col overflow-hidden text-left transition-colors hover:border-brand"
             >
-              <div className="rounded-xl bg-surface p-2">
+              <div className="h-24 w-full bg-surface">
                 <img
                   src={item.image}
                   alt={item.name}
                   loading="lazy"
-                  className="mx-auto h-24 w-full object-contain"
+                  className="h-full w-full object-cover"
                 />
               </div>
-              <p className="mt-3 truncate font-display text-sm font-bold text-foreground">
-                {item.name}
-              </p>
-              <p className="truncate text-xs text-muted-foreground">{restaurant?.name}</p>
-              <p className="mt-2 text-sm font-bold text-primary">{formatKz(item.price)}</p>
+              <div className="p-3">
+                <p className="truncate font-display text-sm font-bold text-foreground">
+                  {item.name}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">{restaurant?.name}</p>
+                <p className="mt-2 text-sm font-bold text-primary">{formatKz(item.price)}</p>
+              </div>
             </button>
           );
         })}

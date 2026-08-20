@@ -10,6 +10,9 @@ export type AuthUser = {
 type AuthContextType = {
   user: AuthUser | null;
   isLoggedIn: boolean;
+  /** true até o localStorage ser lido — evita mostrar a home de convidado
+   * por um instante antes de trocar pra logada (ou vice-versa). */
+  isLoading: boolean;
   login: (name: string, email: string) => void;
   signup: (name: string, email: string, phone: string) => void;
   logout: () => void;
@@ -21,6 +24,7 @@ const STORAGE_KEY = "kino_auth_user";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Restaurar usuário do localStorage ao montar
   useEffect(() => {
@@ -32,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(STORAGE_KEY);
       }
     }
+    setIsLoading(false);
   }, []);
 
   const login = (name: string, email: string) => {
@@ -66,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isLoggedIn: user !== null,
+        isLoading,
         login,
         signup,
         logout,

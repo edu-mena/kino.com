@@ -114,9 +114,6 @@ function SlideCta({ target, children }: { target: LinkTarget; children: React.Re
   );
 }
 
-/** Altura única pros 3 layouts — pra não ficarem com tamanhos diferentes no carrossel. */
-const CARD_HEIGHT = "h-72";
-
 /** Botão invisível que cobre a mídia (imagem/vídeo) e abre o lightbox — sempre um irmão do CTA, nunca aninhado nele. */
 function MediaTrigger({ onClick, label }: { onClick: () => void; label: string }) {
   return (
@@ -164,7 +161,7 @@ function SlideCard({ slide }: { slide: Slide }) {
 
   if (slide.kind === "split") {
     return (
-      <div className="flex flex-col overflow-hidden rounded-[2rem] border border-border bg-card sm:h-72 sm:flex-row">
+      <div className="flex h-96 flex-col overflow-hidden rounded-[2rem] border border-border bg-card sm:h-72 sm:flex-row">
         {/* Mobile: imagem em cima do texto. Desktop: texto encolhe pro conteúdo,
             imagem absorve o resto (com teto, senão ela estoura em telas grandes). */}
         <div className="relative order-1 h-44 w-full p-3 sm:order-none sm:h-auto sm:min-w-0 sm:max-w-[45%] sm:flex-1 sm:p-3 sm:pl-0">
@@ -177,8 +174,8 @@ function SlideCard({ slide }: { slide: Slide }) {
           <MediaTrigger onClick={() => setLightboxOpen(true)} label={`Ver imagem: ${slide.title}`} />
         </div>
         <div className="order-2 flex w-full flex-col justify-center gap-[10px] p-5 sm:order-none sm:w-fit sm:shrink-0 sm:max-w-xs sm:p-8">
-          <h3 className="text-xl font-extrabold text-primary sm:text-2xl">{slide.title}</h3>
-          <p className="text-sm text-muted-foreground">{slide.description}</p>
+          <h3 className="truncate text-xl font-extrabold text-primary sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">{slide.title}</h3>
+          <p className="line-clamp-2 text-sm text-muted-foreground sm:line-clamp-none">{slide.description}</p>
           <SlideCta target={slide.target}>{slide.cta}</SlideCta>
         </div>
         <MediaLightbox
@@ -192,7 +189,7 @@ function SlideCard({ slide }: { slide: Slide }) {
 
   if (slide.kind === "cover") {
     return (
-      <div className={`relative overflow-hidden rounded-[2rem] ${CARD_HEIGHT}`}>
+      <div className="relative h-96 overflow-hidden rounded-[2rem] sm:h-72">
         <img
           src={slide.image}
           alt=""
@@ -202,8 +199,10 @@ function SlideCard({ slide }: { slide: Slide }) {
         <MediaTrigger onClick={() => setLightboxOpen(true)} label={`Ver imagem: ${slide.title}`} />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-[10px] p-8 text-center">
-          <h3 className="max-w-md text-xl font-extrabold text-white sm:text-2xl">{slide.title}</h3>
-          <p className="max-w-sm text-sm text-white/90">{slide.description}</p>
+          <h3 className="w-full max-w-md truncate text-xl font-extrabold text-white sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">
+            {slide.title}
+          </h3>
+          <p className="line-clamp-2 max-w-sm text-sm text-white/90 sm:line-clamp-none">{slide.description}</p>
           <SlideCta target={slide.target}>{slide.cta}</SlideCta>
         </div>
         <MediaLightbox
@@ -220,7 +219,7 @@ function SlideCard({ slide }: { slide: Slide }) {
   // apertado ainda se for vertical). Mobile: vídeo em cima do texto.
   const vertical = slide.orientation === "vertical";
   return (
-    <div className="flex flex-col overflow-hidden rounded-[2rem] border border-border bg-card sm:h-72 sm:flex-row">
+    <div className="flex h-96 flex-col overflow-hidden rounded-[2rem] border border-border bg-card sm:h-72 sm:flex-row">
       <div
         className={`relative order-1 h-44 w-full p-3 sm:order-none sm:h-auto sm:min-w-0 sm:flex-1 sm:p-3 sm:pl-0 ${
           vertical ? "sm:max-w-[40%]" : "sm:max-w-[45%]"
@@ -237,8 +236,8 @@ function SlideCard({ slide }: { slide: Slide }) {
         <MediaTrigger onClick={() => setLightboxOpen(true)} label={`Ver vídeo: ${slide.title}`} />
       </div>
       <div className="order-2 flex w-full flex-col justify-center gap-[10px] p-5 sm:order-none sm:w-fit sm:shrink-0 sm:max-w-xs sm:p-8">
-        <h3 className="text-xl font-extrabold text-primary sm:text-2xl">{slide.title}</h3>
-        <p className="text-sm text-muted-foreground">{slide.description}</p>
+        <h3 className="truncate text-xl font-extrabold text-primary sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">{slide.title}</h3>
+        <p className="line-clamp-2 text-sm text-muted-foreground sm:line-clamp-none">{slide.description}</p>
         <SlideCta target={slide.target}>{slide.cta}</SlideCta>
       </div>
       <MediaLightbox

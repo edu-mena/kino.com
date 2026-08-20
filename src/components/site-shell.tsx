@@ -257,7 +257,9 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
               !panelAlwaysAvailable && "lg:hidden",
               isGuestHome
                 ? "bg-brand text-brand-foreground"
-                : "border border-border bg-card text-foreground",
+                : panelAlwaysAvailable
+                  ? "bg-brand text-white sm:border sm:border-border sm:bg-card sm:text-foreground"
+                  : "border border-border bg-card text-foreground",
             )}
           >
             {open ? (

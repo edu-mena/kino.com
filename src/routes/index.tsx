@@ -5,6 +5,7 @@ import icon from "@/assets/icon.png";
 import { DietaryPreferencesCard } from "@/components/dietary-preferences-card";
 import { DishRecommendationRow } from "@/components/dish-recommendation-row";
 import { HeaderSearch } from "@/components/header-search";
+import { HomeSkeleton } from "@/components/home-skeleton";
 import { PromoCarousel } from "@/components/promo-carousel";
 import { RestaurantAvatarRow } from "@/components/restaurant-avatar-row";
 import { PageShell, SiteHeader } from "@/components/site-shell";
@@ -32,7 +33,13 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn, user, isLoading } = useAuth();
+
+  // Evita mostrar a home errada (convidado ↔ logado) por um instante
+  // antes do AuthProvider terminar de ler o localStorage.
+  if (isLoading) {
+    return <HomeSkeleton />;
+  }
 
   if (isLoggedIn && user) {
     return <HomeLoggedIn />;

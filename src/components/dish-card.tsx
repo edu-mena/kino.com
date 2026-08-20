@@ -14,7 +14,7 @@ export function DishCard({ item }: { item: MenuItem }) {
   const liked = isFavoriteRestaurant(item.restaurantId);
 
   return (
-    <div className="card-soft group relative flex flex-col overflow-hidden p-3">
+    <div className="card-soft group relative flex flex-col overflow-hidden">
       <button
         type="button"
         aria-label="Guardar restaurante nos favoritos"
@@ -27,7 +27,7 @@ export function DishCard({ item }: { item: MenuItem }) {
       <Link
         to="/prato/$dishId"
         params={{ dishId: item.id }}
-        className="block rounded-xl bg-surface p-2"
+        className="block h-28 w-full bg-surface sm:h-32"
       >
         <img
           src={item.image}
@@ -35,40 +35,42 @@ export function DishCard({ item }: { item: MenuItem }) {
           loading="lazy"
           width={768}
           height={768}
-          className="mx-auto h-28 w-full object-contain transition-transform duration-300 group-hover:scale-105 sm:h-32"
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
       </Link>
 
-      <div className="mt-3 min-w-0">
-        <Link
-          to="/prato/$dishId"
-          params={{ dishId: item.id }}
-          className="block truncate font-display text-sm font-bold text-foreground"
-        >
-          {item.name}
-        </Link>
-        <p className="truncate text-xs text-muted-foreground">{restaurant?.name}</p>
-      </div>
-
-      <div className="mt-3 flex items-end justify-between gap-2">
+      <div className="flex flex-1 flex-col p-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-primary">{formatKz(item.price)}</p>
-          <p className="flex items-center gap-1 text-xs text-muted-foreground">
-            {restaurant?.rating ?? "—"}
-            <Star className="h-3 w-3 fill-star text-star" />
-          </p>
+          <Link
+            to="/prato/$dishId"
+            params={{ dishId: item.id }}
+            className="block truncate font-display text-sm font-bold text-foreground"
+          >
+            {item.name}
+          </Link>
+          <p className="truncate text-xs text-muted-foreground">{restaurant?.name}</p>
         </div>
-        <button
-          type="button"
-          aria-label={`Adicionar ${item.name} ao carrinho`}
-          onClick={() => {
-            add(item.id, 1, []);
-            toast.success(`${item.name} adicionado ao carrinho`);
-          }}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+
+        <div className="mt-3 flex items-end justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-primary">{formatKz(item.price)}</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              {restaurant?.rating ?? "—"}
+              <Star className="h-3 w-3 fill-star text-star" />
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label={`Adicionar ${item.name} ao carrinho`}
+            onClick={() => {
+              add(item.id, 1, []);
+              toast.success(`${item.name} adicionado ao carrinho`);
+            }}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
