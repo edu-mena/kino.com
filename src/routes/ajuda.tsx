@@ -46,7 +46,7 @@ function Ajuda() {
       <div className="mx-auto mt-8 max-w-5xl px-4 md:px-6">
         {/* Mobile: um card de cada vez (lista ↔ visualização). Desktop: lado a lado. */}
         <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-          <div className={activeIndex !== null ? "hidden lg:block" : "block"}>
+          <div className={`min-w-0 ${activeIndex !== null ? "hidden lg:block" : "block"}`}>
             <label className="flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3">
               <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
               <input
@@ -106,7 +106,7 @@ function Ajuda() {
           </div>
 
           {/* Card de visualização */}
-          <div className={activeIndex !== null ? "block" : "hidden lg:block"}>
+          <div className={`min-w-0 ${activeIndex !== null ? "block" : "hidden lg:block"}`}>
             <div className="card-soft sticky top-24 p-6">
               {active ? (
                 <>

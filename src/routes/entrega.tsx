@@ -44,7 +44,7 @@ function Entrega() {
       <div className="mx-auto mt-8 max-w-5xl px-4 md:px-6">
         {/* Mobile: um card de cada vez (lista ↔ visualização). Desktop: lado a lado. */}
         <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-          <div className={activeIndex !== null ? "hidden lg:block" : "block"}>
+          <div className={`min-w-0 ${activeIndex !== null ? "hidden lg:block" : "block"}`}>
             {orders.length === 0 ? (
               <div className="card-soft grid place-items-center gap-3 p-12 text-center">
                 <Bike className="h-10 w-10 text-muted-foreground" />
@@ -94,7 +94,7 @@ function Entrega() {
           </div>
 
           {/* Card de visualização */}
-          <div className={activeIndex !== null ? "block" : "hidden lg:block"}>
+          <div className={`min-w-0 ${activeIndex !== null ? "block" : "hidden lg:block"}`}>
             <div className="card-soft sticky top-24 p-6">
               {active ? (
                 <OrderViewer order={active} onBack={() => setActiveIndex(null)} />
