@@ -1,14 +1,13 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ChevronLeft, Minus, Plus, Star } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { DishCard } from "@/components/dish-card";
 import { PageShell } from "@/components/site-shell";
 import { getMenuItem, getRestaurant, getRestaurantsOfferingDish } from "@/data/helpers";
 import { INITIAL_MENU_ITEMS } from "@/data/mockData";
 import type { SelectedIngredient } from "@/data/types";
-import { useCart } from "@/lib/cart";
+import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
 
 export const Route = createFileRoute("/prato/$dishId")({
@@ -40,8 +39,7 @@ export const Route = createFileRoute("/prato/$dishId")({
 
 function DishDetail() {
   const { item } = Route.useLoaderData();
-  const { add } = useCart();
-  const navigate = useNavigate();
+  const addToBill = useAddToBill();
   const [qty, setQty] = useState(1);
 
   const removableFree = item.ingredients.filter((i) => i.removable && !i.extraPrice);
@@ -182,13 +180,11 @@ function DishDetail() {
               <button
                 type="button"
                 onClick={() => {
-                  add(item.id, qty, selected);
-                  toast.success("Adicionado ao carrinho");
-                  navigate({ to: "/carrinho" });
+                  for (let i = 0; i < qty; i++) addToBill(item.restaurantId, item.id, item.name);
                 }}
                 className="min-w-0 truncate rounded-xl bg-brand px-5 py-3.5 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90"
               >
-                Adicionar · {formatKz(unit * qty)}
+                Adicionar ao pedido · {formatKz(unit * qty)}
               </button>
             </div>
 

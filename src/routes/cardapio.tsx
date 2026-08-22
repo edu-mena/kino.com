@@ -1,11 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, SlidersHorizontal } from "lucide-react";
-import { useState } from "react";
 import icon from "@/assets/icon.png";
-import { DishCard } from "@/components/dish-card";
+import { MenuBrowser } from "@/components/menu-browser";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { getMenuCategories, getRestaurant } from "@/data/helpers";
-import { INITIAL_MENU_ITEMS } from "@/data/mockData";
+import { getRestaurant } from "@/data/helpers";
 
 type CardapioSearch = { categoria?: string | undefined; restaurante?: string | undefined };
 
@@ -30,25 +27,9 @@ export const Route = createFileRoute("/cardapio")({
   component: Cardapio,
 });
 
-const categories = getMenuCategories().map((id) => ({ id, label: id }));
-
 function Cardapio() {
-  const { categoria, restaurante } = Route.useSearch();
-  const [active, setActive] = useState<string>(categoria ?? "todos");
-  const [query, setQuery] = useState("");
-
+  const { restaurante } = Route.useSearch();
   const restaurantFilter = restaurante ? getRestaurant(restaurante) : undefined;
-
-  const filtered = INITIAL_MENU_ITEMS.filter((item) => {
-    const byCat = active === "todos" || item.category === active;
-    const byRestaurant = !restaurante || item.restaurantId === restaurante;
-    const restaurantName = getRestaurant(item.restaurantId)?.name ?? "";
-    const byQuery =
-      !query ||
-      item.name.toLowerCase().includes(query.toLowerCase()) ||
-      restaurantName.toLowerCase().includes(query.toLowerCase());
-    return byCat && byRestaurant && byQuery;
-  });
 
   return (
     <PageShell>
@@ -62,53 +43,10 @@ function Cardapio() {
         }
       />
 
-      <div className="mx-auto max-w-6xl px-4 md:px-6">
-        <div className="mt-8 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-border bg-card p-2">
-          <label className="flex min-w-0 items-center gap-2 px-2">
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Pesquisar pratos, restaurantes..."
-              className="w-full min-w-0 bg-transparent py-2 text-sm outline-none"
-            />
-          </label>
-          <span className="flex shrink-0 items-center gap-1.5 rounded-xl bg-surface px-3 py-2 text-xs font-semibold text-muted-foreground">
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            Filtros
-          </span>
-        </div>
-
-        <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto pb-1">
-          {[{ id: "todos", label: "Todos" }, ...categories].map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => setActive(cat.id)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                active === cat.id
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-border bg-card text-muted-foreground hover:border-primary"
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        <p className="mt-6 text-sm text-muted-foreground">{filtered.length} resultados</p>
-
-        <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {filtered.map((item) => (
-            <DishCard key={item.id} item={item} />
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <p className="card-soft mt-4 p-10 text-center text-sm text-muted-foreground">
-            Nenhum prato encontrado. Tente outra pesquisa.
-          </p>
-        )}
+      <div className="mx-auto mt-6 max-w-6xl px-4 md:px-6">
+        <MenuBrowser
+          restaurantFilter={restaurantFilter ? { id: restaurantFilter.id, name: restaurantFilter.name } : undefined}
+        />
       </div>
     </PageShell>
   );

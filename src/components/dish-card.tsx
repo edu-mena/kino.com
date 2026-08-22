@@ -1,17 +1,24 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, Plus, Star } from "lucide-react";
+import { Heart, Plus, Star, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { getRestaurant } from "@/data/helpers";
 import type { MenuItem } from "@/data/types";
-import { useCart } from "@/lib/cart";
+import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
 
 export function DishCard({ item }: { item: MenuItem }) {
-  const { add } = useCart();
-  const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
+  const addToBill = useAddToBill();
+  const { isFavoriteRestaurant, toggleFavoriteRestaurant, excludedIngredients } = usePreferences();
   const restaurant = getRestaurant(item.restaurantId);
   const liked = isFavoriteRestaurant(item.restaurantId);
+
+  // Ingredientes deste prato que o usuário marcou como "não posso comer" em
+  // Preferências — dispara o aviso vermelho no canto da imagem.
+  const conflictingIngredients = item.ingredients
+    .filter((i) => excludedIngredients.includes(i.name))
+    .map((i) => i.name);
+  const hasConflict = conflictingIngredients.length > 0;
 
   return (
     <div className="card-soft group relative flex flex-col overflow-hidden">
@@ -23,6 +30,21 @@ export function DishCard({ item }: { item: MenuItem }) {
       >
         <Heart className={`h-4 w-4 ${liked ? "fill-brand text-brand" : ""}`} />
       </button>
+
+      {hasConflict && (
+        <button
+          type="button"
+          aria-label={`Atenção: ${item.name} contém ${conflictingIngredients.join(", ")}`}
+          onClick={() =>
+            toast.error(
+              `${item.name} contém ${conflictingIngredients.join(", ")} — que indicou não poder comer.`,
+            )
+          }
+          className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition-transform hover:scale-105"
+        >
+          <TriangleAlert className="h-4 w-4" />
+        </button>
+      )}
 
       <Link
         to="/prato/$dishId"
@@ -61,11 +83,8 @@ export function DishCard({ item }: { item: MenuItem }) {
           </div>
           <button
             type="button"
-            aria-label={`Adicionar ${item.name} ao carrinho`}
-            onClick={() => {
-              add(item.id, 1, []);
-              toast.success(`${item.name} adicionado ao carrinho`);
-            }}
+            aria-label={`Adicionar ${item.name} ao pedido`}
+            onClick={() => addToBill(item.restaurantId, item.id, item.name)}
             className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95"
           >
             <Plus className="h-4 w-4" />

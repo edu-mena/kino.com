@@ -1,6 +1,6 @@
 const perfilAvatar = 'https://i.pravatar.cc/150?img=12';
 
-import { Restaurant, MenuItem, Reservation, DeliveryOrder, Review, RegisteredCustomer, UserProfile, SavedAddress, Offer } from './types';
+import { Restaurant, MenuItem, Reservation, DeliveryOrder, Review, RegisteredCustomer, UserProfile, SavedAddress, Offer, RestaurantStory } from './types';
 
 export const INITIAL_RESTAURANTS: Restaurant[] = [
   // RESTAURANTES PREMIUM
@@ -26,6 +26,7 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
       'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800&auto=format&fit=crop'
     ],
     isDeliveryAvailable: true,
+    deliveryZones: ['Marginal', 'Ingombota', 'Maianga', 'Maculusso'],
     deliveryFee: 1500,
     estimatedDeliveryMinutes: 35,
     cautionAmount: 2000,
@@ -52,7 +53,8 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
       'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=800&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?q=80&w=800&auto=format&fit=crop'
     ],
-    isDeliveryAvailable: true,
+    // Marisqueira premium — só serve à mesa, sem entrega em nenhuma área.
+    isDeliveryAvailable: false,
     deliveryFee: 2000,
     estimatedDeliveryMinutes: 45,
     cautionAmount: 3000,
@@ -80,6 +82,7 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
       'https://images.unsplash.com/photo-1579684947550-22e945225d9a?q=80&w=800&auto=format&fit=crop'
     ],
     isDeliveryAvailable: true,
+    deliveryZones: ['Miramar', 'Ingombota'],
     deliveryFee: 1800,
     estimatedDeliveryMinutes: 40,
     cautionAmount: 2000,
@@ -131,7 +134,9 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     galleryImages: [
       'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=800&auto=format&fit=crop'
     ],
-    isDeliveryAvailable: true,
+    // Lounge intimista — reservas e caução fazem sentido, entrega não; sem
+    // cobertura de entrega em nenhuma área.
+    isDeliveryAvailable: false,
     deliveryFee: 2200,
     estimatedDeliveryMinutes: 40,
     cautionAmount: 3000,
@@ -159,6 +164,7 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
       'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop'
     ],
     isDeliveryAvailable: true,
+    deliveryZones: ['Kinaxixe', 'Alvalade'],
     deliveryFee: 800,
     estimatedDeliveryMinutes: 20,
     cautionAmount: 1000,
@@ -238,6 +244,7 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
       'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop'
     ],
     isDeliveryAvailable: true,
+    deliveryZones: ['Cazenga', 'Sambizanga'],
     deliveryFee: 600,
     estimatedDeliveryMinutes: 15,
     cautionAmount: 500,
@@ -619,26 +626,6 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
 
   // ===== MAMMA MIA RISTORANTE (rest-3) =====
   // ===== MAMMA MIA RISTORANTE (rest-3) — Italiana =====
-  {
-    id: 'menu-301',
-    restaurantId: 'rest-3',
-    name: 'Tagliatelle al Ragù della Nonna',
-    description: 'Massa artesanal fresca com ragù de carne cozinhado 4 horas em molho de tomate encorpado. A receita da casa, sem pressa.',
-    price: 8500,
-    category: 'Massas',
-    image: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?q=80&w=800&auto=format&fit=crop',
-    isAvailable: true,
-    portionInfo: 'Prato individual',
-    prepTimeMinutes: 20,
-    orderCount: 190,
-    ingredients: [
-      { id: 'ing-301', name: 'Tagliatelle Artesanal', removable: false },
-      { id: 'ing-302', name: 'Ragù de Carne', removable: false },
-      { id: 'ing-303', name: 'Parmesão Ralado', removable: true },
-      { id: 'ing-301-addon-1', name: 'Porção Extra de Massa', removable: true, extraPrice: 800 },
-      { id: 'ing-301-addon-2', name: 'Queijo Extra', removable: true, extraPrice: 350 }
-    ]
-  },
   {
     id: 'menu-302',
     restaurantId: 'rest-3',
@@ -2074,6 +2061,63 @@ export const INITIAL_OFFERS: Offer[] = [
     type: 'happy-hour',
     title: 'Happy Hour',
     description: '15% OFF em todas as bebidas, das 14h às 17h.'
+  }
+];
+
+export const INITIAL_STORIES: RestaurantStory[] = [
+  {
+    id: 'story-rest1-1',
+    restaurantId: 'rest-1',
+    image: 'https://cookkudia.com/wp-content/uploads/2025/09/cookkudia_cozinha_angolana_moambagalinha.jpg',
+    createdAt: '2026-08-21T08:00:00.000Z'
+  },
+  {
+    id: 'story-rest1-2',
+    restaurantId: 'rest-1',
+    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
+    createdAt: '2026-08-21T09:30:00.000Z'
+  },
+  {
+    id: 'story-rest4-1',
+    restaurantId: 'rest-4',
+    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800&auto=format&fit=crop',
+    createdAt: '2026-08-21T07:15:00.000Z'
+  },
+  {
+    id: 'story-rest4-2',
+    restaurantId: 'rest-4',
+    image: 'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?q=80&w=800&auto=format&fit=crop',
+    createdAt: '2026-08-21T10:00:00.000Z'
+  },
+  {
+    id: 'story-rest4-3',
+    restaurantId: 'rest-4',
+    image: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?q=80&w=800&auto=format&fit=crop',
+    createdAt: '2026-08-21T11:20:00.000Z'
+  },
+  {
+    id: 'story-rest5-1',
+    restaurantId: 'rest-5',
+    image: 'https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=800&auto=format&fit=crop',
+    createdAt: '2026-08-21T06:45:00.000Z'
+  },
+  {
+    id: 'story-rest9-1',
+    restaurantId: 'rest-9',
+    image: 'https://i0.wp.com/criolacozinha.wordpress.com/wp-content/uploads/2016/05/cachupa-receita-tradicional-de-cabo-verde-vc3addeo-por-criola-cozinha-joana-lopes-receita-original-54.jpg?fit=1200%2C800&ssl=1',
+    createdAt: '2026-08-20T18:00:00.000Z'
+  },
+  {
+    id: 'story-rest9-2',
+    restaurantId: 'rest-9',
+    image: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=800&auto=format&fit=crop',
+    createdAt: '2026-08-20T19:30:00.000Z'
+  },
+  {
+    id: 'story-rest11-1',
+    restaurantId: 'rest-11',
+    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800&auto=format&fit=crop',
+    createdAt: '2026-08-21T12:10:00.000Z'
   }
 ];
 

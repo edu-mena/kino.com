@@ -14,10 +14,10 @@ import { Route as AcompanharRouteImport } from './routes/acompanhar'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as CardapioRouteImport } from './routes/cardapio'
-import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as EntregaRouteImport } from './routes/entrega'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as KinoRouteImport } from './routes/kino'
 import { Route as OfertasRouteImport } from './routes/ofertas'
@@ -29,6 +29,7 @@ import { Route as ReservasRouteImport } from './routes/reservas'
 import { Route as RestaurantesRouteImport } from './routes/restaurantes'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as PratoDishIdRouteImport } from './routes/prato.$dishId'
+import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -55,11 +56,6 @@ const CardapioRoute = CardapioRouteImport.update({
   path: '/cardapio',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CarrinhoRoute = CarrinhoRouteImport.update({
-  id: '/carrinho',
-  path: '/carrinho',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
@@ -73,6 +69,11 @@ const ContactoRoute = ContactoRouteImport.update({
 const EntrarRoute = EntrarRouteImport.update({
   id: '/entrar',
   path: '/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntregaRoute = EntregaRouteImport.update({
+  id: '/entrega',
+  path: '/entrega',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FavoritosRoute = FavoritosRouteImport.update({
@@ -130,6 +131,11 @@ const PratoDishIdRoute = PratoDishIdRouteImport.update({
   path: '/prato/$dishId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RestaurantesIdRoute = RestaurantesIdRouteImport.update({
+  id: '/restaurantes_/$id',
+  path: '/restaurantes/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -137,10 +143,10 @@ export interface FileRoutesByFullPath {
   '/ajuda': typeof AjudaRoute
   '/cadastro': typeof CadastroRoute
   '/cardapio': typeof CardapioRoute
-  '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
   '/entrar': typeof EntrarRoute
+  '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
   '/kino': typeof KinoRoute
   '/ofertas': typeof OfertasRoute
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/restaurantes': typeof RestaurantesRoute
   '/sobre': typeof SobreRoute
   '/prato/$dishId': typeof PratoDishIdRoute
+  '/restaurantes/$id': typeof RestaurantesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -159,10 +166,10 @@ export interface FileRoutesByTo {
   '/ajuda': typeof AjudaRoute
   '/cadastro': typeof CadastroRoute
   '/cardapio': typeof CardapioRoute
-  '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
   '/entrar': typeof EntrarRoute
+  '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
   '/kino': typeof KinoRoute
   '/ofertas': typeof OfertasRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/restaurantes': typeof RestaurantesRoute
   '/sobre': typeof SobreRoute
   '/prato/$dishId': typeof PratoDishIdRoute
+  '/restaurantes/$id': typeof RestaurantesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -182,10 +190,10 @@ export interface FileRoutesById {
   '/ajuda': typeof AjudaRoute
   '/cadastro': typeof CadastroRoute
   '/cardapio': typeof CardapioRoute
-  '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
   '/entrar': typeof EntrarRoute
+  '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
   '/kino': typeof KinoRoute
   '/ofertas': typeof OfertasRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/restaurantes': typeof RestaurantesRoute
   '/sobre': typeof SobreRoute
   '/prato/$dishId': typeof PratoDishIdRoute
+  '/restaurantes_/$id': typeof RestaurantesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -206,10 +215,10 @@ export interface FileRouteTypes {
     | '/ajuda'
     | '/cadastro'
     | '/cardapio'
-    | '/carrinho'
     | '/checkout'
     | '/contacto'
     | '/entrar'
+    | '/entrega'
     | '/favoritos'
     | '/kino'
     | '/ofertas'
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/restaurantes'
     | '/sobre'
     | '/prato/$dishId'
+    | '/restaurantes/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -228,10 +238,10 @@ export interface FileRouteTypes {
     | '/ajuda'
     | '/cadastro'
     | '/cardapio'
-    | '/carrinho'
     | '/checkout'
     | '/contacto'
     | '/entrar'
+    | '/entrega'
     | '/favoritos'
     | '/kino'
     | '/ofertas'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/restaurantes'
     | '/sobre'
     | '/prato/$dishId'
+    | '/restaurantes/$id'
   id:
     | '__root__'
     | '/'
@@ -250,10 +261,10 @@ export interface FileRouteTypes {
     | '/ajuda'
     | '/cadastro'
     | '/cardapio'
-    | '/carrinho'
     | '/checkout'
     | '/contacto'
     | '/entrar'
+    | '/entrega'
     | '/favoritos'
     | '/kino'
     | '/ofertas'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/restaurantes'
     | '/sobre'
     | '/prato/$dishId'
+    | '/restaurantes_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -273,10 +285,10 @@ export interface RootRouteChildren {
   AjudaRoute: typeof AjudaRoute
   CadastroRoute: typeof CadastroRoute
   CardapioRoute: typeof CardapioRoute
-  CarrinhoRoute: typeof CarrinhoRoute
   CheckoutRoute: typeof CheckoutRoute
   ContactoRoute: typeof ContactoRoute
   EntrarRoute: typeof EntrarRoute
+  EntregaRoute: typeof EntregaRoute
   FavoritosRoute: typeof FavoritosRoute
   KinoRoute: typeof KinoRoute
   OfertasRoute: typeof OfertasRoute
@@ -288,6 +300,7 @@ export interface RootRouteChildren {
   RestaurantesRoute: typeof RestaurantesRoute
   SobreRoute: typeof SobreRoute
   PratoDishIdRoute: typeof PratoDishIdRoute
+  RestaurantesIdRoute: typeof RestaurantesIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -327,13 +340,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CardapioRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/carrinho': {
-      id: '/carrinho'
-      path: '/carrinho'
-      fullPath: '/carrinho'
-      preLoaderRoute: typeof CarrinhoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/checkout': {
       id: '/checkout'
       path: '/checkout'
@@ -353,6 +359,13 @@ declare module '@tanstack/react-router' {
       path: '/entrar'
       fullPath: '/entrar'
       preLoaderRoute: typeof EntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entrega': {
+      id: '/entrega'
+      path: '/entrega'
+      fullPath: '/entrega'
+      preLoaderRoute: typeof EntregaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/favoritos': {
@@ -432,6 +445,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PratoDishIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/restaurantes_/$id': {
+      id: '/restaurantes_/$id'
+      path: '/restaurantes/$id'
+      fullPath: '/restaurantes/$id'
+      preLoaderRoute: typeof RestaurantesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -441,10 +461,10 @@ const rootRouteChildren: RootRouteChildren = {
   AjudaRoute: AjudaRoute,
   CadastroRoute: CadastroRoute,
   CardapioRoute: CardapioRoute,
-  CarrinhoRoute: CarrinhoRoute,
   CheckoutRoute: CheckoutRoute,
   ContactoRoute: ContactoRoute,
   EntrarRoute: EntrarRoute,
+  EntregaRoute: EntregaRoute,
   FavoritosRoute: FavoritosRoute,
   KinoRoute: KinoRoute,
   OfertasRoute: OfertasRoute,
@@ -456,6 +476,7 @@ const rootRouteChildren: RootRouteChildren = {
   RestaurantesRoute: RestaurantesRoute,
   SobreRoute: SobreRoute,
   PratoDishIdRoute: PratoDishIdRoute,
+  RestaurantesIdRoute: RestaurantesIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

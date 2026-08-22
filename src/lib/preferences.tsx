@@ -11,8 +11,10 @@ export type Preferences = {
   dietaryRestrictions: string[];
   priceRange: string | null;
   cuisinePreferences: string[];
-  locationPreferences: string[];
   servicePreferences: string[];
+  language: string;
+  favoriteIngredients: string[];
+  excludedIngredients: string[];
 };
 
 const DEFAULT_PREFERENCES: Preferences = {
@@ -20,8 +22,10 @@ const DEFAULT_PREFERENCES: Preferences = {
   dietaryRestrictions: [],
   priceRange: null,
   cuisinePreferences: [],
-  locationPreferences: [],
   servicePreferences: [],
+  language: "pt",
+  favoriteIngredients: [],
+  excludedIngredients: [],
 };
 
 type PreferencesValue = Preferences & {
@@ -30,8 +34,10 @@ type PreferencesValue = Preferences & {
   setDietaryRestrictions: (list: string[]) => void;
   setPriceRange: (value: string | null) => void;
   setCuisinePreferences: (list: string[]) => void;
-  setLocationPreferences: (list: string[]) => void;
   setServicePreferences: (list: string[]) => void;
+  setLanguage: (value: string) => void;
+  toggleFavoriteIngredient: (name: string) => void;
+  toggleExcludedIngredient: (name: string) => void;
 };
 
 const PreferencesContext = createContext<PreferencesValue | null>(null);
@@ -69,8 +75,26 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setDietaryRestrictions: (list) => persist({ ...prefs, dietaryRestrictions: list }),
     setPriceRange: (value) => persist({ ...prefs, priceRange: value }),
     setCuisinePreferences: (list) => persist({ ...prefs, cuisinePreferences: list }),
-    setLocationPreferences: (list) => persist({ ...prefs, locationPreferences: list }),
     setServicePreferences: (list) => persist({ ...prefs, servicePreferences: list }),
+    setLanguage: (value) => persist({ ...prefs, language: value }),
+    // Um ingrediente não pode estar nas duas listas ao mesmo tempo (favorito e
+    // banido) — escolher um remove-o automaticamente da outra.
+    toggleFavoriteIngredient: (name) =>
+      persist({
+        ...prefs,
+        favoriteIngredients: prefs.favoriteIngredients.includes(name)
+          ? prefs.favoriteIngredients.filter((n) => n !== name)
+          : [...prefs.favoriteIngredients, name],
+        excludedIngredients: prefs.excludedIngredients.filter((n) => n !== name),
+      }),
+    toggleExcludedIngredient: (name) =>
+      persist({
+        ...prefs,
+        excludedIngredients: prefs.excludedIngredients.includes(name)
+          ? prefs.excludedIngredients.filter((n) => n !== name)
+          : [...prefs.excludedIngredients, name],
+        favoriteIngredients: prefs.favoriteIngredients.filter((n) => n !== name),
+      }),
   };
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

@@ -26,6 +26,11 @@ export interface Restaurant {
   coverImage: string;
   galleryImages: string[];
   isDeliveryAvailable: boolean;
+  /** Bairros cobertos pela entrega — nem toda área de Luanda tem cobertura.
+   * Quando ausente e `isDeliveryAvailable` é true, assume-se cobertura só no
+   * próprio bairro (`neighborhood`). Ignorado quando `isDeliveryAvailable`
+   * é false (o restaurante simplesmente não entrega, em nenhuma área). */
+  deliveryZones?: string[];
   deliveryFee: number;
   estimatedDeliveryMinutes: number;
   cautionAmount: number;
@@ -162,4 +167,12 @@ export interface SavedAddress {
   line1: string;
   line2: string;
   isDefault?: boolean;
+}
+
+/** Story de um restaurante (imagem única, expira depois de 24h — igual WhatsApp/Instagram). */
+export interface RestaurantStory {
+  id: string;
+  restaurantId: string;
+  image: string;
+  createdAt: string; // ISO
 }

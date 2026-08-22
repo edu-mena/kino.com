@@ -1,33 +1,35 @@
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { getMenuCategories, getRestaurant } from "@/data/helpers";
-import { INITIAL_MENU_ITEMS, INITIAL_RESTAURANTS } from "@/data/mockData";
+import { IngredientSearchFilter, LocationFilterSelect, matchesLocation } from "@/components/search-filters";
+import { getAllIngredientNames, getMenuCategories, getRestaurant } from "@/data/helpers";
+import { INITIAL_MENU_ITEMS } from "@/data/mockData";
 import { formatKz } from "@/lib/format";
 
 const categories = getMenuCategories();
-const MAX_PRICE = 20000;
-const neighborhoods = [...new Set(INITIAL_RESTAURANTS.map((r) => r.neighborhood))];
+const ingredientNames = getAllIngredientNames();
+const overallMaxPrice = Math.max(...INITIAL_MENU_ITEMS.map((m) => m.price));
 
 export function HeaderSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | undefined>(undefined);
-  const [maxPrice, setMaxPrice] = useState(MAX_PRICE);
   const [neighborhood, setNeighborhood] = useState<string>("todos");
+  const [ingredient, setIngredient] = useState<string | null>(null);
 
-  const hasActiveFilters = !!query || !!category || maxPrice < MAX_PRICE || neighborhood !== "todos";
+  const [maxPrice, setMaxPrice] = useState(overallMaxPrice);
+  const [priceTouched, setPriceTouched] = useState(false);
 
-  const filtered = useMemo(() => {
+  // Filtrados por tudo MENOS o preço — define até onde a faixa de preço
+  // pode ir com os outros filtros já aplicados.
+  const filteredExceptPrice = useMemo(() => {
     return INITIAL_MENU_ITEMS.filter((item) => {
       const restaurant = getRestaurant(item.restaurantId);
       const byQuery =
@@ -35,11 +37,27 @@ export function HeaderSearch() {
         item.name.toLowerCase().includes(query.toLowerCase()) ||
         restaurant?.name.toLowerCase().includes(query.toLowerCase());
       const byCategory = !category || item.category === category;
-      const byPrice = item.price <= maxPrice;
-      const byNeighborhood = neighborhood === "todos" || restaurant?.neighborhood === neighborhood;
-      return byQuery && byCategory && byPrice && byNeighborhood;
+      const byIngredient = !ingredient || item.ingredients.some((i) => i.name === ingredient);
+      const byNeighborhood = matchesLocation(restaurant?.neighborhood, neighborhood);
+      return byQuery && byCategory && byIngredient && byNeighborhood;
     });
-  }, [query, category, maxPrice, neighborhood]);
+  }, [query, category, ingredient, neighborhood]);
+
+  const maxAvailablePrice = filteredExceptPrice.length
+    ? Math.max(...filteredExceptPrice.map((m) => m.price))
+    : overallMaxPrice;
+
+  // Sem toque manual, a faixa de preço segue o mais caro entre os
+  // resultados já filtrados pelos outros critérios. Uma vez tocada, o
+  // valor escolhido persiste, só sendo limitado se o teto disponível cair.
+  useEffect(() => {
+    setMaxPrice((prev) => (priceTouched ? Math.min(prev, maxAvailablePrice) : maxAvailablePrice));
+  }, [maxAvailablePrice, priceTouched]);
+
+  const filtered = useMemo(
+    () => filteredExceptPrice.filter((item) => item.price <= maxPrice),
+    [filteredExceptPrice, maxPrice],
+  );
 
   return (
     <>
@@ -62,10 +80,10 @@ export function HeaderSearch() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl rounded-[2rem] border-none bg-card p-8">
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto rounded-[2rem] border-none bg-card p-8">
           <DialogTitle className="font-display text-xl font-bold">Buscar</DialogTitle>
 
-          <label className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-3">
+          <label className="mt-3 flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-4 py-3">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
               autoFocus
@@ -76,40 +94,43 @@ export function HeaderSearch() {
             />
           </label>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="mt-4 min-w-0">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Preço até {formatKz(maxPrice)}
+            </p>
+            <Slider
+              min={0}
+              max={maxAvailablePrice}
+              step={500}
+              value={[maxPrice]}
+              onValueChange={([v]) => {
+                setPriceTouched(true);
+                setMaxPrice(v ?? maxAvailablePrice);
+              }}
+            />
+          </div>
+
+          <div className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2">
             <div>
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Preço até {formatKz(maxPrice)}
+                Ingrediente
               </p>
-              <Slider
-                min={0}
-                max={MAX_PRICE}
-                step={500}
-                value={[maxPrice]}
-                onValueChange={([v]) => setMaxPrice(v ?? MAX_PRICE)}
+              <IngredientSearchFilter
+                value={ingredient}
+                onChange={setIngredient}
+                allIngredientNames={ingredientNames}
               />
             </div>
+
             <div>
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Localização
               </p>
-              <Select value={neighborhood} onValueChange={setNeighborhood}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os bairros</SelectItem>
-                  {neighborhoods.map((n) => (
-                    <SelectItem key={n} value={n}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 min-w-0">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Categoria
             </p>
@@ -117,47 +138,32 @@ export function HeaderSearch() {
               type="single"
               value={category ?? ""}
               onValueChange={(v) => setCategory(v || undefined)}
-              className="flex-wrap justify-start"
+              className="no-scrollbar flex-nowrap justify-start overflow-x-auto"
             >
               {categories.map((cat) => (
-                <ToggleGroupItem key={cat} value={cat} className="rounded-full border border-border">
+                <ToggleGroupItem
+                  key={cat}
+                  value={cat}
+                  className="shrink-0 rounded-full border border-border"
+                >
                   {cat}
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
           </div>
 
-          <div className="mt-6 max-h-80 overflow-y-auto">
-            {hasActiveFilters ? (
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">{filtered.length} resultados</p>
-                {filtered.map((item) => (
-                  <SearchResultRow key={item.id} item={item} onSelect={() => setOpen(false)} />
-                ))}
-                {filtered.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
-                    Nenhum resultado encontrado.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <Tabs defaultValue={categories[0] ?? ""}>
-                <TabsList className="h-auto flex-wrap justify-start gap-1">
-                  {categories.map((cat) => (
-                    <TabsTrigger key={cat} value={cat}>
-                      {cat}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                {categories.map((cat) => (
-                  <TabsContent key={cat} value={cat} className="space-y-2">
-                    {INITIAL_MENU_ITEMS.filter((item) => item.category === cat).map((item) => (
-                      <SearchResultRow key={item.id} item={item} onSelect={() => setOpen(false)} />
-                    ))}
-                  </TabsContent>
-                ))}
-              </Tabs>
-            )}
+          <div className="mt-6 min-w-0 max-h-80 overflow-y-auto">
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">{filtered.length} resultados</p>
+              {filtered.map((item) => (
+                <SearchResultRow key={item.id} item={item} onSelect={() => setOpen(false)} />
+              ))}
+              {filtered.length === 0 && (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  Nenhum resultado encontrado.
+                </p>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

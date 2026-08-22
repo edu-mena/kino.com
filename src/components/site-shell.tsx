@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
+  Bike,
   CalendarCheck,
   ChevronDown,
   CircleHelp,
@@ -9,17 +10,25 @@ import {
   MapPin,
   Menu,
   MoreVertical,
-  Navigation,
+  Plus,
   Search,
   Settings,
-  ShoppingCart,
   User,
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { LeftSidebar, tabs } from "./left-sidebar";
 import { Logo } from "./logo";
+import { OrderBuilderCard } from "./order-builder-card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCart } from "@/lib/cart";
+import { useLocation } from "@/lib/location";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +45,7 @@ const appNavLinks = [
   { to: "/", label: "Início", icon: Home },
   { to: "/cardapio", label: "Cardápio", icon: Search },
   { to: "/restaurantes", label: "Restaurantes", icon: MapPin },
-  { to: "/carrinho", label: "Pedidos", icon: ShoppingCart },
+  { to: "/entrega", label: "Entrega", icon: Bike },
   { to: "/reservas", label: "Reservas", icon: CalendarCheck },
   { to: "/favoritos", label: "Favoritos", icon: Heart },
   { to: "/preferencias", label: "Preferências", icon: Settings },
@@ -86,15 +95,60 @@ function guestViewTransitionTypes({
   return ["back"];
 }
 
+/** Selectbox customizado: mostra as localizações já guardadas (perfil) e, por
+ * último, a opção de adicionar uma nova — que leva para o perfil. A seleção
+ * vive em `useLocation` (partilhado) — o pedido de delivery lê-a de lá pra
+ * confirmar se é mesmo a área de entrega pretendida. */
+function LocationSelect() {
+  const { allAddresses, selected, setSelectedId } = useLocation();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="hidden items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-primary md:flex"
+        >
+          <MapPin className="h-3.5 w-3.5 text-primary" />
+          <span className="max-w-32 truncate">{selected ? selected.label : "Definir localização"}</span>
+          <ChevronDown className="h-3.5 w-3.5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-60">
+        {allAddresses.map((a) => (
+          <DropdownMenuItem
+            key={a.id}
+            onClick={() => setSelectedId(a.id)}
+            className="gap-2"
+          >
+            <MapPin className="h-4 w-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{a.label}</p>
+              <p className="truncate text-xs text-muted-foreground">{a.line1}</p>
+            </div>
+          </DropdownMenuItem>
+        ))}
+        {allAddresses.length > 0 && <DropdownMenuSeparator />}
+        <DropdownMenuItem asChild className="gap-2 text-primary">
+          <Link to="/perfil">
+            <Plus className="h-4 w-4 shrink-0" />
+            Adicionar localização
+          </Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function CartButton() {
   const { count } = useCart();
   return (
     <Link
-      to="/carrinho"
-      aria-label="Ver carrinho"
+      to="/entrega"
+      aria-label="Ver entrega"
       className="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary"
     >
-      <ShoppingCart className="h-4 w-4" />
+      <Bike className="h-4 w-4" />
       {count > 0 && (
         <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-bold text-brand-foreground">
           {count}
@@ -106,11 +160,11 @@ function CartButton() {
 
 export function SiteHeader({ variant = "default" }: { variant?: "default" | "guestHome" } = {}) {
   const [open, setOpen] = useState(false);
-  const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
   const { isLoggedIn, user, logout } = useAuth();
   const navigate = useNavigate();
   const isGuestHome = variant === "guestHome";
-  // Logged-in users get the "all links" panel at every width, not just mobile.
+  // Logged-in users get the brand-colored "all links" panel button, but only
+  // below `lg:` — desktop uses the leftbar + header Ajuda icon instead.
   const panelAlwaysAvailable = isLoggedIn && !isGuestHome;
   const panelLinks = isGuestHome ? guestNavLinks : isLoggedIn ? appNavLinks : navLinks;
 
@@ -148,7 +202,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           ? scrolled
             ? "border-border/70 bg-white"
             : "border-transparent bg-transparent"
-          : "border-border/70 bg-background/85 backdrop-blur",
+          : "border-border/70 bg-white",
       )}
       style={isGuestHome ? { viewTransitionName: "guest-header" } : undefined}
     >
@@ -209,22 +263,18 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
         )}
 
         <div className="flex shrink-0 items-center gap-2 justify-self-end">
-          {!isGuestHome && (
-            <button
-              type="button"
-              onClick={() => setUsingCurrentLocation((v) => !v)}
-              className="hidden items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-primary md:flex"
-            >
-              {usingCurrentLocation ? (
-                <Navigation className="h-3.5 w-3.5 text-primary" />
-              ) : (
-                <MapPin className="h-3.5 w-3.5 text-primary" />
-              )}
-              {usingCurrentLocation ? "Localização atual" : "Luanda, Angola"}
-              <ChevronDown className="h-3.5 w-3.5" />
-            </button>
-          )}
+          {!isGuestHome && <LocationSelect />}
           {!isGuestHome && <CartButton />}
+
+          {isFixedDashboardHeader && (
+            <Link
+              to="/ajuda"
+              aria-label="Central de ajuda"
+              className="hidden h-10 w-10 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary lg:grid"
+            >
+              <CircleHelp className="h-4 w-4" />
+            </Link>
+          )}
 
           {isLoggedIn && user ? (
             <div className="hidden items-center gap-2 sm:flex lg:hidden">
@@ -253,8 +303,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
             aria-label={panelAlwaysAvailable ? "Mais opções" : "Abrir menu"}
             onClick={() => setOpen((v) => !v)}
             className={cn(
-              "grid h-10 w-10 place-items-center rounded-xl",
-              !panelAlwaysAvailable && "lg:hidden",
+              "grid h-10 w-10 place-items-center rounded-xl lg:hidden",
               isGuestHome
                 ? "bg-brand text-brand-foreground"
                 : panelAlwaysAvailable
@@ -278,17 +327,17 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
         aria-hidden
         onClick={() => setOpen(false)}
         className={cn(
-          "fixed inset-0 z-40 bg-black/40 transition-opacity duration-300",
-          !panelAlwaysAvailable && "lg:hidden",
+          "fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 lg:hidden",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
 
-      {/* Menu overlay — mobile-only for guests, available at every width once logged in */}
+      {/* Menu overlay — mobile/tablet only now; a leftbar (LeftSidebar) e o
+          ícone de Ajuda no header cobrem o desktop, então este painel nunca
+          é acionável em telas `lg:` pra cima. */}
       <nav
         className={cn(
-          "fixed right-0 top-0 z-50 flex h-[100vh] w-full max-w-xs flex-col border-l border-border bg-card shadow-2xl transition-transform duration-300 ease-in-out",
-          !panelAlwaysAvailable && "lg:hidden",
+          "fixed right-0 top-0 z-50 flex h-[100vh] w-full max-w-xs flex-col border-l border-border bg-card shadow-2xl transition-transform duration-300 ease-in-out lg:hidden",
           open ? "translate-x-0" : "translate-x-full",
         )}
       >
@@ -349,7 +398,7 @@ export function MobileTabBar() {
             className="relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground"
           >
             <tab.icon className="h-5 w-5" />
-            {tab.label === "Pedidos" && count > 0 && (
+            {tab.label === "Entrega" && count > 0 && (
               <span className="absolute right-1/2 top-1 translate-x-4 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
                 {count}
               </span>
@@ -443,9 +492,10 @@ export function PageShell({
         >
           {children}
         </main>
-        {footer === undefined ? <SiteFooter /> : footer}
+        {footer === undefined ? (isLoggedIn ? null : <SiteFooter />) : footer}
       </div>
       {showMobileTabBar && <MobileTabBar />}
+      {isLoggedIn && <OrderBuilderCard />}
     </div>
   );
 }

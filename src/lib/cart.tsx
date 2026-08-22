@@ -1,30 +1,54 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import { getMenuItem } from "@/data/helpers";
-import type { SelectedIngredient } from "@/data/types";
+import { getMenuItem, getRestaurant } from "@/data/helpers";
+import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
+import type { SavedAddress, SelectedIngredient } from "@/data/types";
 
 export type CartLine = {
   key: string;
   menuItemId: string;
-  restaurantId: string;
   qty: number;
   selectedIngredients: SelectedIngredient[];
 };
 
-type CartValue = {
+/**
+ * Um pedido de entrega inteiro — tudo o que foi enviado de uma vez via
+ * "Solicitar delivery" (sempre de UM restaurante, como a lista temporária
+ * que lhe deu origem). Conta como UM delivery só, mesmo com vários pratos
+ * lá dentro; a página de entrega lista estes pedidos, cada um com o seu
+ * próprio estado — não é um carrinho editável de itens soltos.
+ */
+export type CartOrder = {
+  id: string;
+  restaurantId: string;
   lines: CartLine[];
+  createdAt: string;
+  deliveryAddress: SavedAddress;
+  status: string;
+  /** Estimativa (minutos) capturada do restaurante no momento do pedido. */
+  estimatedMinutes: number;
+};
+
+type NewCartLine = {
+  menuItemId: string;
+  qty: number;
+  selectedIngredients?: SelectedIngredient[];
+};
+
+type CartValue = {
+  orders: CartOrder[];
   count: number;
   subtotal: number;
   deliveryFee: number;
   total: number;
-  add: (menuItemId: string, qty: number, selectedIngredients: SelectedIngredient[]) => void;
-  setQty: (key: string, qty: number) => void;
-  remove: (key: string) => void;
+  orderSubtotal: (order: CartOrder) => number;
+  orderTotal: (order: CartOrder) => number;
+  addOrder: (restaurantId: string, items: NewCartLine[], deliveryAddress: SavedAddress) => void;
+  setQty: (orderId: string, lineKey: string, qty: number) => void;
+  removeOrder: (orderId: string) => void;
   clear: () => void;
 };
 
 const CartContext = createContext<CartValue | null>(null);
-
-const DELIVERY_FEE = 700;
 
 /** Preço unitário de uma linha: preço base do prato + extras selecionados com custo. */
 export function lineUnitPrice(line: CartLine): number {
@@ -48,56 +72,99 @@ function makeLineKey(menuItemId: string, selectedIngredients: SelectedIngredient
   return `${menuItemId}|${extras}`;
 }
 
-function seedLines(): CartLine[] {
-  return ["menu-601", "menu-shared-agua-601"]
+function orderSubtotal(order: CartOrder): number {
+  return order.lines.reduce((sum, line) => sum + lineUnitPrice(line) * line.qty, 0);
+}
+
+function orderDeliveryFee(order: CartOrder): number {
+  return getRestaurant(order.restaurantId)?.deliveryFee ?? 0;
+}
+
+function orderTotal(order: CartOrder): number {
+  return orderSubtotal(order) + orderDeliveryFee(order);
+}
+
+function seedOrders(): CartOrder[] {
+  const seedItems = ["menu-601", "menu-shared-agua-601"]
     .map((id) => getMenuItem(id))
-    .filter((m): m is NonNullable<typeof m> => Boolean(m))
-    .map((m) => ({
-      key: makeLineKey(m.id, []),
-      menuItemId: m.id,
-      restaurantId: m.restaurantId,
-      qty: 1,
-      selectedIngredients: [],
-    }));
+    .filter((m): m is NonNullable<typeof m> => Boolean(m));
+  if (seedItems.length === 0) return [];
+  const restaurant = getRestaurant(seedItems[0]!.restaurantId);
+  return [
+    {
+      id: "order-seed-1",
+      restaurantId: seedItems[0]!.restaurantId,
+      lines: seedItems.map((m) => ({
+        key: makeLineKey(m.id, []),
+        menuItemId: m.id,
+        qty: 1,
+        selectedIngredients: [],
+      })),
+      createdAt: new Date().toISOString(),
+      deliveryAddress: INITIAL_SAVED_ADDRESSES.find((a) => a.isDefault) ?? INITIAL_SAVED_ADDRESSES[0]!,
+      status: "A caminho",
+      estimatedMinutes: restaurant?.estimatedDeliveryMinutes ?? 30,
+    },
+  ];
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [lines, setLines] = useState<CartLine[]>(seedLines);
+  const [orders, setOrders] = useState<CartOrder[]>(seedOrders);
 
   const value = useMemo<CartValue>(() => {
-    const subtotal = lines.reduce((sum, line) => sum + lineUnitPrice(line) * line.qty, 0);
-    const deliveryFee = lines.length ? DELIVERY_FEE : 0;
+    const subtotal = orders.reduce((sum, o) => sum + orderSubtotal(o), 0);
+    const deliveryFee = orders.reduce((sum, o) => sum + orderDeliveryFee(o), 0);
 
     return {
-      lines,
-      count: lines.reduce((s, l) => s + l.qty, 0),
+      orders,
+      // Contagem por PEDIDO de entrega, não por produto — vários pratos no
+      // mesmo "Solicitar delivery" continuam a contar como 1 no emblema.
+      count: orders.length,
       subtotal,
       deliveryFee,
       total: subtotal + deliveryFee,
-      add: (menuItemId, qty, selectedIngredients) =>
-        setLines((prev) => {
-          const menuItem = getMenuItem(menuItemId);
-          if (!menuItem) return prev;
-          const key = makeLineKey(menuItemId, selectedIngredients);
-          const existing = prev.find((l) => l.key === key);
-          if (existing) {
-            return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + qty } : l));
-          }
-          return [
-            ...prev,
-            { key, menuItemId, restaurantId: menuItem.restaurantId, qty, selectedIngredients },
-          ];
-        }),
-      setQty: (key, qty) =>
-        setLines((prev) =>
-          qty <= 0
-            ? prev.filter((l) => l.key !== key)
-            : prev.map((l) => (l.key === key ? { ...l, qty } : l)),
+      orderSubtotal,
+      orderTotal,
+      // Sempre cria um pedido NOVO — cada "Solicitar delivery" é um delivery
+      // à parte, mesmo que já haja um pedido pendente do mesmo restaurante.
+      addOrder: (restaurantId, items, deliveryAddress) =>
+        setOrders((prev) => [
+          ...prev,
+          {
+            id: `order-${Date.now()}`,
+            restaurantId,
+            lines: items.map((item) => ({
+              key: makeLineKey(item.menuItemId, item.selectedIngredients ?? []),
+              menuItemId: item.menuItemId,
+              qty: item.qty,
+              selectedIngredients: item.selectedIngredients ?? [],
+            })),
+            createdAt: new Date().toISOString(),
+            deliveryAddress,
+            status: "Pedido enviado — a aguardar confirmação do restaurante",
+            estimatedMinutes: getRestaurant(restaurantId)?.estimatedDeliveryMinutes ?? 30,
+          },
+        ]),
+      setQty: (orderId, key, qty) =>
+        setOrders((prev) =>
+          prev
+            .map((o) =>
+              o.id !== orderId
+                ? o
+                : {
+                    ...o,
+                    lines:
+                      qty <= 0
+                        ? o.lines.filter((l) => l.key !== key)
+                        : o.lines.map((l) => (l.key === key ? { ...l, qty } : l)),
+                  },
+            )
+            .filter((o) => o.lines.length > 0),
         ),
-      remove: (key) => setLines((prev) => prev.filter((l) => l.key !== key)),
-      clear: () => setLines([]),
+      removeOrder: (orderId) => setOrders((prev) => prev.filter((o) => o.id !== orderId)),
+      clear: () => setOrders([]),
     };
-  }, [lines]);
+  }, [orders]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

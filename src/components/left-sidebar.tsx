@@ -1,35 +1,77 @@
-import { Link } from "@tanstack/react-router";
-import { CalendarCheck, Home, Search, Settings, ShoppingCart, User } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  Bike,
+  CalendarCheck,
+  Heart,
+  Home,
+  MapPin,
+  Power,
+  Search,
+  Settings,
+  User,
+} from "lucide-react";
+import { useState } from "react";
 import { Logo } from "./logo";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 
-/** Também reaproveitado pelo bottombar mobile (mesmos 5 destinos). */
+/** Reaproveitado pelo bottombar mobile — mantém-se em 5 destinos lá, mesmo
+ * a leftbar do desktop tendo mais opções (ver `desktopNavItems` abaixo). */
 export const tabs = [
   { to: "/", label: "Início", icon: Home },
   { to: "/cardapio", label: "Buscar", icon: Search },
-  { to: "/carrinho", label: "Pedidos", icon: ShoppingCart },
+  { to: "/entrega", label: "Entrega", icon: Bike },
   { to: "/reservas", label: "Reservas", icon: CalendarCheck },
   { to: "/perfil", label: "Perfil", icon: User },
 ] as const;
 
+/** Só a leftbar do desktop usa esta lista maior — Restaurantes e Favoritos
+ * não cabem/não fazem falta no bottombar mobile. */
+const desktopNavItems = [
+  { to: "/", label: "Início", icon: Home },
+  { to: "/cardapio", label: "Buscar", icon: Search },
+  { to: "/restaurantes", label: "Restaurantes", icon: MapPin },
+  { to: "/entrega", label: "Entrega", icon: Bike },
+  { to: "/reservas", label: "Reservas", icon: CalendarCheck },
+  { to: "/favoritos", label: "Favoritos", icon: Heart },
+  { to: "/perfil", label: "Perfil", icon: User },
+] as const;
+
 const navItemClass =
-  "relative mx-2 flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-primary xl:justify-start";
+  "relative mx-2 flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-primary xl:justify-start";
 
 /**
  * Navegação principal do usuário logado no desktop — `fixed` (não `sticky`)
  * pra ficar completamente imune ao scroll da página, sem precisar de
- * overflow/scroll próprio (logo + 5 tabs + rodapé sempre cabem em
- * `h-screen`). `PageShell` compensa com `lg:ml-24 xl:ml-64` na coluna da
- * direita, já que a aside sai do fluxo normal.
+ * overflow/scroll próprio (logo + nav + rodapé sempre cabem em `h-screen`).
+ * `PageShell` compensa com `lg:ml-24 xl:ml-64` na coluna da direita, já que
+ * a aside sai do fluxo normal.
  *
  * Logo grande no topo, nav centrada verticalmente, e um rodapé fixo com
- * Configurações + conta do usuário — ambos removidos do header em telas
- * `lg:` pra cima (só existem aqui agora).
+ * Preferências + conta do usuário (com botão de terminar sessão ao lado) —
+ * tudo isto é exclusivo daqui (desktop); o painel "três pontos" do mobile
+ * continua com a sua própria versão, sem estas mudanças.
  */
 export function LeftSidebar() {
   const { count } = useCart();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate({ to: "/entrar" });
+  };
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden h-screen w-24 flex-col border-r border-border bg-background py-6 lg:flex xl:w-64">
@@ -37,8 +79,8 @@ export function LeftSidebar() {
         <Logo className="h-12 w-auto" />
       </Link>
 
-      <nav className="flex flex-1 flex-col justify-center gap-2">
-        {tabs.map((tab) => (
+      <nav className="flex flex-1 flex-col justify-center gap-2 overflow-y-auto">
+        {desktopNavItems.map((tab) => (
           <Link
             key={tab.label}
             to={tab.to}
@@ -48,7 +90,7 @@ export function LeftSidebar() {
           >
             <span className="relative mx-auto shrink-0 xl:mx-0">
               <tab.icon className="h-7 w-7" />
-              {tab.label === "Pedidos" && count > 0 && (
+              {tab.label === "Entrega" && count > 0 && (
                 <span className="absolute -right-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
                   {count}
                 </span>
@@ -59,27 +101,63 @@ export function LeftSidebar() {
         ))}
       </nav>
 
-      <div className="shrink-0 space-y-1 border-t border-border pt-3">
+      <div className="mx-2 shrink-0 space-y-1 rounded-2xl bg-surface/80 p-1.5">
         <Link
           to="/preferencias"
-          activeProps={{ className: "text-primary bg-surface" }}
-          className={navItemClass}
+          activeProps={{ className: "text-primary bg-card" }}
+          className={`${navItemClass} mx-0`}
         >
           <span className="mx-auto shrink-0 xl:mx-0">
             <Settings className="h-7 w-7" />
           </span>
-          <span className="hidden truncate xl:inline">Configurações</span>
+          <span className="hidden truncate xl:inline">Preferências</span>
         </Link>
 
         {user && (
-          <Link to="/perfil" activeProps={{ className: "text-primary bg-surface" }} className={navItemClass}>
-            <span className="mx-auto grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary xl:mx-0">
-              <User className="h-5 w-5" />
-            </span>
-            <span className="hidden truncate xl:inline">{user.name}</span>
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link
+              to="/perfil"
+              activeProps={{ className: "text-primary bg-card" }}
+              className={`${navItemClass} mx-0 flex-1`}
+            >
+              <span className="mx-auto grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary xl:mx-0">
+                <User className="h-5 w-5" />
+              </span>
+              <span className="hidden truncate xl:inline">{user.name}</span>
+            </Link>
+            <button
+              type="button"
+              aria-label="Terminar sessão"
+              onClick={() => setConfirmOpen(true)}
+              className="hidden shrink-0 place-items-center rounded-lg p-2.5 text-muted-foreground transition-colors hover:bg-card hover:text-destructive xl:grid"
+            >
+              <Power className="h-5 w-5" />
+            </button>
+          </div>
         )}
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="rounded-[1.5rem]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Terminar sessão?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vai precisar de entrar novamente para aceder à sua conta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout}>Terminar sessão</AlertDialogAction>
+          </AlertDialogFooter>
+          <Link
+            to="/ajuda"
+            onClick={() => setConfirmOpen(false)}
+            className="-mt-1 block text-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+          >
+            Precisa de ajuda? Visite o Centro de Ajuda
+          </Link>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }

@@ -62,6 +62,16 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   }
 }
 
+/* Barrinha de progresso do StoryViewer (story-viewer.tsx) — preenche da esquerda pra direita. */
+@keyframes story-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 @keyframes kino-page-out-back {
   to {
     transform: translateX(100%);

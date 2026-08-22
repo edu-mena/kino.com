@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Plus, TriangleAlert } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { HorizontalCarousel } from "@/components/horizontal-carousel";
 import { getCommonIngredients, getRestaurant, getRestaurantsOfferingDish } from "@/data/helpers";
 import type { MenuItem } from "@/data/types";
-import { useCart } from "@/lib/cart";
+import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
+import { usePreferences } from "@/lib/preferences";
 
 /**
  * Linha horizontal reutilizável de pratos recomendados. Usada para
@@ -15,32 +16,46 @@ import { formatKz } from "@/lib/format";
  */
 export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
   const [active, setActive] = useState<MenuItem | null>(null);
-  const { add } = useCart();
+  const addToBill = useAddToBill();
+  const { excludedIngredients } = usePreferences();
 
   const commonIngredients = active ? getCommonIngredients(active.name) : [];
   const otherRestaurants = active
     ? getRestaurantsOfferingDish(active.name, active.restaurantId)
     : [];
+  const activeConflicts = active
+    ? active.ingredients.filter((i) => excludedIngredients.includes(i.name)).map((i) => i.name)
+    : [];
 
   return (
     <>
-      <div className="no-scrollbar flex gap-4 overflow-x-auto pb-1">
-        {items.map((item) => {
+      <HorizontalCarousel
+        items={items}
+        itemKey={(item) => item.id}
+        renderItem={(item) => {
           const restaurant = getRestaurant(item.restaurantId);
+          const hasConflict = item.ingredients.some((i) => excludedIngredients.includes(i.name));
           return (
             <button
-              key={item.id}
               type="button"
               onClick={() => setActive(item)}
               className="card-soft flex w-40 shrink-0 flex-col overflow-hidden text-left transition-colors hover:border-brand"
             >
-              <div className="h-24 w-full bg-surface">
+              <div className="relative h-28 w-full bg-surface sm:h-32">
                 <img
                   src={item.image}
                   alt={item.name}
                   loading="lazy"
                   className="h-full w-full object-cover"
                 />
+                {hasConflict && (
+                  <span
+                    aria-label="Contém ingrediente que não pode comer"
+                    className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
+                  >
+                    <TriangleAlert className="h-3.5 w-3.5" />
+                  </span>
+                )}
               </div>
               <div className="p-3">
                 <p className="truncate font-display text-sm font-bold text-foreground">
@@ -51,11 +66,11 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
               </div>
             </button>
           );
-        })}
-      </div>
+        }}
+      />
 
       <Dialog open={!!active} onOpenChange={(open) => !open && setActive(null)}>
-        <DialogContent className="max-w-md rounded-[2rem] border-none bg-card p-8">
+        <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-[2rem] border-none bg-card p-8">
           {active && (
             <>
               <div className="rounded-2xl bg-surface p-4">
@@ -73,6 +88,16 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
               </p>
               <p className="mt-2 text-sm text-muted-foreground">{active.description}</p>
               <p className="mt-3 text-lg font-bold text-primary">{formatKz(active.price)}</p>
+
+              {activeConflicts.length > 0 && (
+                <div className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-foreground">
+                  <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                  <span>
+                    <span className="font-bold">Atenção:</span> este prato contém{" "}
+                    {activeConflicts.join(", ")} — que indicou não poder comer.
+                  </span>
+                </div>
+              )}
 
               {commonIngredients.length > 0 && (
                 <div className="mt-4">
@@ -137,8 +162,7 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
                 <button
                   type="button"
                   onClick={() => {
-                    add(active.id, 1, []);
-                    toast.success(`${active.name} adicionado ao carrinho`);
+                    addToBill(active.restaurantId, active.id, active.name);
                     setActive(null);
                   }}
                   className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"

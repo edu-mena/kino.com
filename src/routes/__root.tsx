@@ -12,9 +12,14 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import iconImage from "../assets/icon.png";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AddressesProvider } from "../lib/addresses";
+import { BillProvider } from "../lib/bill";
 import { CartProvider } from "../lib/cart";
+import { LocationProvider } from "../lib/location";
 import { AuthProvider } from "../lib/auth";
 import { PreferencesProvider } from "../lib/preferences";
+import { ReservationsProvider } from "../lib/reservations";
+import { StoriesProvider } from "../lib/stories";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
@@ -145,11 +150,21 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <PreferencesProvider>
-          <CartProvider>
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <Outlet />
-            <Toaster />
-          </CartProvider>
+          <StoriesProvider>
+            <AddressesProvider>
+              <LocationProvider>
+                <ReservationsProvider>
+                  <BillProvider>
+                    <CartProvider>
+                      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                      <Outlet />
+                      <Toaster />
+                    </CartProvider>
+                  </BillProvider>
+                </ReservationsProvider>
+              </LocationProvider>
+            </AddressesProvider>
+          </StoriesProvider>
         </PreferencesProvider>
       </AuthProvider>
     </QueryClientProvider>

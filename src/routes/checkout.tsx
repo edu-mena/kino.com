@@ -3,7 +3,7 @@ import { AlertCircle, Check, ChevronLeft, Clock, MapPin } from "lucide-react";
 import { useState } from "react";
 import icon from "@/assets/icon.png";
 import { PageShell } from "@/components/site-shell";
-import { getMenuItem } from "@/data/helpers";
+import { getMenuItem, getRestaurant } from "@/data/helpers";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { lineUnitPrice, useCart } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
@@ -31,8 +31,9 @@ const slots = ["O mais rápido possível", "Hoje, 19:00 - 19:30", "Hoje, 20:00 -
 
 function Checkout() {
   const navigate = useNavigate();
-  const { lines, subtotal, deliveryFee, total, clear } = useCart();
-  const { dietaryRestrictions } = usePreferences();
+  const { orders, subtotal, deliveryFee, total, clear } = useCart();
+  const hasItems = orders.length > 0;
+  const { dietaryRestrictions, excludedIngredients } = usePreferences();
   const [address, setAddress] = useState(INITIAL_SAVED_ADDRESSES[0]!.id);
   const [slot, setSlot] = useState(slots[0]!);
   const [payment, setPayment] = useState(paymentMethods[0]!.id);
@@ -41,10 +42,10 @@ function Checkout() {
     <PageShell>
       <div className="mx-auto max-w-6xl px-4 pt-6 md:px-6">
         <Link
-          to="/carrinho"
+          to="/entrega"
           className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-primary"
         >
-          <ChevronLeft className="h-4 w-4" /> Voltar ao carrinho
+          <ChevronLeft className="h-4 w-4" /> Voltar à entrega
         </Link>
         <h1 className="mt-4 text-3xl font-extrabold text-primary sm:text-4xl">Finalizar pedido</h1>
 
@@ -56,6 +57,16 @@ function Checkout() {
                 <p className="text-sm text-foreground">
                   <span className="font-bold">Avisaremos o restaurante:</span> o cliente tem
                   restrições — {dietaryRestrictions.join(", ")}.
+                </p>
+              </div>
+            )}
+
+            {excludedIngredients.length > 0 && (
+              <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                <p className="text-sm text-foreground">
+                  <span className="font-bold">Avisaremos o restaurante:</span> o cliente não pode
+                  comer — {excludedIngredients.join(", ")}.
                 </p>
               </div>
             )}
@@ -107,7 +118,11 @@ function Checkout() {
             </section>
 
             <section className="card-soft p-6">
-              <h2 className="font-display text-lg font-bold text-primary">Método de pagamento</h2>
+              <h2 className="font-display text-lg font-bold text-primary">Como prefere pagar</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                A Kino não processa pagamentos — isto é só uma preferência que enviamos ao
+                restaurante junto do pedido. O valor é combinado e pago diretamente com ele.
+              </p>
               <div className="mt-4 space-y-2">
                 {paymentMethods.map((m) => (
                   <button
@@ -140,21 +155,30 @@ function Checkout() {
 
           <aside className="card-soft h-fit p-6">
             <h2 className="font-display text-lg font-bold text-primary">O seu pedido</h2>
-            <ul className="mt-4 space-y-3">
-              {lines.map((line) => {
-                const item = getMenuItem(line.menuItemId);
-                if (!item) return null;
-                const unit = lineUnitPrice(line);
-                return (
-                  <li key={line.key} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm">
-                    <span className="min-w-0 truncate text-muted-foreground">
-                      {line.qty}× {item.name}
-                    </span>
-                    <span className="shrink-0 font-semibold">{formatKz(unit * line.qty)}</span>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="mt-4 space-y-4">
+              {orders.map((order, i) => (
+                <div key={order.id}>
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    Pedido {i + 1} · {getRestaurant(order.restaurantId)?.name ?? "Restaurante"}
+                  </p>
+                  <ul className="mt-2 space-y-2">
+                    {order.lines.map((line) => {
+                      const item = getMenuItem(line.menuItemId);
+                      if (!item) return null;
+                      const unit = lineUnitPrice(line);
+                      return (
+                        <li key={line.key} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm">
+                          <span className="min-w-0 truncate text-muted-foreground">
+                            {line.qty}× {item.name}
+                          </span>
+                          <span className="shrink-0 font-semibold">{formatKz(unit * line.qty)}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
             <dl className="mt-5 space-y-2 border-t border-border pt-4 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Subtotal</dt>
@@ -171,17 +195,17 @@ function Checkout() {
             </dl>
             <button
               type="button"
-              disabled={lines.length === 0}
+              disabled={!hasItems}
               onClick={() => {
                 clear();
                 navigate({ to: "/pedido-confirmado" });
               }}
               className="mt-6 w-full rounded-xl bg-brand px-5 py-3.5 text-sm font-bold text-brand-foreground disabled:opacity-50"
             >
-              Pagar {formatKz(total)}
+              Fazer pedido — {formatKz(total)}
             </button>
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              Demonstração — nenhum pagamento real é processado.
+              O restaurante recebe o pedido e combina o pagamento consigo diretamente.
             </p>
           </aside>
         </div>
