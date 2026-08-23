@@ -1,0 +1,16 @@
+# Normalize line endings to LF in the repository regardless of the local
+# core.autocrlf setting. Without this, Windows checkouts convert every
+# text file to CRLF on disk, which then makes Prettier/ESLint
+# (eslint-plugin-prettier, which enforces endOfLine: "lf") flag every
+# single line as a style violation — noise that has nothing to do with
+# the actual code.
+* text=auto eol=lf
+
+# Binary assets — never touch these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary

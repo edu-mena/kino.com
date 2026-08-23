@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bike, ChevronLeft, ChevronRight, Clock, MapPin, Package, Phone, Trash2 } from "lucide-react";
+import { Bike, ChevronLeft, ChevronRight, Clock, MapPin, Package, Phone, Trash2, Wallet } from "lucide-react";
 import { useState } from "react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
 import { lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
+import { paymentMethods } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/entrega")({
   head: () => ({
@@ -192,6 +193,20 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
             </div>
           </div>
         )}
+
+        {order.paymentMethod && (
+          <div className="flex items-start gap-3">
+            <Wallet className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Preferência de pagamento
+              </dt>
+              <dd className="mt-0.5">
+                {paymentMethods.find((m) => m.id === order.paymentMethod)?.label ?? order.paymentMethod}
+              </dd>
+            </div>
+          </div>
+        )}
       </dl>
 
       <div className="mt-5 border-t border-border pt-4">
@@ -218,6 +233,15 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         <span className="font-bold">Quantia</span>
         <span className="font-extrabold text-primary">{formatKz(orderTotal(order))}</span>
       </div>
+
+      {!order.paymentMethod && (
+        <Link
+          to="/checkout"
+          className="mt-4 block rounded-xl bg-brand px-5 py-3 text-center text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90"
+        >
+          Finalizar pedido — escolher pagamento
+        </Link>
+      )}
 
       <button
         type="button"

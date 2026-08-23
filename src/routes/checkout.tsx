@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AlertCircle, Check, ChevronLeft, Clock, MapPin } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { PageShell } from "@/components/site-shell";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
-import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { lineUnitPrice, useCart } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
 import { paymentMethods } from "@/lib/mock-data";
@@ -17,10 +17,10 @@ export const Route = createFileRoute("/checkout")({
       {
         name: "description",
         content:
-          "Escolha o endereço, o horário de entrega e o método de pagamento para concluir o seu pedido.",
+          "Escolha o horário e o método de pagamento para concluir os seus pedidos de entrega.",
       },
       { property: "og:title", content: "Pagamento e entrega — Kino.com" },
-      { property: "og:description", content: "Conclua o seu pedido em poucos passos." },
+      { property: "og:description", content: "Conclua os seus pedidos em poucos passos." },
       { property: "og:image", content: icon },
     ],
   }),
@@ -31,10 +31,9 @@ const slots = ["O mais rápido possível", "Hoje, 19:00 - 19:30", "Hoje, 20:00 -
 
 function Checkout() {
   const navigate = useNavigate();
-  const { orders, subtotal, deliveryFee, total, clear } = useCart();
+  const { orders, subtotal, deliveryFee, total, confirmOrder } = useCart();
   const hasItems = orders.length > 0;
   const { dietaryRestrictions, excludedIngredients } = usePreferences();
-  const [address, setAddress] = useState(INITIAL_SAVED_ADDRESSES[0]!.id);
   const [slot, setSlot] = useState(slots[0]!);
   const [payment, setPayment] = useState(paymentMethods[0]!.id);
 
@@ -72,28 +71,29 @@ function Checkout() {
             )}
 
             <section className="card-soft p-6">
-              <h2 className="font-display text-lg font-bold text-primary">Endereço de entrega</h2>
+              <h2 className="font-display text-lg font-bold text-primary">Endereços de entrega</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Já confirmados ao pedir cada entrega — para mudar, cancele o pedido em "Entrega" e
+                peça de novo.
+              </p>
               <div className="mt-4 space-y-2">
-                {INITIAL_SAVED_ADDRESSES.map((a) => (
-                  <button
-                    key={a.id}
-                    type="button"
-                    onClick={() => setAddress(a.id)}
-                    className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border p-3 text-left ${
-                      address === a.id ? "border-brand bg-brand/5" : "border-border"
-                    }`}
+                {orders.map((order) => (
+                  <div
+                    key={order.id}
+                    className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border border-border p-3"
                   >
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface text-primary">
                       <MapPin className="h-4 w-4" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-bold">{a.label}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {a.line1} · {a.line2}
+                      <span className="block truncate text-xs font-semibold text-muted-foreground">
+                        {getRestaurant(order.restaurantId)?.name ?? "Restaurante"}
+                      </span>
+                      <span className="block truncate text-sm font-bold">
+                        {order.deliveryAddress.label} — {order.deliveryAddress.line1}
                       </span>
                     </span>
-                    {address === a.id && <Check className="h-4 w-4 shrink-0 text-brand" />}
-                  </button>
+                  </div>
                 ))}
               </div>
             </section>
@@ -197,8 +197,12 @@ function Checkout() {
               type="button"
               disabled={!hasItems}
               onClick={() => {
-                clear();
-                navigate({ to: "/pedido-confirmado" });
+                // Os pedidos já existem (desde "Solicitar delivery") — aqui só
+                // anexamos a preferência de pagamento a cada um. Nada é
+                // limpo: continuam visíveis e acompanháveis em "Entrega".
+                for (const order of orders) confirmOrder(order.id, payment);
+                toast.success("Pedido confirmado — acompanhe o estado em Entrega.");
+                navigate({ to: "/entrega" });
               }}
               className="mt-6 w-full rounded-xl bg-brand px-5 py-3.5 text-sm font-bold text-brand-foreground disabled:opacity-50"
             >

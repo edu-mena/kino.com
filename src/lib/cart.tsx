@@ -26,6 +26,10 @@ export type CartOrder = {
   status: string;
   /** Estimativa (minutos) capturada do restaurante no momento do pedido. */
   estimatedMinutes: number;
+  /** Preferência de pagamento enviada ao restaurante — só existe depois de
+   * passar pelo checkout (`confirmOrder`). A Kino não processa o pagamento
+   * em si, isto é só a preferência relayed ao restaurante. */
+  paymentMethod?: string;
 };
 
 type NewCartLine = {
@@ -45,6 +49,10 @@ type CartValue = {
   addOrder: (restaurantId: string, items: NewCartLine[], deliveryAddress: SavedAddress) => void;
   setQty: (orderId: string, lineKey: string, qty: number) => void;
   removeOrder: (orderId: string) => void;
+  /** Passo do checkout — regista a preferência de pagamento no pedido (já
+   * criado desde o "Solicitar delivery"). Não cria nada novo nem limpa a
+   * lista: o pedido continua o mesmo, agora com o método anexado. */
+  confirmOrder: (orderId: string, paymentMethod: string) => void;
   clear: () => void;
 };
 
@@ -162,6 +170,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
             .filter((o) => o.lines.length > 0),
         ),
       removeOrder: (orderId) => setOrders((prev) => prev.filter((o) => o.id !== orderId)),
+      confirmOrder: (orderId, paymentMethod) =>
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, paymentMethod } : o)),
+        ),
       clear: () => setOrders([]),
     };
   }, [orders]);
