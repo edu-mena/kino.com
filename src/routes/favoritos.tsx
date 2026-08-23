@@ -4,6 +4,7 @@ import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { INITIAL_RESTAURANTS } from "@/data/mockData";
 import { usePreferences } from "@/lib/preferences";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/favoritos")({
   head: () => ({
@@ -20,23 +21,21 @@ export const Route = createFileRoute("/favoritos")({
 function Favoritos() {
   const { favoriteRestaurantIds } = usePreferences();
   const favorites = INITIAL_RESTAURANTS.filter((r) => favoriteRestaurantIds.includes(r.id));
+  const { t } = useTranslation();
 
   return (
     <PageShell>
-      <PageHeading eyebrow="Favoritos" title="Os seus restaurantes favoritos" />
+      <PageHeading eyebrow={t("favoritos.eyebrow")} title={t("favoritos.title")} />
       <div className="mx-auto mt-8 max-w-6xl px-4 md:px-6">
         {favorites.length === 0 ? (
           <div className="card-soft grid place-items-center gap-3 p-12 text-center">
             <Heart className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Ainda não guardou nenhum restaurante. Toque no coração de um restaurante para o
-              guardar aqui.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("favoritos.emptyText")}</p>
             <Link
               to="/restaurantes"
               className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
             >
-              Explorar restaurantes
+              {t("favoritos.explore")}
             </Link>
           </div>
         ) : (
@@ -44,8 +43,8 @@ function Favoritos() {
             {favorites.map((r) => (
               <Link
                 key={r.id}
-                to="/cardapio"
-                search={{ restaurante: r.id }}
+                to="/restaurantes/$id"
+                params={{ id: r.id }}
                 className="card-soft overflow-hidden transition-colors hover:border-brand"
               >
                 <div className="h-32 overflow-hidden bg-surface">

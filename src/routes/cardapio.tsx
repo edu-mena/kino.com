@@ -3,6 +3,7 @@ import icon from "@/assets/icon.png";
 import { MenuBrowser } from "@/components/menu-browser";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { getRestaurant } from "@/data/helpers";
+import { useTranslation } from "@/i18n";
 
 type CardapioSearch = { categoria?: string | undefined; restaurante?: string | undefined };
 
@@ -30,16 +31,17 @@ export const Route = createFileRoute("/cardapio")({
 function Cardapio() {
   const { restaurante } = Route.useSearch();
   const restaurantFilter = restaurante ? getRestaurant(restaurante) : undefined;
+  const { t } = useTranslation();
 
   return (
     <PageShell>
       <PageHeading
-        eyebrow="Cardápio"
-        title={restaurantFilter ? restaurantFilter.name : "Escolha o seu próximo prato"}
+        eyebrow={t("cardapio.eyebrow")}
+        title={restaurantFilter ? restaurantFilter.name : t("cardapio.title")}
         description={
           restaurantFilter
-            ? `Cardápio de ${restaurantFilter.name} — ${restaurantFilter.cuisine}.`
-            : "Filtre por categoria ou pesquise pelo nome do prato ou restaurante."
+            ? `${t("cardapio.eyebrow")} ${restaurantFilter.name} — ${restaurantFilter.cuisine}.`
+            : t("cardapio.description")
         }
       />
 

@@ -31,6 +31,7 @@ import { useCart } from "@/lib/cart";
 import { useLocation } from "@/lib/location";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 
 const navLinks = [
   { to: "/", label: "Início" },
@@ -42,15 +43,15 @@ const navLinks = [
 
 /** Links do usuário logado — mostrados no painel "três pontos" do header. */
 const appNavLinks = [
-  { to: "/", label: "Início", icon: Home },
-  { to: "/cardapio", label: "Cardápio", icon: Search },
-  { to: "/restaurantes", label: "Restaurantes", icon: MapPin },
-  { to: "/entrega", label: "Entrega", icon: Bike },
-  { to: "/reservas", label: "Reservas", icon: CalendarCheck },
-  { to: "/favoritos", label: "Favoritos", icon: Heart },
-  { to: "/preferencias", label: "Preferências", icon: Settings },
-  { to: "/ajuda", label: "Ajuda", icon: CircleHelp },
-  { to: "/perfil", label: "Perfil", icon: User },
+  { to: "/", labelKey: "nav.home", icon: Home },
+  { to: "/cardapio", labelKey: "nav.menu", icon: Search },
+  { to: "/restaurantes", labelKey: "nav.restaurants", icon: MapPin },
+  { to: "/entrega", labelKey: "nav.delivery", icon: Bike },
+  { to: "/reservas", labelKey: "nav.reservations", icon: CalendarCheck },
+  { to: "/favoritos", labelKey: "nav.favorites", icon: Heart },
+  { to: "/preferencias", labelKey: "nav.preferences", icon: Settings },
+  { to: "/ajuda", labelKey: "nav.help", icon: CircleHelp },
+  { to: "/perfil", labelKey: "nav.profile", icon: User },
 ] as const;
 
 const guestNavLinks = [
@@ -62,11 +63,11 @@ const guestNavLinks = [
 
 const guestNavOrder = guestNavLinks.map((link) => link.to as string);
 
-/** "Bom dia"/"Boa tarde"/"Boa noite" conforme a hora local. */
-function greetingForHour(hour: number) {
-  if (hour < 12) return "Bom dia";
-  if (hour < 18) return "Boa tarde";
-  return "Boa noite";
+/** "Bom dia"/"Boa tarde"/"Boa noite" conforme a hora local, no idioma ativo. */
+function greetingForHour(hour: number, t: ReturnType<typeof useTranslation>["t"]) {
+  if (hour < 12) return t("header.greetingMorning");
+  if (hour < 18) return t("header.greetingAfternoon");
+  return t("header.greetingEvening");
 }
 
 /** Ex: "quarta-feira, 19 de agosto" — capitalizado. */
@@ -101,6 +102,7 @@ function guestViewTransitionTypes({
  * confirmar se é mesmo a área de entrega pretendida. */
 function LocationSelect() {
   const { allAddresses, selected, setSelectedId } = useLocation();
+  const { t } = useTranslation();
 
   return (
     <DropdownMenu>
@@ -111,7 +113,7 @@ function LocationSelect() {
         >
           <MapPin className="h-3.5 w-3.5 text-primary" />
           <span className="max-w-32 truncate">
-            {selected ? selected.label : "Definir localização"}
+            {selected ? selected.label : t("header.setLocation")}
           </span>
           <ChevronDown className="h-3.5 w-3.5" />
         </button>
@@ -130,7 +132,7 @@ function LocationSelect() {
         <DropdownMenuItem asChild className="gap-2 text-primary">
           <Link to="/perfil">
             <Plus className="h-4 w-4 shrink-0" />
-            Adicionar localização
+            {t("header.addLocation")}
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -140,10 +142,11 @@ function LocationSelect() {
 
 function CartButton() {
   const { count } = useCart();
+  const { t } = useTranslation();
   return (
     <Link
       to="/entrega"
-      aria-label="Ver entrega"
+      aria-label={t("header.viewDelivery")}
       className="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary"
     >
       <Bike className="h-4 w-4" />
@@ -160,6 +163,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
   const [open, setOpen] = useState(false);
   const { isLoggedIn, user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const isGuestHome = variant === "guestHome";
   // Logged-in users get the brand-colored "all links" panel button, but only
   // below `lg:` — desktop uses the leftbar + header Ajuda icon instead.
@@ -217,7 +221,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           {isFixedDashboardHeader && user && (
             <div className="hidden min-w-0 lg:block">
               <p className="truncate text-sm font-bold text-primary">
-                {greetingForHour(new Date().getHours())},{" "}
+                {greetingForHour(new Date().getHours(), t)},{" "}
                 <span className="capitalize">{user.name}</span> 👋
               </p>
               <p className="truncate text-xs text-muted-foreground">{formatTodayPt(new Date())}</p>
@@ -268,7 +272,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           {isFixedDashboardHeader && (
             <Link
               to="/ajuda"
-              aria-label="Central de ajuda"
+              aria-label={t("header.helpCenter")}
               className="hidden h-10 w-10 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary lg:grid"
             >
               <CircleHelp className="h-4 w-4" />
@@ -281,7 +285,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
               <Link
                 to="/perfil"
                 className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary"
-                aria-label="Perfil"
+                aria-label={t("nav.profile")}
               >
                 <User className="h-4 w-4" />
               </Link>
@@ -348,7 +352,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
               className="flex items-center gap-3 rounded-lg px-2 py-3 text-lg font-medium text-foreground hover:bg-surface"
             >
               {"icon" in link && <link.icon className="h-4 w-4 shrink-0 text-primary" />}
-              {link.label}
+              {"labelKey" in link ? t(link.labelKey) : link.label}
             </Link>
           ))}
         </div>
@@ -364,7 +368,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
               }}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-surface px-4 py-3 text-center text-lg font-semibold text-destructive"
             >
-              <LogOut className="h-4 w-4" /> Terminar sessão
+              <LogOut className="h-4 w-4" /> {t("logoutDialog.confirm")}
             </button>
           ) : (
             <Link
@@ -383,24 +387,25 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
 
 export function MobileTabBar() {
   const { count } = useCart();
+  const { t } = useTranslation();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
       <div className="grid grid-cols-5">
         {tabs.map((tab) => (
           <Link
-            key={tab.label}
+            key={tab.to}
             to={tab.to}
             activeOptions={{ exact: tab.to === "/" }}
             activeProps={{ className: "text-primary" }}
             className="relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground"
           >
             <tab.icon className="h-5 w-5" />
-            {tab.label === "Entrega" && count > 0 && (
+            {tab.to === "/entrega" && count > 0 && (
               <span className="absolute right-1/2 top-1 translate-x-4 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
                 {count}
               </span>
             )}
-            {tab.label}
+            {t(tab.labelKey)}
           </Link>
         ))}
       </div>
@@ -439,7 +444,7 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
-              <Link to="/acompanhar" className="hover:text-primary">
+              <Link to="/entrega" className="hover:text-primary">
                 Acompanhar pedido
               </Link>
             </li>

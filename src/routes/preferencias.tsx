@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { getAllIngredientNames } from "@/data/helpers";
 import { usePreferences } from "@/lib/preferences";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/preferencias")({
   head: () => ({
@@ -44,6 +45,7 @@ function IngredientPicker({
   onToggle: (name: string) => void;
   tone: "primary" | "destructive";
 }) {
+  const { t } = useTranslation();
   const allIngredients = useMemo(() => getAllIngredientNames(), []);
   const [query, setQuery] = useState("");
   // Ingrediente digitado sem nenhum match no cardápio, aguardando confirmação
@@ -94,7 +96,7 @@ function IngredientPicker({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Pesquisar ingrediente..."
+          placeholder={t("preferencias.searchPlaceholder")}
           className="w-full bg-transparent text-sm outline-none"
         />
       </label>
@@ -120,7 +122,7 @@ function IngredientPicker({
               className="flex items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary"
             >
               <Plus className="h-3 w-3" />
-              Adicionar "{trimmedQuery}"
+              {t("preferencias.addQuoted")} "{trimmedQuery}"
             </button>
           )}
         </div>
@@ -129,21 +131,20 @@ function IngredientPicker({
       <AlertDialog open={pendingAdd !== null} onOpenChange={(open) => !open && setPendingAdd(null)}>
         <AlertDialogContent className="rounded-[1.5rem]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar ingrediente</AlertDialogTitle>
+            <AlertDialogTitle>{t("preferencias.confirmIngredientTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Não encontrámos "{pendingAdd}" no nosso cardápio. Tem a certeza que escreveu o nome
-              correto?
+              {t("preferencias.confirmIngredientDescription", { query: pendingAdd ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (pendingAdd) addAndClear(pendingAdd);
                 setPendingAdd(null);
               }}
             >
-              Sim, adicionar
+              {t("preferencias.yesAdd")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -159,25 +160,26 @@ function Preferencias() {
     excludedIngredients,
     toggleExcludedIngredient,
   } = usePreferences();
+  const { t } = useTranslation();
 
   return (
     <PageShell>
       <PageHeading
-        title="Preferências"
-        description="Ingredientes favoritos e ingredientes que não podem constar no prato."
+        title={t("preferencias.title")}
+        description={t("preferencias.description")}
       />
       <div className="mx-auto mt-8 max-w-6xl space-y-6 px-4 md:px-6">
         <IngredientPicker
-          title="Ingredientes favoritos"
-          description="Vamos destacar pratos que tenham estes ingredientes."
+          title={t("preferencias.favoriteTitle")}
+          description={t("preferencias.favoriteDescription")}
           selected={favoriteIngredients}
           onToggle={toggleFavoriteIngredient}
           tone="primary"
         />
 
         <IngredientPicker
-          title="Ingredientes que não podem constar no prato"
-          description="Avisamos o restaurante sempre que fizer um pedido com um prato que tenha algum destes ingredientes."
+          title={t("preferencias.excludedTitle")}
+          description={t("preferencias.excludedDescription")}
           selected={excludedIngredients}
           onToggle={toggleExcludedIngredient}
           tone="destructive"

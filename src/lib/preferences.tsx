@@ -1,5 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
+export type NotificationSettings = {
+  orderUpdates: boolean;
+  promotions: boolean;
+  news: boolean;
+};
+
 export type Preferences = {
   favoriteRestaurantIds: string[];
   dietaryRestrictions: string[];
@@ -9,6 +15,7 @@ export type Preferences = {
   language: string;
   favoriteIngredients: string[];
   excludedIngredients: string[];
+  notificationSettings: NotificationSettings;
 };
 
 const DEFAULT_PREFERENCES: Preferences = {
@@ -20,6 +27,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   language: "pt",
   favoriteIngredients: [],
   excludedIngredients: [],
+  notificationSettings: { orderUpdates: true, promotions: true, news: false },
 };
 
 type PreferencesValue = Preferences & {
@@ -32,6 +40,7 @@ type PreferencesValue = Preferences & {
   setLanguage: (value: string) => void;
   toggleFavoriteIngredient: (name: string) => void;
   toggleExcludedIngredient: (name: string) => void;
+  setNotificationSetting: (key: keyof NotificationSettings, value: boolean) => void;
 };
 
 const PreferencesContext = createContext<PreferencesValue | null>(null);
@@ -88,6 +97,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
           ? prefs.excludedIngredients.filter((n) => n !== name)
           : [...prefs.excludedIngredients, name],
         favoriteIngredients: prefs.favoriteIngredients.filter((n) => n !== name),
+      }),
+    setNotificationSetting: (key, value) =>
+      persist({
+        ...prefs,
+        notificationSettings: { ...prefs.notificationSettings, [key]: value },
       }),
   };
 

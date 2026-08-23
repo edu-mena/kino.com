@@ -2,8 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarCheck } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { INITIAL_RESERVATIONS } from "@/data/mockData";
 import { useReservations } from "@/lib/reservations";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/reservas")({
   head: () => ({
@@ -18,26 +18,26 @@ export const Route = createFileRoute("/reservas")({
 });
 
 function Reservas() {
-  const { customReservations } = useReservations();
-  const reservations = [...customReservations, ...INITIAL_RESERVATIONS];
+  const { reservations } = useReservations();
+  const { t } = useTranslation();
 
   return (
     <PageShell>
       <PageHeading
-        eyebrow="Reservas"
-        title="As suas mesas"
-        description="Pedidos de reserva enviados aos restaurantes — a confirmação final, o horário definitivo e eventual caução ficam a cargo de cada restaurante."
+        eyebrow={t("reservas.eyebrow")}
+        title={t("reservas.title")}
+        description={t("reservas.description")}
       />
       <div className="mx-auto mt-8 max-w-6xl px-4 md:px-6">
         {reservations.length === 0 ? (
           <div className="card-soft grid place-items-center gap-3 p-12 text-center">
             <CalendarCheck className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Ainda não tem reservas.</p>
+            <p className="text-sm text-muted-foreground">{t("reservas.emptyText")}</p>
             <Link
               to="/restaurantes"
               className="mt-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
-              Reservar uma mesa
+              {t("reservas.reserveTable")}
             </Link>
           </div>
         ) : (
@@ -64,7 +64,9 @@ function Reservas() {
                   className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
                     r.status === "Confirmada"
                       ? "bg-success/15 text-success"
-                      : "bg-brand/15 text-brand"
+                      : r.status === "Recusada"
+                        ? "bg-destructive/15 text-destructive"
+                        : "bg-brand/15 text-brand"
                   }`}
                 >
                   {r.status}
@@ -75,11 +77,11 @@ function Reservas() {
         )}
         {reservations.length > 0 && (
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Para reservar noutro restaurante, procure-o em{" "}
+            {t("reservas.footerPrefix")}{" "}
             <Link to="/restaurantes" className="font-semibold text-primary hover:underline">
-              Restaurantes
+              {t("reservas.footerLink")}
             </Link>{" "}
-            e escolha "Reservar mesa".
+            {t("reservas.footerSuffix")}
           </p>
         )}
       </div>

@@ -31,10 +31,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { useAddresses } from "@/lib/addresses";
 import { useAuth } from "@/lib/auth";
 import { usePreferences } from "@/lib/preferences";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
@@ -59,36 +61,36 @@ const languages = [
 
 const menu = [
   {
-    label: "Preferências",
-    description: "Ingredientes favoritos e ingredientes a evitar nos seus pedidos.",
+    labelKey: "perfil.menuPreferencesLabel",
+    descriptionKey: "perfil.menuPreferencesDescription",
     icon: Settings,
     to: "/preferencias" as const,
   },
   {
-    label: "Histórico de pedidos",
-    description: "Veja o estado e o histórico dos seus pedidos anteriores.",
+    labelKey: "perfil.menuOrdersLabel",
+    descriptionKey: "perfil.menuOrdersDescription",
     icon: Receipt,
-    to: "/acompanhar" as const,
+    to: "/entrega" as const,
   },
   {
-    label: "Reservas",
-    description: "Acompanhe e agende reservas de mesa nos restaurantes.",
+    labelKey: "perfil.menuReservationsLabel",
+    descriptionKey: "perfil.menuReservationsDescription",
     icon: CalendarCheck,
     to: "/reservas" as const,
   },
   {
-    label: "Favoritos",
-    description: "Os restaurantes que guardou como favoritos.",
+    labelKey: "perfil.menuFavoritesLabel",
+    descriptionKey: "perfil.menuFavoritesDescription",
     icon: Heart,
     to: "/favoritos" as const,
   },
-  {
-    label: "Notificações",
-    description: "Ajuste alertas de pedidos, promoções e novidades.",
-    icon: Bell,
-    to: undefined,
-  },
-];
+] as const;
+
+const notificationOptions = [
+  { key: "orderUpdates", labelKey: "perfil.notifOrderUpdatesLabel", descriptionKey: "perfil.notifOrderUpdatesDescription" },
+  { key: "promotions", labelKey: "perfil.notifPromotionsLabel", descriptionKey: "perfil.notifPromotionsDescription" },
+  { key: "news", labelKey: "perfil.notifNewsLabel", descriptionKey: "perfil.notifNewsDescription" },
+] as const;
 
 function Perfil() {
   // Todos os hooks ficam aqui em cima, incondicionalmente — o early return
@@ -98,9 +100,11 @@ function Perfil() {
   // e a hidratação no cliente com user).
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { language, setLanguage } = usePreferences();
+  const { t } = useTranslation();
+  const { language, setLanguage, notificationSettings, setNotificationSetting } = usePreferences();
   const { customAddresses, addAddress } = useAddresses();
   const [addAddressOpen, setAddAddressOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [newAlias, setNewAlias] = useState("");
   const [newAddress, setNewAddress] = useState("");
 
@@ -113,7 +117,7 @@ function Perfil() {
     e.preventDefault();
     if (!newAlias.trim() || !newAddress.trim()) return;
     addAddress(newAlias.trim(), newAddress.trim());
-    toast.success("Endereço adicionado");
+    toast.success(t("perfil.addressAdded"));
     setNewAlias("");
     setNewAddress("");
     setAddAddressOpen(false);
@@ -123,13 +127,13 @@ function Perfil() {
     return (
       <PageShell>
         <div className="mx-auto max-w-6xl px-4 py-20 text-center">
-          <h1 className="text-3xl font-bold text-primary">Acesso não autorizado</h1>
-          <p className="mt-2 text-muted-foreground">Por favor, faça login primeiro.</p>
+          <h1 className="text-3xl font-bold text-primary">{t("perfil.unauthorizedTitle")}</h1>
+          <p className="mt-2 text-muted-foreground">{t("perfil.unauthorizedDescription")}</p>
           <Link
             to="/entrar"
             className="mt-6 inline-flex rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground"
           >
-            Ir para login
+            {t("perfil.goToLogin")}
           </Link>
         </div>
       </PageShell>
@@ -174,43 +178,63 @@ function Perfil() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <div className="card-soft divide-y divide-border">
-            {menu.map((item) =>
-              item.to ? (
-                <Link
-                  key={item.label}
-                  to={item.to}
-                  className="group grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 text-left transition-colors hover:bg-surface"
-                >
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface text-primary transition-transform group-hover:scale-110">
-                    <item.icon className="h-4 w-4" />
+            {menu.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="group grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 text-left transition-colors hover:bg-surface"
+              >
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface text-primary transition-transform group-hover:scale-110">
+                  <item.icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold">{t(item.labelKey)}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {t(item.descriptionKey)}
                   </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold">{item.label}</span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {item.description}
-                    </span>
-                  </span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-                </Link>
-              ) : (
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+              </Link>
+            ))}
+
+            <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+              <DialogTrigger asChild>
                 <button
-                  key={item.label}
                   type="button"
                   className="group grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 text-left transition-colors hover:bg-surface"
                 >
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface text-primary transition-transform group-hover:scale-110">
-                    <item.icon className="h-4 w-4" />
+                    <Bell className="h-4 w-4" />
                   </span>
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold">{item.label}</span>
+                    <span className="block truncate text-sm font-semibold">{t("perfil.notificationsLabel")}</span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {item.description}
+                      {t("perfil.notificationsDescription")}
                     </span>
                   </span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                 </button>
-              ),
-            )}
+              </DialogTrigger>
+              <DialogContent className="max-w-sm rounded-[1.5rem] border-none bg-card p-6">
+                <DialogTitle className="font-display text-lg font-bold">{t("perfil.notificationsLabel")}</DialogTitle>
+                <DialogDescription>{t("perfil.notificationsDialogDescription")}</DialogDescription>
+                <div className="mt-2 space-y-4">
+                  {notificationOptions.map((opt) => (
+                    <div key={opt.key} className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold">{t(opt.labelKey)}</p>
+                        <p className="truncate text-xs text-muted-foreground">{t(opt.descriptionKey)}</p>
+                      </div>
+                      <Switch
+                        checked={notificationSettings[opt.key]}
+                        onCheckedChange={(checked) => setNotificationSetting(opt.key, checked)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+
             <button
               type="button"
               onClick={handleLogout}
@@ -219,13 +243,13 @@ function Perfil() {
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-destructive/10 transition-transform group-hover:scale-110">
                 <LogOut className="h-4 w-4" />
               </span>
-              <span className="text-sm font-semibold">Terminar sessão</span>
+              <span className="text-sm font-semibold">{t("perfil.logout")}</span>
             </button>
           </div>
 
           <div className="space-y-6">
             <section className="card-soft p-6">
-              <h2 className="font-display text-lg font-bold text-primary">Endereços guardados</h2>
+              <h2 className="font-display text-lg font-bold text-primary">{t("perfil.savedAddresses")}</h2>
               <div className="mt-4 space-y-2">
                 {allAddresses.map((a) => (
                   <div
@@ -253,39 +277,37 @@ function Perfil() {
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-sm font-semibold text-primary transition-colors hover:border-primary hover:bg-primary/5"
                   >
                     <Plus className="h-4 w-4" />
-                    Adicionar novo endereço
+                    {t("perfil.addAddress")}
                   </button>
                 </DialogTrigger>
                 <DialogContent className="max-w-sm rounded-[1.5rem] border-none bg-card p-6">
                   <DialogTitle className="font-display text-lg font-bold">
-                    Novo endereço
+                    {t("perfil.newAddressTitle")}
                   </DialogTitle>
-                  <DialogDescription>
-                    Dê um apelido fácil de reconhecer e o endereço completo.
-                  </DialogDescription>
+                  <DialogDescription>{t("perfil.newAddressDescription")}</DialogDescription>
                   <form onSubmit={handleAddAddress} className="mt-2 space-y-4">
                     <div className="space-y-1.5">
-                      <Label htmlFor="address-alias">Alias</Label>
+                      <Label htmlFor="address-alias">{t("perfil.aliasLabel")}</Label>
                       <Input
                         id="address-alias"
                         value={newAlias}
                         onChange={(e) => setNewAlias(e.target.value)}
-                        placeholder="Ex: Casa, Trabalho..."
+                        placeholder={t("perfil.aliasPlaceholder")}
                         required
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="address-line">Endereço</Label>
+                      <Label htmlFor="address-line">{t("perfil.addressLabel")}</Label>
                       <Input
                         id="address-line"
                         value={newAddress}
                         onChange={(e) => setNewAddress(e.target.value)}
-                        placeholder="Rua, número, bairro..."
+                        placeholder={t("perfil.addressPlaceholder")}
                         required
                       />
                     </div>
                     <Button type="submit" className="w-full rounded-xl">
-                      Guardar endereço
+                      {t("perfil.saveAddress")}
                     </Button>
                   </form>
                 </DialogContent>
