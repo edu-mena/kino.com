@@ -10,11 +10,36 @@
  * ele (por isso nenhum destes tem número de cartão guardado, só o método).
  */
 export const paymentMethods = [
-  { id: "cash", label: "Dinheiro na entrega", detail: "Pague ao estafeta na entrega", brand: "CASH" },
-  { id: "pos", label: "Cartão (POS na entrega)", detail: "Multicaixa, Visa ou Mastercard", brand: "POS" },
-  { id: "mpesa", label: "M-Pesa", detail: "Transferência combinada com o restaurante", brand: "M-PESA" },
-  { id: "unitel", label: "Unitel Money", detail: "Transferência combinada com o restaurante", brand: "UNITEL" },
-  { id: "transferencia", label: "Transferência bancária", detail: "Combinada diretamente com o restaurante", brand: "BANCO" },
+  {
+    id: "cash",
+    label: "Dinheiro na entrega",
+    detail: "Pague ao estafeta na entrega",
+    brand: "CASH",
+  },
+  {
+    id: "pos",
+    label: "Cartão (POS na entrega)",
+    detail: "Multicaixa, Visa ou Mastercard",
+    brand: "POS",
+  },
+  {
+    id: "mpesa",
+    label: "M-Pesa",
+    detail: "Transferência combinada com o restaurante",
+    brand: "M-PESA",
+  },
+  {
+    id: "unitel",
+    label: "Unitel Money",
+    detail: "Transferência combinada com o restaurante",
+    brand: "UNITEL",
+  },
+  {
+    id: "transferencia",
+    label: "Transferência bancária",
+    detail: "Combinada diretamente com o restaurante",
+    brand: "BANCO",
+  },
 ];
 
 export const trackingSteps = [

@@ -1,23 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  ImagePlus,
-  Lock,
-  Mail,
-  MapPin,
-  Phone,
-  Store,
-} from "lucide-react";
+import { ArrowLeft, CheckCircle2, ImagePlus, Lock, Mail, MapPin, Phone, Store } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,

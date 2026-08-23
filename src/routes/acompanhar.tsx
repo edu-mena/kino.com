@@ -99,7 +99,10 @@ function Acompanhar() {
           <h2 className="font-display text-lg font-bold text-primary">Detalhes do pedido</h2>
           <ul className="mt-4 space-y-3">
             {items.map(({ dish, qty }) => (
-              <li key={dish!.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+              <li
+                key={dish!.id}
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3"
+              >
                 <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-surface">
                   <img src={dish!.image} alt={dish!.name} className="h-9 object-contain" />
                 </span>

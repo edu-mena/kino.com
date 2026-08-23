@@ -110,17 +110,15 @@ function LocationSelect() {
           className="hidden items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-primary md:flex"
         >
           <MapPin className="h-3.5 w-3.5 text-primary" />
-          <span className="max-w-32 truncate">{selected ? selected.label : "Definir localização"}</span>
+          <span className="max-w-32 truncate">
+            {selected ? selected.label : "Definir localização"}
+          </span>
           <ChevronDown className="h-3.5 w-3.5" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-60">
         {allAddresses.map((a) => (
-          <DropdownMenuItem
-            key={a.id}
-            onClick={() => setSelectedId(a.id)}
-            className="gap-2"
-          >
+          <DropdownMenuItem key={a.id} onClick={() => setSelectedId(a.id)} className="gap-2">
             <MapPin className="h-4 w-4 shrink-0 text-primary" />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{a.label}</p>
@@ -219,7 +217,8 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           {isFixedDashboardHeader && user && (
             <div className="hidden min-w-0 lg:block">
               <p className="truncate text-sm font-bold text-primary">
-                {greetingForHour(new Date().getHours())}, <span className="capitalize">{user.name}</span> 👋
+                {greetingForHour(new Date().getHours())},{" "}
+                <span className="capitalize">{user.name}</span> 👋
               </p>
               <p className="truncate text-xs text-muted-foreground">{formatTodayPt(new Date())}</p>
             </div>
@@ -278,9 +277,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
 
           {isLoggedIn && user ? (
             <div className="hidden items-center gap-2 sm:flex lg:hidden">
-              <span className="text-sm font-medium text-muted-foreground">
-                {user.name}
-              </span>
+              <span className="text-sm font-medium text-muted-foreground">{user.name}</span>
               <Link
                 to="/perfil"
                 className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary"
@@ -297,7 +294,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
               Entrar
             </Link>
           )}
-          
+
           <button
             type="button"
             aria-label={panelAlwaysAvailable ? "Mais opções" : "Abrir menu"}
@@ -476,12 +473,7 @@ export function PageShell({
   return (
     <div className="flex min-h-screen">
       {isLoggedIn && <LeftSidebar />}
-      <div
-        className={cn(
-          "flex min-w-0 flex-1 flex-col",
-          isLoggedIn && "lg:ml-24 xl:ml-64",
-        )}
-      >
+      <div className={cn("flex min-w-0 flex-1 flex-col", isLoggedIn && "lg:ml-24 xl:ml-64")}>
         {header ?? <SiteHeader />}
         <main
           className={cn(
@@ -492,7 +484,7 @@ export function PageShell({
         >
           {children}
         </main>
-        {footer === undefined ? (isLoggedIn ? null : <SiteFooter />) : footer}
+        {footer === undefined ? isLoggedIn ? null : <SiteFooter /> : footer}
       </div>
       {showMobileTabBar && <MobileTabBar />}
       {isLoggedIn && <OrderBuilderCard />}

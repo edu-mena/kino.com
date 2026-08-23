@@ -190,9 +190,7 @@ function DishDetail() {
 
             {otherRestaurants.length > 0 && (
               <div className="mt-8 rounded-xl border border-border bg-surface p-4">
-                <p className="text-xs font-semibold text-muted-foreground">
-                  Também disponível em:
-                </p>
+                <p className="text-xs font-semibold text-muted-foreground">Também disponível em:</p>
                 <div className="mt-2 space-y-2">
                   {otherRestaurants.map((r) => (
                     <Link

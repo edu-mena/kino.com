@@ -109,7 +109,8 @@ function seedOrders(): CartOrder[] {
         selectedIngredients: [],
       })),
       createdAt: new Date().toISOString(),
-      deliveryAddress: INITIAL_SAVED_ADDRESSES.find((a) => a.isDefault) ?? INITIAL_SAVED_ADDRESSES[0]!,
+      deliveryAddress:
+        INITIAL_SAVED_ADDRESSES.find((a) => a.isDefault) ?? INITIAL_SAVED_ADDRESSES[0]!,
       status: "A caminho",
       estimatedMinutes: restaurant?.estimatedDeliveryMinutes ?? 30,
     },
@@ -171,9 +172,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ),
       removeOrder: (orderId) => setOrders((prev) => prev.filter((o) => o.id !== orderId)),
       confirmOrder: (orderId, paymentMethod) =>
-        setOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, paymentMethod } : o)),
-        ),
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, paymentMethod } : o))),
       clear: () => setOrders([]),
     };
   }, [orders]);

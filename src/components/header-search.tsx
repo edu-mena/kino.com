@@ -1,14 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { IngredientSearchFilter, LocationFilterSelect, matchesLocation } from "@/components/search-filters";
+import {
+  IngredientSearchFilter,
+  LocationFilterSelect,
+  matchesLocation,
+} from "@/components/search-filters";
 import { getAllIngredientNames, getMenuCategories, getRestaurant } from "@/data/helpers";
 import { INITIAL_MENU_ITEMS } from "@/data/mockData";
 import { formatKz } from "@/lib/format";
@@ -186,7 +186,11 @@ function SearchResultRow({
       onClick={onSelect}
       className="flex items-center gap-3 rounded-xl border border-border p-2 transition-colors hover:border-primary"
     >
-      <img src={item.image} alt="" className="h-11 w-11 shrink-0 rounded-lg bg-surface object-contain" />
+      <img
+        src={item.image}
+        alt=""
+        className="h-11 w-11 shrink-0 rounded-lg bg-surface object-contain"
+      />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
         <p className="truncate text-xs text-muted-foreground">{restaurant?.name}</p>

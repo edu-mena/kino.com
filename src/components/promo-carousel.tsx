@@ -5,7 +5,12 @@ import dishDrink from "@/assets/dish-drink.png";
 import heroFood from "@/assets/hero-food.jpg";
 import kinoVideo from "@/assets/kino/video.mp4";
 import restaurantAngolana from "@/assets/restaurant-angolana.jpg";
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getRestaurant } from "@/data/helpers";
 import { INITIAL_MENU_ITEMS, INITIAL_OFFERS } from "@/data/mockData";
@@ -13,11 +18,28 @@ import { formatKz } from "@/lib/format";
 
 const MAX_SLIDES = 8;
 
-type LinkTarget = { to: "/ofertas" } | { to: "/cardapio"; search: { restaurante: string } } | { to: "/kino" };
+type LinkTarget =
+  { to: "/ofertas" } | { to: "/cardapio"; search: { restaurante: string } } | { to: "/kino" };
 
 type Slide =
-  | { id: string; kind: "split"; title: string; description: string; cta: string; image: string; target: LinkTarget }
-  | { id: string; kind: "cover"; title: string; description: string; cta: string; image: string; target: LinkTarget }
+  | {
+      id: string;
+      kind: "split";
+      title: string;
+      description: string;
+      cta: string;
+      image: string;
+      target: LinkTarget;
+    }
+  | {
+      id: string;
+      kind: "cover";
+      title: string;
+      description: string;
+      cta: string;
+      image: string;
+      target: LinkTarget;
+    }
   | {
       id: string;
       kind: "video";
@@ -141,7 +163,11 @@ function MediaLightbox({
       <DialogContent className="max-w-3xl overflow-hidden rounded-[2rem] border-none bg-neutral-100 p-2">
         <DialogTitle className="sr-only">Pré-visualização</DialogTitle>
         {media.type === "image" ? (
-          <img src={media.src} alt="" className="max-h-[75vh] w-full rounded-[1.5rem] object-contain" />
+          <img
+            src={media.src}
+            alt=""
+            className="max-h-[75vh] w-full rounded-[1.5rem] object-contain"
+          />
         ) : (
           <video
             src={media.src}
@@ -171,11 +197,18 @@ function SlideCard({ slide }: { slide: Slide }) {
             aria-hidden
             className="h-full w-full rounded-[1.5rem] object-cover"
           />
-          <MediaTrigger onClick={() => setLightboxOpen(true)} label={`Ver imagem: ${slide.title}`} />
+          <MediaTrigger
+            onClick={() => setLightboxOpen(true)}
+            label={`Ver imagem: ${slide.title}`}
+          />
         </div>
         <div className="order-2 flex w-full flex-col justify-center gap-[10px] p-5 sm:order-none sm:w-fit sm:shrink-0 sm:max-w-xs sm:p-8">
-          <h3 className="truncate text-xl font-extrabold text-primary sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">{slide.title}</h3>
-          <p className="line-clamp-2 text-sm text-muted-foreground sm:line-clamp-none">{slide.description}</p>
+          <h3 className="truncate text-xl font-extrabold text-primary sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">
+            {slide.title}
+          </h3>
+          <p className="line-clamp-2 text-sm text-muted-foreground sm:line-clamp-none">
+            {slide.description}
+          </p>
           <SlideCta target={slide.target}>{slide.cta}</SlideCta>
         </div>
         <MediaLightbox
@@ -202,7 +235,9 @@ function SlideCard({ slide }: { slide: Slide }) {
           <h3 className="w-full max-w-md truncate text-xl font-extrabold text-white sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">
             {slide.title}
           </h3>
-          <p className="line-clamp-2 max-w-sm text-sm text-white/90 sm:line-clamp-none">{slide.description}</p>
+          <p className="line-clamp-2 max-w-sm text-sm text-white/90 sm:line-clamp-none">
+            {slide.description}
+          </p>
           <SlideCta target={slide.target}>{slide.cta}</SlideCta>
         </div>
         <MediaLightbox
@@ -236,8 +271,12 @@ function SlideCard({ slide }: { slide: Slide }) {
         <MediaTrigger onClick={() => setLightboxOpen(true)} label={`Ver vídeo: ${slide.title}`} />
       </div>
       <div className="order-2 flex w-full flex-col justify-center gap-[10px] p-5 sm:order-none sm:w-fit sm:shrink-0 sm:max-w-xs sm:p-8">
-        <h3 className="truncate text-xl font-extrabold text-primary sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">{slide.title}</h3>
-        <p className="line-clamp-2 text-sm text-muted-foreground sm:line-clamp-none">{slide.description}</p>
+        <h3 className="truncate text-xl font-extrabold text-primary sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">
+          {slide.title}
+        </h3>
+        <p className="line-clamp-2 text-sm text-muted-foreground sm:line-clamp-none">
+          {slide.description}
+        </p>
         <SlideCta target={slide.target}>{slide.cta}</SlideCta>
       </div>
       <MediaLightbox

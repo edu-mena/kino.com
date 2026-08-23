@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { getStoriesForRestaurant } from "@/data/helpers";
 
 const STORAGE_KEY = "kino_viewed_stories";

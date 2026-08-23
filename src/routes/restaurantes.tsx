@@ -7,7 +7,13 @@ import { ReservationDialog } from "@/components/reservation-dialog";
 import { LocationFilterSelect, matchesLocation } from "@/components/search-filters";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Restaurant } from "@/data/types";
 import { INITIAL_RESTAURANTS } from "@/data/mockData";
@@ -136,7 +142,10 @@ function Restaurantes() {
           {pageItems.map((r) => {
             const liked = isFavoriteRestaurant(r.id);
             return (
-              <div key={r.id} className="card-soft group relative overflow-hidden transition-colors hover:border-brand">
+              <div
+                key={r.id}
+                className="card-soft group relative overflow-hidden transition-colors hover:border-brand"
+              >
                 <button
                   type="button"
                   aria-label="Guardar nos favoritos"
@@ -230,7 +239,11 @@ function Restaurantes() {
               className="flex-wrap justify-start"
             >
               {priceLevels.map((level) => (
-                <ToggleGroupItem key={level} value={level} className="rounded-full border border-border">
+                <ToggleGroupItem
+                  key={level}
+                  value={level}
+                  className="rounded-full border border-border"
+                >
                   {level}
                 </ToggleGroupItem>
               ))}

@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
 
@@ -69,7 +63,9 @@ export function BillProvider({ children }: { children: ReactNode }) {
       persist({
         ...bill,
         lines:
-          qty <= 0 ? bill.lines.filter((l) => l.key !== key) : bill.lines.map((l) => (l.key === key ? { ...l, qty } : l)),
+          qty <= 0
+            ? bill.lines.filter((l) => l.key !== key)
+            : bill.lines.map((l) => (l.key === key ? { ...l, qty } : l)),
       }),
     // Descarta a lista temporária inteira — ex: pedido de entrega já criado,
     // trocar de ideias, ou trocar de restaurante a meio da escolha.
@@ -98,7 +94,9 @@ export function useAddToBill() {
   return (restaurantId: string, menuItemId: string, itemName: string) => {
     if (currentRestaurantId && currentRestaurantId !== restaurantId && lines.length > 0) {
       const previousName = getRestaurant(currentRestaurantId)?.name ?? "outro restaurante";
-      toast.info(`Lista de ${previousName} foi substituída — só pode montar o pedido de um restaurante de cada vez.`);
+      toast.info(
+        `Lista de ${previousName} foi substituída — só pode montar o pedido de um restaurante de cada vez.`,
+      );
     }
     addToBill(restaurantId, menuItemId);
     toast.success(`${itemName} adicionado ao pedido`);

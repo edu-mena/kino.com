@@ -70,7 +70,10 @@ export function DietaryPreferencesCard() {
           <div className="mt-4 grid grid-cols-2 gap-3">
             {COMMON_RESTRICTIONS.map((label) => (
               <label key={label} className="flex items-center gap-2 text-sm text-foreground">
-                <Checkbox checked={selected.includes(label)} onCheckedChange={() => toggle(label)} />
+                <Checkbox
+                  checked={selected.includes(label)}
+                  onCheckedChange={() => toggle(label)}
+                />
                 {label}
               </label>
             ))}

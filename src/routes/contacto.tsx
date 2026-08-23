@@ -68,16 +68,18 @@ const faqs = [
   },
   {
     question: "É grátis para usar como cliente?",
-    answer: "Sim. Explorar cardápios, reservar mesas e fazer pedidos na Kino não tem qualquer custo para o cliente.",
+    answer:
+      "Sim. Explorar cardápios, reservar mesas e fazer pedidos na Kino não tem qualquer custo para o cliente.",
   },
   {
     question: "Como coloco o meu restaurante na Kino?",
     answer:
-      "Escolha \"Sou restaurante / Parceria\" no formulário abaixo ou visite a página de parceiros — a nossa equipa entra em contacto para configurar o seu cardápio digital.",
+      'Escolha "Sou restaurante / Parceria" no formulário abaixo ou visite a página de parceiros — a nossa equipa entra em contacto para configurar o seu cardápio digital.',
   },
   {
     question: "Posso personalizar os meus pedidos?",
-    answer: "Sim, sempre que o restaurante disponibilizar essa opção você pode escolher os ingredientes do seu prato antes de finalizar o pedido.",
+    answer:
+      "Sim, sempre que o restaurante disponibilizar essa opção você pode escolher os ingredientes do seu prato antes de finalizar o pedido.",
   },
   {
     question: "Quanto tempo demora o suporte a responder?",
@@ -121,7 +123,10 @@ function Contacto() {
       <section className="mx-auto mt-10 max-w-6xl px-4 md:px-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {contactInfo.map((item) => (
-            <div key={item.title} className="rounded-2xl border border-border bg-card p-5 text-left">
+            <div
+              key={item.title}
+              className="rounded-2xl border border-border bg-card p-5 text-left"
+            >
               <item.icon className="h-8 w-8 text-brand" />
               <h3 className="mt-4 font-display text-base font-bold text-primary">{item.title}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{item.text}</p>

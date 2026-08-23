@@ -1,6 +1,11 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 
 const AUTOPLAY_INTERVAL = 5000;
 
@@ -66,7 +71,10 @@ export function HorizontalCarousel<T>({
 
   return (
     <div className="relative">
-      <Carousel setApi={setApi} opts={{ align: "start", dragFree: true, containScroll: "trimSnaps" }}>
+      <Carousel
+        setApi={setApi}
+        opts={{ align: "start", dragFree: true, containScroll: "trimSnaps" }}
+      >
         <CarouselContent>
           {items.map((item) => (
             <CarouselItem key={itemKey(item)} className="basis-auto">

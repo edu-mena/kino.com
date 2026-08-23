@@ -1,5 +1,16 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bike, Check, ChevronDown, ChevronUp, MapPin, Minus, Plus, Receipt, Trash2, X } from "lucide-react";
+import {
+  Bike,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
+  Minus,
+  Plus,
+  Receipt,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -159,10 +170,12 @@ export function OrderBuilderCard() {
 
       <Dialog open={addressConfirmOpen} onOpenChange={setAddressConfirmOpen}>
         <DialogContent className="max-w-sm rounded-[1.5rem] border-none bg-card p-6">
-          <DialogTitle className="font-display text-lg font-bold">Confirmar localização de entrega</DialogTitle>
+          <DialogTitle className="font-display text-lg font-bold">
+            Confirmar localização de entrega
+          </DialogTitle>
           <p className="mt-1 text-sm text-muted-foreground">
-            Escolha para onde vai o pedido — a mesma localização indicada no topo, ou outra
-            guardada no seu perfil.
+            Escolha para onde vai o pedido — a mesma localização indicada no topo, ou outra guardada
+            no seu perfil.
           </p>
 
           <div className="mt-4 space-y-2">

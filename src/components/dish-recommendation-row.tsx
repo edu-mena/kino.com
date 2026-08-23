@@ -74,11 +74,7 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
           {active && (
             <>
               <div className="rounded-2xl bg-surface p-4">
-                <img
-                  src={active.image}
-                  alt={active.name}
-                  className="mx-auto h-40 object-contain"
-                />
+                <img src={active.image} alt={active.name} className="mx-auto h-40 object-contain" />
               </div>
               <DialogTitle className="mt-4 font-display text-xl font-bold">
                 {active.name}

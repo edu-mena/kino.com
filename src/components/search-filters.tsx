@@ -1,6 +1,12 @@
 import { Search, X } from "lucide-react";
 import { useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getNeighborhoods } from "@/data/helpers";
 import { INITIAL_USER_PROFILE } from "@/data/mockData";
 
@@ -37,7 +43,8 @@ export function LocationFilterSelect({
 
 export function matchesLocation(restaurantNeighborhood: string | undefined, filterValue: string) {
   if (filterValue === "todos") return true;
-  if (filterValue === MY_AREA) return restaurantNeighborhood === INITIAL_USER_PROFILE.userNeighborhood;
+  if (filterValue === MY_AREA)
+    return restaurantNeighborhood === INITIAL_USER_PROFILE.userNeighborhood;
   return restaurantNeighborhood === filterValue;
 }
 

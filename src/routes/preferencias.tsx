@@ -52,7 +52,9 @@ function IngredientPicker({
 
   const trimmedQuery = query.trim();
   const results = trimmedQuery
-    ? allIngredients.filter((n) => n.toLowerCase().includes(trimmedQuery.toLowerCase())).slice(0, 40)
+    ? allIngredients
+        .filter((n) => n.toLowerCase().includes(trimmedQuery.toLowerCase()))
+        .slice(0, 40)
     : [];
   const noMatch = trimmedQuery.length > 0 && results.length === 0;
 
@@ -151,8 +153,12 @@ function IngredientPicker({
 }
 
 function Preferencias() {
-  const { favoriteIngredients, toggleFavoriteIngredient, excludedIngredients, toggleExcludedIngredient } =
-    usePreferences();
+  const {
+    favoriteIngredients,
+    toggleFavoriteIngredient,
+    excludedIngredients,
+    toggleExcludedIngredient,
+  } = usePreferences();
 
   return (
     <PageShell>

@@ -117,9 +117,7 @@ function Ajuda() {
                   >
                     <ChevronLeft className="h-4 w-4" /> Voltar
                   </button>
-                  <h2 className="font-display text-xl font-bold text-primary">
-                    {active.question}
-                  </h2>
+                  <h2 className="font-display text-xl font-bold text-primary">{active.question}</h2>
                   <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                     {active.answer}
                   </p>
