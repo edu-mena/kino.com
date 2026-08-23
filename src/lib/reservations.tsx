@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Reservation, Restaurant } from "@/data/types";
 import { useAuth } from "@/lib/auth";
 
@@ -39,7 +33,13 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const addReservation = ({ restaurant, date, time, peopleCount, specialRequests }: NewReservationInput) => {
+  const addReservation = ({
+    restaurant,
+    date,
+    time,
+    peopleCount,
+    specialRequests,
+  }: NewReservationInput) => {
     const reservation: Reservation = {
       id: `res-custom-${Date.now()}`,
       restaurantId: restaurant.id,

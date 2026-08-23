@@ -138,7 +138,9 @@ function Checkout() {
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-bold">{m.label}</span>
-                      <span className="block truncate text-xs text-muted-foreground">{m.detail}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {m.detail}
+                      </span>
                     </span>
                     <span
                       className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
@@ -167,11 +169,16 @@ function Checkout() {
                       if (!item) return null;
                       const unit = lineUnitPrice(line);
                       return (
-                        <li key={line.key} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm">
+                        <li
+                          key={line.key}
+                          className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm"
+                        >
                           <span className="min-w-0 truncate text-muted-foreground">
                             {line.qty}× {item.name}
                           </span>
-                          <span className="shrink-0 font-semibold">{formatKz(unit * line.qty)}</span>
+                          <span className="shrink-0 font-semibold">
+                            {formatKz(unit * line.qty)}
+                          </span>
                         </li>
                       );
                     })}

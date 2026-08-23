@@ -45,7 +45,9 @@ function Cardapio() {
 
       <div className="mx-auto mt-6 max-w-6xl px-4 md:px-6">
         <MenuBrowser
-          restaurantFilter={restaurantFilter ? { id: restaurantFilter.id, name: restaurantFilter.name } : undefined}
+          restaurantFilter={
+            restaurantFilter ? { id: restaurantFilter.id, name: restaurantFilter.name } : undefined
+          }
         />
       </div>
     </PageShell>

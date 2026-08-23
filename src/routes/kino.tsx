@@ -30,7 +30,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
-  
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -193,8 +192,8 @@ function Kino() {
               Um cardápio digital para cada restaurante
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Pratos, preços e disponibilidade sempre atualizados — direto do restaurante para o
-              seu telemóvel.
+              Pratos, preços e disponibilidade sempre atualizados — direto do restaurante para o seu
+              telemóvel.
             </p>
           </div>
 
@@ -257,7 +256,7 @@ function Kino() {
               </Link>
             </div>
           </div>
-          
+
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
             <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Quer pedir?</h2>
             <p className="max-w-sm text-primary-foreground/85">

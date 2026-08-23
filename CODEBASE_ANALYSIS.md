@@ -13,6 +13,7 @@
 ## 🛠️ Stack Tecnológico
 
 ### Frameworks & Bibliotecas Principais
+
 - **TanStack Start 1.168.32** - Full-stack React meta-framework
 - **React + TypeScript** - UI com type safety
 - **TanStack Router 1.170.18** - File-based routing
@@ -21,6 +22,7 @@
 - **Radix UI** - Componentes acessíveis de baixo nível
 
 ### Ferramentas & DevTools
+
 - **Vite** - Build tool e dev server
 - **Bun** - Runtime JavaScript (bunfig.toml presente)
 - **TypeScript** - Type safety completo
@@ -31,6 +33,7 @@
 - **class-variance-authority** - CSS class composition
 
 ### Versão Node & Compatibilidade
+
 - TypeScript: ES2022 target
 - DOM APIs completo (DOM.Iterable)
 - Browser-only (sem SSR ativo em dev)
@@ -54,6 +57,7 @@ src/
 ```
 
 ### Padrão de Roteamento (File-Based)
+
 - **`__root.tsx`** - Layout raiz com QueryClientProvider, CartProvider, Toaster
 - **`index.tsx`** - Página home com hero section
 - **Rotas nomeadas por recurso**:
@@ -72,6 +76,7 @@ src/
 ## 🎨 Padrões de Design
 
 ### 1. **Component-Driven Architecture**
+
 - **Pequenos componentes** reutilizáveis (separation of concerns)
 - **Composição sobre herança**
 - Exemplo:
@@ -80,6 +85,7 @@ src/
   - `DishCarousel` - Carrossel de pratos
 
 ### 2. **Context API para State Global**
+
 ```typescript
 // CartProvider em lib/cart.tsx
 - CartContext armazena estado do carrinho
@@ -88,12 +94,14 @@ src/
 ```
 
 ### 3. **Custom Hooks Pattern**
+
 ```typescript
-useIsMobile()       // Detecta breakpoint md (768px)
-useCart()           // Acesso ao contexto do carrinho
+useIsMobile(); // Detecta breakpoint md (768px)
+useCart(); // Acesso ao contexto do carrinho
 ```
 
 ### 4. **Type Safety Rigorosa**
+
 ```typescript
 // Tipos bem definidos para Dish, AddOn, CartLine
 export type Dish = {
@@ -110,16 +118,19 @@ export type Dish = {
 ```
 
 ### 5. **Mock Data Pattern**
+
 - Dados centralizados em `mock-data.ts`
 - Estruturas imutáveis
 - Funções helper (formatKz, getPromo, promoPrice)
 
 ### 6. **UI Component Composition**
+
 - Wrapper sobre Radix UI primitivos
 - Tailwind styling integrado
 - Acessibilidade incluída (aria-labels)
 
 ### 7. **Error Handling Pattern**
+
 - Boundary errors (ErrorComponent no root)
 - 404 handling (NotFoundComponent)
 - Error capture e reporting (Lovable error tracking)
@@ -129,28 +140,33 @@ export type Dish = {
 ## 📝 Convenções de Nomes
 
 ### Arquivos
-| Padrão | Exemplo | Propósito |
-|--------|---------|----------|
-| kebab-case | `dish-card.tsx` | Componentes |
-| snake_case com $ | `prato.$dishId.tsx` | Rotas dinâmicas |
-| __ prefix | `__root.tsx` | Layout root |
-| camelCase | `mock-data.ts`, `utils.ts` | Utilidades |
+
+| Padrão           | Exemplo                    | Propósito       |
+| ---------------- | -------------------------- | --------------- |
+| kebab-case       | `dish-card.tsx`            | Componentes     |
+| snake_case com $ | `prato.$dishId.tsx`        | Rotas dinâmicas |
+| __ prefix        | `__root.tsx`               | Layout root     |
+| camelCase        | `mock-data.ts`, `utils.ts` | Utilidades      |
 
 ### Componentes React
+
 - **PascalCase** para exports: `DishCard`, `SiteHeader`, `PageShell`
 - **Sufixos descritivos**: `-Card`, `-Grid`, `-Carousel`, `-Provider`
 - **Função interna minúscula**: `function DishCard({ dish })`
 
 ### Variáveis & Funções
+
 - **camelCase** padrão: `formatKz`, `getPromo`, `promoPrice`
 - **useXxx** para custom hooks
 - **lowerCamelCase** para props e state
 
 ### Constantes
+
 - **UPPER_SNAKE_CASE**: `DELIVERY_FEE`, `MOBILE_BREAKPOINT`, `TTL_MS`
 - **Arrays como plural**: `categories[]`, `dishes[]`, `navLinks`
 
 ### CSS Classes (Tailwind)
+
 - **BEM-inspired com Tailwind**: `card-soft`, `font-display`
 - **Breakpoints**: `sm:`, `md:`, `lg:` prefixes
 - **Responsive design**: Mobile-first approach
@@ -160,6 +176,7 @@ export type Dish = {
 ## 🧩 Estrutura de Componentes
 
 ### Componentes de Layout
+
 ```typescript
 // site-shell.tsx - Wrapper principal
 - SiteHeader: Navigation sticky com logo, links, cart button
@@ -171,6 +188,7 @@ export type Dish = {
 ```
 
 ### Componentes de Negócio (Domain)
+
 ```
 dish-card.tsx
 - Card compacto de prato
@@ -192,6 +210,7 @@ dish-carousel.tsx
 ```
 
 ### Componentes UI (Radix Wrapped)
+
 ```
 ui/
 - accordion.tsx      - Acordeão expandível
@@ -213,6 +232,7 @@ ui/
 ## 🔄 State Management Strategy
 
 ### 1. **Context API (CartProvider)**
+
 ```typescript
 // Estado local to estado global
 CartContext
@@ -225,15 +245,18 @@ CartContext
 ```
 
 ### 2. **React Query (TanStack Query)**
+
 - Instanciado no router context
 - Para futuro data fetching async
 - Caching automático
 
 ### 3. **Local Component State**
+
 - `useState` para UI temporária (liked state, mobile menu)
 - `useState` para inputs de formulário
 
 ### 4. **URL State (Router)**
+
 - Parâmetros dinâmicos: `/prato/$dishId`
 - Search params para filtros
 
@@ -242,6 +265,7 @@ CartContext
 ## 🛣️ Estratégia de Roteamento
 
 ### TanStack Router - File-Based
+
 ```
 routes/
 ├── __root.tsx           # Root layout (providers)
@@ -261,6 +285,7 @@ routes/
 ```
 
 ### Padrão de Rota
+
 ```typescript
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [...] }),      // SEO metadata
@@ -274,9 +299,10 @@ export const Route = createFileRoute("/")({
 ## 🎯 Padrões de UI/UX
 
 ### Design System Integrado
+
 - **Color Palette**: primary, brand, secondary, destructive, muted
 - **Spacing**: Tailwind standard (4px units)
-- **Typography**: 
+- **Typography**:
   - `font-display` custom (heading font)
   - `font-bold` padrão para ênfase
 - **Shadows**: `shadow-[var(--shadow-soft)]`
@@ -284,6 +310,7 @@ export const Route = createFileRoute("/")({
 - **Backdrop**: `backdrop-blur` para sticky elements
 
 ### Componentes Interativos Padrão
+
 ```typescript
 // Toast notifications
 toast.success("Prato adicionado ao carrinho")
@@ -299,6 +326,7 @@ className="transition-transform hover:scale-105 active:scale-95"
 ```
 
 ### Responsividade
+
 - **Mobile-first approach**
 - **Breakpoints**: sm (640px), md (768px), lg (1024px)
 - **Classes**: `sm:text-sm md:grid-cols-2 lg:text-lg`
@@ -308,6 +336,7 @@ className="transition-transform hover:scale-105 active:scale-95"
 ## 📊 Arquivos Chave & Dados
 
 ### Mock Data (mock-data.ts)
+
 ```typescript
 - images: { burger, fries, drink, pizza, plate, dessert }
 - categories: Array de categorias com ícones
@@ -320,11 +349,13 @@ className="transition-transform hover:scale-105 active:scale-95"
 ```
 
 ### Utils (lib/utils.ts)
+
 ```typescript
 cn(...inputs): Merge Tailwind classes (clsx + twMerge)
 ```
 
 ### Error Handling (lib/error-capture.ts)
+
 ```typescript
 - lastCapturedError tracking
 - describeError(error): Serialização de erros com stack trace
@@ -336,6 +367,7 @@ cn(...inputs): Merge Tailwind classes (clsx + twMerge)
 ## ✅ Padrões de Código & Qualidade
 
 ### ESLint Rules Ativas
+
 ```javascript
 - typescript-eslint recommended
 - react-hooks recommended
@@ -345,6 +377,7 @@ cn(...inputs): Merge Tailwind classes (clsx + twMerge)
 ```
 
 ### TypeScript Config
+
 ```json
 {
   "strict": true,
@@ -357,6 +390,7 @@ cn(...inputs): Merge Tailwind classes (clsx + twMerge)
 ```
 
 ### Padrões de Código
+
 1. **Tipos explícitos**: `type ReactNode` sempre explícito
 2. **Props typing**: `{ dish }: { dish: Dish }`
 3. **Arrow functions**: Predominante
@@ -368,6 +402,7 @@ cn(...inputs): Merge Tailwind classes (clsx + twMerge)
 ## 🔌 Integrações & Dependências
 
 ### Já Integrado
+
 ✅ Radix UI (30+ componentes)  
 ✅ Tailwind CSS com config customizado  
 ✅ React Hook Form + resolvers  
@@ -375,24 +410,25 @@ cn(...inputs): Merge Tailwind classes (clsx + twMerge)
 ✅ Sonner (toast notifications)  
 ✅ TanStack Query  
 ✅ TanStack Router  
-✅ Lovable error reporting  
+✅ Lovable error reporting
 
 ### Não Implementado (Frontend-only)
+
 ❌ Backend API  
 ❌ Database  
 ❌ Authentication  
-❌ Payment processing  
+❌ Payment processing
 
 ---
 
 ## 📱 Responsive Breakpoints
 
-| Breakpoint | Width | Uso |
-|-----------|-------|-----|
-| Mobile | < 640px | Padrão |
-| sm | 640px | Pequenas mudanças |
-| md | 768px | useIsMobile breakpoint |
-| lg | 1024px | Layouts grandes |
+| Breakpoint | Width   | Uso                    |
+| ---------- | ------- | ---------------------- |
+| Mobile     | < 640px | Padrão                 |
+| sm         | 640px   | Pequenas mudanças      |
+| md         | 768px   | useIsMobile breakpoint |
+| lg         | 1024px  | Layouts grandes        |
 
 ---
 
@@ -402,7 +438,7 @@ cn(...inputs): Merge Tailwind classes (clsx + twMerge)
 2. **Reusabilidade**: DishCard/GridDishCard baseados em Dish type
 3. **Type Safety**: Tipos discriminados (`category` union)
 4. **Acessibilidade**: `aria-label` em botões interativos
-5. **Performance**: 
+5. **Performance**:
    - Lazy loading de imagens
    - Memoization via useMemo em CartProvider
    - Scroll restoration no router

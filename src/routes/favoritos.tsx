@@ -49,11 +49,7 @@ function Favoritos() {
                 className="card-soft overflow-hidden transition-colors hover:border-brand"
               >
                 <div className="h-32 overflow-hidden bg-surface">
-                  <img
-                    src={r.coverImage}
-                    alt={r.name}
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={r.coverImage} alt={r.name} className="h-full w-full object-cover" />
                 </div>
                 <div className="p-4">
                   <h2 className="truncate font-display text-base font-bold">{r.name}</h2>

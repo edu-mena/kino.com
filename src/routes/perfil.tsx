@@ -24,7 +24,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { useAddresses } from "@/lib/addresses";
 import { useAuth } from "@/lib/auth";

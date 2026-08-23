@@ -16,7 +16,10 @@ export const Route = createFileRoute("/sobre")({
           "A Kino é o cardápio digital de Angola: quem está por trás, os números da plataforma e quem já confia na gente.",
       },
       { property: "og:title", content: "Sobre a Kino — quem somos" },
-      { property: "og:description", content: "O cardápio digital que liga restaurantes e clientes em Angola." },
+      {
+        property: "og:description",
+        content: "O cardápio digital que liga restaurantes e clientes em Angola.",
+      },
       { property: "og:image", content: icon },
     ],
   }),
@@ -138,7 +141,10 @@ function Sobre() {
       <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {stats.map((stat) => (
-            <div key={stat.label} className="rounded-2xl border border-border bg-card p-5 text-left">
+            <div
+              key={stat.label}
+              className="rounded-2xl border border-border bg-card p-5 text-left"
+            >
               <stat.icon className="h-8 w-8 text-brand" />
               <p className="mt-4 font-display text-3xl font-extrabold text-primary">{stat.value}</p>
               <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
@@ -169,7 +175,10 @@ function Sobre() {
         <h2 className="text-2xl font-extrabold text-primary">Testemunhos</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           {testimonials.map((t) => (
-            <div key={t.name} className="flex flex-col rounded-[2rem] border border-border bg-card p-6">
+            <div
+              key={t.name}
+              className="flex flex-col rounded-[2rem] border border-border bg-card p-6"
+            >
               <Quote className="h-6 w-6 text-brand" />
               <p className="mt-3 flex-1 text-sm text-foreground">{t.quote}</p>
               <div className="mt-5 flex items-center gap-3">

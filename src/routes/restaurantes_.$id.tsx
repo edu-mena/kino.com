@@ -84,7 +84,11 @@ function RestaurantDetail() {
         </div>
       </div>
 
-      <ReservationDialog restaurant={restaurant} open={reservingOpen} onOpenChange={setReservingOpen} />
+      <ReservationDialog
+        restaurant={restaurant}
+        open={reservingOpen}
+        onOpenChange={setReservingOpen}
+      />
     </PageShell>
   );
 }

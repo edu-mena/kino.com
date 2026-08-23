@@ -1,11 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Bike, CalendarCheck, Star } from "lucide-react";
 import { useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { HorizontalCarousel } from "@/components/horizontal-carousel";
 import { ReservationDialog } from "@/components/reservation-dialog";
@@ -121,7 +117,8 @@ export function RestaurantAvatarRow() {
                 <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
                   <span className="flex items-center gap-1 font-semibold text-foreground">
                     <Star className="h-4 w-4 fill-star text-star" />
-                    {active.rating} <span className="text-muted-foreground">({active.reviewCount})</span>
+                    {active.rating}{" "}
+                    <span className="text-muted-foreground">({active.reviewCount})</span>
                   </span>
                   {active.isDeliveryAvailable && (
                     <span className="flex items-center gap-1 text-muted-foreground">

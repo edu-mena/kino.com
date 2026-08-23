@@ -66,7 +66,7 @@ function HomeNotLoggedIn() {
             <span className="text-brand">Hoje é aonde</span>?
           </h1>
           <p className="mt-4 text-[1.1rem] max-w-md text-muted-foreground">
-            A Melhor escolha à distância de um click!! <br/>
+            A Melhor escolha à distância de um click!! <br />
             <span className="text-brand">Kino.com</span> o teu cardápio online.
           </p>
 
@@ -94,7 +94,10 @@ function HomeNotLoggedIn() {
             { icon: Armchair, title: "Reserve uma mesa", text: "Reserve sua mesa com facilidade." },
             { icon: Tag, title: "Ofertas exclusivas", text: "Descontos especiais só para você." },
           ].map((item) => (
-            <div key={item.title} className="rounded-2xl border border-border bg-card p-5 text-left">
+            <div
+              key={item.title}
+              className="rounded-2xl border border-border bg-card p-5 text-left"
+            >
               <span className="grid h-11 w-11 place-items-center rounded-full border border-border bg-background text-brand">
                 <item.icon className="h-5 w-5" />
               </span>

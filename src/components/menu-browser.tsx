@@ -3,9 +3,19 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DishCard } from "@/components/dish-card";
 import { ListPagination } from "@/components/list-pagination";
-import { IngredientSearchFilter, LocationFilterSelect, matchesLocation } from "@/components/search-filters";
+import {
+  IngredientSearchFilter,
+  LocationFilterSelect,
+  matchesLocation,
+} from "@/components/search-filters";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { getAllIngredientNames, getRestaurant } from "@/data/helpers";
 import { INITIAL_MENU_ITEMS } from "@/data/mockData";
@@ -78,7 +88,8 @@ export function MenuBrowser({
         item.name.toLowerCase().includes(query.toLowerCase()) ||
         restaurant?.name.toLowerCase().includes(query.toLowerCase());
       const byIngredient = !ingredient || item.ingredients.some((i) => i.name === ingredient);
-      const byNeighborhood = lockedRestaurantId || matchesLocation(restaurant?.neighborhood, neighborhood);
+      const byNeighborhood =
+        lockedRestaurantId || matchesLocation(restaurant?.neighborhood, neighborhood);
       return byCat && byRestaurant && byQuery && byIngredient && byNeighborhood;
     });
   }, [active, effectiveRestaurantId, lockedRestaurantId, query, ingredient, neighborhood]);

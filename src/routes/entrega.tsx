@@ -1,5 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bike, ChevronLeft, ChevronRight, Clock, MapPin, Package, Phone, Trash2, Wallet } from "lucide-react";
+import {
+  Bike,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  MapPin,
+  Package,
+  Phone,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 import { useState } from "react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
@@ -202,7 +212,8 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
                 Preferência de pagamento
               </dt>
               <dd className="mt-0.5">
-                {paymentMethods.find((m) => m.id === order.paymentMethod)?.label ?? order.paymentMethod}
+                {paymentMethods.find((m) => m.id === order.paymentMethod)?.label ??
+                  order.paymentMethod}
               </dd>
             </div>
           </div>
