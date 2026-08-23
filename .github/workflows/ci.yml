@@ -20,7 +20,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # @tanstack/react-start requires >=22.12.0 — must match here.
+          node-version: 22
           cache: npm
 
       - run: npm ci
