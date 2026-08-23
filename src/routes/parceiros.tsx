@@ -74,10 +74,7 @@ function Parceiros() {
           >
             <ArrowLeft className="h-4 w-4" /> Voltar ao início
           </Link>
-          <Link
-            to="/admin/entrar"
-            className="text-sm font-semibold text-primary hover:underline"
-          >
+          <Link to="/admin/entrar" className="text-sm font-semibold text-primary hover:underline">
             Já é parceiro? Aceder ao painel
           </Link>
         </div>

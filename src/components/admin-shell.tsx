@@ -105,7 +105,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-surface">
               <img src={restaurant.coverImage} alt="" className="h-full w-full object-cover" />
             </span>
-            <span className="min-w-0 truncate text-sm font-bold text-primary">{restaurant.name}</span>
+            <span className="min-w-0 truncate text-sm font-bold text-primary">
+              {restaurant.name}
+            </span>
           </Link>
           <button
             type="button"
@@ -186,4 +188,3 @@ export function AdminPageHeading({
     </div>
   );
 }
-

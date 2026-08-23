@@ -41,7 +41,9 @@ function AdminAvaliacoes() {
         {reviews.map((review) => (
           <div key={review.id} className="card-soft p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="font-display text-sm font-bold text-foreground">{review.customerName}</p>
+              <p className="font-display text-sm font-bold text-foreground">
+                {review.customerName}
+              </p>
               <div className="flex items-center gap-2">
                 <span className="flex items-center gap-0.5">
                   {Array.from({ length: 5 }).map((_, i) => (

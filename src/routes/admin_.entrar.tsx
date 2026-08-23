@@ -4,7 +4,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { INITIAL_RESTAURANTS } from "@/data/mockData";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 

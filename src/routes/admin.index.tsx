@@ -50,7 +50,10 @@ function AdminDashboard() {
       icon: Soup,
       label: "Pratos no cardápio",
       value: menuItems.length,
-      hint: unavailableCount > 0 ? `${unavailableCount} marcados como indisponíveis` : "Todos disponíveis",
+      hint:
+        unavailableCount > 0
+          ? `${unavailableCount} marcados como indisponíveis`
+          : "Todos disponíveis",
     },
     {
       to: "/admin/avaliacoes" as const,
@@ -93,9 +96,15 @@ function AdminDashboard() {
 
       <div className="mx-auto mt-8 max-w-6xl px-4 md:px-6">
         <div className="card-soft flex flex-wrap items-center gap-4 p-5">
-          <img src={restaurant.coverImage} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+          <img
+            src={restaurant.coverImage}
+            alt=""
+            className="h-14 w-14 shrink-0 rounded-xl object-cover"
+          />
           <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-base font-bold text-foreground">{restaurant.name}</p>
+            <p className="truncate font-display text-base font-bold text-foreground">
+              {restaurant.name}
+            </p>
             <p className="truncate text-xs text-muted-foreground">
               {restaurant.cuisine} · {restaurant.neighborhood} ·{" "}
               {restaurant.isDeliveryAvailable ? "Com entrega" : "Sem entrega"}

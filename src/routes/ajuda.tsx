@@ -92,7 +92,9 @@ function Ajuda() {
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold">{t("ajuda.liveChat")}</p>
-                  <p className="truncate text-xs text-muted-foreground">{t("ajuda.liveChatHint")}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {t("ajuda.liveChatHint")}
+                  </p>
                 </div>
               </div>
               <div className="card-soft flex items-center gap-3 p-4">

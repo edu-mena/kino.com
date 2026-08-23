@@ -222,7 +222,9 @@ export function MenuBrowser({
 
       <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
         <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-[2rem] border-none bg-card p-8">
-          <DialogTitle className="font-display text-xl font-bold">{t("cardapio.filters")}</DialogTitle>
+          <DialogTitle className="font-display text-xl font-bold">
+            {t("cardapio.filters")}
+          </DialogTitle>
 
           <div className="mt-4 min-w-0">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">

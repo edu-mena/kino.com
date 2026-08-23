@@ -223,7 +223,9 @@ function Restaurantes() {
 
       <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
         <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-[2rem] border-none bg-card p-8">
-          <DialogTitle className="font-display text-xl font-bold">{t("restaurantes.filters")}</DialogTitle>
+          <DialogTitle className="font-display text-xl font-bold">
+            {t("restaurantes.filters")}
+          </DialogTitle>
 
           <div className="mt-4">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">

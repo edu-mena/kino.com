@@ -87,8 +87,16 @@ const menu = [
 ] as const;
 
 const notificationOptions = [
-  { key: "orderUpdates", labelKey: "perfil.notifOrderUpdatesLabel", descriptionKey: "perfil.notifOrderUpdatesDescription" },
-  { key: "promotions", labelKey: "perfil.notifPromotionsLabel", descriptionKey: "perfil.notifPromotionsDescription" },
+  {
+    key: "orderUpdates",
+    labelKey: "perfil.notifOrderUpdatesLabel",
+    descriptionKey: "perfil.notifOrderUpdatesDescription",
+  },
+  {
+    key: "promotions",
+    labelKey: "perfil.notifPromotionsLabel",
+    descriptionKey: "perfil.notifPromotionsDescription",
+  },
   { key: "news", labelKey: "perfil.notifNewsLabel", descriptionKey: "perfil.notifNewsDescription" },
 ] as const;
 
@@ -207,7 +215,9 @@ function Perfil() {
                     <Bell className="h-4 w-4" />
                   </span>
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold">{t("perfil.notificationsLabel")}</span>
+                    <span className="block truncate text-sm font-semibold">
+                      {t("perfil.notificationsLabel")}
+                    </span>
                     <span className="block truncate text-xs text-muted-foreground">
                       {t("perfil.notificationsDescription")}
                     </span>
@@ -216,14 +226,18 @@ function Perfil() {
                 </button>
               </DialogTrigger>
               <DialogContent className="max-w-sm rounded-[1.5rem] border-none bg-card p-6">
-                <DialogTitle className="font-display text-lg font-bold">{t("perfil.notificationsLabel")}</DialogTitle>
+                <DialogTitle className="font-display text-lg font-bold">
+                  {t("perfil.notificationsLabel")}
+                </DialogTitle>
                 <DialogDescription>{t("perfil.notificationsDialogDescription")}</DialogDescription>
                 <div className="mt-2 space-y-4">
                   {notificationOptions.map((opt) => (
                     <div key={opt.key} className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-semibold">{t(opt.labelKey)}</p>
-                        <p className="truncate text-xs text-muted-foreground">{t(opt.descriptionKey)}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {t(opt.descriptionKey)}
+                        </p>
                       </div>
                       <Switch
                         checked={notificationSettings[opt.key]}
@@ -249,7 +263,9 @@ function Perfil() {
 
           <div className="space-y-6">
             <section className="card-soft p-6">
-              <h2 className="font-display text-lg font-bold text-primary">{t("perfil.savedAddresses")}</h2>
+              <h2 className="font-display text-lg font-bold text-primary">
+                {t("perfil.savedAddresses")}
+              </h2>
               <div className="mt-4 space-y-2">
                 {allAddresses.map((a) => (
                   <div

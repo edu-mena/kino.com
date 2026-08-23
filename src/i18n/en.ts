@@ -75,9 +75,11 @@ export const en: Dictionary = {
   entrega: {
     eyebrow: "Delivery",
     title: "Your orders",
-    description: "Each order is from one restaurant only — pick one to see the status, contact and details.",
+    description:
+      "Each order is from one restaurant only — pick one to see the status, contact and details.",
     emptyTitle: "You don't have any delivery orders yet.",
-    emptyHint: 'Add dishes with the "+" button on the menu or a restaurant page and choose "Request delivery".',
+    emptyHint:
+      'Add dishes with the "+" button on the menu or a restaurant page and choose "Request delivery".',
     seeMenu: "View menu",
     itemSingular: "item",
     itemPlural: "items",
@@ -101,7 +103,8 @@ export const en: Dictionary = {
   reservas: {
     eyebrow: "Reservations",
     title: "Your tables",
-    description: "Reservation requests sent to restaurants — final confirmation, definitive time and any deposit are handled by each restaurant.",
+    description:
+      "Reservation requests sent to restaurants — final confirmation, definitive time and any deposit are handled by each restaurant.",
     emptyText: "You don't have any reservations yet.",
     reserveTable: "Reserve a table",
     footerPrefix: "To reserve at another restaurant, find it in",
@@ -111,7 +114,8 @@ export const en: Dictionary = {
   favoritos: {
     eyebrow: "Favorites",
     title: "Your favorite restaurants",
-    emptyText: "You haven't saved any restaurant yet. Tap the heart on a restaurant to save it here.",
+    emptyText:
+      "You haven't saved any restaurant yet. Tap the heart on a restaurant to save it here.",
     explore: "Explore restaurants",
   },
   ajuda: {
@@ -164,21 +168,25 @@ export const en: Dictionary = {
     favoriteTitle: "Favorite ingredients",
     favoriteDescription: "We'll highlight dishes that have these ingredients.",
     excludedTitle: "Ingredients that can't be in your dish",
-    excludedDescription: "We'll warn the restaurant whenever you order a dish that has any of these ingredients.",
+    excludedDescription:
+      "We'll warn the restaurant whenever you order a dish that has any of these ingredients.",
     searchPlaceholder: "Search ingredient...",
     addQuoted: "Add",
     confirmIngredientTitle: "Confirm ingredient",
-    confirmIngredientDescription: 'We couldn\'t find "{query}" in our menu. Are you sure you typed the right name?',
+    confirmIngredientDescription:
+      'We couldn\'t find "{query}" in our menu. Are you sure you typed the right name?',
     yesAdd: "Yes, add it",
   },
   checkout: {
     backToDelivery: "Back to delivery",
     title: "Finalize order",
     addressesTitle: "Delivery addresses",
-    addressesDescription: 'Already confirmed when requesting each delivery — to change, cancel the order in "Delivery" and order again.',
+    addressesDescription:
+      'Already confirmed when requesting each delivery — to change, cancel the order in "Delivery" and order again.',
     scheduleTitle: "Delivery time",
     paymentTitle: "How would you like to pay",
-    paymentDescription: "Kino doesn't process payments — this is just a preference we send to the restaurant with the order. The amount is arranged and paid directly with them.",
+    paymentDescription:
+      "Kino doesn't process payments — this is just a preference we send to the restaurant with the order. The amount is arranged and paid directly with them.",
     warnPrefix: "We'll let the restaurant know:",
     warnDietarySuffix: "the customer has restrictions — {list}.",
     warnExcludedSuffix: "the customer can't eat — {list}.",

@@ -149,7 +149,9 @@ export function LeftSidebar() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout}>{t("logoutDialog.confirm")}</AlertDialogAction>
+            <AlertDialogAction onClick={handleLogout}>
+              {t("logoutDialog.confirm")}
+            </AlertDialogAction>
           </AlertDialogFooter>
           <Link
             to="/ajuda"

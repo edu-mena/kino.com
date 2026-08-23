@@ -75,9 +75,11 @@ export const fr: Dictionary = {
   entrega: {
     eyebrow: "Livraison",
     title: "Vos commandes",
-    description: "Chaque commande vient d'un seul restaurant — choisissez-en une pour voir l'état, le contact et les détails.",
+    description:
+      "Chaque commande vient d'un seul restaurant — choisissez-en une pour voir l'état, le contact et les détails.",
     emptyTitle: "Vous n'avez encore aucune commande de livraison.",
-    emptyHint: "Ajoutez des plats avec le bouton \"+\" dans le menu ou sur la page d'un restaurant et choisissez \"Demander la livraison\".",
+    emptyHint:
+      'Ajoutez des plats avec le bouton "+" dans le menu ou sur la page d\'un restaurant et choisissez "Demander la livraison".',
     seeMenu: "Voir le menu",
     itemSingular: "article",
     itemPlural: "articles",
@@ -101,17 +103,19 @@ export const fr: Dictionary = {
   reservas: {
     eyebrow: "Réservations",
     title: "Vos tables",
-    description: "Demandes de réservation envoyées aux restaurants — la confirmation finale, l'heure définitive et un éventuel acompte sont gérés par chaque restaurant.",
+    description:
+      "Demandes de réservation envoyées aux restaurants — la confirmation finale, l'heure définitive et un éventuel acompte sont gérés par chaque restaurant.",
     emptyText: "Vous n'avez encore aucune réservation.",
     reserveTable: "Réserver une table",
     footerPrefix: "Pour réserver dans un autre restaurant, cherchez-le dans",
     footerLink: "Restaurants",
-    footerSuffix: "et choisissez \"Réserver une table\".",
+    footerSuffix: 'et choisissez "Réserver une table".',
   },
   favoritos: {
     eyebrow: "Favoris",
     title: "Vos restaurants favoris",
-    emptyText: "Vous n'avez encore sauvegardé aucun restaurant. Touchez le cœur d'un restaurant pour le sauvegarder ici.",
+    emptyText:
+      "Vous n'avez encore sauvegardé aucun restaurant. Touchez le cœur d'un restaurant pour le sauvegarder ici.",
     explore: "Explorer les restaurants",
   },
   ajuda: {
@@ -164,21 +168,25 @@ export const fr: Dictionary = {
     favoriteTitle: "Ingrédients favoris",
     favoriteDescription: "Nous mettrons en avant les plats qui contiennent ces ingrédients.",
     excludedTitle: "Ingrédients qui ne peuvent pas figurer dans le plat",
-    excludedDescription: "Nous avertirons le restaurant chaque fois que vous commanderez un plat contenant l'un de ces ingrédients.",
+    excludedDescription:
+      "Nous avertirons le restaurant chaque fois que vous commanderez un plat contenant l'un de ces ingrédients.",
     searchPlaceholder: "Rechercher un ingrédient...",
     addQuoted: "Ajouter",
     confirmIngredientTitle: "Confirmer l'ingrédient",
-    confirmIngredientDescription: "Nous n'avons pas trouvé \"{query}\" dans notre menu. Êtes-vous sûr d'avoir écrit le bon nom ?",
+    confirmIngredientDescription:
+      "Nous n'avons pas trouvé \"{query}\" dans notre menu. Êtes-vous sûr d'avoir écrit le bon nom ?",
     yesAdd: "Oui, ajouter",
   },
   checkout: {
     backToDelivery: "Retour à la livraison",
     title: "Finaliser la commande",
     addressesTitle: "Adresses de livraison",
-    addressesDescription: "Déjà confirmées lors de la demande de chaque livraison — pour changer, annulez la commande dans \"Livraison\" et recommandez.",
+    addressesDescription:
+      'Déjà confirmées lors de la demande de chaque livraison — pour changer, annulez la commande dans "Livraison" et recommandez.',
     scheduleTitle: "Heure de livraison",
     paymentTitle: "Comment préférez-vous payer",
-    paymentDescription: "Kino ne traite pas les paiements — ceci n'est qu'une préférence que nous envoyons au restaurant avec la commande. Le montant est convenu et payé directement avec lui.",
+    paymentDescription:
+      "Kino ne traite pas les paiements — ceci n'est qu'une préférence que nous envoyons au restaurant avec la commande. Le montant est convenu et payé directement avec lui.",
     warnPrefix: "Nous informerons le restaurant :",
     warnDietarySuffix: "le client a des restrictions — {list}.",
     warnExcludedSuffix: "le client ne peut pas manger — {list}.",

@@ -1,4 +1,9 @@
-import { INITIAL_MENU_ITEMS, INITIAL_RESTAURANTS, INITIAL_REVIEWS, INITIAL_STORIES } from "./mockData";
+import {
+  INITIAL_MENU_ITEMS,
+  INITIAL_RESTAURANTS,
+  INITIAL_REVIEWS,
+  INITIAL_STORIES,
+} from "./mockData";
 import type { MenuItem, Restaurant, RestaurantStory, Review } from "./types";
 
 export function getRestaurant(id: string): Restaurant | undefined {

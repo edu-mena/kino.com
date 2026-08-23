@@ -82,9 +82,11 @@ export const pt = {
   entrega: {
     eyebrow: "Entrega",
     title: "Os seus pedidos",
-    description: "Cada pedido é de um restaurante só — escolha um para ver o estado, o contacto e os detalhes.",
+    description:
+      "Cada pedido é de um restaurante só — escolha um para ver o estado, o contacto e os detalhes.",
     emptyTitle: "Ainda não tem pedidos de entrega.",
-    emptyHint: 'Adicione pratos com o botão "+" no cardápio ou na página de um restaurante e escolha "Solicitar delivery".',
+    emptyHint:
+      'Adicione pratos com o botão "+" no cardápio ou na página de um restaurante e escolha "Solicitar delivery".',
     seeMenu: "Ver cardápio",
     itemSingular: "item",
     itemPlural: "itens",
@@ -108,7 +110,8 @@ export const pt = {
   reservas: {
     eyebrow: "Reservas",
     title: "As suas mesas",
-    description: "Pedidos de reserva enviados aos restaurantes — a confirmação final, o horário definitivo e eventual caução ficam a cargo de cada restaurante.",
+    description:
+      "Pedidos de reserva enviados aos restaurantes — a confirmação final, o horário definitivo e eventual caução ficam a cargo de cada restaurante.",
     emptyText: "Ainda não tem reservas.",
     reserveTable: "Reservar uma mesa",
     footerPrefix: "Para reservar noutro restaurante, procure-o em",
@@ -118,7 +121,8 @@ export const pt = {
   favoritos: {
     eyebrow: "Favoritos",
     title: "Os seus restaurantes favoritos",
-    emptyText: "Ainda não guardou nenhum restaurante. Toque no coração de um restaurante para o guardar aqui.",
+    emptyText:
+      "Ainda não guardou nenhum restaurante. Toque no coração de um restaurante para o guardar aqui.",
     explore: "Explorar restaurantes",
   },
   ajuda: {
@@ -171,21 +175,25 @@ export const pt = {
     favoriteTitle: "Ingredientes favoritos",
     favoriteDescription: "Vamos destacar pratos que tenham estes ingredientes.",
     excludedTitle: "Ingredientes que não podem constar no prato",
-    excludedDescription: "Avisamos o restaurante sempre que fizer um pedido com um prato que tenha algum destes ingredientes.",
+    excludedDescription:
+      "Avisamos o restaurante sempre que fizer um pedido com um prato que tenha algum destes ingredientes.",
     searchPlaceholder: "Pesquisar ingrediente...",
     addQuoted: "Adicionar",
     confirmIngredientTitle: "Confirmar ingrediente",
-    confirmIngredientDescription: 'Não encontrámos "{query}" no nosso cardápio. Tem a certeza que escreveu o nome correto?',
+    confirmIngredientDescription:
+      'Não encontrámos "{query}" no nosso cardápio. Tem a certeza que escreveu o nome correto?',
     yesAdd: "Sim, adicionar",
   },
   checkout: {
     backToDelivery: "Voltar à entrega",
     title: "Finalizar pedido",
     addressesTitle: "Endereços de entrega",
-    addressesDescription: 'Já confirmados ao pedir cada entrega — para mudar, cancele o pedido em "Entrega" e peça de novo.',
+    addressesDescription:
+      'Já confirmados ao pedir cada entrega — para mudar, cancele o pedido em "Entrega" e peça de novo.',
     scheduleTitle: "Horário de entrega",
     paymentTitle: "Como prefere pagar",
-    paymentDescription: "A Kino não processa pagamentos — isto é só uma preferência que enviamos ao restaurante junto do pedido. O valor é combinado e pago diretamente com ele.",
+    paymentDescription:
+      "A Kino não processa pagamentos — isto é só uma preferência que enviamos ao restaurante junto do pedido. O valor é combinado e pago diretamente com ele.",
     warnPrefix: "Avisaremos o restaurante:",
     warnDietarySuffix: "o cliente tem restrições — {list}.",
     warnExcludedSuffix: "o cliente não pode comer — {list}.",

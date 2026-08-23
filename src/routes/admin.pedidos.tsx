@@ -40,7 +40,11 @@ function AdminPedidos() {
 
   const advance = (order: CartOrder) => {
     const next: CartOrderStatus =
-      order.status === "pending" ? "accepted" : order.status === "accepted" ? "onTheWay" : "delivered";
+      order.status === "pending"
+        ? "accepted"
+        : order.status === "accepted"
+          ? "onTheWay"
+          : "delivered";
     updateOrderStatus(order.id, next);
     toast.success(`Pedido atualizado — ${statusLabels[next]}`);
   };
@@ -73,7 +77,9 @@ function AdminPedidos() {
                 <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
                 {order.deliveryAddress.label} — {order.deliveryAddress.line1}
               </span>
-              <span className={`rounded-full px-3 py-1 text-xs font-bold ${statusTone[order.status]}`}>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-bold ${statusTone[order.status]}`}
+              >
                 {statusLabels[order.status]}
               </span>
             </div>

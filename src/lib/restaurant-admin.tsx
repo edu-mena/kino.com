@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { getRestaurant } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
 
@@ -57,7 +51,9 @@ export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
     logout,
   };
 
-  return <RestaurantAdminContext.Provider value={value}>{children}</RestaurantAdminContext.Provider>;
+  return (
+    <RestaurantAdminContext.Provider value={value}>{children}</RestaurantAdminContext.Provider>
+  );
 }
 
 export function useRestaurantAdmin() {

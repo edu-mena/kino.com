@@ -105,7 +105,9 @@ function Entrega() {
                           {restaurant?.name ?? "Restaurante"}
                         </span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {itemCount} {itemCount === 1 ? t("entrega.itemSingular") : t("entrega.itemPlural")} · {statusLabel(order.status, t)}
+                          {itemCount}{" "}
+                          {itemCount === 1 ? t("entrega.itemSingular") : t("entrega.itemPlural")} ·{" "}
+                          {statusLabel(order.status, t)}
                         </span>
                       </span>
                       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
@@ -232,7 +234,9 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
       </dl>
 
       <div className="mt-5 border-t border-border pt-4">
-        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t("entrega.products")}</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          {t("entrega.products")}
+        </p>
         <ul className="mt-2 space-y-2">
           {order.lines.map((line) => {
             const item = getMenuItem(line.menuItemId);

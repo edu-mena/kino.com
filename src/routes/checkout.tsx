@@ -54,7 +54,9 @@ function Checkout() {
         >
           <ChevronLeft className="h-4 w-4" /> {t("checkout.backToDelivery")}
         </Link>
-        <h1 className="mt-4 text-3xl font-extrabold text-primary sm:text-4xl">{t("checkout.title")}</h1>
+        <h1 className="mt-4 text-3xl font-extrabold text-primary sm:text-4xl">
+          {t("checkout.title")}
+        </h1>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
           <div className="space-y-6">
@@ -79,8 +81,12 @@ function Checkout() {
             )}
 
             <section className="card-soft p-6">
-              <h2 className="font-display text-lg font-bold text-primary">{t("checkout.addressesTitle")}</h2>
-              <p className="mt-1 text-xs text-muted-foreground">{t("checkout.addressesDescription")}</p>
+              <h2 className="font-display text-lg font-bold text-primary">
+                {t("checkout.addressesTitle")}
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("checkout.addressesDescription")}
+              </p>
               <div className="mt-4 space-y-2">
                 {orders.map((order) => (
                   <div
@@ -104,7 +110,9 @@ function Checkout() {
             </section>
 
             <section className="card-soft p-6">
-              <h2 className="font-display text-lg font-bold text-primary">{t("checkout.scheduleTitle")}</h2>
+              <h2 className="font-display text-lg font-bold text-primary">
+                {t("checkout.scheduleTitle")}
+              </h2>
               <div className="mt-4 grid gap-2 sm:grid-cols-3">
                 {slots.map((s) => (
                   <button
@@ -123,8 +131,12 @@ function Checkout() {
             </section>
 
             <section className="card-soft p-6">
-              <h2 className="font-display text-lg font-bold text-primary">{t("checkout.paymentTitle")}</h2>
-              <p className="mt-1 text-xs text-muted-foreground">{t("checkout.paymentDescription")}</p>
+              <h2 className="font-display text-lg font-bold text-primary">
+                {t("checkout.paymentTitle")}
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("checkout.paymentDescription")}
+              </p>
               <div className="mt-4 space-y-2">
                 {paymentMethods.map((m) => (
                   <button
@@ -158,12 +170,15 @@ function Checkout() {
           </div>
 
           <aside className="card-soft h-fit p-6">
-            <h2 className="font-display text-lg font-bold text-primary">{t("checkout.yourOrder")}</h2>
+            <h2 className="font-display text-lg font-bold text-primary">
+              {t("checkout.yourOrder")}
+            </h2>
             <div className="mt-4 space-y-4">
               {orders.map((order, i) => (
                 <div key={order.id}>
                   <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    {t("checkout.order")} {i + 1} · {getRestaurant(order.restaurantId)?.name ?? "Restaurante"}
+                    {t("checkout.order")} {i + 1} ·{" "}
+                    {getRestaurant(order.restaurantId)?.name ?? "Restaurante"}
                   </p>
                   <ul className="mt-2 space-y-2">
                     {order.lines.map((line) => {
@@ -217,7 +232,9 @@ function Checkout() {
             >
               {t("checkout.placeOrder")} — {formatKz(total)}
             </button>
-            <p className="mt-3 text-center text-xs text-muted-foreground">{t("checkout.footerNote")}</p>
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              {t("checkout.footerNote")}
+            </p>
           </aside>
         </div>
       </div>
