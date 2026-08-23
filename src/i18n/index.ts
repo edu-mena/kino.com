@@ -11,7 +11,9 @@ const dictionaries: Record<Locale, Dictionary> = { pt, en, fr };
 /** `t("entrega.title")`, `{query}` etc. interpolated via the second arg. */
 type Vars = Record<string, string | number>;
 
-function lookup(dict: Dictionary, path: string): string | undefined {
+// Exported (not just used internally) so lookup/interpolate can be unit
+// tested directly, without mounting a component tree around useTranslation.
+export function lookup(dict: Dictionary, path: string): string | undefined {
   return path.split(".").reduce<unknown>((node, key) => {
     if (node && typeof node === "object" && key in node) {
       return (node as Record<string, unknown>)[key];
@@ -20,7 +22,7 @@ function lookup(dict: Dictionary, path: string): string | undefined {
   }, dict) as string | undefined;
 }
 
-function interpolate(text: string, vars?: Vars): string {
+export function interpolate(text: string, vars?: Vars): string {
   if (!vars) return text;
   return text.replace(/\{(\w+)\}/g, (match, key) => (key in vars ? String(vars[key]) : match));
 }
