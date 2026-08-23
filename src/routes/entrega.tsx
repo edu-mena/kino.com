@@ -17,6 +17,7 @@ import { getMenuItem, getRestaurant } from "@/data/helpers";
 import { lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
 import { paymentMethods } from "@/lib/mock-data";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/entrega")({
   head: () => ({
@@ -40,17 +41,31 @@ function arrivalTime(order: CartOrder) {
   return arrival.toLocaleTimeString("pt-AO", { hour: "2-digit", minute: "2-digit" });
 }
 
+/** O estado fica guardado como código, nunca já traduzido — assim trocar
+ * de idioma atualiza pedidos já existentes. */
+function statusLabel(status: CartOrder["status"], t: ReturnType<typeof useTranslation>["t"]) {
+  const key = {
+    pending: "statusPending",
+    accepted: "statusAccepted",
+    onTheWay: "statusOnTheWay",
+    delivered: "statusDelivered",
+    rejected: "statusRejected",
+  }[status];
+  return t(`entrega.${key}`);
+}
+
 function Entrega() {
   const { orders } = useCart();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const active = activeIndex !== null ? (orders[activeIndex] ?? null) : null;
+  const { t } = useTranslation();
 
   return (
     <PageShell>
       <PageHeading
-        eyebrow="Entrega"
-        title="Os seus pedidos"
-        description="Cada pedido é de um restaurante só — escolha um para ver o estado, o contacto e os detalhes."
+        eyebrow={t("entrega.eyebrow")}
+        title={t("entrega.title")}
+        description={t("entrega.description")}
       />
       <div className="mx-auto mt-8 max-w-5xl px-4 md:px-6">
         {/* Mobile: um card de cada vez (lista ↔ visualização). Desktop: lado a lado. */}
@@ -59,16 +74,13 @@ function Entrega() {
             {orders.length === 0 ? (
               <div className="card-soft grid place-items-center gap-3 p-12 text-center">
                 <Bike className="h-10 w-10 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Ainda não tem pedidos de entrega.</p>
-                <p className="max-w-xs text-xs text-muted-foreground">
-                  Adicione pratos com o botão "+" no cardápio ou na página de um restaurante e
-                  escolha "Solicitar delivery".
-                </p>
+                <p className="text-sm text-muted-foreground">{t("entrega.emptyTitle")}</p>
+                <p className="max-w-xs text-xs text-muted-foreground">{t("entrega.emptyHint")}</p>
                 <Link
                   to="/cardapio"
                   className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
                 >
-                  Ver cardápio
+                  {t("entrega.seeMenu")}
                 </Link>
               </div>
             ) : (
@@ -93,7 +105,7 @@ function Entrega() {
                           {restaurant?.name ?? "Restaurante"}
                         </span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {itemCount} {itemCount === 1 ? "item" : "itens"} · {order.status}
+                          {itemCount} {itemCount === 1 ? t("entrega.itemSingular") : t("entrega.itemPlural")} · {statusLabel(order.status, t)}
                         </span>
                       </span>
                       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
@@ -112,9 +124,7 @@ function Entrega() {
               ) : (
                 <div className="grid place-items-center gap-3 py-12 text-center">
                   <Package className="h-10 w-10 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Escolha um pedido à esquerda para ver os detalhes.
-                  </p>
+                  <p className="text-sm text-muted-foreground">{t("entrega.chooseOrderHint")}</p>
                 </div>
               )}
             </div>
@@ -128,6 +138,7 @@ function Entrega() {
 function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }) {
   const { removeOrder, orderTotal } = useCart();
   const restaurant = getRestaurant(order.restaurantId);
+  const { t } = useTranslation();
 
   return (
     <>
@@ -136,7 +147,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         onClick={onBack}
         className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary lg:hidden"
       >
-        <ChevronLeft className="h-4 w-4" /> Voltar
+        <ChevronLeft className="h-4 w-4" /> {t("common.back")}
       </button>
 
       <div className="flex items-center gap-3">
@@ -164,9 +175,9 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           <Bike className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <div className="min-w-0">
             <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Estado da entrega
+              {t("entrega.deliveryStatus")}
             </dt>
-            <dd className="mt-0.5">{order.status}</dd>
+            <dd className="mt-0.5">{statusLabel(order.status, t)}</dd>
           </div>
         </div>
 
@@ -174,7 +185,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <div className="min-w-0">
             <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Hora de chegada prevista
+              {t("entrega.eta")}
             </dt>
             <dd className="mt-0.5">~{arrivalTime(order)}</dd>
           </div>
@@ -184,7 +195,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <div className="min-w-0">
             <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Entregar em
+              {t("entrega.deliverTo")}
             </dt>
             <dd className="mt-0.5 truncate">
               {order.deliveryAddress.label} — {order.deliveryAddress.line1}
@@ -197,7 +208,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
             <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <div className="min-w-0">
               <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Contacto para reclamações
+                {t("entrega.complaintContact")}
               </dt>
               <dd className="mt-0.5">{restaurant.phone}</dd>
             </div>
@@ -209,7 +220,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
             <Wallet className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <div className="min-w-0">
               <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Preferência de pagamento
+                {t("entrega.paymentPreference")}
               </dt>
               <dd className="mt-0.5">
                 {paymentMethods.find((m) => m.id === order.paymentMethod)?.label ??
@@ -221,7 +232,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
       </dl>
 
       <div className="mt-5 border-t border-border pt-4">
-        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Produtos</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t("entrega.products")}</p>
         <ul className="mt-2 space-y-2">
           {order.lines.map((line) => {
             const item = getMenuItem(line.menuItemId);
@@ -241,7 +252,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
       </div>
 
       <div className="mt-4 flex items-center justify-between border-t border-border pt-4 text-base">
-        <span className="font-bold">Quantia</span>
+        <span className="font-bold">{t("entrega.amount")}</span>
         <span className="font-extrabold text-primary">{formatKz(orderTotal(order))}</span>
       </div>
 
@@ -250,7 +261,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           to="/checkout"
           className="mt-4 block rounded-xl bg-brand px-5 py-3 text-center text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90"
         >
-          Finalizar pedido — escolher pagamento
+          {t("entrega.finalizeOrder")}
         </Link>
       )}
 
@@ -263,7 +274,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
       >
         <Trash2 className="h-3.5 w-3.5" />
-        Cancelar pedido
+        {t("entrega.cancelOrder")}
       </button>
     </>
   );

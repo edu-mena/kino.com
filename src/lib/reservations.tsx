@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { INITIAL_RESERVATIONS } from "@/data/mockData";
 import type { Reservation, Restaurant } from "@/data/types";
 import { useAuth } from "@/lib/auth";
 
-const STORAGE_KEY = "kino_custom_reservations";
+const STORAGE_KEY = "kino_reservations";
 
 type NewReservationInput = {
   restaurant: Restaurant;
@@ -13,25 +14,40 @@ type NewReservationInput = {
 };
 
 type ReservationsValue = {
-  customReservations: Reservation[];
+  reservations: Reservation[];
   addReservation: (input: NewReservationInput) => void;
+  /** Usado pelo painel do restaurante (`/admin/reservas`) — Pendente →
+   * Confirmada/Recusada. Não há backend real: como no resto da app, o
+   * painel lê/escreve o mesmo estado partilhado que a página de cliente. */
+  updateReservationStatus: (id: string, status: string) => void;
 };
 
 const ReservationsContext = createContext<ReservationsValue | null>(null);
 
 export function ReservationsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [customReservations, setCustomReservations] = useState<Reservation[]>([]);
+  // A seed (INITIAL_RESERVATIONS) entra logo no estado — assim vira um
+  // registo normal, atualizável (o painel do restaurante precisa poder
+  // confirmar/recusar reservas de exemplo, não só as criadas na hora).
+  const [reservations, setReservations] = useState<Reservation[]>(INITIAL_RESERVATIONS);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return;
-    try {
-      setCustomReservations(JSON.parse(stored));
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        setReservations(JSON.parse(stored));
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
     }
+    setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+  }, [reservations, hydrated]);
 
   const addReservation = ({
     restaurant,
@@ -59,13 +75,14 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
       ...(specialRequests ? { specialRequests } : {}),
       createdAt: new Date().toISOString(),
     };
-    const next = [reservation, ...customReservations];
-    setCustomReservations(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setReservations((prev) => [reservation, ...prev]);
   };
 
+  const updateReservationStatus = (id: string, status: string) =>
+    setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+
   return (
-    <ReservationsContext.Provider value={{ customReservations, addReservation }}>
+    <ReservationsContext.Provider value={{ reservations, addReservation, updateReservationStatus }}>
       {children}
     </ReservationsContext.Provider>
   );

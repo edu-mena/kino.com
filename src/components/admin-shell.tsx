@@ -1,0 +1,189 @@
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  Bike,
+  CalendarCheck,
+  LayoutGrid,
+  LogOut,
+  Menu,
+  Soup,
+  Star,
+  Store,
+  User,
+  X,
+} from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Logo } from "./logo";
+import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+
+const navItems = [
+  { to: "/admin", label: "Painel", icon: LayoutGrid },
+  { to: "/admin/pedidos", label: "Pedidos", icon: Bike },
+  { to: "/admin/reservas", label: "Reservas", icon: CalendarCheck },
+  { to: "/admin/cardapio", label: "Cardápio", icon: Soup },
+  { to: "/admin/avaliacoes", label: "Avaliações", icon: Star },
+  { to: "/admin/perfil", label: "Restaurante", icon: Store },
+] as const;
+
+/** Só os 5 primeiros cabem na barra inferior do mobile — Avaliações fica só
+ * na sidebar do desktop e acessível a partir de Perfil no mobile. */
+const mobileTabItems = navItems.filter((item) => item.to !== "/admin/avaliacoes");
+
+/**
+ * Casca do painel do restaurante — equivalente ao `PageShell` do lado do
+ * cliente, mas completamente à parte: sessão própria (`useRestaurantAdmin`,
+ * nada a ver com `useAuth`), navegação própria, sem footer/tabbar de
+ * cliente. Mesma linguagem visual (card-soft, cores primary/brand) para
+ * manter consistência entre as duas partes da app.
+ */
+export function AdminShell({ children }: { children: ReactNode }) {
+  const { managedRestaurantId, restaurant, hydrated, logout } = useRestaurantAdmin();
+  const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (hydrated && !managedRestaurantId) {
+      navigate({ to: "/admin/entrar" });
+    }
+  }, [hydrated, managedRestaurantId, navigate]);
+
+  if (!managedRestaurantId || !restaurant) return null;
+
+  const handleLogout = () => {
+    logout();
+    navigate({ to: "/admin/entrar" });
+  };
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      {/* Sidebar — desktop */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden h-screen w-24 flex-col border-r border-border bg-background py-6 lg:flex xl:w-64">
+        <Link to="/admin" className="mx-auto shrink-0 px-2 pb-6 xl:mx-4">
+          <Logo className="h-12 w-auto" />
+        </Link>
+
+        <nav className="flex flex-1 flex-col justify-center gap-2 overflow-y-auto">
+          {navItems.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              activeOptions={{ exact: item.to === "/admin" }}
+              activeProps={{ className: "text-primary bg-surface" }}
+              className="relative mx-2 flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-primary xl:justify-start"
+            >
+              <item.icon className="mx-auto h-6 w-6 shrink-0 xl:mx-0" />
+              <span className="hidden truncate xl:inline">{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="mx-2 shrink-0 space-y-1 rounded-2xl bg-surface/80 p-1.5">
+          <div className="flex items-center gap-1">
+            <div className="flex flex-1 items-center gap-3 rounded-xl px-3 py-3">
+              <span className="mx-auto grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-primary/15 text-primary xl:mx-0">
+                <img src={restaurant.coverImage} alt="" className="h-full w-full object-cover" />
+              </span>
+              <span className="hidden min-w-0 truncate text-xs font-bold text-foreground xl:inline">
+                {restaurant.name}
+              </span>
+            </div>
+            <button
+              type="button"
+              aria-label="Sair do painel"
+              onClick={handleLogout}
+              className="hidden shrink-0 place-items-center rounded-lg p-2.5 text-muted-foreground transition-colors hover:bg-card hover:text-destructive xl:grid"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col lg:ml-24 xl:ml-64">
+        {/* Top bar — mobile */}
+        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-white px-4 py-3 lg:hidden">
+          <Link to="/admin" className="flex min-w-0 items-center gap-2">
+            <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-surface">
+              <img src={restaurant.coverImage} alt="" className="h-full w-full object-cover" />
+            </span>
+            <span className="min-w-0 truncate text-sm font-bold text-primary">{restaurant.name}</span>
+          </Link>
+          <button
+            type="button"
+            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+            onClick={() => setMobileOpen((v) => !v)}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground"
+          >
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
+        </header>
+
+        {mobileOpen && (
+          <div className="border-b border-border bg-card px-4 py-3 lg:hidden">
+            <Link
+              to="/admin/avaliacoes"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-2 py-3 text-sm font-medium text-foreground hover:bg-surface"
+            >
+              <Star className="h-4 w-4 shrink-0 text-primary" />
+              Avaliações
+            </Link>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-lg px-2 py-3 text-left text-sm font-medium text-destructive hover:bg-destructive/5"
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              Sair do painel
+            </button>
+          </div>
+        )}
+
+        <main className="min-w-0 flex-1 pb-20 lg:pb-0">{children}</main>
+      </div>
+
+      {/* Barra inferior — mobile */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur lg:hidden">
+        <div className="grid grid-cols-5">
+          {mobileTabItems.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              activeOptions={{ exact: item.to === "/admin" }}
+              activeProps={{ className: "text-primary" }}
+              className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground"
+            >
+              <item.icon className="h-5 w-5" />
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
+    </div>
+  );
+}
+
+export function AdminPageHeading({
+  eyebrow,
+  title,
+  description,
+  action,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-4 px-4 pt-8 md:px-6">
+      <div>
+        {eyebrow && (
+          <p className="text-sm font-semibold uppercase tracking-widest text-brand">{eyebrow}</p>
+        )}
+        <h1 className="mt-2 text-3xl font-extrabold text-primary sm:text-4xl">{title}</h1>
+        {description && <p className="mt-3 max-w-2xl text-muted-foreground">{description}</p>}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
+  );
+}
+
