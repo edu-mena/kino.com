@@ -5,13 +5,18 @@ import { getRestaurant } from "@/data/helpers";
 import type { MenuItem } from "@/data/types";
 import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
+import { useMenuAdmin } from "@/lib/menu-admin";
 import { usePreferences } from "@/lib/preferences";
+import { useTranslation } from "@/i18n";
 
 export function DishCard({ item }: { item: MenuItem }) {
   const addToBill = useAddToBill();
   const { isFavoriteRestaurant, toggleFavoriteRestaurant, excludedIngredients } = usePreferences();
+  const { isAvailable } = useMenuAdmin();
+  const { t } = useTranslation();
   const restaurant = getRestaurant(item.restaurantId);
   const liked = isFavoriteRestaurant(item.restaurantId);
+  const available = item.isAvailable && isAvailable(item.id);
 
   // Ingredientes deste prato que o usuário marcou como "não posso comer" em
   // Preferências — dispara o aviso vermelho no canto da imagem.
@@ -49,7 +54,7 @@ export function DishCard({ item }: { item: MenuItem }) {
       <Link
         to="/prato/$dishId"
         params={{ dishId: item.id }}
-        className="block h-28 w-full bg-surface sm:h-32"
+        className="relative block h-28 w-full bg-surface sm:h-32"
       >
         <img
           src={item.image}
@@ -57,8 +62,15 @@ export function DishCard({ item }: { item: MenuItem }) {
           loading="lazy"
           width={768}
           height={768}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+            available ? "" : "grayscale"
+          }`}
         />
+        {!available && (
+          <span className="absolute inset-x-2 bottom-2 rounded-full bg-foreground/80 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-background">
+            {t("cardapio.unavailable")}
+          </span>
+        )}
       </Link>
 
       <div className="flex flex-1 flex-col p-3">
@@ -83,9 +95,10 @@ export function DishCard({ item }: { item: MenuItem }) {
           </div>
           <button
             type="button"
+            disabled={!available}
             aria-label={`Adicionar ${item.name} ao pedido`}
             onClick={() => addToBill(item.restaurantId, item.id, item.name)}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
           >
             <Plus className="h-4 w-4" />
           </button>

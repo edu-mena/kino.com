@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AcompanharRouteImport } from './routes/acompanhar'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as CardapioRouteImport } from './routes/cardapio'
@@ -22,12 +22,18 @@ import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as KinoRouteImport } from './routes/kino'
 import { Route as OfertasRouteImport } from './routes/ofertas'
 import { Route as ParceirosRouteImport } from './routes/parceiros'
-import { Route as PedidoConfirmadoRouteImport } from './routes/pedido-confirmado'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PreferenciasRouteImport } from './routes/preferencias'
 import { Route as ReservasRouteImport } from './routes/reservas'
 import { Route as RestaurantesRouteImport } from './routes/restaurantes'
 import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAvaliacoesRouteImport } from './routes/admin.avaliacoes'
+import { Route as AdminCardapioRouteImport } from './routes/admin.cardapio'
+import { Route as AdminPedidosRouteImport } from './routes/admin.pedidos'
+import { Route as AdminPerfilRouteImport } from './routes/admin.perfil'
+import { Route as AdminReservasRouteImport } from './routes/admin.reservas'
+import { Route as AdminEntrarRouteImport } from './routes/admin_.entrar'
 import { Route as PratoDishIdRouteImport } from './routes/prato.$dishId'
 import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
 
@@ -36,9 +42,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AcompanharRoute = AcompanharRouteImport.update({
-  id: '/acompanhar',
-  path: '/acompanhar',
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AjudaRoute = AjudaRouteImport.update({
@@ -96,11 +102,6 @@ const ParceirosRoute = ParceirosRouteImport.update({
   path: '/parceiros',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PedidoConfirmadoRoute = PedidoConfirmadoRouteImport.update({
-  id: '/pedido-confirmado',
-  path: '/pedido-confirmado',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PerfilRoute = PerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -126,6 +127,41 @@ const SobreRoute = SobreRouteImport.update({
   path: '/sobre',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAvaliacoesRoute = AdminAvaliacoesRouteImport.update({
+  id: '/avaliacoes',
+  path: '/avaliacoes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCardapioRoute = AdminCardapioRouteImport.update({
+  id: '/cardapio',
+  path: '/cardapio',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPedidosRoute = AdminPedidosRouteImport.update({
+  id: '/pedidos',
+  path: '/pedidos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPerfilRoute = AdminPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReservasRoute = AdminReservasRouteImport.update({
+  id: '/reservas',
+  path: '/reservas',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEntrarRoute = AdminEntrarRouteImport.update({
+  id: '/admin_/entrar',
+  path: '/admin/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PratoDishIdRoute = PratoDishIdRouteImport.update({
   id: '/prato/$dishId',
   path: '/prato/$dishId',
@@ -139,7 +175,7 @@ const RestaurantesIdRoute = RestaurantesIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/acompanhar': typeof AcompanharRoute
+  '/admin': typeof AdminRouteWithChildren
   '/ajuda': typeof AjudaRoute
   '/cadastro': typeof CadastroRoute
   '/cardapio': typeof CardapioRoute
@@ -151,18 +187,23 @@ export interface FileRoutesByFullPath {
   '/kino': typeof KinoRoute
   '/ofertas': typeof OfertasRoute
   '/parceiros': typeof ParceirosRoute
-  '/pedido-confirmado': typeof PedidoConfirmadoRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
   '/reservas': typeof ReservasRoute
   '/restaurantes': typeof RestaurantesRoute
   '/sobre': typeof SobreRoute
+  '/admin/avaliacoes': typeof AdminAvaliacoesRoute
+  '/admin/cardapio': typeof AdminCardapioRoute
+  '/admin/pedidos': typeof AdminPedidosRoute
+  '/admin/perfil': typeof AdminPerfilRoute
+  '/admin/reservas': typeof AdminReservasRoute
+  '/admin/entrar': typeof AdminEntrarRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/acompanhar': typeof AcompanharRoute
   '/ajuda': typeof AjudaRoute
   '/cadastro': typeof CadastroRoute
   '/cardapio': typeof CardapioRoute
@@ -174,19 +215,25 @@ export interface FileRoutesByTo {
   '/kino': typeof KinoRoute
   '/ofertas': typeof OfertasRoute
   '/parceiros': typeof ParceirosRoute
-  '/pedido-confirmado': typeof PedidoConfirmadoRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
   '/reservas': typeof ReservasRoute
   '/restaurantes': typeof RestaurantesRoute
   '/sobre': typeof SobreRoute
+  '/admin/avaliacoes': typeof AdminAvaliacoesRoute
+  '/admin/cardapio': typeof AdminCardapioRoute
+  '/admin/pedidos': typeof AdminPedidosRoute
+  '/admin/perfil': typeof AdminPerfilRoute
+  '/admin/reservas': typeof AdminReservasRoute
+  '/admin/entrar': typeof AdminEntrarRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/acompanhar': typeof AcompanharRoute
+  '/admin': typeof AdminRouteWithChildren
   '/ajuda': typeof AjudaRoute
   '/cadastro': typeof CadastroRoute
   '/cardapio': typeof CardapioRoute
@@ -198,20 +245,26 @@ export interface FileRoutesById {
   '/kino': typeof KinoRoute
   '/ofertas': typeof OfertasRoute
   '/parceiros': typeof ParceirosRoute
-  '/pedido-confirmado': typeof PedidoConfirmadoRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
   '/reservas': typeof ReservasRoute
   '/restaurantes': typeof RestaurantesRoute
   '/sobre': typeof SobreRoute
+  '/admin/avaliacoes': typeof AdminAvaliacoesRoute
+  '/admin/cardapio': typeof AdminCardapioRoute
+  '/admin/pedidos': typeof AdminPedidosRoute
+  '/admin/perfil': typeof AdminPerfilRoute
+  '/admin/reservas': typeof AdminReservasRoute
+  '/admin_/entrar': typeof AdminEntrarRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/restaurantes_/$id': typeof RestaurantesIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/acompanhar'
+    | '/admin'
     | '/ajuda'
     | '/cadastro'
     | '/cardapio'
@@ -223,18 +276,23 @@ export interface FileRouteTypes {
     | '/kino'
     | '/ofertas'
     | '/parceiros'
-    | '/pedido-confirmado'
     | '/perfil'
     | '/preferencias'
     | '/reservas'
     | '/restaurantes'
     | '/sobre'
+    | '/admin/avaliacoes'
+    | '/admin/cardapio'
+    | '/admin/pedidos'
+    | '/admin/perfil'
+    | '/admin/reservas'
+    | '/admin/entrar'
     | '/prato/$dishId'
     | '/restaurantes/$id'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/acompanhar'
     | '/ajuda'
     | '/cadastro'
     | '/cardapio'
@@ -246,18 +304,24 @@ export interface FileRouteTypes {
     | '/kino'
     | '/ofertas'
     | '/parceiros'
-    | '/pedido-confirmado'
     | '/perfil'
     | '/preferencias'
     | '/reservas'
     | '/restaurantes'
     | '/sobre'
+    | '/admin/avaliacoes'
+    | '/admin/cardapio'
+    | '/admin/pedidos'
+    | '/admin/perfil'
+    | '/admin/reservas'
+    | '/admin/entrar'
     | '/prato/$dishId'
     | '/restaurantes/$id'
+    | '/admin'
   id:
     | '__root__'
     | '/'
-    | '/acompanhar'
+    | '/admin'
     | '/ajuda'
     | '/cadastro'
     | '/cardapio'
@@ -269,19 +333,25 @@ export interface FileRouteTypes {
     | '/kino'
     | '/ofertas'
     | '/parceiros'
-    | '/pedido-confirmado'
     | '/perfil'
     | '/preferencias'
     | '/reservas'
     | '/restaurantes'
     | '/sobre'
+    | '/admin/avaliacoes'
+    | '/admin/cardapio'
+    | '/admin/pedidos'
+    | '/admin/perfil'
+    | '/admin/reservas'
+    | '/admin_/entrar'
     | '/prato/$dishId'
     | '/restaurantes_/$id'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AcompanharRoute: typeof AcompanharRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AjudaRoute: typeof AjudaRoute
   CadastroRoute: typeof CadastroRoute
   CardapioRoute: typeof CardapioRoute
@@ -293,12 +363,12 @@ export interface RootRouteChildren {
   KinoRoute: typeof KinoRoute
   OfertasRoute: typeof OfertasRoute
   ParceirosRoute: typeof ParceirosRoute
-  PedidoConfirmadoRoute: typeof PedidoConfirmadoRoute
   PerfilRoute: typeof PerfilRoute
   PreferenciasRoute: typeof PreferenciasRoute
   ReservasRoute: typeof ReservasRoute
   RestaurantesRoute: typeof RestaurantesRoute
   SobreRoute: typeof SobreRoute
+  AdminEntrarRoute: typeof AdminEntrarRoute
   PratoDishIdRoute: typeof PratoDishIdRoute
   RestaurantesIdRoute: typeof RestaurantesIdRoute
 }
@@ -312,11 +382,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/acompanhar': {
-      id: '/acompanhar'
-      path: '/acompanhar'
-      fullPath: '/acompanhar'
-      preLoaderRoute: typeof AcompanharRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ajuda': {
@@ -396,13 +466,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ParceirosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pedido-confirmado': {
-      id: '/pedido-confirmado'
-      path: '/pedido-confirmado'
-      fullPath: '/pedido-confirmado'
-      preLoaderRoute: typeof PedidoConfirmadoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/perfil': {
       id: '/perfil'
       path: '/perfil'
@@ -438,6 +501,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SobreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/avaliacoes': {
+      id: '/admin/avaliacoes'
+      path: '/avaliacoes'
+      fullPath: '/admin/avaliacoes'
+      preLoaderRoute: typeof AdminAvaliacoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/cardapio': {
+      id: '/admin/cardapio'
+      path: '/cardapio'
+      fullPath: '/admin/cardapio'
+      preLoaderRoute: typeof AdminCardapioRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/pedidos': {
+      id: '/admin/pedidos'
+      path: '/pedidos'
+      fullPath: '/admin/pedidos'
+      preLoaderRoute: typeof AdminPedidosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/perfil': {
+      id: '/admin/perfil'
+      path: '/perfil'
+      fullPath: '/admin/perfil'
+      preLoaderRoute: typeof AdminPerfilRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reservas': {
+      id: '/admin/reservas'
+      path: '/reservas'
+      fullPath: '/admin/reservas'
+      preLoaderRoute: typeof AdminReservasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin_/entrar': {
+      id: '/admin_/entrar'
+      path: '/admin/entrar'
+      fullPath: '/admin/entrar'
+      preLoaderRoute: typeof AdminEntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/prato/$dishId': {
       id: '/prato/$dishId'
       path: '/prato/$dishId'
@@ -455,9 +567,29 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminAvaliacoesRoute: typeof AdminAvaliacoesRoute
+  AdminCardapioRoute: typeof AdminCardapioRoute
+  AdminPedidosRoute: typeof AdminPedidosRoute
+  AdminPerfilRoute: typeof AdminPerfilRoute
+  AdminReservasRoute: typeof AdminReservasRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAvaliacoesRoute: AdminAvaliacoesRoute,
+  AdminCardapioRoute: AdminCardapioRoute,
+  AdminPedidosRoute: AdminPedidosRoute,
+  AdminPerfilRoute: AdminPerfilRoute,
+  AdminReservasRoute: AdminReservasRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AcompanharRoute: AcompanharRoute,
+  AdminRoute: AdminRouteWithChildren,
   AjudaRoute: AjudaRoute,
   CadastroRoute: CadastroRoute,
   CardapioRoute: CardapioRoute,
@@ -469,12 +601,12 @@ const rootRouteChildren: RootRouteChildren = {
   KinoRoute: KinoRoute,
   OfertasRoute: OfertasRoute,
   ParceirosRoute: ParceirosRoute,
-  PedidoConfirmadoRoute: PedidoConfirmadoRoute,
   PerfilRoute: PerfilRoute,
   PreferenciasRoute: PreferenciasRoute,
   ReservasRoute: ReservasRoute,
   RestaurantesRoute: RestaurantesRoute,
   SobreRoute: SobreRoute,
+  AdminEntrarRoute: AdminEntrarRoute,
   PratoDishIdRoute: PratoDishIdRoute,
   RestaurantesIdRoute: RestaurantesIdRoute,
 }

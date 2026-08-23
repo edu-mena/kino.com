@@ -67,12 +67,17 @@ function Parceiros() {
   return (
     <div className="flex min-h-screen flex-col items-center bg-background px-5 py-12 sm:px-12">
       <div className="w-full max-w-3xl">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-primary"
-        >
-          <ArrowLeft className="h-4 w-4" /> Voltar ao início
-        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-primary"
+          >
+            <ArrowLeft className="h-4 w-4" /> Voltar ao início
+          </Link>
+          <Link to="/admin/entrar" className="text-sm font-semibold text-primary hover:underline">
+            Já é parceiro? Aceder ao painel
+          </Link>
+        </div>
 
         <div className="mx-auto mt-8 flex max-w-md flex-col items-center text-center">
           <Logo />

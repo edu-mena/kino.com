@@ -1,5 +1,10 @@
-import { INITIAL_MENU_ITEMS, INITIAL_RESTAURANTS, INITIAL_STORIES } from "./mockData";
-import type { MenuItem, Restaurant, RestaurantStory } from "./types";
+import {
+  INITIAL_MENU_ITEMS,
+  INITIAL_RESTAURANTS,
+  INITIAL_REVIEWS,
+  INITIAL_STORIES,
+} from "./mockData";
+import type { MenuItem, Restaurant, RestaurantStory, Review } from "./types";
 
 export function getRestaurant(id: string): Restaurant | undefined {
   return INITIAL_RESTAURANTS.find((r) => r.id === id);
@@ -78,6 +83,14 @@ export function canDeliverToNeighborhood(restaurant: Restaurant, neighborhood?: 
 export function getStoriesForRestaurant(restaurantId: string): RestaurantStory[] {
   return INITIAL_STORIES.filter((s) => s.restaurantId === restaurantId).sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
+}
+
+/** Avaliações de um restaurante, mais recente primeiro — usado no painel do
+ * restaurante (`/admin/avaliacoes`). */
+export function getReviewsForRestaurant(restaurantId: string): Review[] {
+  return INITIAL_REVIEWS.filter((r) => r.restaurantId === restaurantId).sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 }
 

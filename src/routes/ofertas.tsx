@@ -29,7 +29,7 @@ function Ofertas() {
       <PageHeading
         eyebrow="Promoções"
         title="Ofertas especiais"
-        description="Descontos ativos hoje. Aplique o código no checkout."
+        description="Descontos ativos hoje. Mencione o código ao restaurante ao fazer o pedido."
       />
       <div className="mx-auto mt-8 grid max-w-6xl gap-4 px-4 md:px-6">
         {INITIAL_OFFERS.map((offer) => {

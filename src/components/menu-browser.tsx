@@ -20,15 +20,16 @@ import { Slider } from "@/components/ui/slider";
 import { getAllIngredientNames, getRestaurant } from "@/data/helpers";
 import { INITIAL_MENU_ITEMS } from "@/data/mockData";
 import { formatKz } from "@/lib/format";
+import { useTranslation } from "@/i18n";
 
 const ingredientNames = getAllIngredientNames();
 const overallMaxPrice = Math.max(...INITIAL_MENU_ITEMS.map((m) => m.price));
 
 const sortOptions = [
-  { value: "relevancia", label: "Relevância" },
-  { value: "preco-asc", label: "Preço: menor primeiro" },
-  { value: "preco-desc", label: "Preço: maior primeiro" },
-  { value: "populares", label: "Mais pedidos" },
+  { value: "relevancia", labelKey: "cardapio.sortRelevance" },
+  { value: "preco-asc", labelKey: "cardapio.sortPriceAsc" },
+  { value: "preco-desc", labelKey: "cardapio.sortPriceDesc" },
+  { value: "populares", labelKey: "cardapio.sortPopular" },
 ] as const;
 
 const PAGE_SIZE = 12;
@@ -55,6 +56,7 @@ export function MenuBrowser({
   onClearRestaurantFilter?: (() => void) | undefined;
 }) {
   const effectiveRestaurantId = lockedRestaurantId ?? restaurantFilter?.id;
+  const { t } = useTranslation();
 
   // Só mostra uma categoria como chip se ela tiver pelo menos um prato —
   // sem filtro de restaurante, é a lista completa de categorias do
@@ -150,7 +152,7 @@ export function MenuBrowser({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Pesquisar pratos, restaurantes..."
+            placeholder={t("cardapio.searchPlaceholder")}
             className="w-full min-w-0 bg-transparent py-2 text-sm outline-none"
           />
         </label>
@@ -160,7 +162,7 @@ export function MenuBrowser({
           className="relative flex shrink-0 items-center gap-1.5 rounded-xl bg-surface px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary"
         >
           <SlidersHorizontal className="h-3.5 w-3.5" />
-          Filtros
+          {t("cardapio.filters")}
           {activeExtraFilters > 0 && (
             <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
               {activeExtraFilters}
@@ -170,7 +172,7 @@ export function MenuBrowser({
       </div>
 
       <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto pb-1">
-        {[{ id: "todos", label: "Todos" }, ...categories].map((cat) => (
+        {[{ id: "todos", label: t("common.all") }, ...categories].map((cat) => (
           <button
             key={cat.id}
             type="button"
@@ -187,7 +189,9 @@ export function MenuBrowser({
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">{filtered.length} resultados</p>
+        <p className="text-sm text-muted-foreground">
+          {filtered.length} {t("cardapio.results")}
+        </p>
         <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
           <SelectTrigger className="w-48 rounded-xl">
             <SelectValue />
@@ -195,7 +199,7 @@ export function MenuBrowser({
           <SelectContent>
             {sortOptions.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+                {t(opt.labelKey)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -210,7 +214,7 @@ export function MenuBrowser({
 
       {filtered.length === 0 && (
         <p className="card-soft mt-4 p-10 text-center text-sm text-muted-foreground">
-          Nenhum prato encontrado. Tente outra pesquisa.
+          {t("cardapio.noResults")}
         </p>
       )}
 
@@ -218,11 +222,13 @@ export function MenuBrowser({
 
       <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
         <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-[2rem] border-none bg-card p-8">
-          <DialogTitle className="font-display text-xl font-bold">Filtros</DialogTitle>
+          <DialogTitle className="font-display text-xl font-bold">
+            {t("cardapio.filters")}
+          </DialogTitle>
 
           <div className="mt-4 min-w-0">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Preço até {formatKz(maxPrice)}
+              {t("cardapio.priceUpTo")} {formatKz(maxPrice)}
             </p>
             <Slider
               min={0}
@@ -238,7 +244,7 @@ export function MenuBrowser({
 
           <div className="mt-5">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Ingrediente
+              {t("cardapio.ingredient")}
             </p>
             <IngredientSearchFilter
               value={ingredient}
@@ -250,7 +256,7 @@ export function MenuBrowser({
           {!lockedRestaurantId && (
             <div className="mt-5">
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Localização
+                {t("cardapio.location")}
               </p>
               <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
             </div>
@@ -261,7 +267,7 @@ export function MenuBrowser({
             onClick={() => setFiltersOpen(false)}
             className="mt-6 w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
           >
-            Ver {filtered.length} resultados
+            {t("cardapio.seeResults")} {filtered.length} {t("cardapio.results")}
           </button>
         </DialogContent>
       </Dialog>

@@ -19,6 +19,7 @@ import type { Restaurant } from "@/data/types";
 import { INITIAL_RESTAURANTS } from "@/data/mockData";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/restaurantes")({
   head: () => ({
@@ -42,14 +43,15 @@ const priceLevels = [...new Set(INITIAL_RESTAURANTS.map((r) => r.priceLevel))].s
 );
 
 const sortOptions = [
-  { value: "proximidade", label: "Mais próximos" },
-  { value: "avaliacao", label: "Melhor avaliados" },
-  { value: "nome", label: "Nome (A-Z)" },
+  { value: "proximidade", labelKey: "restaurantes.sortProximity" },
+  { value: "avaliacao", labelKey: "restaurantes.sortRating" },
+  { value: "nome", labelKey: "restaurantes.sortName" },
 ] as const;
 
 const PAGE_SIZE = 9;
 
 function Restaurantes() {
+  const { t } = useTranslation();
   const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
   const [query, setQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -91,9 +93,9 @@ function Restaurantes() {
   return (
     <PageShell>
       <PageHeading
-        eyebrow="Parceiros"
-        title="Restaurantes perto de você"
-        description="Cozinhas selecionadas, avaliadas pelos nossos clientes em Luanda."
+        eyebrow={t("restaurantes.eyebrow")}
+        title={t("restaurantes.title")}
+        description={t("restaurantes.description")}
       />
 
       <div className="mx-auto mt-8 max-w-6xl px-4 md:px-6">
@@ -103,7 +105,7 @@ function Restaurantes() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Pesquisar restaurantes, cozinhas..."
+              placeholder={t("restaurantes.searchPlaceholder")}
               className="w-full min-w-0 bg-transparent py-2 text-sm outline-none"
             />
           </label>
@@ -113,7 +115,7 @@ function Restaurantes() {
             className="relative flex shrink-0 items-center gap-1.5 rounded-xl bg-surface px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary"
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            Filtros
+            {t("restaurantes.filters")}
             {activeExtraFilters > 0 && (
               <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
                 {activeExtraFilters}
@@ -123,7 +125,9 @@ function Restaurantes() {
         </div>
 
         <div className="mt-5 flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">{filtered.length} restaurantes</p>
+          <p className="text-sm text-muted-foreground">
+            {filtered.length} {t("restaurantes.resultsSuffix")}
+          </p>
           <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
             <SelectTrigger className="w-48 rounded-xl">
               <SelectValue />
@@ -131,7 +135,7 @@ function Restaurantes() {
             <SelectContent>
               {sortOptions.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -190,7 +194,7 @@ function Restaurantes() {
                           {r.estimatedDeliveryMinutes} min · {formatKz(r.deliveryFee)}
                         </span>
                       ) : (
-                        <span>Sem entrega — só no local</span>
+                        <span>{t("restaurantes.noDelivery")}</span>
                       )}
                     </div>
                   </div>
@@ -201,7 +205,7 @@ function Restaurantes() {
                   className="flex w-full items-center justify-center gap-1.5 border-t border-border py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
                 >
                   <CalendarCheck className="h-4 w-4" />
-                  Reservar mesa
+                  {t("restaurantes.reserveTable")}
                 </button>
               </div>
             );
@@ -210,7 +214,7 @@ function Restaurantes() {
 
         {filtered.length === 0 && (
           <p className="card-soft mt-4 p-10 text-center text-sm text-muted-foreground">
-            Nenhum restaurante encontrado. Tente outra pesquisa.
+            {t("restaurantes.noResults")}
           </p>
         )}
 
@@ -219,18 +223,20 @@ function Restaurantes() {
 
       <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
         <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-[2rem] border-none bg-card p-8">
-          <DialogTitle className="font-display text-xl font-bold">Filtros</DialogTitle>
+          <DialogTitle className="font-display text-xl font-bold">
+            {t("restaurantes.filters")}
+          </DialogTitle>
 
           <div className="mt-4">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Localização
+              {t("cardapio.location")}
             </p>
             <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
           </div>
 
           <div className="mt-5">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Nível de preço
+              {t("restaurantes.priceLevel")}
             </p>
             <ToggleGroup
               type="single"
@@ -251,7 +257,7 @@ function Restaurantes() {
           </div>
 
           <label className="mt-5 flex items-center justify-between gap-3 rounded-xl border border-border p-3">
-            <span className="text-sm font-medium">Só com entrega disponível</span>
+            <span className="text-sm font-medium">{t("restaurantes.deliveryOnly")}</span>
             <input
               type="checkbox"
               checked={deliveryOnly}
@@ -265,7 +271,7 @@ function Restaurantes() {
             onClick={() => setFiltersOpen(false)}
             className="mt-6 w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
           >
-            Ver {filtered.length} restaurantes
+            {t("restaurantes.seeRestaurants")} {filtered.length} {t("restaurantes.resultsSuffix")}
           </button>
         </DialogContent>
       </Dialog>

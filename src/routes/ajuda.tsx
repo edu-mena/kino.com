@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { helpArticles } from "@/lib/mock-data";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/ajuda")({
   head: () => ({
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/ajuda")({
 function Ajuda() {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const { t } = useTranslation();
 
   const filtered = useMemo(
     () =>
@@ -39,9 +41,9 @@ function Ajuda() {
   return (
     <PageShell>
       <PageHeading
-        eyebrow="Suporte"
-        title="Centro de ajuda"
-        description="Escolha um tema ou fale com a nossa equipa."
+        eyebrow={t("ajuda.eyebrow")}
+        title={t("ajuda.title")}
+        description={t("ajuda.description")}
       />
       <div className="mx-auto mt-8 max-w-5xl px-4 md:px-6">
         {/* Mobile: um card de cada vez (lista ↔ visualização). Desktop: lado a lado. */}
@@ -52,7 +54,7 @@ function Ajuda() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Como podemos ajudar?"
+                placeholder={t("ajuda.searchPlaceholder")}
                 className="w-full min-w-0 bg-transparent text-sm outline-none"
               />
             </label>
@@ -78,7 +80,7 @@ function Ajuda() {
               })}
               {filtered.length === 0 && (
                 <p className="p-4 text-center text-sm text-muted-foreground">
-                  Nenhum tema encontrado.
+                  {t("ajuda.noResults")}
                 </p>
               )}
             </div>
@@ -89,8 +91,10 @@ function Ajuda() {
                   <MessageCircle className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold">Chat ao vivo</p>
-                  <p className="truncate text-xs text-muted-foreground">Resposta em ~2 minutos</p>
+                  <p className="truncate text-sm font-bold">{t("ajuda.liveChat")}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {t("ajuda.liveChatHint")}
+                  </p>
                 </div>
               </div>
               <div className="card-soft flex items-center gap-3 p-4">
@@ -99,7 +103,7 @@ function Ajuda() {
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold">+244 923 000 000</p>
-                  <p className="truncate text-xs text-muted-foreground">Todos os dias, 8h - 23h</p>
+                  <p className="truncate text-xs text-muted-foreground">{t("ajuda.phoneHint")}</p>
                 </div>
               </div>
             </div>
@@ -115,7 +119,7 @@ function Ajuda() {
                     onClick={() => setActiveIndex(null)}
                     className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary lg:hidden"
                   >
-                    <ChevronLeft className="h-4 w-4" /> Voltar
+                    <ChevronLeft className="h-4 w-4" /> {t("common.back")}
                   </button>
                   <h2 className="font-display text-xl font-bold text-primary">{active.question}</h2>
                   <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -125,9 +129,7 @@ function Ajuda() {
               ) : (
                 <div className="grid place-items-center gap-3 py-12 text-center">
                   <CircleHelp className="h-10 w-10 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Escolha um tema à esquerda para ver a resposta.
-                  </p>
+                  <p className="text-sm text-muted-foreground">{t("ajuda.chooseTopicHint")}</p>
                 </div>
               )}
             </div>

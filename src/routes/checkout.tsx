@@ -9,6 +9,7 @@ import { lineUnitPrice, useCart } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
 import { paymentMethods } from "@/lib/mock-data";
 import { usePreferences } from "@/lib/preferences";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -27,15 +28,22 @@ export const Route = createFileRoute("/checkout")({
   component: Checkout,
 });
 
-const slots = ["O mais rápido possível", "Hoje, 19:00 - 19:30", "Hoje, 20:00 - 20:30"];
+const slots = [
+  { id: "fastest", time: null },
+  { id: "today-1900", time: "19:00 - 19:30" },
+  { id: "today-2000", time: "20:00 - 20:30" },
+] as const;
 
 function Checkout() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { orders, subtotal, deliveryFee, total, confirmOrder } = useCart();
   const hasItems = orders.length > 0;
   const { dietaryRestrictions, excludedIngredients } = usePreferences();
-  const [slot, setSlot] = useState(slots[0]!);
+  const [slot, setSlot] = useState<(typeof slots)[number]["id"]>(slots[0].id);
   const [payment, setPayment] = useState(paymentMethods[0]!.id);
+  const slotLabel = (s: (typeof slots)[number]) =>
+    s.time ? `${t("checkout.today")} ${s.time}` : t("checkout.slotFastest");
 
   return (
     <PageShell>
@@ -44,9 +52,11 @@ function Checkout() {
           to="/entrega"
           className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-primary"
         >
-          <ChevronLeft className="h-4 w-4" /> Voltar à entrega
+          <ChevronLeft className="h-4 w-4" /> {t("checkout.backToDelivery")}
         </Link>
-        <h1 className="mt-4 text-3xl font-extrabold text-primary sm:text-4xl">Finalizar pedido</h1>
+        <h1 className="mt-4 text-3xl font-extrabold text-primary sm:text-4xl">
+          {t("checkout.title")}
+        </h1>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
           <div className="space-y-6">
@@ -54,8 +64,8 @@ function Checkout() {
               <div className="flex items-start gap-3 rounded-xl border border-brand/30 bg-brand/5 p-4">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
                 <p className="text-sm text-foreground">
-                  <span className="font-bold">Avisaremos o restaurante:</span> o cliente tem
-                  restrições — {dietaryRestrictions.join(", ")}.
+                  <span className="font-bold">{t("checkout.warnPrefix")}</span>{" "}
+                  {t("checkout.warnDietarySuffix", { list: dietaryRestrictions.join(", ") })}
                 </p>
               </div>
             )}
@@ -64,17 +74,18 @@ function Checkout() {
               <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
                 <p className="text-sm text-foreground">
-                  <span className="font-bold">Avisaremos o restaurante:</span> o cliente não pode
-                  comer — {excludedIngredients.join(", ")}.
+                  <span className="font-bold">{t("checkout.warnPrefix")}</span>{" "}
+                  {t("checkout.warnExcludedSuffix", { list: excludedIngredients.join(", ") })}
                 </p>
               </div>
             )}
 
             <section className="card-soft p-6">
-              <h2 className="font-display text-lg font-bold text-primary">Endereços de entrega</h2>
+              <h2 className="font-display text-lg font-bold text-primary">
+                {t("checkout.addressesTitle")}
+              </h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Já confirmados ao pedir cada entrega — para mudar, cancele o pedido em "Entrega" e
-                peça de novo.
+                {t("checkout.addressesDescription")}
               </p>
               <div className="mt-4 space-y-2">
                 {orders.map((order) => (
@@ -99,29 +110,32 @@ function Checkout() {
             </section>
 
             <section className="card-soft p-6">
-              <h2 className="font-display text-lg font-bold text-primary">Horário de entrega</h2>
+              <h2 className="font-display text-lg font-bold text-primary">
+                {t("checkout.scheduleTitle")}
+              </h2>
               <div className="mt-4 grid gap-2 sm:grid-cols-3">
                 {slots.map((s) => (
                   <button
-                    key={s}
+                    key={s.id}
                     type="button"
-                    onClick={() => setSlot(s)}
+                    onClick={() => setSlot(s.id)}
                     className={`rounded-xl border p-3 text-left text-sm font-semibold ${
-                      slot === s ? "border-brand bg-brand/5 text-primary" : "border-border"
+                      slot === s.id ? "border-brand bg-brand/5 text-primary" : "border-border"
                     }`}
                   >
                     <Clock className="mb-2 h-4 w-4 text-brand" />
-                    {s}
+                    {slotLabel(s)}
                   </button>
                 ))}
               </div>
             </section>
 
             <section className="card-soft p-6">
-              <h2 className="font-display text-lg font-bold text-primary">Como prefere pagar</h2>
+              <h2 className="font-display text-lg font-bold text-primary">
+                {t("checkout.paymentTitle")}
+              </h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                A Kino não processa pagamentos — isto é só uma preferência que enviamos ao
-                restaurante junto do pedido. O valor é combinado e pago diretamente com ele.
+                {t("checkout.paymentDescription")}
               </p>
               <div className="mt-4 space-y-2">
                 {paymentMethods.map((m) => (
@@ -156,12 +170,15 @@ function Checkout() {
           </div>
 
           <aside className="card-soft h-fit p-6">
-            <h2 className="font-display text-lg font-bold text-primary">O seu pedido</h2>
+            <h2 className="font-display text-lg font-bold text-primary">
+              {t("checkout.yourOrder")}
+            </h2>
             <div className="mt-4 space-y-4">
               {orders.map((order, i) => (
                 <div key={order.id}>
                   <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    Pedido {i + 1} · {getRestaurant(order.restaurantId)?.name ?? "Restaurante"}
+                    {t("checkout.order")} {i + 1} ·{" "}
+                    {getRestaurant(order.restaurantId)?.name ?? "Restaurante"}
                   </p>
                   <ul className="mt-2 space-y-2">
                     {order.lines.map((line) => {
@@ -188,15 +205,15 @@ function Checkout() {
             </div>
             <dl className="mt-5 space-y-2 border-t border-border pt-4 text-sm">
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Subtotal</dt>
+                <dt className="text-muted-foreground">{t("checkout.subtotal")}</dt>
                 <dd className="font-semibold">{formatKz(subtotal)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Entrega</dt>
+                <dt className="text-muted-foreground">{t("checkout.delivery")}</dt>
                 <dd className="font-semibold">{formatKz(deliveryFee)}</dd>
               </div>
               <div className="flex justify-between border-t border-border pt-3 text-base">
-                <dt className="font-bold">Total</dt>
+                <dt className="font-bold">{t("checkout.total")}</dt>
                 <dd className="font-extrabold text-primary">{formatKz(total)}</dd>
               </div>
             </dl>
@@ -208,15 +225,15 @@ function Checkout() {
                 // anexamos a preferência de pagamento a cada um. Nada é
                 // limpo: continuam visíveis e acompanháveis em "Entrega".
                 for (const order of orders) confirmOrder(order.id, payment);
-                toast.success("Pedido confirmado — acompanhe o estado em Entrega.");
+                toast.success(t("checkout.orderConfirmedToast"));
                 navigate({ to: "/entrega" });
               }}
               className="mt-6 w-full rounded-xl bg-brand px-5 py-3.5 text-sm font-bold text-brand-foreground disabled:opacity-50"
             >
-              Fazer pedido — {formatKz(total)}
+              {t("checkout.placeOrder")} — {formatKz(total)}
             </button>
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              O restaurante recebe o pedido e combina o pagamento consigo diretamente.
+              {t("checkout.footerNote")}
             </p>
           </aside>
         </div>

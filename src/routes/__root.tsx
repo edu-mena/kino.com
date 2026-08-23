@@ -17,8 +17,10 @@ import { BillProvider } from "../lib/bill";
 import { CartProvider } from "../lib/cart";
 import { LocationProvider } from "../lib/location";
 import { AuthProvider } from "../lib/auth";
+import { MenuAdminProvider } from "../lib/menu-admin";
 import { PreferencesProvider } from "../lib/preferences";
 import { ReservationsProvider } from "../lib/reservations";
+import { RestaurantAdminProvider } from "../lib/restaurant-admin";
 import { StoriesProvider } from "../lib/stories";
 import { Toaster } from "../components/ui/sonner";
 
@@ -149,23 +151,27 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <PreferencesProvider>
-          <StoriesProvider>
-            <AddressesProvider>
-              <LocationProvider>
-                <ReservationsProvider>
-                  <BillProvider>
-                    <CartProvider>
-                      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-                      <Outlet />
-                      <Toaster />
-                    </CartProvider>
-                  </BillProvider>
-                </ReservationsProvider>
-              </LocationProvider>
-            </AddressesProvider>
-          </StoriesProvider>
-        </PreferencesProvider>
+        <RestaurantAdminProvider>
+          <PreferencesProvider>
+            <StoriesProvider>
+              <AddressesProvider>
+                <LocationProvider>
+                  <ReservationsProvider>
+                    <BillProvider>
+                      <MenuAdminProvider>
+                        <CartProvider>
+                          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                          <Outlet />
+                          <Toaster />
+                        </CartProvider>
+                      </MenuAdminProvider>
+                    </BillProvider>
+                  </ReservationsProvider>
+                </LocationProvider>
+              </AddressesProvider>
+            </StoriesProvider>
+          </PreferencesProvider>
+        </RestaurantAdminProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

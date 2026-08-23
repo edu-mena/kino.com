@@ -42,14 +42,6 @@ export const paymentMethods = [
   },
 ];
 
-export const trackingSteps = [
-  { id: 1, title: "Pedido feito", detail: "O seu pedido foi recebido", time: "12:45", done: true },
-  { id: 2, title: "Em preparação", detail: "A cozinha está a preparar", time: "12:50", done: true },
-  { id: 3, title: "A caminho", detail: "O estafeta saiu para entrega", time: "13:10", done: true },
-  { id: 4, title: "A chegar", detail: "Chega em poucos minutos", time: "—", done: false },
-  { id: 5, title: "Entregue", detail: "Bom apetite!", time: "—", done: false },
-];
-
 /**
  * A Kino.com é só a ponte entre cliente e restaurante — não processa
  * pagamentos, não entrega, não gere reservas nem cancelamentos. Por isso a
