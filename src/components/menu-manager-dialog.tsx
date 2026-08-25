@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { useTranslation } from "@/i18n";
 import { useMenusAdmin } from "@/lib/menus-admin";
 
 /**
@@ -24,6 +25,7 @@ export function MenuManagerDialog({
   const { menusByRestaurant, createMenu, renameMenu, toggleMenuActive, deleteMenu, menuHasDishes } =
     useMenusAdmin();
   const menus = menusByRestaurant(restaurantId);
+  const { t } = useTranslation();
 
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export function MenuManagerDialog({
     e.preventDefault();
     if (!newName.trim()) return;
     createMenu(restaurantId, newName.trim());
-    toast.success("Cardápio criado.");
+    toast.success(t("menuManagerDialog.createdToast"));
     setNewName("");
   };
 
@@ -49,25 +51,24 @@ export function MenuManagerDialog({
 
   const handleDelete = (id: string, name: string) => {
     if (menuHasDishes(id)) {
-      toast.error(`Mova ou remova os pratos de "${name}" antes de apagar este cardápio.`);
+      toast.error(t("menuManagerDialog.hasDishesError", { name }));
       return;
     }
     const ok = deleteMenu(id);
     if (!ok) {
-      toast.error("Não é possível apagar o único cardápio do restaurante.");
+      toast.error(t("menuManagerDialog.lastMenuError"));
       return;
     }
-    toast.success("Cardápio apagado.");
+    toast.success(t("menuManagerDialog.deletedToast"));
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-[1.5rem] border-none bg-card p-6">
-        <DialogTitle className="font-display text-lg font-bold">Os seus cardápios</DialogTitle>
-        <p className="text-sm text-muted-foreground">
-          Um cardápio desativado fica como rascunho — os pratos lá dentro deixam de aparecer para os
-          clientes, mas continuam aqui para editar.
-        </p>
+        <DialogTitle className="font-display text-lg font-bold">
+          {t("menuManagerDialog.title")}
+        </DialogTitle>
+        <p className="text-sm text-muted-foreground">{t("menuManagerDialog.description")}</p>
 
         <div className="mt-4 space-y-2">
           {menus.map((menu) => (
@@ -86,7 +87,7 @@ export function MenuManagerDialog({
                   />
                   <button
                     type="button"
-                    aria-label="Guardar nome"
+                    aria-label={t("menuManagerDialog.saveNameAria")}
                     onClick={confirmEdit}
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-success hover:bg-success/10"
                   >
@@ -94,7 +95,7 @@ export function MenuManagerDialog({
                   </button>
                   <button
                     type="button"
-                    aria-label="Cancelar"
+                    aria-label={t("menuManagerDialog.cancelAria")}
                     onClick={() => setEditingId(null)}
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-surface"
                   >
@@ -111,7 +112,7 @@ export function MenuManagerDialog({
                       menu.isActive ? "text-success" : "text-muted-foreground"
                     }`}
                   >
-                    {menu.isActive ? "Ativo" : "Rascunho"}
+                    {menu.isActive ? t("menuManagerDialog.active") : t("menuManagerDialog.draft")}
                   </span>
                   <Switch
                     checked={menu.isActive}
@@ -119,7 +120,7 @@ export function MenuManagerDialog({
                   />
                   <button
                     type="button"
-                    aria-label={`Renomear ${menu.name}`}
+                    aria-label={t("menuManagerDialog.renameAria", { name: menu.name })}
                     onClick={() => startEdit(menu.id, menu.name)}
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-surface hover:text-primary"
                   >
@@ -127,7 +128,7 @@ export function MenuManagerDialog({
                   </button>
                   <button
                     type="button"
-                    aria-label={`Apagar ${menu.name}`}
+                    aria-label={t("menuManagerDialog.deleteAria", { name: menu.name })}
                     onClick={() => handleDelete(menu.id, menu.name)}
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   >
@@ -143,14 +144,14 @@ export function MenuManagerDialog({
           <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Ex: Menu de Fim de Semana"
+            placeholder={t("menuManagerDialog.newMenuPlaceholder")}
             className="min-w-0 flex-1"
           />
           <Button
             type="submit"
             size="icon"
             className="shrink-0 rounded-xl"
-            aria-label="Criar cardápio"
+            aria-label={t("menuManagerDialog.createAria")}
           >
             <Plus className="h-4 w-4" />
           </Button>

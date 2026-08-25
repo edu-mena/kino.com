@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import icon from "@/assets/icon.png";
 import { getEffectiveMenuItems, normalizeIngredients, type MenuItemInput } from "@/data/menu-store";
 import type { MenuItem, MenuItemIngredient } from "@/data/types";
+import { useTranslation } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 type IngredientRow = {
@@ -73,6 +74,7 @@ export function DishFormDialog({
   onSave: (restaurantId: string, input: MenuItemInput, editingId?: string) => void;
 }) {
   const suggestions = useDishSuggestions();
+  const { t } = useTranslation();
 
   const [name, setName] = useState("");
   const [nameSuggestionsOpen, setNameSuggestionsOpen] = useState(false);
@@ -119,7 +121,7 @@ export function DishFormDialog({
     setImage(suggestion.image);
     setIngredientRows(toRows(suggestion.ingredients));
     setNameSuggestionsOpen(false);
-    toast.success(`Dados de "${suggestion.name}" preenchidos — reveja o preço.`);
+    toast.success(t("dishFormDialog.suggestionAppliedToast", { name: suggestion.name }));
   };
 
   const updateRow = (index: number, patch: Partial<IngredientRow>) =>
@@ -132,7 +134,7 @@ export function DishFormDialog({
     e.preventDefault();
     const priceNum = Number(price);
     if (!name.trim() || !category.trim() || !priceNum || priceNum <= 0) {
-      toast.error("Preencha nome, categoria e um preço válido.");
+      toast.error(t("dishFormDialog.missingFieldsError"));
       return;
     }
 
@@ -156,7 +158,7 @@ export function DishFormDialog({
     };
 
     onSave(restaurantId, input, dish?.id);
-    toast.success(dish ? "Prato atualizado." : "Prato criado.");
+    toast.success(dish ? t("dishFormDialog.updatedToast") : t("dishFormDialog.createdToast"));
     onOpenChange(false);
   };
 
@@ -164,17 +166,15 @@ export function DishFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto rounded-[1.5rem] border-none bg-card p-6">
         <DialogTitle className="font-display text-lg font-bold">
-          {dish ? "Editar prato" : "Novo prato"}
+          {dish ? t("dishFormDialog.editTitle") : t("dishFormDialog.newTitle")}
         </DialogTitle>
         <DialogDescription>
-          {dish
-            ? "As alterações ficam visíveis assim que guardar."
-            : "O prato aparece no cardápio assim que o criar."}
+          {dish ? t("dishFormDialog.editDescription") : t("dishFormDialog.newDescription")}
         </DialogDescription>
 
         <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <div className="relative space-y-1.5">
-            <Label htmlFor="dish-name">Nome do prato</Label>
+            <Label htmlFor="dish-name">{t("dishFormDialog.nameLabel")}</Label>
             <Input
               id="dish-name"
               value={name}
@@ -184,14 +184,14 @@ export function DishFormDialog({
               }}
               onFocus={() => setNameSuggestionsOpen(true)}
               onBlur={() => setTimeout(() => setNameSuggestionsOpen(false), 150)}
-              placeholder="Ex: Muamba de Galinha"
+              placeholder={t("dishFormDialog.namePlaceholder")}
               autoComplete="off"
               required
             />
             {nameSuggestionsOpen && nameSuggestions.length > 0 && (
               <div className="absolute inset-x-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-lg">
                 <p className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                  Já existe no Kino.com — usar como base?
+                  {t("dishFormDialog.suggestionsHint")}
                 </p>
                 {nameSuggestions.map((s) => (
                   <button
@@ -220,13 +220,13 @@ export function DishFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="dish-category">Categoria</Label>
+              <Label htmlFor="dish-category">{t("dishFormDialog.categoryLabel")}</Label>
               <Input
                 id="dish-category"
                 list="dish-category-options"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="Ex: Pratos Principais"
+                placeholder={t("dishFormDialog.categoryPlaceholder")}
                 required
               />
               <datalist id="dish-category-options">
@@ -236,7 +236,7 @@ export function DishFormDialog({
               </datalist>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="dish-price">Preço (Kz)</Label>
+              <Label htmlFor="dish-price">{t("dishFormDialog.priceLabel")}</Label>
               <Input
                 id="dish-price"
                 type="number"
@@ -251,16 +251,16 @@ export function DishFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="dish-portion">Porção</Label>
+              <Label htmlFor="dish-portion">{t("dishFormDialog.portionLabel")}</Label>
               <Input
                 id="dish-portion"
                 value={portionInfo}
                 onChange={(e) => setPortionInfo(e.target.value)}
-                placeholder="Ex: 1 pessoa"
+                placeholder={t("dishFormDialog.portionPlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="dish-prep-time">Tempo de preparo (min)</Label>
+              <Label htmlFor="dish-prep-time">{t("dishFormDialog.prepTimeLabel")}</Label>
               <Input
                 id="dish-prep-time"
                 type="number"
@@ -273,12 +273,12 @@ export function DishFormDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="dish-description">Descrição</Label>
+            <Label htmlFor="dish-description">{t("dishFormDialog.descriptionLabel")}</Label>
             <Textarea
               id="dish-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ingredientes principais e forma de preparo..."
+              placeholder={t("dishFormDialog.descriptionPlaceholder")}
               className="rounded-xl"
             />
           </div>
@@ -291,19 +291,19 @@ export function DishFormDialog({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Ingredientes</Label>
+              <Label>{t("dishFormDialog.ingredientsLabel")}</Label>
               <button
                 type="button"
                 onClick={() => setIngredientRows((rows) => [...rows, { ...emptyRow }])}
                 className="inline-flex items-center gap-1 text-xs font-semibold text-brand"
               >
-                <Plus className="h-3.5 w-3.5" /> Adicionar
+                <Plus className="h-3.5 w-3.5" /> {t("dishFormDialog.addIngredient")}
               </button>
             </div>
 
             {ingredientRows.length === 0 && (
               <p className="text-xs text-muted-foreground">
-                Nenhum ingrediente listado — o prato fica sem opções de personalização.
+                {t("dishFormDialog.noIngredientsHint")}
               </p>
             )}
 
@@ -316,7 +316,7 @@ export function DishFormDialog({
                   <Input
                     value={row.name}
                     onChange={(e) => updateRow(index, { name: e.target.value })}
-                    placeholder="Nome do ingrediente"
+                    placeholder={t("dishFormDialog.ingredientNamePlaceholder")}
                     className="min-w-0"
                   />
                   <select
@@ -328,8 +328,8 @@ export function DishFormDialog({
                       "h-9 shrink-0 rounded-xl border border-border bg-background px-2 text-xs",
                     )}
                   >
-                    <option value="main">Principal</option>
-                    <option value="extra">Adicional</option>
+                    <option value="main">{t("dishFormDialog.kindMain")}</option>
+                    <option value="extra">{t("dishFormDialog.kindExtra")}</option>
                   </select>
                   {row.kind === "extra" ? (
                     <Input
@@ -338,7 +338,7 @@ export function DishFormDialog({
                       step={50}
                       value={row.extraPrice}
                       onChange={(e) => updateRow(index, { extraPrice: e.target.value })}
-                      placeholder="Preço"
+                      placeholder={t("dishFormDialog.extraPricePlaceholder")}
                       className="w-20 shrink-0"
                     />
                   ) : (
@@ -346,7 +346,7 @@ export function DishFormDialog({
                   )}
                   <button
                     type="button"
-                    aria-label="Remover ingrediente"
+                    aria-label={t("dishFormDialog.removeIngredientAria")}
                     onClick={() => removeRow(index)}
                     className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   >
@@ -356,13 +356,15 @@ export function DishFormDialog({
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              <span className="font-semibold">Principal</span>: já vem no prato, o cliente pode
-              tirar. <span className="font-semibold">Adicional</span>: opcional, com custo extra.
+              <span className="font-semibold">{t("dishFormDialog.kindMain")}</span>:{" "}
+              {t("dishFormDialog.ingredientsHintMain")}{" "}
+              <span className="font-semibold">{t("dishFormDialog.kindExtra")}</span>:{" "}
+              {t("dishFormDialog.ingredientsHintExtra")}
             </p>
           </div>
 
           <Button type="submit" disabled={imageUploading} className="w-full rounded-xl">
-            {dish ? "Guardar alterações" : "Criar prato"}
+            {dish ? t("dishFormDialog.saveChanges") : t("dishFormDialog.createDish")}
           </Button>
         </form>
       </DialogContent>

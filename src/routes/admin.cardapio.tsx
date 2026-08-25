@@ -19,6 +19,7 @@ import { DishFormDialog } from "@/components/dish-form-dialog";
 import { MenuManagerDialog } from "@/components/menu-manager-dialog";
 import { defaultMenuId } from "@/data/menus-store";
 import type { MenuItem } from "@/data/types";
+import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { useMenusAdmin } from "@/lib/menus-admin";
@@ -35,6 +36,7 @@ function AdminCardapio() {
   const { items, isAvailable, toggleAvailability, createItem, updateItem, deleteItem } =
     useMenuAdmin();
   const { menusByRestaurant } = useMenusAdmin();
+  const { t } = useTranslation();
   const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
   const [menuManagerOpen, setMenuManagerOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -74,19 +76,19 @@ function AdminCardapio() {
   const handleDelete = () => {
     if (!deletingDish) return;
     deleteItem(deletingDish.id);
-    toast.success("Prato removido do cardápio.");
+    toast.success(t("adminCardapio.deletedToast"));
     setDeletingDish(null);
   };
 
   return (
     <div className="pb-16">
       <AdminPageHeading
-        eyebrow="Cardápio"
-        title="Os seus pratos"
-        description='Crie e edite pratos, ou desligue um quando esgotar — some da app na hora, com o selo "Indisponível".'
+        eyebrow={t("adminCardapio.eyebrow")}
+        title={t("adminCardapio.title")}
+        description={t("adminCardapio.description")}
         action={
           <Button onClick={openCreate} className="rounded-xl">
-            <Plus className="h-4 w-4" /> Novo prato
+            <Plus className="h-4 w-4" /> {t("adminCardapio.newDish")}
           </Button>
         }
       />
@@ -115,7 +117,7 @@ function AdminCardapio() {
                       : "bg-surface text-muted-foreground",
                   )}
                 >
-                  Rascunho
+                  {t("adminCardapio.draftBadge")}
                 </span>
               )}
             </button>
@@ -125,7 +127,7 @@ function AdminCardapio() {
             onClick={() => setMenuManagerOpen(true)}
             className="flex shrink-0 items-center gap-1.5 rounded-full border border-dashed border-border px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
           >
-            <Settings2 className="h-4 w-4" /> Gerir cardápios
+            <Settings2 className="h-4 w-4" /> {t("adminCardapio.manageMenus")}
           </button>
         </div>
       </div>
@@ -160,7 +162,9 @@ function AdminCardapio() {
                             available ? "text-success" : "text-muted-foreground"
                           }`}
                         >
-                          {available ? "Disponível" : "Indisponível"}
+                          {available
+                            ? t("adminCardapio.available")
+                            : t("adminCardapio.unavailable")}
                         </span>
                         <Switch
                           checked={available}
@@ -168,7 +172,7 @@ function AdminCardapio() {
                         />
                         <button
                           type="button"
-                          aria-label={`Editar ${item.name}`}
+                          aria-label={t("adminCardapio.editAria", { name: item.name })}
                           onClick={() => openEdit(item)}
                           className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-primary"
                         >
@@ -176,7 +180,7 @@ function AdminCardapio() {
                         </button>
                         <button
                           type="button"
-                          aria-label={`Remover ${item.name}`}
+                          aria-label={t("adminCardapio.removeAria", { name: item.name })}
                           onClick={() => setDeletingDish(item)}
                           className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                         >
@@ -192,9 +196,9 @@ function AdminCardapio() {
 
         {dishes.length === 0 && (
           <div className="card-soft grid place-items-center gap-3 p-12 text-center">
-            <p className="text-sm text-muted-foreground">Este cardápio ainda não tem pratos.</p>
+            <p className="text-sm text-muted-foreground">{t("adminCardapio.emptyText")}</p>
             <Button onClick={openCreate} className="rounded-xl">
-              <Plus className="h-4 w-4" /> Criar o primeiro prato
+              <Plus className="h-4 w-4" /> {t("adminCardapio.createFirst")}
             </Button>
           </div>
         )}
@@ -221,15 +225,18 @@ function AdminCardapio() {
       <AlertDialog open={!!deletingDish} onOpenChange={(open) => !open && setDeletingDish(null)}>
         <AlertDialogContent className="rounded-[1.5rem]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover "{deletingDish?.name}"?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("adminCardapio.deleteDialogTitle", { name: deletingDish?.name ?? "" })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              O prato deixa de aparecer no cardápio para os clientes. Esta ação não pode ser
-              desfeita.
+              {t("adminCardapio.deleteDialogDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Remover</AlertDialogAction>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              {t("adminCardapio.deleteConfirm")}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
