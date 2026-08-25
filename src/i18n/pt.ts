@@ -647,8 +647,8 @@ export const pt = {
   homeGuest: {
     heroLine1: "Então,",
     heroLine2: "Hoje é aonde",
-    subtitle: "A Melhor escolha à distância de um click!!",
-    subtitleBrand: "o teu cardápio online.",
+    subtitle: "Sua próxima refeição a um toque de distância.",
+    subtitleBrandPrefix: "Conecte-se ao cardápio online de",
     login: "Fazer Login",
     whatIsKino: "O que é a Kino?",
     reserveTitle: "Reserve uma mesa",

@@ -642,8 +642,8 @@ export const en: Dictionary = {
   homeGuest: {
     heroLine1: "So,",
     heroLine2: "Where to today",
-    subtitle: "The best choice, one click away!!",
-    subtitleBrand: "your online menu.",
+    subtitle: "Your next meal, one tap away.",
+    subtitleBrandPrefix: "Connect to the online menu at",
     login: "Log in",
     whatIsKino: "What is Kino?",
     reserveTitle: "Reserve a table",
