@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useReducer, useState, type ReactNode } from "react";
 import { getRestaurant } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
 
@@ -26,11 +26,23 @@ const RestaurantAdminContext = createContext<RestaurantAdminValue | null>(null);
 export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
   const [managedRestaurantId, setManagedRestaurantId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  // `restaurant` abaixo é derivado (chama `getRestaurant`, que aplica as
+  // edições de `/admin/perfil`) — sem isto, guardar uma edição não fazia
+  // este provider voltar a renderizar, e o painel ficava com dados velhos
+  // até a próxima navegação.
+  const [, forceUpdate] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) setManagedRestaurantId(stored);
     setHydrated(true);
+
+    window.addEventListener("kino:menu-changed", forceUpdate);
+    window.addEventListener("storage", forceUpdate);
+    return () => {
+      window.removeEventListener("kino:menu-changed", forceUpdate);
+      window.removeEventListener("storage", forceUpdate);
+    };
   }, []);
 
   const login = (restaurantId: string) => {

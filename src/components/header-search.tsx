@@ -10,27 +10,34 @@ import {
   matchesLocation,
 } from "@/components/search-filters";
 import { getAllIngredientNames, getMenuCategories, getRestaurant } from "@/data/helpers";
-import { INITIAL_MENU_ITEMS } from "@/data/mockData";
+import type { MenuItem } from "@/data/types";
+import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";
+import { useTranslation } from "@/i18n";
 
 const categories = getMenuCategories();
 const ingredientNames = getAllIngredientNames();
-const overallMaxPrice = Math.max(...INITIAL_MENU_ITEMS.map((m) => m.price));
 
 export function HeaderSearch() {
+  const { t } = useTranslation();
+  const items = useMenuItems();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [neighborhood, setNeighborhood] = useState<string>("todos");
   const [ingredient, setIngredient] = useState<string | null>(null);
 
+  const overallMaxPrice = useMemo(
+    () => (items.length ? Math.max(...items.map((m) => m.price)) : 0),
+    [items],
+  );
   const [maxPrice, setMaxPrice] = useState(overallMaxPrice);
   const [priceTouched, setPriceTouched] = useState(false);
 
   // Filtrados por tudo MENOS o preço — define até onde a faixa de preço
   // pode ir com os outros filtros já aplicados.
   const filteredExceptPrice = useMemo(() => {
-    return INITIAL_MENU_ITEMS.filter((item) => {
+    return items.filter((item) => {
       const restaurant = getRestaurant(item.restaurantId);
       const byQuery =
         !query ||
@@ -41,7 +48,7 @@ export function HeaderSearch() {
       const byNeighborhood = matchesLocation(restaurant?.neighborhood, neighborhood);
       return byQuery && byCategory && byIngredient && byNeighborhood;
     });
-  }, [query, category, ingredient, neighborhood]);
+  }, [items, query, category, ingredient, neighborhood]);
 
   const maxAvailablePrice = filteredExceptPrice.length
     ? Math.max(...filteredExceptPrice.map((m) => m.price))
@@ -61,11 +68,11 @@ export function HeaderSearch() {
 
   return (
     <>
-      <div className="flex items-center gap-[5px]">
+      <div data-tour="search" className="flex items-center gap-[5px]">
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Buscar"
+          aria-label={t("search.buttonLabel")}
           className="grid shrink-0 place-items-center rounded-full bg-primary p-4 text-primary-foreground transition-opacity hover:opacity-90"
         >
           <Search className="h-4 w-4" />
@@ -75,13 +82,15 @@ export function HeaderSearch() {
           onClick={() => setOpen(true)}
           className="w-full rounded-2xl border border-primary bg-card px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary"
         >
-          Pesquisar pratos, restaurantes, locais...
+          {t("search.triggerPlaceholder")}
         </button>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto rounded-[2rem] border-none bg-card p-8">
-          <DialogTitle className="font-display text-xl font-bold">Buscar</DialogTitle>
+          <DialogTitle className="font-display text-xl font-bold">
+            {t("search.dialogTitle")}
+          </DialogTitle>
 
           <label className="mt-3 flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-4 py-3">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -89,14 +98,14 @@ export function HeaderSearch() {
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Nome do prato, restaurante..."
+              placeholder={t("search.inputPlaceholder")}
               className="w-full bg-transparent text-sm outline-none"
             />
           </label>
 
           <div className="mt-4 min-w-0">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Preço até {formatKz(maxPrice)}
+              {t("search.priceUpTo", { price: formatKz(maxPrice) })}
             </p>
             <Slider
               min={0}
@@ -113,7 +122,7 @@ export function HeaderSearch() {
           <div className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2">
             <div>
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Ingrediente
+                {t("search.ingredient")}
               </p>
               <IngredientSearchFilter
                 value={ingredient}
@@ -124,7 +133,7 @@ export function HeaderSearch() {
 
             <div>
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Localização
+                {t("search.location")}
               </p>
               <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
             </div>
@@ -132,7 +141,7 @@ export function HeaderSearch() {
 
           <div className="mt-4 min-w-0">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Categoria
+              {t("search.category")}
             </p>
             <ToggleGroup
               type="single"
@@ -154,13 +163,15 @@ export function HeaderSearch() {
 
           <div className="mt-6 min-w-0 max-h-80 overflow-y-auto">
             <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">{filtered.length} resultados</p>
+              <p className="text-xs text-muted-foreground">
+                {t("search.resultsCount", { count: filtered.length })}
+              </p>
               {filtered.map((item) => (
                 <SearchResultRow key={item.id} item={item} onSelect={() => setOpen(false)} />
               ))}
               {filtered.length === 0 && (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  Nenhum resultado encontrado.
+                  {t("search.noResults")}
                 </p>
               )}
             </div>
@@ -171,13 +182,7 @@ export function HeaderSearch() {
   );
 }
 
-function SearchResultRow({
-  item,
-  onSelect,
-}: {
-  item: (typeof INITIAL_MENU_ITEMS)[number];
-  onSelect: () => void;
-}) {
+function SearchResultRow({ item, onSelect }: { item: MenuItem; onSelect: () => void }) {
   const restaurant = getRestaurant(item.restaurantId);
   return (
     <Link

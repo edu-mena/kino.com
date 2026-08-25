@@ -5,8 +5,8 @@ import icon from "@/assets/icon.png";
 import { DishCard } from "@/components/dish-card";
 import { PageShell } from "@/components/site-shell";
 import { getMenuItem, getRestaurant, getRestaurantsOfferingDish } from "@/data/helpers";
-import { INITIAL_MENU_ITEMS } from "@/data/mockData";
 import type { SelectedIngredient } from "@/data/types";
+import { useMenuItems } from "@/data/use-menu-items";
 import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
 
@@ -60,7 +60,8 @@ function DishDetail() {
   const unit = item.price + extraTotal;
 
   const otherRestaurants = getRestaurantsOfferingDish(item.name, item.restaurantId);
-  const related = INITIAL_MENU_ITEMS.filter((m) => m.id !== item.id).slice(0, 4);
+  const menuItems = useMenuItems();
+  const related = menuItems.filter((m) => m.id !== item.id).slice(0, 4);
 
   return (
     <PageShell>

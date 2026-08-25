@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bike, CalendarCheck, ChevronRight, Soup, Star } from "lucide-react";
 import { AdminPageHeading } from "@/components/admin-shell";
-import { getMenuItemsByRestaurant, getReviewsForRestaurant } from "@/data/helpers";
+import { getReviewsForRestaurant } from "@/data/helpers";
 import { useCart } from "@/lib/cart";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { useReservations } from "@/lib/reservations";
@@ -18,7 +18,9 @@ function AdminDashboard() {
   const { restaurant } = useRestaurantAdmin();
   const { orders } = useCart();
   const { reservations } = useReservations();
-  const { unavailableIds } = useMenuAdmin();
+  // `items` (não `getMenuItemsByRestaurant`) — o painel precisa de contar
+  // também os pratos de cardápios em rascunho, não só os visíveis ao cliente.
+  const { items } = useMenuAdmin();
 
   if (!restaurant) return null;
 
@@ -26,8 +28,8 @@ function AdminDashboard() {
   const pendingOrders = restaurantOrders.filter((o) => o.status === "pending").length;
   const restaurantReservations = reservations.filter((r) => r.restaurantId === restaurant.id);
   const pendingReservations = restaurantReservations.filter((r) => r.status === "Pendente").length;
-  const menuItems = getMenuItemsByRestaurant(restaurant.id);
-  const unavailableCount = menuItems.filter((m) => unavailableIds.includes(m.id)).length;
+  const menuItems = items.filter((m) => m.restaurantId === restaurant.id);
+  const unavailableCount = menuItems.filter((m) => !m.isAvailable).length;
   const reviews = getReviewsForRestaurant(restaurant.id);
 
   const cards = [

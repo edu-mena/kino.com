@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bike, Percent, Sparkles } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { INITIAL_OFFERS } from "@/data/mockData";
+import { useOffers } from "@/data/use-offers";
 
 export const Route = createFileRoute("/ofertas")({
   head: () => ({
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/ofertas")({
 const iconByType = { discount: Percent, delivery: Bike, "happy-hour": Sparkles } as const;
 
 function Ofertas() {
+  const offers = useOffers();
   return (
     <PageShell>
       <PageHeading
@@ -32,7 +33,7 @@ function Ofertas() {
         description="Descontos ativos hoje. Mencione o código ao restaurante ao fazer o pedido."
       />
       <div className="mx-auto mt-8 grid max-w-6xl gap-4 px-4 md:px-6">
-        {INITIAL_OFFERS.map((offer) => {
+        {offers.map((offer) => {
           const OfferIcon = iconByType[offer.type];
           return (
             <div

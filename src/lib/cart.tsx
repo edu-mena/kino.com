@@ -106,29 +106,46 @@ function orderTotal(order: CartOrder): number {
   return orderSubtotal(order) + orderDeliveryFee(order);
 }
 
-function seedOrders(): CartOrder[] {
-  const seedItems = ["menu-601", "menu-shared-agua-601"]
-    .map((id) => getMenuItem(id))
+/** Um pedido seed a partir de ids de prato reais — usado para dar aos
+ * painéis de Pedidos/Estatísticas de vários restaurantes (não só um) algo
+ * para mostrar logo de início, sem precisar de criar pedidos a viver o
+ * fluxo todo primeiro. */
+function buildSeedOrder(
+  id: string,
+  menuItemIds: string[],
+  status: CartOrderStatus,
+  daysAgo: number,
+): CartOrder | null {
+  const items = menuItemIds
+    .map((mid) => getMenuItem(mid))
     .filter((m): m is NonNullable<typeof m> => Boolean(m));
-  if (seedItems.length === 0) return [];
-  const restaurant = getRestaurant(seedItems[0]!.restaurantId);
+  if (items.length === 0) return null;
+  const restaurant = getRestaurant(items[0]!.restaurantId);
+  const createdAt = new Date();
+  createdAt.setDate(createdAt.getDate() - daysAgo);
+  return {
+    id,
+    restaurantId: items[0]!.restaurantId,
+    lines: items.map((m) => ({
+      key: makeLineKey(m.id, []),
+      menuItemId: m.id,
+      qty: 1,
+      selectedIngredients: [],
+    })),
+    createdAt: createdAt.toISOString(),
+    deliveryAddress:
+      INITIAL_SAVED_ADDRESSES.find((a) => a.isDefault) ?? INITIAL_SAVED_ADDRESSES[0]!,
+    status,
+    estimatedMinutes: restaurant?.estimatedDeliveryMinutes ?? 30,
+  };
+}
+
+function seedOrders(): CartOrder[] {
   return [
-    {
-      id: "order-seed-1",
-      restaurantId: seedItems[0]!.restaurantId,
-      lines: seedItems.map((m) => ({
-        key: makeLineKey(m.id, []),
-        menuItemId: m.id,
-        qty: 1,
-        selectedIngredients: [],
-      })),
-      createdAt: new Date().toISOString(),
-      deliveryAddress:
-        INITIAL_SAVED_ADDRESSES.find((a) => a.isDefault) ?? INITIAL_SAVED_ADDRESSES[0]!,
-      status: "onTheWay",
-      estimatedMinutes: restaurant?.estimatedDeliveryMinutes ?? 30,
-    },
-  ];
+    buildSeedOrder("order-seed-1", ["menu-601", "menu-shared-agua-601"], "onTheWay", 0),
+    buildSeedOrder("order-seed-2", ["menu-101"], "delivered", 2),
+    buildSeedOrder("order-seed-3", ["menu-302"], "pending", 0),
+  ].filter((o): o is CartOrder => o !== null);
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -148,7 +165,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     }
     setHydrated(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

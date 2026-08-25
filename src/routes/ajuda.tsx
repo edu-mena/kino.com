@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, CircleHelp, MessageCircle, Phone, Search } f
 import { useMemo, useState } from "react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { helpArticles } from "@/lib/mock-data";
+import { useHelpArticles } from "@/lib/help-articles";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/ajuda")({
@@ -27,13 +27,14 @@ function Ajuda() {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const { t } = useTranslation();
+  const helpArticles = useHelpArticles();
 
   const filtered = useMemo(
     () =>
       query
         ? helpArticles.filter((a) => a.question.toLowerCase().includes(query.toLowerCase()))
         : helpArticles,
-    [query],
+    [query, helpArticles],
   );
 
   const active = activeIndex !== null ? helpArticles[activeIndex] : null;
@@ -64,7 +65,7 @@ function Ajuda() {
                 const index = helpArticles.indexOf(article);
                 return (
                   <button
-                    key={article.question}
+                    key={article.id}
                     type="button"
                     onClick={() => setActiveIndex(index)}
                     className={`group grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-4 text-left transition-colors hover:bg-surface ${

@@ -41,14 +41,37 @@ export interface Restaurant {
 export interface MenuItemIngredient {
   id: string;
   name: string;
+  /** true = ingrediente principal/essencial do prato (o cliente pode
+   * desmarcá-lo); false = ingrediente adicional, com custo extra opcional
+   * (`extraPrice`). Nome do campo mantido por compatibilidade com o dataset
+   * já existente — na interface do painel chama-se "Principal"/"Adicional". */
   removable: boolean;
-  /** Presente só em ingredientes extra/addon (ex: "Bacon Extra"). */
+  /** Presente só em ingredientes adicionais (ex: "Bacon Extra"). */
   extraPrice?: number;
+}
+
+/**
+ * Cardápio nomeado de um restaurante (ex: "Cardápio Principal", "Menu de
+ * Fim de Semana") — um restaurante pode ter vários, geridos em
+ * `/admin/cardapio`. Só pratos de cardápios com `isActive: true` aparecem
+ * para os clientes; os restantes ficam como rascunho, visíveis só no
+ * painel. Todo restaurante tem sempre pelo menos um (o "Cardápio
+ * Principal" sintético, criado automaticamente — ver `@/data/menus-store`).
+ */
+export interface RestaurantMenu {
+  id: string;
+  restaurantId: string;
+  name: string;
+  isActive: boolean;
 }
 
 export interface MenuItem {
   id: string;
   restaurantId: string;
+  /** Cardápio a que este prato pertence. Ausente nos itens do dataset
+   * inicial (seed) — nesse caso assume-se o cardápio principal sintético
+   * do restaurante (ver `@/data/menus-store`, `defaultMenuId`). */
+  menuId?: string;
   name: string;
   description: string;
   price: number;
@@ -155,6 +178,10 @@ export interface UserProfile {
 
 export interface Offer {
   id: string;
+  /** Ausente = promoção da própria Kino (geridas centralmente, nunca
+   * editáveis no painel do restaurante). Presente = promoção criada por um
+   * restaurante em `/admin/promocoes`. */
+  restaurantId?: string;
   type: "discount" | "delivery" | "happy-hour";
   title: string;
   description: string;

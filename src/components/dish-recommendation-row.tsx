@@ -8,6 +8,7 @@ import type { MenuItem } from "@/data/types";
 import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
+import { useTranslation } from "@/i18n";
 
 /**
  * Linha horizontal reutilizável de pratos recomendados. Usada para
@@ -15,6 +16,7 @@ import { usePreferences } from "@/lib/preferences";
  * lista de `items` recebida.
  */
 export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
+  const { t } = useTranslation();
   const [active, setActive] = useState<MenuItem | null>(null);
   const addToBill = useAddToBill();
   const { excludedIngredients } = usePreferences();
@@ -50,7 +52,7 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
                 />
                 {hasConflict && (
                   <span
-                    aria-label="Contém ingrediente que não pode comer"
+                    aria-label={t("home.dishConflictLabel")}
                     className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
                   >
                     <TriangleAlert className="h-3.5 w-3.5" />
@@ -88,17 +90,14 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
               {activeConflicts.length > 0 && (
                 <div className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-foreground">
                   <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                  <span>
-                    <span className="font-bold">Atenção:</span> este prato contém{" "}
-                    {activeConflicts.join(", ")} — que indicou não poder comer.
-                  </span>
+                  <span>{t("home.dishConflictWarning", { list: activeConflicts.join(", ") })}</span>
                 </div>
               )}
 
               {commonIngredients.length > 0 && (
                 <div className="mt-4">
                   <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    Ingredientes comuns entre restaurantes
+                    {t("home.commonIngredients")}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {commonIngredients.map((name) => (
@@ -116,7 +115,7 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
               {otherRestaurants.length > 0 && (
                 <div className="mt-4">
                   <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    Também disponível em
+                    {t("home.alsoAvailableAt")}
                   </p>
                   <div className="mt-2 space-y-2">
                     {otherRestaurants.map((r) => (
@@ -138,7 +137,7 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
                           onClick={() => setActive(null)}
                           className="shrink-0 text-xs font-bold text-brand"
                         >
-                          ver aqui
+                          {t("home.seeHere")}
                         </Link>
                       </div>
                     ))}
@@ -153,7 +152,7 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
                   onClick={() => setActive(null)}
                   className="flex-1 rounded-xl border border-border px-5 py-3 text-center text-sm font-semibold text-foreground transition-colors hover:border-primary"
                 >
-                  Ver prato
+                  {t("home.seeDish")}
                 </Link>
                 <button
                   type="button"
@@ -164,7 +163,7 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
                   className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                 >
                   <Plus className="h-4 w-4" />
-                  Adicionar
+                  {t("common.add")}
                 </button>
               </div>
             </>

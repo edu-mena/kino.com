@@ -3,12 +3,17 @@ import {
   Bike,
   CalendarCheck,
   LayoutGrid,
+  LifeBuoy,
   LogOut,
+  Megaphone,
   Menu,
   Soup,
+  Sparkles,
   Star,
   Store,
+  TrendingUp,
   User,
+  Users,
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -20,13 +25,27 @@ const navItems = [
   { to: "/admin/pedidos", label: "Pedidos", icon: Bike },
   { to: "/admin/reservas", label: "Reservas", icon: CalendarCheck },
   { to: "/admin/cardapio", label: "Cardápio", icon: Soup },
+  { to: "/admin/estatisticas", label: "Estatísticas", icon: TrendingUp },
+  { to: "/admin/clientes", label: "Clientes", icon: Users },
+  { to: "/admin/stories", label: "Stories", icon: Sparkles },
+  { to: "/admin/promocoes", label: "Promoções", icon: Megaphone },
   { to: "/admin/avaliacoes", label: "Avaliações", icon: Star },
   { to: "/admin/perfil", label: "Restaurante", icon: Store },
+  { to: "/admin/suporte", label: "Suporte", icon: LifeBuoy },
 ] as const;
 
-/** Só os 5 primeiros cabem na barra inferior do mobile — Avaliações fica só
- * na sidebar do desktop e acessível a partir de Perfil no mobile. */
-const mobileTabItems = navItems.filter((item) => item.to !== "/admin/avaliacoes");
+const mobileTabRoutes = new Set([
+  "/admin",
+  "/admin/pedidos",
+  "/admin/reservas",
+  "/admin/cardapio",
+  "/admin/estatisticas",
+]);
+
+/** Só 5 itens cabem na barra inferior do mobile (grid fixo) — os restantes
+ * ficam no painel "mais opções" do topo mobile, junto do logout. */
+const mobileTabItems = navItems.filter((item) => mobileTabRoutes.has(item.to));
+const mobileOverflowItems = navItems.filter((item) => !mobileTabRoutes.has(item.to));
 
 /**
  * Casca do painel do restaurante — equivalente ao `PageShell` do lado do
@@ -121,14 +140,17 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
         {mobileOpen && (
           <div className="border-b border-border bg-card px-4 py-3 lg:hidden">
-            <Link
-              to="/admin/avaliacoes"
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-2 py-3 text-sm font-medium text-foreground hover:bg-surface"
-            >
-              <Star className="h-4 w-4 shrink-0 text-primary" />
-              Avaliações
-            </Link>
+            {mobileOverflowItems.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 rounded-lg px-2 py-3 text-sm font-medium text-foreground hover:bg-surface"
+              >
+                <item.icon className="h-4 w-4 shrink-0 text-primary" />
+                {item.label}
+              </Link>
+            ))}
             <button
               type="button"
               onClick={handleLogout}

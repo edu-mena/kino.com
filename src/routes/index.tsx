@@ -1,16 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Armchair, ArrowRight, Tag } from "lucide-react";
+import { useMemo } from "react";
 import heroBg from "@/assets/hero.png";
 import icon from "@/assets/icon.png";
 import { DietaryPreferencesCard } from "@/components/dietary-preferences-card";
 import { DishRecommendationRow } from "@/components/dish-recommendation-row";
 import { HeaderSearch } from "@/components/header-search";
 import { HomeSkeleton } from "@/components/home-skeleton";
+import { OnboardingTour, TutorialHint } from "@/components/onboarding-tour";
 import { PromoCarousel } from "@/components/promo-carousel";
 import { RestaurantAvatarRow } from "@/components/restaurant-avatar-row";
 import { PageShell, SiteHeader } from "@/components/site-shell";
-import { INITIAL_MENU_ITEMS } from "@/data/mockData";
+import { useMenuItems } from "@/data/use-menu-items";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -120,6 +123,7 @@ function SectionHeading({
   to?: "/cardapio" | "/restaurantes";
   search?: { categoria?: string | undefined };
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-end justify-between gap-4">
       <h2 className="text-2xl font-extrabold text-primary">{title}</h2>
@@ -129,23 +133,35 @@ function SectionHeading({
           {...(search ? { search } : {})}
           className="inline-flex items-center gap-1 text-sm font-semibold text-brand"
         >
-          Ver mais <ArrowRight className="h-4 w-4" />
+          {t("home.seeMore")} <ArrowRight className="h-4 w-4" />
         </Link>
       )}
     </div>
   );
 }
 
-const fastFoodItems = INITIAL_MENU_ITEMS.filter((m) => m.category === "Fast-food");
-const grelhadosItems = INITIAL_MENU_ITEMS.filter((m) => m.category === "Grelhados");
-const trendingItems = [...INITIAL_MENU_ITEMS]
-  .filter((m) => m.isTrending || (m.orderCount ?? 0) > 0)
-  .sort((a, b) => (b.orderCount ?? 0) - (a.orderCount ?? 0));
-const recommendedItems = INITIAL_MENU_ITEMS.slice(0, 10);
-
 function HomeLoggedIn() {
+  const { t } = useTranslation();
+  const items = useMenuItems();
+
+  // Derivados da lista efetiva de pratos (reativa a criações/edições no
+  // painel do restaurante) — não do seed estático diretamente.
+  const fastFoodItems = useMemo(() => items.filter((m) => m.category === "Fast-food"), [items]);
+  const grelhadosItems = useMemo(() => items.filter((m) => m.category === "Grelhados"), [items]);
+  const trendingItems = useMemo(
+    () =>
+      [...items]
+        .filter((m) => m.isTrending || (m.orderCount ?? 0) > 0)
+        .sort((a, b) => (b.orderCount ?? 0) - (a.orderCount ?? 0)),
+    [items],
+  );
+  const recommendedItems = useMemo(() => items.slice(0, 10), [items]);
+
   return (
     <PageShell>
+      <OnboardingTour />
+      <TutorialHint />
+
       {/* Busca (mensagem de boas-vindas mudou pro header — ver SiteHeader) */}
       <section className="mx-auto max-w-6xl px-4 pt-3 md:px-6">
         <HeaderSearch />
@@ -158,7 +174,7 @@ function HomeLoggedIn() {
 
       {/* Restaurantes próximos */}
       <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
-        <SectionHeading title="Restaurantes perto de si" to="/restaurantes" />
+        <SectionHeading title={t("home.restaurantsNearYou")} to="/restaurantes" />
         <div className="mt-5">
           <RestaurantAvatarRow />
         </div>
@@ -166,7 +182,7 @@ function HomeLoggedIn() {
 
       {/* Recomendações */}
       <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
-        <SectionHeading title="Recomendações pra si" to="/cardapio" />
+        <SectionHeading title={t("home.recommendedForYou")} to="/cardapio" />
         <div className="mt-5">
           <DishRecommendationRow items={recommendedItems} />
         </div>
@@ -180,7 +196,11 @@ function HomeLoggedIn() {
       {/* Fast-food */}
       {fastFoodItems.length > 0 && (
         <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
-          <SectionHeading title="Fast-food" to="/cardapio" search={{ categoria: "Fast-food" }} />
+          <SectionHeading
+            title={t("home.fastFood")}
+            to="/cardapio"
+            search={{ categoria: "Fast-food" }}
+          />
           <div className="mt-5">
             <DishRecommendationRow items={fastFoodItems} />
           </div>
@@ -190,7 +210,11 @@ function HomeLoggedIn() {
       {/* Grelhados */}
       {grelhadosItems.length > 0 && (
         <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
-          <SectionHeading title="Grelhados" to="/cardapio" search={{ categoria: "Grelhados" }} />
+          <SectionHeading
+            title={t("home.grilled")}
+            to="/cardapio"
+            search={{ categoria: "Grelhados" }}
+          />
           <div className="mt-5">
             <DishRecommendationRow items={grelhadosItems} />
           </div>
@@ -200,7 +224,7 @@ function HomeLoggedIn() {
       {/* Em alta */}
       {trendingItems.length > 0 && (
         <section className="mx-auto mb-12 mt-12 max-w-6xl px-4 md:px-6">
-          <SectionHeading title="Em Alta" to="/cardapio" />
+          <SectionHeading title={t("home.trending")} to="/cardapio" />
           <div className="mt-5">
             <DishRecommendationRow items={trendingItems} />
           </div>

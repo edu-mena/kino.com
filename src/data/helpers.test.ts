@@ -27,7 +27,12 @@ describe("getRestaurant / getMenuItem", () => {
 
   it("finds a menu item by id", () => {
     const first = INITIAL_MENU_ITEMS[0]!;
-    expect(getMenuItem(first.id)).toEqual(first);
+    // Itens do seed não têm `menuId` explícito — a leitura resolve-o para o
+    // cardápio principal sintético do restaurante (ver `@/data/menus-store`).
+    expect(getMenuItem(first.id)).toEqual({
+      ...first,
+      menuId: `menu-default-${first.restaurantId}`,
+    });
   });
 
   it("returns undefined for an unknown menu item id", () => {
