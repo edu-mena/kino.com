@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { INITIAL_RESTAURANTS } from "@/data/mockData";
+import { useTranslation } from "@/i18n";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 export const Route = createFileRoute("/admin_/entrar")({
@@ -31,6 +32,7 @@ function AdminEntrar() {
   const navigate = useNavigate();
   const [restaurantId, setRestaurantId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +42,7 @@ function AdminEntrar() {
     setTimeout(() => {
       login(restaurantId);
       const restaurant = INITIAL_RESTAURANTS.find((r) => r.id === restaurantId);
-      toast.success(`Sessão iniciada — ${restaurant?.name}`);
+      toast.success(t("adminEntrar.successToast", { name: restaurant?.name ?? "" }));
       navigate({ to: "/admin" });
     }, 500);
   };
@@ -52,24 +54,22 @@ function AdminEntrar() {
           to="/"
           className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-primary"
         >
-          <ArrowLeft className="h-4 w-4" /> Voltar ao início
+          <ArrowLeft className="h-4 w-4" /> {t("adminEntrar.backHome")}
         </Link>
 
         <div className="mt-6">
           <Logo />
         </div>
 
-        <h1 className="mt-6 text-3xl font-extrabold text-primary">Painel do restaurante</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Escolha o restaurante que gere para aceder aos pedidos, reservas e cardápio.
-        </p>
+        <h1 className="mt-6 text-3xl font-extrabold text-primary">{t("adminEntrar.title")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("adminEntrar.description")}</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <Select value={restaurantId ?? ""} onValueChange={setRestaurantId}>
             <SelectTrigger className="h-auto rounded-xl border-border bg-card px-4 py-3.5 text-sm">
               <div className="flex items-center gap-2">
                 <Store className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <SelectValue placeholder="Selecione o seu restaurante" />
+                <SelectValue placeholder={t("adminEntrar.placeholder")} />
               </div>
             </SelectTrigger>
             <SelectContent>
@@ -86,14 +86,14 @@ function AdminEntrar() {
             disabled={!restaurantId || loading}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? "A entrar..." : "Entrar no painel"}
+            {loading ? t("adminEntrar.submitting") : t("adminEntrar.submit")}
           </button>
         </form>
 
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          Ainda não é parceiro?{" "}
+          {t("adminEntrar.notPartnerYet")}{" "}
           <Link to="/parceiros" className="font-bold text-primary">
-            Torne-se parceiro
+            {t("adminEntrar.becomePartner")}
           </Link>
         </p>
       </div>

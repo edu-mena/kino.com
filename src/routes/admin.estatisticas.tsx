@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Bike, CalendarCheck, Star, TrendingUp } from "lucide-react";
 import { AdminPageHeading } from "@/components/admin-shell";
 import { getMenuItem, getReviewsForRestaurant } from "@/data/helpers";
+import { useTranslation } from "@/i18n";
 import { useCart } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
 import { useReservations } from "@/lib/reservations";
@@ -39,6 +40,7 @@ function AdminEstatisticas() {
   const { restaurant } = useRestaurantAdmin();
   const { orders, orderTotal } = useCart();
   const { reservations } = useReservations();
+  const { t } = useTranslation();
 
   if (!restaurant) return null;
 
@@ -78,44 +80,53 @@ function AdminEstatisticas() {
   return (
     <div className="pb-16">
       <AdminPageHeading
-        eyebrow="Estatísticas"
-        title="Como o restaurante está a ir"
-        description="Métricas reais, construídas a partir dos seus pedidos, reservas e avaliações — sem dados fabricados."
+        eyebrow={t("adminEstatisticas.eyebrow")}
+        title={t("adminEstatisticas.title")}
+        description={t("adminEstatisticas.description")}
       />
 
       <div className="mx-auto mt-8 grid max-w-6xl gap-4 px-4 sm:grid-cols-2 md:px-6 lg:grid-cols-4">
         <StatCard
           icon={Bike}
-          label="Receita entregue"
+          label={t("adminEstatisticas.deliveredRevenue")}
           value={formatKz(revenue)}
-          hint={`${deliveredOrders.length} de ${restaurantOrders.length} pedidos entregues`}
+          hint={t("adminEstatisticas.deliveredHint", {
+            delivered: deliveredOrders.length,
+            total: restaurantOrders.length,
+          })}
         />
         <StatCard
           icon={CalendarCheck}
-          label="Reservas confirmadas"
+          label={t("adminEstatisticas.confirmedReservations")}
           value={String(confirmedReservations.length)}
-          hint={acceptanceRate !== null ? `${acceptanceRate}% de aceitação` : "Ainda sem respostas"}
+          hint={
+            acceptanceRate !== null
+              ? t("adminEstatisticas.acceptanceRateHint", { rate: acceptanceRate })
+              : t("adminEstatisticas.noResponsesYet")
+          }
         />
         <StatCard
           icon={TrendingUp}
-          label="Pessoas atendidas"
+          label={t("adminEstatisticas.peopleServed")}
           value={String(peopleServed)}
-          hint="Via reservas confirmadas"
+          hint={t("adminEstatisticas.peopleServedHint")}
         />
         <StatCard
           icon={Star}
-          label="Avaliação média"
+          label={t("adminEstatisticas.averageRating")}
           value={restaurant.rating.toFixed(1)}
-          hint={`${reviews.length} avaliações detalhadas`}
+          hint={t("adminEstatisticas.detailedReviewsHint", { count: reviews.length })}
         />
       </div>
 
       <div className="mx-auto mt-8 grid max-w-6xl gap-4 px-4 md:px-6 lg:grid-cols-2">
         <div className="card-soft p-5">
-          <h2 className="font-display text-base font-bold text-foreground">Pratos mais vendidos</h2>
+          <h2 className="font-display text-base font-bold text-foreground">
+            {t("adminEstatisticas.topDishesTitle")}
+          </h2>
           {topDishes.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
-              Ainda não há pedidos suficientes para mostrar um ranking.
+              {t("adminEstatisticas.topDishesEmpty")}
             </p>
           ) : (
             <div className="mt-4 space-y-3">
@@ -141,11 +152,11 @@ function AdminEstatisticas() {
 
         <div className="card-soft p-5">
           <h2 className="font-display text-base font-bold text-foreground">
-            Distribuição das avaliações
+            {t("adminEstatisticas.ratingDistributionTitle")}
           </h2>
           {reviews.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
-              Ainda não tem avaliações detalhadas.
+              {t("adminEstatisticas.ratingDistributionEmpty")}
             </p>
           ) : (
             <div className="mt-4 space-y-2">

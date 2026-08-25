@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Star } from "lucide-react";
 import { AdminPageHeading } from "@/components/admin-shell";
 import { getReviewsForRestaurant } from "@/data/helpers";
+import { useTranslation } from "@/i18n";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 export const Route = createFileRoute("/admin/avaliacoes")({
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/admin/avaliacoes")({
 
 function AdminAvaliacoes() {
   const { restaurant } = useRestaurantAdmin();
+  const { t } = useTranslation();
   if (!restaurant) return null;
 
   const reviews = getReviewsForRestaurant(restaurant.id);
@@ -18,9 +20,9 @@ function AdminAvaliacoes() {
   return (
     <div className="pb-16">
       <AdminPageHeading
-        eyebrow="Avaliações"
-        title="O que os clientes dizem"
-        description="Avaliações são só de leitura — a Kino não intermedeia respostas."
+        eyebrow={t("adminAvaliacoes.eyebrow")}
+        title={t("adminAvaliacoes.title")}
+        description={t("adminAvaliacoes.description")}
         action={
           <div className="card-soft flex items-center gap-2 px-4 py-2.5">
             <Star className="h-4 w-4 fill-star text-star" />
@@ -34,7 +36,7 @@ function AdminAvaliacoes() {
         {reviews.length === 0 && (
           <div className="card-soft grid place-items-center gap-3 p-12 text-center">
             <Star className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Ainda não tem avaliações detalhadas.</p>
+            <p className="text-sm text-muted-foreground">{t("adminAvaliacoes.emptyText")}</p>
           </div>
         )}
 

@@ -3,6 +3,7 @@ import { Bike, Check, MapPin, Package, X } from "lucide-react";
 import { toast } from "sonner";
 import { AdminPageHeading } from "@/components/admin-shell";
 import { getMenuItem } from "@/data/helpers";
+import { useTranslation } from "@/i18n";
 import { lineUnitPrice, useCart, type CartOrder, type CartOrderStatus } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -12,15 +13,7 @@ export const Route = createFileRoute("/admin/pedidos")({
   component: AdminPedidos,
 });
 
-const statusLabels: Record<CartOrderStatus, string> = {
-  pending: "Novo pedido",
-  accepted: "Aceite — a preparar",
-  onTheWay: "A caminho",
-  delivered: "Entregue",
-  rejected: "Recusado",
-};
-
-const statusTone: Record<CartOrderStatus, string> = {
+const statusToneMap: Record<CartOrderStatus, string> = {
   pending: "bg-brand/15 text-brand",
   accepted: "bg-primary/15 text-primary",
   onTheWay: "bg-primary/15 text-primary",
@@ -31,6 +24,15 @@ const statusTone: Record<CartOrderStatus, string> = {
 function AdminPedidos() {
   const { restaurant } = useRestaurantAdmin();
   const { orders, orderTotal, updateOrderStatus } = useCart();
+  const { t } = useTranslation();
+
+  const statusLabels: Record<CartOrderStatus, string> = {
+    pending: t("adminPedidos.statusPending"),
+    accepted: t("adminPedidos.statusAccepted"),
+    onTheWay: t("adminPedidos.statusOnTheWay"),
+    delivered: t("adminPedidos.statusDelivered"),
+    rejected: t("adminPedidos.statusRejected"),
+  };
 
   if (!restaurant) return null;
 
@@ -46,27 +48,27 @@ function AdminPedidos() {
           ? "onTheWay"
           : "delivered";
     updateOrderStatus(order.id, next);
-    toast.success(`Pedido atualizado — ${statusLabels[next]}`);
+    toast.success(t("adminPedidos.updatedToast", { status: statusLabels[next] }));
   };
 
   const reject = (order: CartOrder) => {
     updateOrderStatus(order.id, "rejected");
-    toast.success("Pedido recusado");
+    toast.success(t("adminPedidos.rejectedToast"));
   };
 
   return (
     <div className="pb-16">
       <AdminPageHeading
-        eyebrow="Entrega"
-        title="Pedidos"
-        description="Pedidos de entrega enviados pelos clientes — aceite, avance o estado ou recuse."
+        eyebrow={t("adminPedidos.eyebrow")}
+        title={t("adminPedidos.title")}
+        description={t("adminPedidos.description")}
       />
 
       <div className="mx-auto mt-8 max-w-4xl space-y-3 px-4 md:px-6">
         {restaurantOrders.length === 0 && (
           <div className="card-soft grid place-items-center gap-3 p-12 text-center">
             <Package className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Ainda não tem pedidos.</p>
+            <p className="text-sm text-muted-foreground">{t("adminPedidos.emptyText")}</p>
           </div>
         )}
 
@@ -78,7 +80,7 @@ function AdminPedidos() {
                 {order.deliveryAddress.label} — {order.deliveryAddress.line1}
               </span>
               <span
-                className={`rounded-full px-3 py-1 text-xs font-bold ${statusTone[order.status]}`}
+                className={`rounded-full px-3 py-1 text-xs font-bold ${statusToneMap[order.status]}`}
               >
                 {statusLabels[order.status]}
               </span>
@@ -102,7 +104,7 @@ function AdminPedidos() {
             </ul>
 
             <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-sm">
-              <span className="font-bold">Total</span>
+              <span className="font-bold">{t("adminPedidos.total")}</span>
               <span className="font-extrabold text-primary">{formatKz(orderTotal(order))}</span>
             </div>
 
@@ -115,7 +117,7 @@ function AdminPedidos() {
                     className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
                   >
                     <X className="h-3.5 w-3.5" />
-                    Recusar
+                    {t("adminPedidos.reject")}
                   </button>
                 )}
                 <button
@@ -126,10 +128,10 @@ function AdminPedidos() {
                   {order.status === "pending" && <Check className="h-3.5 w-3.5" />}
                   {order.status === "onTheWay" && <Bike className="h-3.5 w-3.5" />}
                   {order.status === "pending"
-                    ? "Aceitar pedido"
+                    ? t("adminPedidos.acceptOrder")
                     : order.status === "accepted"
-                      ? "Marcar como a caminho"
-                      : "Marcar como entregue"}
+                      ? t("adminPedidos.markOnTheWay")
+                      : t("adminPedidos.markDelivered")}
                 </button>
               </div>
             )}

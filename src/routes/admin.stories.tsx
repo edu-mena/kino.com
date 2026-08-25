@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { enUS, fr as frLocale, ptBR } from "date-fns/locale";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ImageUploadField } from "@/components/image-upload-field";
 import type { RestaurantStory } from "@/data/types";
+import { useTranslation } from "@/i18n";
 import { useStoriesAdmin } from "@/lib/stories-admin";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
@@ -27,6 +28,8 @@ export const Route = createFileRoute("/admin/stories")({
   component: AdminStories,
 });
 
+const dateLocales = { pt: ptBR, en: enUS, fr: frLocale };
+
 function AdminStories() {
   const { restaurant } = useRestaurantAdmin();
   const { storiesByRestaurant, createStory, deleteStory } = useStoriesAdmin();
@@ -34,6 +37,7 @@ function AdminStories() {
   const [image, setImage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<RestaurantStory | null>(null);
+  const { t, locale } = useTranslation();
 
   if (!restaurant) return null;
 
@@ -44,11 +48,11 @@ function AdminStories() {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!image.trim()) {
-      toast.error("Escolha uma imagem primeiro.");
+      toast.error(t("adminStories.missingImageError"));
       return;
     }
     createStory(restaurant.id, image.trim());
-    toast.success("Story publicado.");
+    toast.success(t("adminStories.createdToast"));
     setImage("");
     setFormOpen(false);
   };
@@ -56,16 +60,16 @@ function AdminStories() {
   const handleDelete = () => {
     if (!deleting) return;
     deleteStory(deleting.id);
-    toast.success("Story removido.");
+    toast.success(t("adminStories.deletedToast"));
     setDeleting(null);
   };
 
   return (
     <div className="pb-16">
       <AdminPageHeading
-        eyebrow="Stories"
-        title="Os seus stories"
-        description="Imagens temporárias em destaque na home dos clientes — igual às stories de Instagram/WhatsApp."
+        eyebrow={t("adminStories.eyebrow")}
+        title={t("adminStories.title")}
+        description={t("adminStories.description")}
         action={
           <Button
             onClick={() => {
@@ -74,7 +78,7 @@ function AdminStories() {
             }}
             className="rounded-xl"
           >
-            <Plus className="h-4 w-4" /> Novo story
+            <Plus className="h-4 w-4" /> {t("adminStories.newStory")}
           </Button>
         }
       />
@@ -82,9 +86,9 @@ function AdminStories() {
       <div className="mx-auto mt-8 max-w-4xl px-4 md:px-6">
         {stories.length === 0 ? (
           <div className="card-soft grid place-items-center gap-3 p-12 text-center">
-            <p className="text-sm text-muted-foreground">Ainda não tem stories publicados.</p>
+            <p className="text-sm text-muted-foreground">{t("adminStories.emptyText")}</p>
             <Button onClick={() => setFormOpen(true)} className="rounded-xl">
-              <Plus className="h-4 w-4" /> Publicar o primeiro
+              <Plus className="h-4 w-4" /> {t("adminStories.publishFirst")}
             </Button>
           </div>
         ) : (
@@ -99,12 +103,12 @@ function AdminStories() {
                 <p className="absolute bottom-2 left-2 right-2 truncate text-xs font-medium text-white">
                   {formatDistanceToNow(new Date(story.createdAt), {
                     addSuffix: true,
-                    locale: ptBR,
+                    locale: dateLocales[locale],
                   })}
                 </p>
                 <button
                   type="button"
-                  aria-label="Remover story"
+                  aria-label={t("adminStories.removeAria")}
                   onClick={() => setDeleting(story)}
                   className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur transition-opacity hover:bg-destructive group-hover:opacity-100"
                 >
@@ -118,20 +122,20 @@ function AdminStories() {
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-sm rounded-[1.5rem] border-none bg-card p-6">
-          <DialogTitle className="font-display text-lg font-bold">Novo story</DialogTitle>
-          <DialogDescription>
-            Fica visível para os clientes assim que publicar — sem outros campos, é só a imagem.
-          </DialogDescription>
+          <DialogTitle className="font-display text-lg font-bold">
+            {t("adminStories.newStoryDialogTitle")}
+          </DialogTitle>
+          <DialogDescription>{t("adminStories.newStoryDialogDescription")}</DialogDescription>
           <form onSubmit={handleCreate} className="mt-2 space-y-4">
             <ImageUploadField
               value={image}
               onChange={setImage}
               onUploadingChange={setUploading}
-              label="Imagem do story"
-              helpText="Cole um link ou carregue uma foto do dispositivo."
+              label={t("adminStories.imageLabel")}
+              helpText={t("adminStories.imageHelp")}
             />
             <Button type="submit" disabled={uploading} className="w-full rounded-xl">
-              Publicar
+              {t("adminStories.publish")}
             </Button>
           </form>
         </DialogContent>
@@ -140,14 +144,16 @@ function AdminStories() {
       <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
         <AlertDialogContent className="rounded-[1.5rem]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover este story?</AlertDialogTitle>
+            <AlertDialogTitle>{t("adminStories.deleteDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Deixa de aparecer para os clientes. Esta ação não pode ser desfeita.
+              {t("adminStories.deleteDialogDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Remover</AlertDialogAction>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              {t("adminStories.deleteConfirm")}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

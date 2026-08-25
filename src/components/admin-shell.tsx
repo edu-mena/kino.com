@@ -18,20 +18,21 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Logo } from "./logo";
+import { useTranslation } from "@/i18n";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 const navItems = [
-  { to: "/admin", label: "Painel", icon: LayoutGrid },
-  { to: "/admin/pedidos", label: "Pedidos", icon: Bike },
-  { to: "/admin/reservas", label: "Reservas", icon: CalendarCheck },
-  { to: "/admin/cardapio", label: "Cardápio", icon: Soup },
-  { to: "/admin/estatisticas", label: "Estatísticas", icon: TrendingUp },
-  { to: "/admin/clientes", label: "Clientes", icon: Users },
-  { to: "/admin/stories", label: "Stories", icon: Sparkles },
-  { to: "/admin/promocoes", label: "Promoções", icon: Megaphone },
-  { to: "/admin/avaliacoes", label: "Avaliações", icon: Star },
-  { to: "/admin/perfil", label: "Restaurante", icon: Store },
-  { to: "/admin/suporte", label: "Suporte", icon: LifeBuoy },
+  { to: "/admin", labelKey: "dashboard", icon: LayoutGrid },
+  { to: "/admin/pedidos", labelKey: "orders", icon: Bike },
+  { to: "/admin/reservas", labelKey: "reservations", icon: CalendarCheck },
+  { to: "/admin/cardapio", labelKey: "menu", icon: Soup },
+  { to: "/admin/estatisticas", labelKey: "stats", icon: TrendingUp },
+  { to: "/admin/clientes", labelKey: "customers", icon: Users },
+  { to: "/admin/stories", labelKey: "stories", icon: Sparkles },
+  { to: "/admin/promocoes", labelKey: "promotions", icon: Megaphone },
+  { to: "/admin/avaliacoes", labelKey: "reviews", icon: Star },
+  { to: "/admin/perfil", labelKey: "restaurant", icon: Store },
+  { to: "/admin/suporte", labelKey: "support", icon: LifeBuoy },
 ] as const;
 
 const mobileTabRoutes = new Set([
@@ -58,6 +59,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const { managedRestaurantId, restaurant, hydrated, logout } = useRestaurantAdmin();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (hydrated && !managedRestaurantId) {
@@ -90,7 +92,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               className="relative mx-2 flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-primary xl:justify-start"
             >
               <item.icon className="mx-auto h-6 w-6 shrink-0 xl:mx-0" />
-              <span className="hidden truncate xl:inline">{item.label}</span>
+              <span className="hidden truncate xl:inline">{t(`adminNav.${item.labelKey}`)}</span>
             </Link>
           ))}
         </nav>
@@ -107,7 +109,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             </div>
             <button
               type="button"
-              aria-label="Sair do painel"
+              aria-label={t("adminNav.logout")}
               onClick={handleLogout}
               className="hidden shrink-0 place-items-center rounded-lg p-2.5 text-muted-foreground transition-colors hover:bg-card hover:text-destructive xl:grid"
             >
@@ -130,7 +132,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </Link>
           <button
             type="button"
-            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+            aria-label={mobileOpen ? t("adminNav.closeMenu") : t("adminNav.openMenu")}
             onClick={() => setMobileOpen((v) => !v)}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground"
           >
@@ -148,7 +150,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 className="flex items-center gap-3 rounded-lg px-2 py-3 text-sm font-medium text-foreground hover:bg-surface"
               >
                 <item.icon className="h-4 w-4 shrink-0 text-primary" />
-                {item.label}
+                {t(`adminNav.${item.labelKey}`)}
               </Link>
             ))}
             <button
@@ -157,7 +159,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               className="flex w-full items-center gap-3 rounded-lg px-2 py-3 text-left text-sm font-medium text-destructive hover:bg-destructive/5"
             >
               <LogOut className="h-4 w-4 shrink-0" />
-              Sair do painel
+              {t("adminNav.logout")}
             </button>
           </div>
         )}
@@ -177,7 +179,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground"
             >
               <item.icon className="h-5 w-5" />
-              {item.label}
+              {t(`adminNav.${item.labelKey}`)}
             </Link>
           ))}
         </div>
