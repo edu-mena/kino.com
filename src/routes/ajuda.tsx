@@ -87,7 +87,12 @@ function Ajuda() {
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <div className="card-soft flex items-center gap-3 p-4">
+              <a
+                href="https://wa.me/244930814277"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="card-soft flex items-center gap-3 p-4 transition-colors hover:border-primary"
+              >
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface text-brand">
                   <MessageCircle className="h-4 w-4" />
                 </span>
@@ -97,8 +102,11 @@ function Ajuda() {
                     {t("ajuda.liveChatHint")}
                   </p>
                 </div>
-              </div>
-              <div className="card-soft flex items-center gap-3 p-4">
+              </a>
+              <a
+                href="tel:+244923000000"
+                className="card-soft flex items-center gap-3 p-4 transition-colors hover:border-primary"
+              >
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface text-brand">
                   <Phone className="h-4 w-4" />
                 </span>
@@ -106,7 +114,7 @@ function Ajuda() {
                   <p className="truncate text-sm font-bold">+244 923 000 000</p>
                   <p className="truncate text-xs text-muted-foreground">{t("ajuda.phoneHint")}</p>
                 </div>
-              </div>
+              </a>
             </div>
           </div>
 

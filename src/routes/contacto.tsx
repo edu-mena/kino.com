@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Mail, MapPin, Phone, Send } from "lucide-react";
-import { useState, type SVGProps } from "react";
+import type { SVGProps } from "react";
 import { toast } from "sonner";
 import dishFries from "@/assets/dish-fries.png";
 import icon from "@/assets/icon.png";
@@ -46,10 +46,12 @@ function WhatsAppIcon(props: SVGProps<SVGSVGElement>) {
 const inputClass =
   "w-full min-w-0 rounded-xl border border-border bg-card px-4 py-3 text-sm outline-none transition-colors focus:border-primary";
 
+const CONTACT_EMAIL = "ola@kino.com";
+
 const contactInfo = [
-  { icon: Mail, title: "Email", text: "ola@kino.com" },
-  { icon: Phone, title: "Telefone", text: "+244 923 456 789" },
-  { icon: MapPin, title: "Morada", text: "Luanda, Angola" },
+  { icon: Mail, title: "Email", text: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` },
+  { icon: Phone, title: "Telefone", text: "+244 923 456 789", href: "tel:+244923456789" },
+  { icon: MapPin, title: "Morada", text: "Luanda, Angola", href: undefined },
 ];
 
 const subjects = [
@@ -88,16 +90,26 @@ const faqs = [
 ];
 
 function Contacto() {
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  // Sem backend, não há para onde a mensagem ir de verdade — em vez de
+  // fingir um envio, abrimos o cliente de email do utilizador já preenchido,
+  // que é a única ação real que o frontend consegue disparar sozinho.
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitting(true);
-    setTimeout(() => {
-      toast.success("Mensagem enviada! A nossa equipa responde em breve.");
-      (e.target as HTMLFormElement).reset();
-      setSubmitting(false);
-    }, 600);
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    const name = String(data.get("name") ?? "");
+    const email = String(data.get("email") ?? "");
+    const subjectValue = String(data.get("subject") ?? "");
+    const subjectLabel = subjects.find((s) => s.value === subjectValue)?.label ?? "Contacto";
+    const message = String(data.get("message") ?? "");
+
+    const body = `${message}\n\n— ${name} (${email})`;
+    const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+      `[Kino.com] ${subjectLabel}`,
+    )}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+    toast.success("A abrir o seu email para enviar a mensagem à equipa Kino.");
+    form.reset();
   };
 
   return (
@@ -122,16 +134,20 @@ function Contacto() {
       {/* Contact info */}
       <section className="mx-auto mt-10 max-w-6xl px-4 md:px-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {contactInfo.map((item) => (
-            <div
-              key={item.title}
-              className="rounded-2xl border border-border bg-card p-5 text-left"
-            >
-              <item.icon className="h-8 w-8 text-brand" />
-              <h3 className="mt-4 font-display text-base font-bold text-primary">{item.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{item.text}</p>
-            </div>
-          ))}
+          {contactInfo.map((item) => {
+            const Tag = item.href ? "a" : "div";
+            return (
+              <Tag
+                key={item.title}
+                {...(item.href ? { href: item.href } : {})}
+                className="rounded-2xl border border-border bg-card p-5 text-left transition-colors hover:border-primary"
+              >
+                <item.icon className="h-8 w-8 text-brand" />
+                <h3 className="mt-4 font-display text-base font-bold text-primary">{item.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{item.text}</p>
+              </Tag>
+            );
+          })}
 
           <a
             href="https://wa.me/244930814277"
@@ -151,9 +167,16 @@ function Contacto() {
         <div className="rounded-[2rem] border border-border bg-card p-6 sm:p-10">
           <h2 className="text-2xl font-extrabold text-primary">Envie uma mensagem</h2>
           <form onSubmit={handleSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
-            <input required placeholder="O seu nome" autoComplete="name" className={inputClass} />
             <input
               required
+              name="name"
+              placeholder="O seu nome"
+              autoComplete="name"
+              className={inputClass}
+            />
+            <input
+              required
+              name="email"
               type="email"
               placeholder="O seu email"
               autoComplete="email"
@@ -179,6 +202,7 @@ function Contacto() {
 
             <textarea
               required
+              name="message"
               placeholder="A sua mensagem"
               rows={5}
               className={`${inputClass} resize-none sm:col-span-2`}
@@ -186,10 +210,9 @@ function Contacto() {
 
             <button
               type="submit"
-              disabled={submitting}
-              className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60 sm:col-span-2"
+              className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 sm:col-span-2"
             >
-              {submitting ? "A enviar..." : "Enviar mensagem"} <Send className="h-4 w-4" />
+              Enviar mensagem <Send className="h-4 w-4" />
             </button>
           </form>
         </div>
