@@ -457,6 +457,7 @@ export const en: Dictionary = {
     deleteDialogTitle: "Remove this story?",
     deleteDialogDescription: "It stops showing to customers. This action can't be undone.",
     deleteConfirm: "Remove",
+    firstUseHint: "Tip: stories don't expire on their own — they stay up until you remove them.",
   },
   adminPromocoes: {
     eyebrow: "Promotions",
@@ -490,6 +491,8 @@ export const en: Dictionary = {
     deleteDialogTitle: 'Remove "{title}"?',
     deleteDialogDescription: "It stops showing to customers. This action can't be undone.",
     deleteConfirm: "Remove",
+    firstUseHint:
+      "Tip: promotions show up in Offers and the home carousel, alongside Kino's own promotions.",
   },
   adminCardapio: {
     eyebrow: "Menu",
@@ -527,6 +530,8 @@ export const en: Dictionary = {
     deletedToast: "Menu deleted.",
     hasDishesError: 'Move or remove the dishes in "{name}" before deleting this menu.',
     lastMenuError: "You can't delete the restaurant's only menu.",
+    whyMultipleMenus:
+      "Use several menus for different versions — e.g. a weekend menu or a seasonal menu — without deleting the main one.",
   },
   dishFormDialog: {
     editTitle: "Edit dish",
@@ -560,6 +565,8 @@ export const en: Dictionary = {
     suggestionAppliedToast: 'Filled in with "{name}"\'s details — double-check the price.',
     updatedToast: "Dish updated.",
     createdToast: "Dish created.",
+    firstUseHint:
+      "Tip: start with the name — if a matching dish already exists on Kino, we'll fill in the details for you (except the price).",
   },
   textListField: {
     add: "Add",
@@ -593,7 +600,11 @@ export const en: Dictionary = {
     deliveryTimeLabel: "Estimated time (min)",
     deliveryZonesLabel: "Neighborhoods covered by delivery",
     deliveryZonePlaceholder: "E.g.: Talatona",
+    deliveryZonesExplainer:
+      "Neighborhoods outside this list can't order delivery from this restaurant, even with delivery turned on.",
     cautionLabel: "Reservation deposit (Kz)",
+    cautionExplainer:
+      "Charged to the customer when they confirm the reservation — your refund policy (below) is shown to them before they pay.",
     cautionZeroHint: "0 = no deposit.",
     cautionPolicyPlaceholder: "E.g.: refunded if the table is taken.",
     galleryLabel: "Photo gallery",
@@ -827,5 +838,8 @@ export const en: Dictionary = {
     description: "Discounts active today. Mention the code to the restaurant when ordering.",
     code: "Code",
     orderNow: "Order now",
+  },
+  firstUseHint: {
+    dismissAria: "Dismiss tip",
   },
 };

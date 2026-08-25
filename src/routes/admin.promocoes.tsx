@@ -25,8 +25,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { FirstUseHint } from "@/components/first-use-hint";
 import type { Offer } from "@/data/types";
 import { useTranslation } from "@/i18n";
+import { useFirstUseHint } from "@/lib/first-use-hints";
 import { useOffersAdmin } from "@/lib/offers-admin";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
@@ -44,6 +46,7 @@ function AdminPromocoes() {
   const [editing, setEditing] = useState<Offer | null>(null);
   const [deleting, setDeleting] = useState<Offer | null>(null);
   const { t } = useTranslation();
+  const promoHint = useFirstUseHint("promo");
 
   const typeLabels: Record<Offer["type"], string> = {
     discount: t("adminPromocoes.typeDiscount"),
@@ -96,6 +99,7 @@ function AdminPromocoes() {
     } else {
       createOffer(restaurant.id, input);
       toast.success(t("adminPromocoes.createdToast"));
+      promoHint.dismiss();
     }
     setFormOpen(false);
   };
@@ -180,6 +184,10 @@ function AdminPromocoes() {
             {editing ? t("adminPromocoes.editDialogTitle") : t("adminPromocoes.newDialogTitle")}
           </DialogTitle>
           <DialogDescription>{t("adminPromocoes.dialogDescription")}</DialogDescription>
+
+          {!editing && promoHint.shouldShow && (
+            <FirstUseHint text={t("adminPromocoes.firstUseHint")} onDismiss={promoHint.dismiss} />
+          )}
 
           <form onSubmit={handleSubmit} className="mt-2 space-y-4">
             <div className="space-y-1.5">

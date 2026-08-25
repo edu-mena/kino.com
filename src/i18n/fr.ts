@@ -461,6 +461,8 @@ export const fr: Dictionary = {
     deleteDialogTitle: "Supprimer cette story ?",
     deleteDialogDescription: "Elle ne sera plus visible pour les clients. Action irréversible.",
     deleteConfirm: "Supprimer",
+    firstUseHint:
+      "Astuce : les stories n'expirent pas toutes seules — elles restent visibles jusqu'à ce que vous les supprimiez.",
   },
   adminPromocoes: {
     eyebrow: "Promotions",
@@ -495,6 +497,8 @@ export const fr: Dictionary = {
     deleteDialogTitle: "Supprimer « {title} » ?",
     deleteDialogDescription: "Elle ne sera plus visible pour les clients. Action irréversible.",
     deleteConfirm: "Supprimer",
+    firstUseHint:
+      "Astuce : les promotions apparaissent dans Offres et le carrousel de l'accueil, aux côtés des promotions Kino.",
   },
   adminCardapio: {
     eyebrow: "Carte",
@@ -531,6 +535,8 @@ export const fr: Dictionary = {
     deletedToast: "Carte supprimée.",
     hasDishesError: "Déplacez ou supprimez les plats de « {name} » avant de supprimer cette carte.",
     lastMenuError: "Impossible de supprimer la seule carte du restaurant.",
+    whyMultipleMenus:
+      "Utilisez plusieurs cartes pour différentes versions — ex : une carte du week-end ou une carte saisonnière — sans supprimer la principale.",
   },
   dishFormDialog: {
     editTitle: "Modifier le plat",
@@ -565,6 +571,8 @@ export const fr: Dictionary = {
     suggestionAppliedToast: "Données de « {name} » remplies — vérifiez le prix.",
     updatedToast: "Plat mis à jour.",
     createdToast: "Plat créé.",
+    firstUseHint:
+      "Astuce : commencez par le nom — si un plat identique existe déjà sur Kino, nous remplissons les détails pour vous (sauf le prix).",
   },
   textListField: {
     add: "Ajouter",
@@ -599,7 +607,11 @@ export const fr: Dictionary = {
     deliveryTimeLabel: "Temps estimé (min)",
     deliveryZonesLabel: "Quartiers couverts par la livraison",
     deliveryZonePlaceholder: "Ex : Talatona",
+    deliveryZonesExplainer:
+      "Les quartiers hors de cette liste ne peuvent pas commander de livraison auprès de ce restaurant, même avec la livraison activée.",
     cautionLabel: "Caution de réservation (Kz)",
+    cautionExplainer:
+      "Facturée au client à la confirmation de la réservation — votre politique de remboursement (ci-dessous) lui est montrée avant le paiement.",
     cautionZeroHint: "0 = pas de caution.",
     cautionPolicyPlaceholder: "Ex : remboursée si la table est occupée.",
     galleryLabel: "Galerie photo",
@@ -837,5 +849,8 @@ export const fr: Dictionary = {
       "Réductions actives aujourd'hui. Mentionnez le code au restaurant lors de la commande.",
     code: "Code",
     orderNow: "Commander maintenant",
+  },
+  firstUseHint: {
+    dismissAria: "Ignorer l'astuce",
   },
 };

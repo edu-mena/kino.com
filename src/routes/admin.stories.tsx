@@ -17,9 +17,11 @@ import {
 import { AdminPageHeading } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { FirstUseHint } from "@/components/first-use-hint";
 import { ImageUploadField } from "@/components/image-upload-field";
 import type { RestaurantStory } from "@/data/types";
 import { useTranslation } from "@/i18n";
+import { useFirstUseHint } from "@/lib/first-use-hints";
 import { useStoriesAdmin } from "@/lib/stories-admin";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
@@ -38,6 +40,7 @@ function AdminStories() {
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<RestaurantStory | null>(null);
   const { t, locale } = useTranslation();
+  const storyHint = useFirstUseHint("story");
 
   if (!restaurant) return null;
 
@@ -53,6 +56,7 @@ function AdminStories() {
     }
     createStory(restaurant.id, image.trim());
     toast.success(t("adminStories.createdToast"));
+    storyHint.dismiss();
     setImage("");
     setFormOpen(false);
   };
@@ -126,6 +130,9 @@ function AdminStories() {
             {t("adminStories.newStoryDialogTitle")}
           </DialogTitle>
           <DialogDescription>{t("adminStories.newStoryDialogDescription")}</DialogDescription>
+          {storyHint.shouldShow && (
+            <FirstUseHint text={t("adminStories.firstUseHint")} onDismiss={storyHint.dismiss} />
+          )}
           <form onSubmit={handleCreate} className="mt-2 space-y-4">
             <ImageUploadField
               value={image}

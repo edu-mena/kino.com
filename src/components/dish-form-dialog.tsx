@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import icon from "@/assets/icon.png";
+import { FirstUseHint } from "@/components/first-use-hint";
 import { getEffectiveMenuItems, normalizeIngredients, type MenuItemInput } from "@/data/menu-store";
 import type { MenuItem, MenuItemIngredient } from "@/data/types";
 import { useTranslation } from "@/i18n";
+import { useFirstUseHint } from "@/lib/first-use-hints";
 import { cn } from "@/lib/utils";
 
 type IngredientRow = {
@@ -75,6 +77,7 @@ export function DishFormDialog({
 }) {
   const suggestions = useDishSuggestions();
   const { t } = useTranslation();
+  const dishHint = useFirstUseHint("dish");
 
   const [name, setName] = useState("");
   const [nameSuggestionsOpen, setNameSuggestionsOpen] = useState(false);
@@ -159,6 +162,7 @@ export function DishFormDialog({
 
     onSave(restaurantId, input, dish?.id);
     toast.success(dish ? t("dishFormDialog.updatedToast") : t("dishFormDialog.createdToast"));
+    if (!dish) dishHint.dismiss();
     onOpenChange(false);
   };
 
@@ -171,6 +175,10 @@ export function DishFormDialog({
         <DialogDescription>
           {dish ? t("dishFormDialog.editDescription") : t("dishFormDialog.newDescription")}
         </DialogDescription>
+
+        {!dish && dishHint.shouldShow && (
+          <FirstUseHint text={t("dishFormDialog.firstUseHint")} onDismiss={dishHint.dismiss} />
+        )}
 
         <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <div className="relative space-y-1.5">
