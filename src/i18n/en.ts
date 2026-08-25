@@ -274,6 +274,22 @@ export const en: Dictionary = {
     stepCounter: "{current} of {total}",
     hint: "I'm here if you need me!",
   },
+  adminTutorial: {
+    step1Title: "Your orders land here",
+    step1Description: "Accept, decline or advance the status of each delivery order in real time.",
+    step2Title: "Build your menu",
+    step2Description:
+      "Create dishes, set ingredients and turn off what runs out — it disappears from the customer's menu instantly.",
+    step3Title: "Confirm table reservations",
+    step3Description:
+      "See the request, the deposit and respond — the customer is notified as soon as you decide.",
+    step4Title: "Create your promotions",
+    step4Description:
+      "They show up in Offers and on customers' home screen, alongside Kino's own promotions.",
+    step5Title: "Keep your profile up to date",
+    step5Description:
+      "Cover photo, hours, delivery and deposit — what the customer sees on your page.",
+  },
   adminNav: {
     dashboard: "Dashboard",
     orders: "Orders",
