@@ -320,19 +320,25 @@ function AdminPerfil() {
                   </div>
                 </div>
 
-                <TextListField
-                  label={t("adminPerfil.deliveryZonesLabel")}
-                  items={deliveryZones}
-                  onChange={setDeliveryZones}
-                  placeholder={t("adminPerfil.deliveryZonePlaceholder")}
-                />
+                <div>
+                  <TextListField
+                    label={t("adminPerfil.deliveryZonesLabel")}
+                    items={deliveryZones}
+                    onChange={setDeliveryZones}
+                    placeholder={t("adminPerfil.deliveryZonePlaceholder")}
+                  />
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    {t("adminPerfil.deliveryZonesExplainer")}
+                  </p>
+                </div>
               </div>
             )}
           </div>
 
           <div className="rounded-xl border border-border p-4">
             <Label htmlFor="rest-caution">{t("adminPerfil.cautionLabel")}</Label>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground">{t("adminPerfil.cautionExplainer")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
               {t("adminPerfil.cautionZeroHint")}{" "}
               {cautionAmount !== "0" && formatKz(Number(cautionAmount) || 0)}
             </p>

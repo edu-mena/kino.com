@@ -462,6 +462,7 @@ export const pt = {
     deleteDialogTitle: "Remover este story?",
     deleteDialogDescription: "Deixa de aparecer para os clientes. Esta ação não pode ser desfeita.",
     deleteConfirm: "Remover",
+    firstUseHint: "Dica: stories não expiram sozinhas — ficam visíveis até as remover.",
   },
   adminPromocoes: {
     eyebrow: "Promoções",
@@ -495,6 +496,8 @@ export const pt = {
     deleteDialogTitle: 'Remover "{title}"?',
     deleteDialogDescription: "Deixa de aparecer para os clientes. Esta ação não pode ser desfeita.",
     deleteConfirm: "Remover",
+    firstUseHint:
+      "Dica: promoções aparecem em Ofertas e no carrossel da home, junto das promoções da Kino.",
   },
   adminCardapio: {
     eyebrow: "Cardápio",
@@ -532,6 +535,8 @@ export const pt = {
     deletedToast: "Cardápio apagado.",
     hasDishesError: 'Mova ou remova os pratos de "{name}" antes de apagar este cardápio.',
     lastMenuError: "Não é possível apagar o único cardápio do restaurante.",
+    whyMultipleMenus:
+      "Use vários cardápios para versões diferentes — ex: menu de fim de semana ou menu sazonal — sem apagar o principal.",
   },
   dishFormDialog: {
     editTitle: "Editar prato",
@@ -565,6 +570,8 @@ export const pt = {
     suggestionAppliedToast: 'Dados de "{name}" preenchidos — reveja o preço.',
     updatedToast: "Prato atualizado.",
     createdToast: "Prato criado.",
+    firstUseHint:
+      "Dica: comece pelo nome — se um prato igual já existir na Kino, sugerimos os dados automaticamente (menos o preço).",
   },
   textListField: {
     add: "Adicionar",
@@ -598,7 +605,11 @@ export const pt = {
     deliveryTimeLabel: "Tempo estimado (min)",
     deliveryZonesLabel: "Bairros cobertos pela entrega",
     deliveryZonePlaceholder: "Ex: Talatona",
+    deliveryZonesExplainer:
+      "Bairros fora desta lista não conseguem pedir entrega deste restaurante, mesmo com a entrega ligada.",
     cautionLabel: "Caução de reserva (Kz)",
+    cautionExplainer:
+      "Cobrada ao cliente ao confirmar a reserva — a sua política de reembolso (abaixo) é mostrada a ele antes de pagar.",
     cautionZeroHint: "0 = sem caução.",
     cautionPolicyPlaceholder: "Ex: reembolsada se a mesa for ocupada.",
     galleryLabel: "Galeria de fotos",
@@ -833,5 +844,8 @@ export const pt = {
     description: "Descontos ativos hoje. Mencione o código ao restaurante ao fazer o pedido.",
     code: "Código",
     orderNow: "Pedir agora",
+  },
+  firstUseHint: {
+    dismissAria: "Dispensar dica",
   },
 };

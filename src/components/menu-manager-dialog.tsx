@@ -156,6 +156,9 @@ export function MenuManagerDialog({
             <Plus className="h-4 w-4" />
           </Button>
         </form>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {t("menuManagerDialog.whyMultipleMenus")}
+        </p>
       </DialogContent>
     </Dialog>
   );
