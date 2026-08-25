@@ -16,11 +16,16 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Logo } from "./logo";
+import { AdminOnboardingTour, AdminTutorialHint } from "./admin-onboarding-tour";
 import { useTranslation } from "@/i18n";
+import { AdminTutorialProvider, useAdminTutorial } from "@/lib/admin-tutorial";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
+// `labelKey` também serve de `tourId` (data-tour="admin-<tourId>") — só
+// orders/menu/reservations/promotions/restaurant têm passo no tour hoje,
+// mas manter o atributo em todos evita ficar a decidir caso a caso.
 const navItems = [
   { to: "/admin", labelKey: "dashboard", icon: LayoutGrid },
   { to: "/admin/pedidos", labelKey: "orders", icon: Bike },
@@ -56,10 +61,8 @@ const mobileOverflowItems = navItems.filter((item) => !mobileTabRoutes.has(item.
  * manter consistência entre as duas partes da app.
  */
 export function AdminShell({ children }: { children: ReactNode }) {
-  const { managedRestaurantId, restaurant, hydrated, logout } = useRestaurantAdmin();
+  const { managedRestaurantId, restaurant, hydrated } = useRestaurantAdmin();
   const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const { t } = useTranslation();
 
   useEffect(() => {
     if (hydrated && !managedRestaurantId) {
@@ -68,6 +71,23 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }, [hydrated, managedRestaurantId, navigate]);
 
   if (!managedRestaurantId || !restaurant) return null;
+
+  // O provider do tour só existe depois de confirmada a sessão — sem isso o
+  // tour tentaria abrir para quem ainda vai ser mandado para /admin/entrar.
+  return (
+    <AdminTutorialProvider>
+      <AdminShellContent>{children}</AdminShellContent>
+    </AdminTutorialProvider>
+  );
+}
+
+function AdminShellContent({ children }: { children: ReactNode }) {
+  const { restaurant, logout } = useRestaurantAdmin();
+  const navigate = useNavigate();
+  const { mobileMenuOpen: mobileOpen, setMobileMenuOpen: setMobileOpen } = useAdminTutorial();
+  const { t } = useTranslation();
+
+  if (!restaurant) return null;
 
   const handleLogout = () => {
     logout();
@@ -87,6 +107,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <Link
               key={item.to}
               to={item.to}
+              data-tour={`admin-${item.labelKey}`}
               activeOptions={{ exact: item.to === "/admin" }}
               activeProps={{ className: "text-primary bg-surface" }}
               className="relative mx-2 flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-primary xl:justify-start"
@@ -132,8 +153,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </Link>
           <button
             type="button"
+            data-tour="admin-nav-menu"
             aria-label={mobileOpen ? t("adminNav.closeMenu") : t("adminNav.openMenu")}
-            onClick={() => setMobileOpen((v) => !v)}
+            onClick={() => setMobileOpen(!mobileOpen)}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground"
           >
             {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -146,6 +168,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
+                data-tour={`admin-${item.labelKey}`}
                 onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-3 rounded-lg px-2 py-3 text-sm font-medium text-foreground hover:bg-surface"
               >
@@ -174,6 +197,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <Link
               key={item.to}
               to={item.to}
+              data-tour={`admin-${item.labelKey}`}
               activeOptions={{ exact: item.to === "/admin" }}
               activeProps={{ className: "text-primary" }}
               className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground"
@@ -184,6 +208,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
           ))}
         </div>
       </nav>
+
+      <AdminOnboardingTour />
+      <AdminTutorialHint />
     </div>
   );
 }

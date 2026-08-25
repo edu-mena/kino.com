@@ -282,6 +282,19 @@ export const pt = {
     stepCounter: "{current} de {total}",
     hint: "Estou aqui se precisar!",
   },
+  adminTutorial: {
+    step1Title: "Os seus pedidos chegam aqui",
+    step1Description: "Aceite, recuse ou avance o estado de cada pedido de entrega em tempo real.",
+    step2Title: "Monte o seu cardápio",
+    step2Description:
+      "Crie pratos, defina ingredientes e desligue o que esgotar — some do cardápio do cliente na hora.",
+    step3Title: "Confirme as reservas de mesa",
+    step3Description: "Veja o pedido, a caução e responda — o cliente é avisado assim que decidir.",
+    step4Title: "Crie as suas promoções",
+    step4Description: "Aparecem em Ofertas e na home dos clientes, junto das promoções da Kino.",
+    step5Title: "Mantenha o perfil atualizado",
+    step5Description: "Capa, horário, entrega e caução — o que o cliente vê na sua página.",
+  },
   adminNav: {
     dashboard: "Painel",
     orders: "Pedidos",

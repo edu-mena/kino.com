@@ -275,6 +275,23 @@ export const fr: Dictionary = {
     stepCounter: "{current} sur {total}",
     hint: "Je suis là si besoin !",
   },
+  adminTutorial: {
+    step1Title: "Vos commandes arrivent ici",
+    step1Description:
+      "Acceptez, refusez ou faites avancer le statut de chaque commande en temps réel.",
+    step2Title: "Composez votre carte",
+    step2Description:
+      "Créez des plats, définissez les ingrédients et désactivez ce qui manque — ça disparaît aussitôt de la carte du client.",
+    step3Title: "Confirmez les réservations de table",
+    step3Description:
+      "Consultez la demande, la caution, et répondez — le client est prévenu dès votre décision.",
+    step4Title: "Créez vos promotions",
+    step4Description:
+      "Elles apparaissent dans Offres et sur l'accueil des clients, aux côtés des promotions Kino.",
+    step5Title: "Gardez votre profil à jour",
+    step5Description:
+      "Photo de couverture, horaires, livraison et caution — ce que le client voit sur votre page.",
+  },
   adminNav: {
     dashboard: "Tableau de bord",
     orders: "Commandes",
