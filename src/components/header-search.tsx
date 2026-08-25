@@ -14,6 +14,7 @@ import type { MenuItem } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";
 import { useTranslation } from "@/i18n";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 const categories = getMenuCategories();
 const ingredientNames = getAllIngredientNames();
@@ -23,6 +24,7 @@ export function HeaderSearch() {
   const items = useMenuItems();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query);
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [neighborhood, setNeighborhood] = useState<string>("todos");
   const [ingredient, setIngredient] = useState<string | null>(null);
@@ -40,15 +42,15 @@ export function HeaderSearch() {
     return items.filter((item) => {
       const restaurant = getRestaurant(item.restaurantId);
       const byQuery =
-        !query ||
-        item.name.toLowerCase().includes(query.toLowerCase()) ||
-        restaurant?.name.toLowerCase().includes(query.toLowerCase());
+        !debouncedQuery ||
+        item.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        restaurant?.name.toLowerCase().includes(debouncedQuery.toLowerCase());
       const byCategory = !category || item.category === category;
       const byIngredient = !ingredient || item.ingredients.some((i) => i.name === ingredient);
       const byNeighborhood = matchesLocation(restaurant?.neighborhood, neighborhood);
       return byQuery && byCategory && byIngredient && byNeighborhood;
     });
-  }, [items, query, category, ingredient, neighborhood]);
+  }, [items, debouncedQuery, category, ingredient, neighborhood]);
 
   const maxAvailablePrice = filteredExceptPrice.length
     ? Math.max(...filteredExceptPrice.map((m) => m.price))
@@ -92,7 +94,7 @@ export function HeaderSearch() {
             {t("search.dialogTitle")}
           </DialogTitle>
 
-          <label className="mt-3 flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-4 py-3">
+          <label className="mt-3 flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 transition-colors has-[:focus]:border-primary">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
               autoFocus

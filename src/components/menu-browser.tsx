@@ -21,6 +21,7 @@ import { getAllIngredientNames, getRestaurant } from "@/data/helpers";
 import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";
 import { translateMenuCategory, useTranslation } from "@/i18n";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 const ingredientNames = getAllIngredientNames();
 
@@ -76,6 +77,7 @@ export function MenuBrowser({
 
   const [active, setActive] = useState<string>("todos");
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [neighborhood, setNeighborhood] = useState("todos");
   const [ingredient, setIngredient] = useState<string | null>(null);
@@ -90,15 +92,23 @@ export function MenuBrowser({
       const byCat = active === "todos" || item.category === active;
       const byRestaurant = !effectiveRestaurantId || item.restaurantId === effectiveRestaurantId;
       const byQuery =
-        !query ||
-        item.name.toLowerCase().includes(query.toLowerCase()) ||
-        restaurant?.name.toLowerCase().includes(query.toLowerCase());
+        !debouncedQuery ||
+        item.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        restaurant?.name.toLowerCase().includes(debouncedQuery.toLowerCase());
       const byIngredient = !ingredient || item.ingredients.some((i) => i.name === ingredient);
       const byNeighborhood =
         lockedRestaurantId || matchesLocation(restaurant?.neighborhood, neighborhood);
       return byCat && byRestaurant && byQuery && byIngredient && byNeighborhood;
     });
-  }, [items, active, effectiveRestaurantId, lockedRestaurantId, query, ingredient, neighborhood]);
+  }, [
+    items,
+    active,
+    effectiveRestaurantId,
+    lockedRestaurantId,
+    debouncedQuery,
+    ingredient,
+    neighborhood,
+  ]);
 
   const maxAvailablePrice = filteredExceptPrice.length
     ? Math.max(...filteredExceptPrice.map((m) => m.price))
@@ -134,7 +144,7 @@ export function MenuBrowser({
 
   useEffect(() => {
     setPage(1);
-  }, [active, effectiveRestaurantId, query, ingredient, neighborhood, maxPrice, sort]);
+  }, [active, effectiveRestaurantId, debouncedQuery, ingredient, neighborhood, maxPrice, sort]);
 
   return (
     <div>
@@ -150,7 +160,7 @@ export function MenuBrowser({
         </Link>
       )}
 
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-border bg-card p-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-border bg-card p-2 transition-colors has-[:focus]:border-primary">
         <label className="flex min-w-0 items-center gap-2 px-2">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
           <input

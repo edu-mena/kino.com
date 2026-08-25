@@ -78,7 +78,7 @@ export function IngredientSearchFilter({
 
   return (
     <div className="relative min-w-0">
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 transition-colors has-[:focus]:border-primary">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
           value={query}

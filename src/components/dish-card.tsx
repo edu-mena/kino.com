@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, Plus, Star, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
+import { LazyImage } from "@/components/lazy-image";
 import { getRestaurant } from "@/data/helpers";
 import type { MenuItem } from "@/data/types";
 import { useAddToBill } from "@/lib/bill";
@@ -56,10 +57,9 @@ export function DishCard({ item }: { item: MenuItem }) {
         params={{ dishId: item.id }}
         className="relative block h-28 w-full bg-surface sm:h-32"
       >
-        <img
+        <LazyImage
           src={item.image}
           alt={item.name}
-          loading="lazy"
           width={768}
           height={768}
           className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${

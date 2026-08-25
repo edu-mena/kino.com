@@ -10,6 +10,7 @@ import { getCustomerNote, setCustomerNote } from "@/data/customer-notes-store";
 import { useTranslation } from "@/i18n";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/clientes")({
   head: () => ({ meta: [{ title: "Clientes — Painel Kino.com" }] }),
@@ -57,6 +58,7 @@ function AdminClientes() {
   const { restaurant } = useRestaurantAdmin();
   const { reservations } = useReservations();
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const { t } = useTranslation();
@@ -72,9 +74,11 @@ function AdminClientes() {
     return groupByCustomer(reservations.filter((r) => r.restaurantId === restaurant.id));
   }, [reservations, restaurant]);
 
-  const filtered = query
+  const filtered = debouncedQuery
     ? customers.filter((c) =>
-        [c.name, c.phone, c.email].some((v) => v.toLowerCase().includes(query.toLowerCase())),
+        [c.name, c.phone, c.email].some((v) =>
+          v.toLowerCase().includes(debouncedQuery.toLowerCase()),
+        ),
       )
     : customers;
 
@@ -103,7 +107,7 @@ function AdminClientes() {
       />
 
       <div className="mx-auto mt-8 max-w-4xl px-4 md:px-6">
-        <label className="flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3">
+        <label className="flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 transition-colors has-[:focus]:border-primary">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
           <input
             value={query}

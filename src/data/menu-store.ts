@@ -1,5 +1,6 @@
 import { INITIAL_MENU_ITEMS } from "./mockData";
 import { defaultMenuId, getEffectiveMenus } from "./menus-store";
+import { safeLocalStorageSet } from "./safe-storage";
 import type { MenuItem, MenuItemIngredient } from "./types";
 
 /**
@@ -49,10 +50,14 @@ function readItemsState(): MenuAdminState {
   }
 }
 
-function writeItemsState(state: MenuAdminState) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(ITEMS_KEY, JSON.stringify(state));
-  window.dispatchEvent(new Event(CHANGE_EVENT));
+/** `false` = a escrita falhou (ex: quota do localStorage excedida) — quem
+ * chama decide como avisar o utilizador; o estado em memória não muda de
+ * qualquer forma nesse caso (a próxima leitura volta a ler o valor antigo). */
+function writeItemsState(state: MenuAdminState): boolean {
+  if (typeof window === "undefined") return true;
+  const ok = safeLocalStorageSet(ITEMS_KEY, JSON.stringify(state));
+  if (ok) window.dispatchEvent(new Event(CHANGE_EVENT));
+  return ok;
 }
 
 function readUnavailableIds(): string[] {
@@ -150,7 +155,10 @@ export function normalizeIngredients(
     }));
 }
 
-export function createMenuItem(restaurantId: string, input: MenuItemInput): MenuItem {
+export function createMenuItem(
+  restaurantId: string,
+  input: MenuItemInput,
+): { item: MenuItem; ok: boolean } {
   const state = readItemsState();
   const item: MenuItem = {
     id: `dish-custom-${Date.now()}`,
@@ -158,22 +166,21 @@ export function createMenuItem(restaurantId: string, input: MenuItemInput): Menu
     isAvailable: true,
     ...input,
   };
-  writeItemsState({ ...state, customItems: [...state.customItems, item] });
-  return item;
+  const ok = writeItemsState({ ...state, customItems: [...state.customItems, item] });
+  return { item, ok };
 }
 
-export function updateMenuItem(id: string, input: MenuItemInput) {
+export function updateMenuItem(id: string, input: MenuItemInput): boolean {
   const state = readItemsState();
   // Prato criado no painel: edita o próprio item guardado. Prato do seed:
   // guarda só a diferença, em `overrides`.
   if (state.customItems.some((i) => i.id === id)) {
-    writeItemsState({
+    return writeItemsState({
       ...state,
       customItems: state.customItems.map((i) => (i.id === id ? { ...i, ...input } : i)),
     });
-    return;
   }
-  writeItemsState({ ...state, overrides: { ...state.overrides, [id]: input } });
+  return writeItemsState({ ...state, overrides: { ...state.overrides, [id]: input } });
 }
 
 /** Usado pela UI para bloquear a eliminação de um cardápio que ainda tenha

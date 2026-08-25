@@ -24,8 +24,10 @@ type MenuAdminValue = {
   items: MenuItem[];
   isAvailable: (menuItemId: string) => boolean;
   toggleAvailability: (menuItemId: string) => void;
-  createItem: (restaurantId: string, input: MenuItemInput) => MenuItem;
-  updateItem: (id: string, input: MenuItemInput) => void;
+  /** `ok: false` = a escrita falhou (ex: quota do localStorage excedida,
+   * comum com imagens grandes) — o prato pode não ter sido guardado. */
+  createItem: (restaurantId: string, input: MenuItemInput) => { item: MenuItem; ok: boolean };
+  updateItem: (id: string, input: MenuItemInput) => boolean;
   deleteItem: (id: string) => void;
 };
 

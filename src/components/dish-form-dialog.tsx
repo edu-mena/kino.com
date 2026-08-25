@@ -73,7 +73,8 @@ export function DishFormDialog({
   menuId: string;
   categories: string[];
   dish?: MenuItem | null;
-  onSave: (restaurantId: string, input: MenuItemInput, editingId?: string) => void;
+  /** `false` = a escrita falhou (ex: quota do localStorage excedida). */
+  onSave: (restaurantId: string, input: MenuItemInput, editingId?: string) => boolean;
 }) {
   const suggestions = useDishSuggestions();
   const { t } = useTranslation();
@@ -160,7 +161,11 @@ export function DishFormDialog({
       ),
     };
 
-    onSave(restaurantId, input, dish?.id);
+    const ok = onSave(restaurantId, input, dish?.id);
+    if (!ok) {
+      toast.error(t("dishFormDialog.saveFailedError"));
+      return;
+    }
     toast.success(dish ? t("dishFormDialog.updatedToast") : t("dishFormDialog.createdToast"));
     if (!dish) dishHint.dismiss();
     onOpenChange(false);

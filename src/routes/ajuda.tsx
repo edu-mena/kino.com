@@ -5,6 +5,7 @@ import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { useHelpArticles } from "@/lib/help-articles";
 import { useTranslation } from "@/i18n";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/ajuda")({
   head: () => ({
@@ -25,16 +26,19 @@ export const Route = createFileRoute("/ajuda")({
 
 function Ajuda() {
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const { t } = useTranslation();
   const helpArticles = useHelpArticles();
 
   const filtered = useMemo(
     () =>
-      query
-        ? helpArticles.filter((a) => a.question.toLowerCase().includes(query.toLowerCase()))
+      debouncedQuery
+        ? helpArticles.filter((a) =>
+            a.question.toLowerCase().includes(debouncedQuery.toLowerCase()),
+          )
         : helpArticles,
-    [query, helpArticles],
+    [debouncedQuery, helpArticles],
   );
 
   const active = activeIndex !== null ? helpArticles[activeIndex] : null;
@@ -50,7 +54,7 @@ function Ajuda() {
         {/* Mobile: um card de cada vez (lista ↔ visualização). Desktop: lado a lado. */}
         <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
           <div className={`min-w-0 ${activeIndex !== null ? "hidden lg:block" : "block"}`}>
-            <label className="flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3">
+            <label className="flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 transition-colors has-[:focus]:border-primary">
               <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
               <input
                 value={query}

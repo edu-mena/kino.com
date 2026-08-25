@@ -6,7 +6,7 @@ import type { RestaurantStory } from "@/data/types";
 type StoriesAdminValue = {
   stories: RestaurantStory[];
   storiesByRestaurant: (restaurantId: string) => RestaurantStory[];
-  createStory: (restaurantId: string, image: string) => RestaurantStory;
+  createStory: (restaurantId: string, image: string) => { story: RestaurantStory; ok: boolean };
   deleteStory: (id: string) => void;
 };
 
