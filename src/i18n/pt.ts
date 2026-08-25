@@ -110,6 +110,7 @@ export const pt = {
     amount: "Quantia",
     cancelOrder: "Cancelar pedido",
     finalizeOrder: "Finalizar pedido — escolher pagamento",
+    observationLabel: "Observação",
   },
   reservas: {
     eyebrow: "Reservas",
@@ -211,6 +212,9 @@ export const pt = {
     footerNote: "O restaurante recebe o pedido e combina o pagamento consigo diretamente.",
     slotFastest: "O mais rápido possível",
     today: "Hoje,",
+    noteTitle: "Alguma observação?",
+    noteDescription: "Opcional — enviamos junto do pedido para o(s) restaurante(s).",
+    notePlaceholder: "Ex: sem cebola, entregar na portaria...",
   },
   search: {
     buttonLabel: "Buscar",
@@ -345,6 +349,7 @@ export const pt = {
     markDelivered: "Marcar como entregue",
     updatedToast: "Pedido atualizado — {status}",
     rejectedToast: "Pedido recusado",
+    observationLabel: "Observação do cliente",
   },
   adminReservas: {
     eyebrow: "Reservas",
@@ -853,5 +858,14 @@ export const pt = {
   },
   firstUseHint: {
     dismissAria: "Dispensar dica",
+  },
+  restaurantAvatarRow: {
+    chooserDescription: "Já viu o story deste restaurante — o que quer fazer?",
+    viewStoryAgain: "Ver story",
+  },
+  orderBuilderCard: {
+    noteLabel: "Alguma observação? (opcional)",
+    notePlaceholder: "Ex: sem cebola, entregar na portaria...",
+    orderCreatedToast: "Pedido de entrega criado",
   },
 };

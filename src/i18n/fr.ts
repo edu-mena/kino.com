@@ -103,6 +103,7 @@ export const fr: Dictionary = {
     amount: "Montant",
     cancelOrder: "Annuler la commande",
     finalizeOrder: "Finaliser la commande — choisir le paiement",
+    observationLabel: "Remarque",
   },
   reservas: {
     eyebrow: "Réservations",
@@ -204,6 +205,9 @@ export const fr: Dictionary = {
     footerNote: "Le restaurant reçoit la commande et convient du paiement directement avec vous.",
     slotFastest: "Le plus rapide possible",
     today: "Aujourd'hui,",
+    noteTitle: "Une remarque particulière ?",
+    noteDescription: "Facultatif — envoyée avec la commande au(x) restaurant(s).",
+    notePlaceholder: "Ex : sans oignon, livrer à la réception...",
   },
   search: {
     buttonLabel: "Rechercher",
@@ -343,6 +347,7 @@ export const fr: Dictionary = {
     markDelivered: "Marquer comme livrée",
     updatedToast: "Commande mise à jour — {status}",
     rejectedToast: "Commande refusée",
+    observationLabel: "Remarque du client",
   },
   adminReservas: {
     eyebrow: "Réservations",
@@ -858,5 +863,14 @@ export const fr: Dictionary = {
   },
   firstUseHint: {
     dismissAria: "Ignorer l'astuce",
+  },
+  restaurantAvatarRow: {
+    chooserDescription: "Vous avez déjà vu la story de ce restaurant — que voulez-vous faire ?",
+    viewStoryAgain: "Voir la story",
+  },
+  orderBuilderCard: {
+    noteLabel: "Une remarque particulière ? (facultatif)",
+    notePlaceholder: "Ex : sans oignon, livrer à la réception...",
+    orderCreatedToast: "Commande de livraison créée",
   },
 };

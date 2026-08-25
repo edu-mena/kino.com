@@ -158,19 +158,24 @@ function Perfil() {
   return (
     <PageShell>
       <div className="mx-auto max-w-6xl px-4 pt-10 md:px-6">
-        <div className="card-soft grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 p-6">
-          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-primary font-display text-xl font-extrabold text-primary-foreground">
-            {initials}
-          </span>
-          <div className="min-w-0">
-            <h1 className="truncate text-2xl font-extrabold text-primary">{user.name}</h1>
-            <p className="truncate text-sm text-muted-foreground">
-              {user.email} · {user.phone}
-            </p>
+        {/* `flex-wrap` + o seletor a `w-full` até `sm:` — em telas estreitas
+            ele quebra sozinho para uma linha própria, em vez de espremer o
+            nome/email do meio até truncar demais. */}
+        <div className="card-soft flex flex-wrap items-center gap-4 p-6">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
+            <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-primary font-display text-xl font-extrabold text-primary-foreground">
+              {initials}
+            </span>
+            <div className="min-w-0">
+              <h1 className="truncate text-2xl font-extrabold text-primary">{user.name}</h1>
+              <p className="truncate text-sm text-muted-foreground">
+                {user.email} · {user.phone}
+              </p>
+            </div>
           </div>
-          <div className="shrink-0">
+          <div className="w-full sm:w-auto sm:shrink-0">
             <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger className="w-36 rounded-xl">
+              <SelectTrigger className="w-full rounded-xl sm:w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

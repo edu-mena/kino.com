@@ -41,6 +41,10 @@ export type CartOrder = {
    * passar pelo checkout (`confirmOrder`). A Kino não processa o pagamento
    * em si, isto é só a preferência relayed ao restaurante. */
   paymentMethod?: string;
+  /** Observação livre do cliente para o restaurante (ex: "sem cebola",
+   * "entregar na portaria") — pode ser escrita ao pedir a entrega ou
+   * editada depois, no checkout; opcional nos dois momentos. */
+  note?: string;
 };
 
 type NewCartLine = {
@@ -57,13 +61,20 @@ type CartValue = {
   total: number;
   orderSubtotal: (order: CartOrder) => number;
   orderTotal: (order: CartOrder) => number;
-  addOrder: (restaurantId: string, items: NewCartLine[], deliveryAddress: SavedAddress) => void;
+  addOrder: (
+    restaurantId: string,
+    items: NewCartLine[],
+    deliveryAddress: SavedAddress,
+    note?: string,
+  ) => void;
   setQty: (orderId: string, lineKey: string, qty: number) => void;
   removeOrder: (orderId: string) => void;
   /** Passo do checkout — regista a preferência de pagamento no pedido (já
    * criado desde o "Solicitar delivery"). Não cria nada novo nem limpa a
-   * lista: o pedido continua o mesmo, agora com o método anexado. */
-  confirmOrder: (orderId: string, paymentMethod: string) => void;
+   * lista: o pedido continua o mesmo, agora com o método anexado. `note`,
+   * se passada, substitui a observação existente (o campo é editável nos
+   * dois momentos — pedido e checkout). */
+  confirmOrder: (orderId: string, paymentMethod: string, note?: string) => void;
   /** Usado pelo painel do restaurante (`/admin/pedidos`) pra avançar o
    * pedido: pending → accepted → onTheWay → delivered, ou pending → rejected. */
   updateOrderStatus: (orderId: string, status: CartOrderStatus) => void;
@@ -188,7 +199,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       orderTotal,
       // Sempre cria um pedido NOVO — cada "Solicitar delivery" é um delivery
       // à parte, mesmo que já haja um pedido pendente do mesmo restaurante.
-      addOrder: (restaurantId, items, deliveryAddress) =>
+      addOrder: (restaurantId, items, deliveryAddress, note) =>
         setOrders((prev) => [
           ...prev,
           {
@@ -204,6 +215,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             deliveryAddress,
             status: "pending",
             estimatedMinutes: getRestaurant(restaurantId)?.estimatedDeliveryMinutes ?? 30,
+            ...(note?.trim() ? { note: note.trim() } : {}),
           },
         ]),
       setQty: (orderId, key, qty) =>
@@ -223,8 +235,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
             .filter((o) => o.lines.length > 0),
         ),
       removeOrder: (orderId) => setOrders((prev) => prev.filter((o) => o.id !== orderId)),
-      confirmOrder: (orderId, paymentMethod) =>
-        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, paymentMethod } : o))),
+      confirmOrder: (orderId, paymentMethod, note) =>
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId
+              ? { ...o, paymentMethod, ...(note !== undefined ? { note: note.trim() } : {}) }
+              : o,
+          ),
+        ),
       updateOrderStatus: (orderId, status) =>
         setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o))),
       clear: () => setOrders([]),

@@ -187,7 +187,7 @@ function AdminShellContent({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        <main className="min-w-0 flex-1 pb-20 lg:pb-0">{children}</main>
+        <main className="min-w-0 flex-1 pb-20 lg:pb-12">{children}</main>
       </div>
 
       {/* Barra inferior — mobile */}
