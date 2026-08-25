@@ -650,8 +650,8 @@ export const fr: Dictionary = {
   homeGuest: {
     heroLine1: "Alors,",
     heroLine2: "Où va-t-on aujourd'hui",
-    subtitle: "Le meilleur choix, à un clic de distance !!",
-    subtitleBrand: "votre carte en ligne.",
+    subtitle: "Votre prochain repas à portée de main.",
+    subtitleBrandPrefix: "Connectez-vous à la carte en ligne de",
     login: "Se connecter",
     whatIsKino: "Qu'est-ce que Kino ?",
     reserveTitle: "Réservez une table",

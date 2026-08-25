@@ -70,13 +70,18 @@ function HomeNotLoggedIn() {
             <span className="text-brand">{t("homeGuest.heroLine2")}</span>?
           </h1>
           <p className="mt-4 text-[1.1rem] max-w-md text-muted-foreground">
-            {t("homeGuest.subtitle")} <br />
-            <span className="text-brand">Kino.com</span> {t("homeGuest.subtitleBrand")}
+            {t("homeGuest.subtitle")}
+            <br />
+            {t("homeGuest.subtitleBrandPrefix")}{" "}
+            <Link to="/kino" viewTransition className="font-semibold text-brand hover:underline">
+              Kino.com
+            </Link>
+            .
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Link
-              to="/entrar"
+              to="/cadastro"
               className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
               {t("homeGuest.login")}

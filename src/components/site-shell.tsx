@@ -375,33 +375,35 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           ))}
         </div>
 
-        {!isGuestHome && (
-          <div data-tour="language" className="shrink-0 border-t border-border px-4 py-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-muted-foreground">
-                {t("header.language")}
-              </span>
-              <div className="flex items-center gap-1 rounded-full bg-surface p-1">
-                {languageOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setLanguage(opt.value)}
-                    aria-pressed={language === opt.value}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-xs font-bold transition-colors",
-                      language === opt.value
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+        {/* O idioma funciona igual para convidados (usePreferences não
+            depende de sessão) — só a home de convidado escondia o seletor;
+            as outras páginas de visitante (Kino, Sobre, Contacto) já o
+            mostravam por não usarem este variant. */}
+        <div data-tour="language" className="shrink-0 border-t border-border px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium text-muted-foreground">
+              {t("header.language")}
+            </span>
+            <div className="flex items-center gap-1 rounded-full bg-surface p-1">
+              {languageOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setLanguage(opt.value)}
+                  aria-pressed={language === opt.value}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-bold transition-colors",
+                    language === opt.value
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
-        )}
+        </div>
 
         <div className="shrink-0 border-t border-border px-4 py-3">
           {isLoggedIn ? (
