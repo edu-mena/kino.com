@@ -3,6 +3,7 @@ import { Bike, Percent, Sparkles } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { useOffers } from "@/data/use-offers";
+import { translateOffer, useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/ofertas")({
   head: () => ({
@@ -25,27 +26,29 @@ const iconByType = { discount: Percent, delivery: Bike, "happy-hour": Sparkles }
 
 function Ofertas() {
   const offers = useOffers();
+  const { t } = useTranslation();
   return (
     <PageShell>
       <PageHeading
-        eyebrow="Promoções"
-        title="Ofertas especiais"
-        description="Descontos ativos hoje. Mencione o código ao restaurante ao fazer o pedido."
+        eyebrow={t("ofertas.eyebrow")}
+        title={t("ofertas.title")}
+        description={t("ofertas.description")}
       />
       <div className="mx-auto mt-8 grid max-w-6xl gap-4 px-4 md:px-6">
         {offers.map((offer) => {
           const OfferIcon = iconByType[offer.type];
+          const { title, description } = translateOffer(offer, t);
           return (
             <div
               key={offer.id}
               className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-[1.75rem] bg-primary p-6 text-primary-foreground sm:p-8"
             >
               <div className="min-w-0">
-                <p className="font-display text-2xl font-extrabold sm:text-3xl">{offer.title}</p>
-                <p className="mt-1 text-sm opacity-90">{offer.description}</p>
+                <p className="font-display text-2xl font-extrabold sm:text-3xl">{title}</p>
+                <p className="mt-1 text-sm opacity-90">{description}</p>
                 {offer.code && (
                   <p className="mt-3 inline-block rounded-full bg-brand px-3 py-1 text-xs font-bold">
-                    Código: {offer.code}
+                    {t("ofertas.code")}: {offer.code}
                   </p>
                 )}
                 <div className="mt-5">
@@ -53,7 +56,7 @@ function Ofertas() {
                     to="/cardapio"
                     className="inline-block rounded-xl bg-card px-5 py-2.5 text-sm font-semibold text-primary"
                   >
-                    Pedir agora
+                    {t("ofertas.orderNow")}
                   </Link>
                 </div>
               </div>

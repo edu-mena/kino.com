@@ -17,7 +17,7 @@ import type { MenuItem, Offer } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { useOffers } from "@/data/use-offers";
 import { formatKz } from "@/lib/format";
-import { useTranslation } from "@/i18n";
+import { translateOffer, useTranslation } from "@/i18n";
 
 const MAX_SLIDES = 8;
 
@@ -69,11 +69,12 @@ function buildSlides(
 
   offers.forEach((offer, i) => {
     if (slides.length >= MAX_SLIDES) return;
+    const { title, description } = translateOffer(offer, t);
     slides.push({
       id: offer.id,
       kind: i % 2 === 0 ? "split" : "cover",
-      title: offer.title,
-      description: offer.description,
+      title,
+      description,
       cta: offer.code ? t("home.promoUseCode", { code: offer.code }) : t("home.promoSeeOffer"),
       image: offerSlideImages[i % offerSlideImages.length]!,
       target: { to: "/ofertas" },

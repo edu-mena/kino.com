@@ -20,7 +20,7 @@ import { Slider } from "@/components/ui/slider";
 import { getAllIngredientNames, getRestaurant } from "@/data/helpers";
 import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";
-import { useTranslation } from "@/i18n";
+import { translateMenuCategory, useTranslation } from "@/i18n";
 
 const ingredientNames = getAllIngredientNames();
 
@@ -55,7 +55,7 @@ export function MenuBrowser({
   onClearRestaurantFilter?: (() => void) | undefined;
 }) {
   const effectiveRestaurantId = lockedRestaurantId ?? restaurantFilter?.id;
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const items = useMenuItems();
   const overallMaxPrice = useMemo(
     () => (items.length ? Math.max(...items.map((m) => m.price)) : 0),
@@ -71,8 +71,8 @@ export function MenuBrowser({
       ? items.filter((m) => m.restaurantId === effectiveRestaurantId)
       : items;
     const ids = [...new Set(scoped.map((m) => m.category))];
-    return ids.map((id) => ({ id, label: id }));
-  }, [items, effectiveRestaurantId]);
+    return ids.map((id) => ({ id, label: translateMenuCategory(id, locale) }));
+  }, [items, effectiveRestaurantId, locale]);
 
   const [active, setActive] = useState<string>("todos");
   const [query, setQuery] = useState("");
