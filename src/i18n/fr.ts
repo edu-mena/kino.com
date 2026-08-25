@@ -456,6 +456,8 @@ export const fr: Dictionary = {
     imageHelp: "Collez un lien ou importez une photo depuis votre appareil.",
     publish: "Publier",
     missingImageError: "Choisissez d'abord une image.",
+    saveFailedError:
+      "Impossible d'enregistrer — le stockage du navigateur est plein. Essayez une image plus légère ou libérez de l'espace.",
     createdToast: "Story publiée.",
     deletedToast: "Story supprimée.",
     deleteDialogTitle: "Supprimer cette story ?",
@@ -568,6 +570,8 @@ export const fr: Dictionary = {
     saveChanges: "Enregistrer les modifications",
     createDish: "Créer le plat",
     missingFieldsError: "Renseignez le nom, la catégorie et un prix valide.",
+    saveFailedError:
+      "Impossible d'enregistrer — le stockage du navigateur est plein. Essayez une image plus légère ou libérez de l'espace.",
     suggestionAppliedToast: "Données de « {name} » remplies — vérifiez le prix.",
     updatedToast: "Plat mis à jour.",
     createdToast: "Plat créé.",
@@ -617,6 +621,8 @@ export const fr: Dictionary = {
     galleryLabel: "Galerie photo",
     galleryPlaceholder: "https://...",
     saveChanges: "Enregistrer les modifications",
+    saveFailedError:
+      "Impossible d'enregistrer — le stockage du navigateur est plein. Essayez des images plus légères ou libérez de l'espace.",
     updatedToast: "Profil mis à jour.",
     logout: "Se déconnecter",
   },

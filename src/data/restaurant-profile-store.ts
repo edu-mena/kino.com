@@ -1,3 +1,4 @@
+import { safeLocalStorageSet } from "./safe-storage";
 import type { Restaurant } from "./types";
 
 /**
@@ -48,10 +49,11 @@ function readState(): Record<string, RestaurantProfileEdit> {
   }
 }
 
-function writeState(state: Record<string, RestaurantProfileEdit>) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(PROFILE_KEY, JSON.stringify(state));
-  window.dispatchEvent(new Event(CHANGE_EVENT));
+function writeState(state: Record<string, RestaurantProfileEdit>): boolean {
+  if (typeof window === "undefined") return true;
+  const ok = safeLocalStorageSet(PROFILE_KEY, JSON.stringify(state));
+  if (ok) window.dispatchEvent(new Event(CHANGE_EVENT));
+  return ok;
 }
 
 /** Aplica as edições guardadas de um restaurante sobre o registo do seed —
@@ -66,7 +68,9 @@ export function getProfileEdits(restaurantId: string): RestaurantProfileEdit {
   return readState()[restaurantId] ?? {};
 }
 
-export function saveProfileEdits(restaurantId: string, edits: RestaurantProfileEdit) {
+/** `false` = a escrita falhou (ex: quota do localStorage excedida, comum
+ * quando a capa/galeria têm imagens grandes em base64). */
+export function saveProfileEdits(restaurantId: string, edits: RestaurantProfileEdit): boolean {
   const state = readState();
-  writeState({ ...state, [restaurantId]: { ...state[restaurantId], ...edits } });
+  return writeState({ ...state, [restaurantId]: { ...state[restaurantId], ...edits } });
 }

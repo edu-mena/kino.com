@@ -457,6 +457,8 @@ export const pt = {
     imageHelp: "Cole um link ou carregue uma foto do dispositivo.",
     publish: "Publicar",
     missingImageError: "Escolha uma imagem primeiro.",
+    saveFailedError:
+      "Não foi possível guardar — o armazenamento do navegador está cheio. Tente uma imagem mais leve ou liberte espaço.",
     createdToast: "Story publicado.",
     deletedToast: "Story removido.",
     deleteDialogTitle: "Remover este story?",
@@ -567,6 +569,8 @@ export const pt = {
     saveChanges: "Guardar alterações",
     createDish: "Criar prato",
     missingFieldsError: "Preencha nome, categoria e um preço válido.",
+    saveFailedError:
+      "Não foi possível guardar — o armazenamento do navegador está cheio. Tente uma imagem mais leve ou liberte espaço.",
     suggestionAppliedToast: 'Dados de "{name}" preenchidos — reveja o preço.',
     updatedToast: "Prato atualizado.",
     createdToast: "Prato criado.",
@@ -615,6 +619,8 @@ export const pt = {
     galleryLabel: "Galeria de fotos",
     galleryPlaceholder: "https://...",
     saveChanges: "Guardar alterações",
+    saveFailedError:
+      "Não foi possível guardar — o armazenamento do navegador está cheio. Tente imagens mais leves ou liberte espaço.",
     updatedToast: "Perfil atualizado.",
     logout: "Sair do painel",
   },

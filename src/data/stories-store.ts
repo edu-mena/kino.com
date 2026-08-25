@@ -1,4 +1,5 @@
 import { INITIAL_STORIES } from "./mockData";
+import { safeLocalStorageSet } from "./safe-storage";
 import type { RestaurantStory } from "./types";
 
 /**
@@ -28,10 +29,11 @@ function readState(): StoriesState {
   }
 }
 
-function writeState(state: StoriesState) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORIES_KEY, JSON.stringify(state));
-  window.dispatchEvent(new Event(CHANGE_EVENT));
+function writeState(state: StoriesState): boolean {
+  if (typeof window === "undefined") return true;
+  const ok = safeLocalStorageSet(STORIES_KEY, JSON.stringify(state));
+  if (ok) window.dispatchEvent(new Event(CHANGE_EVENT));
+  return ok;
 }
 
 /** Todos os stories (de todos os restaurantes): seed − eliminados + criados. */
@@ -41,7 +43,10 @@ export function getEffectiveStories(): RestaurantStory[] {
   return [...fromSeed, ...customStories];
 }
 
-export function createStory(restaurantId: string, image: string): RestaurantStory {
+export function createStory(
+  restaurantId: string,
+  image: string,
+): { story: RestaurantStory; ok: boolean } {
   const state = readState();
   const story: RestaurantStory = {
     id: `story-custom-${Date.now()}`,
@@ -49,8 +54,8 @@ export function createStory(restaurantId: string, image: string): RestaurantStor
     image,
     createdAt: new Date().toISOString(),
   };
-  writeState({ ...state, customStories: [...state.customStories, story] });
-  return story;
+  const ok = writeState({ ...state, customStories: [...state.customStories, story] });
+  return { story, ok };
 }
 
 export function deleteStory(id: string) {

@@ -214,7 +214,7 @@ function AdminCardapio() {
         categories={categories}
         dish={editingDish}
         onSave={(restaurantId, input, editingId) =>
-          editingId ? updateItem(editingId, input) : createItem(restaurantId, input)
+          editingId ? updateItem(editingId, input) : createItem(restaurantId, input).ok
         }
       />
 

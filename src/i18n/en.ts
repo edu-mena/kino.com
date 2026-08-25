@@ -452,6 +452,8 @@ export const en: Dictionary = {
     imageHelp: "Paste a link or upload a photo from your device.",
     publish: "Publish",
     missingImageError: "Choose an image first.",
+    saveFailedError:
+      "Couldn't save — the browser's storage is full. Try a smaller image or free up space.",
     createdToast: "Story published.",
     deletedToast: "Story removed.",
     deleteDialogTitle: "Remove this story?",
@@ -562,6 +564,8 @@ export const en: Dictionary = {
     saveChanges: "Save changes",
     createDish: "Create dish",
     missingFieldsError: "Fill in name, category and a valid price.",
+    saveFailedError:
+      "Couldn't save — the browser's storage is full. Try a smaller image or free up space.",
     suggestionAppliedToast: 'Filled in with "{name}"\'s details — double-check the price.',
     updatedToast: "Dish updated.",
     createdToast: "Dish created.",
@@ -610,6 +614,8 @@ export const en: Dictionary = {
     galleryLabel: "Photo gallery",
     galleryPlaceholder: "https://...",
     saveChanges: "Save changes",
+    saveFailedError:
+      "Couldn't save — the browser's storage is full. Try smaller images or free up space.",
     updatedToast: "Profile updated.",
     logout: "Log out",
   },

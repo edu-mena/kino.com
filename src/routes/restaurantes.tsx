@@ -20,6 +20,7 @@ import { INITIAL_RESTAURANTS } from "@/data/mockData";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
 import { useTranslation } from "@/i18n";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/restaurantes")({
   head: () => ({
@@ -54,6 +55,7 @@ function Restaurantes() {
   const { t } = useTranslation();
   const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [neighborhood, setNeighborhood] = useState("todos");
   const [priceLevel, setPriceLevel] = useState<string | undefined>(undefined);
@@ -65,9 +67,9 @@ function Restaurantes() {
   const filtered = useMemo(() => {
     const list = INITIAL_RESTAURANTS.filter((r) => {
       const byQuery =
-        !query ||
-        r.name.toLowerCase().includes(query.toLowerCase()) ||
-        r.cuisine.toLowerCase().includes(query.toLowerCase());
+        !debouncedQuery ||
+        r.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        r.cuisine.toLowerCase().includes(debouncedQuery.toLowerCase());
       const byNeighborhood = matchesLocation(r.neighborhood, neighborhood);
       const byPriceLevel = !priceLevel || r.priceLevel === priceLevel;
       const byDelivery = !deliveryOnly || r.isDeliveryAvailable;
@@ -78,7 +80,7 @@ function Restaurantes() {
     else if (sort === "avaliacao") sorted.sort((a, b) => b.rating - a.rating);
     else sorted.sort((a, b) => a.name.localeCompare(b.name, "pt"));
     return sorted;
-  }, [query, neighborhood, priceLevel, deliveryOnly, sort]);
+  }, [debouncedQuery, neighborhood, priceLevel, deliveryOnly, sort]);
 
   const activeExtraFilters =
     (neighborhood !== "todos" ? 1 : 0) + (priceLevel ? 1 : 0) + (deliveryOnly ? 1 : 0);
@@ -88,7 +90,7 @@ function Restaurantes() {
 
   useEffect(() => {
     setPage(1);
-  }, [query, neighborhood, priceLevel, deliveryOnly, sort]);
+  }, [debouncedQuery, neighborhood, priceLevel, deliveryOnly, sort]);
 
   return (
     <PageShell>

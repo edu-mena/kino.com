@@ -134,7 +134,7 @@ function AdminPerfil() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    saveProfileEdits(restaurant.id, {
+    const ok = saveProfileEdits(restaurant.id, {
       coverImage: coverImage.trim() || restaurant.coverImage,
       description: description.trim(),
       cuisine: cuisine.trim(),
@@ -153,6 +153,10 @@ function AdminPerfil() {
       cautionPolicyNotice: cautionPolicyNotice.trim(),
       galleryImages: galleryImages.map((g) => g.trim()).filter(Boolean),
     });
+    if (!ok) {
+      toast.error(t("adminPerfil.saveFailedError"));
+      return;
+    }
     toast.success(t("adminPerfil.updatedToast"));
   };
 

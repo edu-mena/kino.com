@@ -89,7 +89,7 @@ export function RestaurantAvatarRow() {
               className="flex w-20 shrink-0 flex-col items-center gap-2"
             >
               <span
-                className={`h-16 w-16 shrink-0 overflow-hidden rounded-full ${
+                className={`h-16 w-16 shrink-0 overflow-hidden rounded-full bg-surface ${
                   hasStory
                     ? `ring-2 ring-offset-2 ring-offset-background ${viewed ? "ring-border" : "ring-primary"}`
                     : "border border-border"

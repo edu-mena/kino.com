@@ -54,7 +54,11 @@ function AdminStories() {
       toast.error(t("adminStories.missingImageError"));
       return;
     }
-    createStory(restaurant.id, image.trim());
+    const { ok } = createStory(restaurant.id, image.trim());
+    if (!ok) {
+      toast.error(t("adminStories.saveFailedError"));
+      return;
+    }
     toast.success(t("adminStories.createdToast"));
     storyHint.dismiss();
     setImage("");
