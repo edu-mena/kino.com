@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CalendarCheck, Check, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { AdminPageHeading } from "@/components/admin-shell";
+import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -14,6 +15,13 @@ export const Route = createFileRoute("/admin/reservas")({
 function AdminReservas() {
   const { restaurant } = useRestaurantAdmin();
   const { reservations, updateReservationStatus } = useReservations();
+  const { t } = useTranslation();
+
+  const statusLabels: Record<string, string> = {
+    Pendente: t("adminReservas.statusPending"),
+    Confirmada: t("adminReservas.statusConfirmed"),
+    Recusada: t("adminReservas.statusRejected"),
+  };
 
   if (!restaurant) return null;
 
@@ -23,22 +31,26 @@ function AdminReservas() {
 
   const respond = (id: string, status: "Confirmada" | "Recusada") => {
     updateReservationStatus(id, status);
-    toast.success(status === "Confirmada" ? "Reserva confirmada" : "Reserva recusada");
+    toast.success(
+      status === "Confirmada"
+        ? t("adminReservas.confirmedToast")
+        : t("adminReservas.rejectedToast"),
+    );
   };
 
   return (
     <div className="pb-16">
       <AdminPageHeading
-        eyebrow="Reservas"
-        title="Pedidos de reserva"
-        description="Confirme ou recuse os pedidos de mesa enviados pelos clientes."
+        eyebrow={t("adminReservas.eyebrow")}
+        title={t("adminReservas.title")}
+        description={t("adminReservas.description")}
       />
 
       <div className="mx-auto mt-8 max-w-4xl space-y-3 px-4 md:px-6">
         {restaurantReservations.length === 0 && (
           <div className="card-soft grid place-items-center gap-3 p-12 text-center">
             <CalendarCheck className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Ainda não tem pedidos de reserva.</p>
+            <p className="text-sm text-muted-foreground">{t("adminReservas.emptyText")}</p>
           </div>
         )}
 
@@ -60,7 +72,7 @@ function AdminReservas() {
                       : "bg-brand/15 text-brand"
                 }`}
               >
-                {r.status}
+                {statusLabels[r.status] ?? r.status}
               </span>
             </div>
 
@@ -71,11 +83,11 @@ function AdminReservas() {
               </span>
               <span className="flex items-center gap-1.5">
                 <Users className="h-4 w-4 text-primary" />
-                {r.peopleCount} pessoas
+                {r.peopleCount} {t("adminReservas.people")}
               </span>
               {r.cautionAmount > 0 && (
                 <span className="flex items-center gap-1.5">
-                  Caução: {formatKz(r.cautionAmount)}
+                  {t("adminReservas.caution")}: {formatKz(r.cautionAmount)}
                 </span>
               )}
             </div>
@@ -94,7 +106,7 @@ function AdminReservas() {
                   className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
                 >
                   <X className="h-3.5 w-3.5" />
-                  Recusar
+                  {t("adminReservas.reject")}
                 </button>
                 <button
                   type="button"
@@ -102,7 +114,7 @@ function AdminReservas() {
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
                 >
                   <Check className="h-3.5 w-3.5" />
-                  Confirmar reserva
+                  {t("adminReservas.confirm")}
                 </button>
               </div>
             )}

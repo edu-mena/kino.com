@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { Reservation } from "@/data/types";
 import { getCustomerNote, setCustomerNote } from "@/data/customer-notes-store";
+import { useTranslation } from "@/i18n";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
@@ -58,6 +59,13 @@ function AdminClientes() {
   const [query, setQuery] = useState("");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
+  const { t } = useTranslation();
+
+  const statusLabels: Record<string, string> = {
+    Pendente: t("adminClientes.statusPending"),
+    Confirmada: t("adminClientes.statusConfirmed"),
+    Recusada: t("adminClientes.statusRejected"),
+  };
 
   const customers = useMemo(() => {
     if (!restaurant) return [];
@@ -83,15 +91,15 @@ function AdminClientes() {
 
   const saveNote = (customer: Customer) => {
     setCustomerNote(customer.email || customer.key, noteDraft);
-    toast.success("Nota guardada.");
+    toast.success(t("adminClientes.noteSavedToast"));
   };
 
   return (
     <div className="pb-16">
       <AdminPageHeading
-        eyebrow="Clientes"
-        title="Quem já reservou consigo"
-        description="Lista construída a partir dos pedidos de reserva — a app não tem pedidos de entrega com identidade de cliente."
+        eyebrow={t("adminClientes.eyebrow")}
+        title={t("adminClientes.title")}
+        description={t("adminClientes.description")}
       />
 
       <div className="mx-auto mt-8 max-w-4xl px-4 md:px-6">
@@ -100,7 +108,7 @@ function AdminClientes() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Pesquisar por nome, telefone ou email..."
+            placeholder={t("adminClientes.searchPlaceholder")}
             className="w-full min-w-0 bg-transparent text-sm outline-none"
           />
         </label>
@@ -111,8 +119,8 @@ function AdminClientes() {
               <Users className="h-10 w-10 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
                 {customers.length === 0
-                  ? "Ainda não tem clientes — aparecem aqui assim que houver o primeiro pedido de reserva."
-                  : "Nenhum cliente encontrado para essa pesquisa."}
+                  ? t("adminClientes.emptyNoCustomers")
+                  : t("adminClientes.emptyNoResults")}
               </p>
             </div>
           )}
@@ -139,11 +147,13 @@ function AdminClientes() {
                     <span className="flex items-center gap-1.5">
                       <CalendarCheck className="h-3.5 w-3.5 text-primary" />
                       {customer.reservations.length}{" "}
-                      {customer.reservations.length === 1 ? "reserva" : "reservas"}
+                      {customer.reservations.length === 1
+                        ? t("adminClientes.reservationSingular")
+                        : t("adminClientes.reservationPlural")}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Users className="h-3.5 w-3.5 text-primary" />
-                      {totalPeople} pessoas
+                      {totalPeople} {t("adminClientes.people")}
                     </span>
                   </div>
                 </button>
@@ -174,7 +184,7 @@ function AdminClientes() {
                                     : "bg-brand/15 text-brand"
                               }`}
                             >
-                              {r.status}
+                              {statusLabels[r.status] ?? r.status}
                             </span>
                           </div>
                         ))}
@@ -182,16 +192,16 @@ function AdminClientes() {
 
                     <div className="space-y-1.5">
                       <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                        Notas
+                        {t("adminClientes.notesLabel")}
                       </p>
                       <Textarea
                         value={noteDraft}
                         onChange={(e) => setNoteDraft(e.target.value)}
-                        placeholder="Ex: prefere mesas externas, alérgico a marisco..."
+                        placeholder={t("adminClientes.notesPlaceholder")}
                         className="rounded-xl"
                       />
                       <Button onClick={() => saveNote(customer)} size="sm" className="rounded-xl">
-                        Guardar nota
+                        {t("adminClientes.saveNote")}
                       </Button>
                     </div>
                   </div>

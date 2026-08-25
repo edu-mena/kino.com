@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bike, CalendarCheck, ChevronRight, Soup, Star } from "lucide-react";
 import { AdminPageHeading } from "@/components/admin-shell";
 import { getReviewsForRestaurant } from "@/data/helpers";
+import { useTranslation } from "@/i18n";
 import { useCart } from "@/lib/cart";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { useReservations } from "@/lib/reservations";
@@ -21,6 +22,7 @@ function AdminDashboard() {
   // `items` (não `getMenuItemsByRestaurant`) — o painel precisa de contar
   // também os pratos de cardápios em rascunho, não só os visíveis ao cliente.
   const { items } = useMenuAdmin();
+  const { t } = useTranslation();
 
   if (!restaurant) return null;
 
@@ -36,42 +38,42 @@ function AdminDashboard() {
     {
       to: "/admin/pedidos" as const,
       icon: Bike,
-      label: "Pedidos pendentes",
+      label: t("adminIndex.pendingOrders"),
       value: pendingOrders,
-      hint: `${restaurantOrders.length} no total`,
+      hint: t("adminIndex.totalOrdersHint", { count: restaurantOrders.length }),
     },
     {
       to: "/admin/reservas" as const,
       icon: CalendarCheck,
-      label: "Reservas pendentes",
+      label: t("adminIndex.pendingReservations"),
       value: pendingReservations,
-      hint: `${restaurantReservations.length} no total`,
+      hint: t("adminIndex.totalReservationsHint", { count: restaurantReservations.length }),
     },
     {
       to: "/admin/cardapio" as const,
       icon: Soup,
-      label: "Pratos no cardápio",
+      label: t("adminIndex.menuItems"),
       value: menuItems.length,
       hint:
         unavailableCount > 0
-          ? `${unavailableCount} marcados como indisponíveis`
-          : "Todos disponíveis",
+          ? t("adminIndex.unavailableHint", { count: unavailableCount })
+          : t("adminIndex.allAvailableHint"),
     },
     {
       to: "/admin/avaliacoes" as const,
       icon: Star,
-      label: "Avaliação média",
+      label: t("adminIndex.averageRating"),
       value: restaurant.rating.toFixed(1),
-      hint: `${reviews.length} avaliações · ${restaurant.reviewCount} no total`,
+      hint: t("adminIndex.reviewsHint", { count: reviews.length, total: restaurant.reviewCount }),
     },
   ];
 
   return (
     <div className="pb-16">
       <AdminPageHeading
-        eyebrow="Painel"
-        title={`Olá, ${restaurant.name}`}
-        description="Resumo rápido do que precisa da sua atenção hoje."
+        eyebrow={t("adminIndex.eyebrow")}
+        title={t("adminIndex.greeting", { name: restaurant.name })}
+        description={t("adminIndex.description")}
       />
 
       <div className="mx-auto mt-8 grid max-w-6xl gap-4 px-4 sm:grid-cols-2 md:px-6 lg:grid-cols-4">
@@ -109,14 +111,16 @@ function AdminDashboard() {
             </p>
             <p className="truncate text-xs text-muted-foreground">
               {restaurant.cuisine} · {restaurant.neighborhood} ·{" "}
-              {restaurant.isDeliveryAvailable ? "Com entrega" : "Sem entrega"}
+              {restaurant.isDeliveryAvailable
+                ? t("adminIndex.withDelivery")
+                : t("adminIndex.withoutDelivery")}
             </p>
           </div>
           <Link
             to="/admin/perfil"
             className="shrink-0 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:border-primary"
           >
-            Ver perfil do restaurante
+            {t("adminIndex.viewProfile")}
           </Link>
         </div>
       </div>

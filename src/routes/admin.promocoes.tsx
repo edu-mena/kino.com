@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Offer } from "@/data/types";
+import { useTranslation } from "@/i18n";
 import { useOffersAdmin } from "@/lib/offers-admin";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
@@ -35,11 +36,6 @@ export const Route = createFileRoute("/admin/promocoes")({
 });
 
 const iconByType = { discount: Percent, delivery: Bike, "happy-hour": Sparkles } as const;
-const typeLabels: Record<Offer["type"], string> = {
-  discount: "Desconto",
-  delivery: "Entrega grátis",
-  "happy-hour": "Happy hour",
-};
 
 function AdminPromocoes() {
   const { restaurant } = useRestaurantAdmin();
@@ -47,6 +43,13 @@ function AdminPromocoes() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Offer | null>(null);
   const [deleting, setDeleting] = useState<Offer | null>(null);
+  const { t } = useTranslation();
+
+  const typeLabels: Record<Offer["type"], string> = {
+    discount: t("adminPromocoes.typeDiscount"),
+    delivery: t("adminPromocoes.typeDelivery"),
+    "happy-hour": t("adminPromocoes.typeHappyHour"),
+  };
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -78,7 +81,7 @@ function AdminPromocoes() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
-      toast.error("Preencha título e descrição.");
+      toast.error(t("adminPromocoes.missingFieldsError"));
       return;
     }
     const input = {
@@ -89,10 +92,10 @@ function AdminPromocoes() {
     };
     if (editing) {
       updateOffer(editing.id, input);
-      toast.success("Promoção atualizada.");
+      toast.success(t("adminPromocoes.updatedToast"));
     } else {
       createOffer(restaurant.id, input);
-      toast.success("Promoção criada.");
+      toast.success(t("adminPromocoes.createdToast"));
     }
     setFormOpen(false);
   };
@@ -100,19 +103,19 @@ function AdminPromocoes() {
   const handleDelete = () => {
     if (!deleting) return;
     deleteOffer(deleting.id);
-    toast.success("Promoção removida.");
+    toast.success(t("adminPromocoes.deletedToast"));
     setDeleting(null);
   };
 
   return (
     <div className="pb-16">
       <AdminPageHeading
-        eyebrow="Promoções"
-        title="As suas promoções"
-        description="Aparecem em Ofertas e no carrossel da home, junto das promoções da Kino."
+        eyebrow={t("adminPromocoes.eyebrow")}
+        title={t("adminPromocoes.title")}
+        description={t("adminPromocoes.description")}
         action={
           <Button onClick={openCreate} className="rounded-xl">
-            <Plus className="h-4 w-4" /> Nova promoção
+            <Plus className="h-4 w-4" /> {t("adminPromocoes.newPromo")}
           </Button>
         }
       />
@@ -120,9 +123,9 @@ function AdminPromocoes() {
       <div className="mx-auto mt-8 max-w-4xl space-y-3 px-4 md:px-6">
         {offers.length === 0 && (
           <div className="card-soft grid place-items-center gap-3 p-12 text-center">
-            <p className="text-sm text-muted-foreground">Ainda não tem promoções ativas.</p>
+            <p className="text-sm text-muted-foreground">{t("adminPromocoes.emptyText")}</p>
             <Button onClick={openCreate} className="rounded-xl">
-              <Plus className="h-4 w-4" /> Criar a primeira
+              <Plus className="h-4 w-4" /> {t("adminPromocoes.createFirst")}
             </Button>
           </div>
         )}
@@ -144,14 +147,14 @@ function AdminPromocoes() {
                 <p className="mt-1 text-sm text-muted-foreground">{offer.description}</p>
                 {offer.code && (
                   <p className="mt-2 inline-block rounded-full bg-surface px-3 py-1 text-xs font-bold text-foreground">
-                    Código: {offer.code}
+                    {t("adminPromocoes.couponCode")}: {offer.code}
                   </p>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <button
                   type="button"
-                  aria-label={`Editar ${offer.title}`}
+                  aria-label={t("adminPromocoes.editAria", { title: offer.title })}
                   onClick={() => openEdit(offer)}
                   className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-primary"
                 >
@@ -159,7 +162,7 @@ function AdminPromocoes() {
                 </button>
                 <button
                   type="button"
-                  aria-label={`Remover ${offer.title}`}
+                  aria-label={t("adminPromocoes.removeAria", { title: offer.title })}
                   onClick={() => setDeleting(offer)}
                   className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 >
@@ -174,62 +177,60 @@ function AdminPromocoes() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-md rounded-[1.5rem] border-none bg-card p-6">
           <DialogTitle className="font-display text-lg font-bold">
-            {editing ? "Editar promoção" : "Nova promoção"}
+            {editing ? t("adminPromocoes.editDialogTitle") : t("adminPromocoes.newDialogTitle")}
           </DialogTitle>
-          <DialogDescription>
-            Visível para todos os clientes em Ofertas e na home.
-          </DialogDescription>
+          <DialogDescription>{t("adminPromocoes.dialogDescription")}</DialogDescription>
 
           <form onSubmit={handleSubmit} className="mt-2 space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="offer-type">Tipo</Label>
+              <Label htmlFor="offer-type">{t("adminPromocoes.typeLabel")}</Label>
               <Select value={type} onValueChange={(v) => setType(v as Offer["type"])}>
                 <SelectTrigger id="offer-type" className="rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="discount">Desconto</SelectItem>
-                  <SelectItem value="delivery">Entrega grátis</SelectItem>
-                  <SelectItem value="happy-hour">Happy hour</SelectItem>
+                  <SelectItem value="discount">{t("adminPromocoes.typeDiscount")}</SelectItem>
+                  <SelectItem value="delivery">{t("adminPromocoes.typeDelivery")}</SelectItem>
+                  <SelectItem value="happy-hour">{t("adminPromocoes.typeHappyHour")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="offer-title">Título</Label>
+              <Label htmlFor="offer-title">{t("adminPromocoes.titleLabel")}</Label>
               <Input
                 id="offer-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: 15% OFF em pratos principais"
+                placeholder={t("adminPromocoes.titlePlaceholder")}
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="offer-description">Descrição</Label>
+              <Label htmlFor="offer-description">{t("adminPromocoes.descriptionLabel")}</Label>
               <Textarea
                 id="offer-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Válido todos os dias, das 12h às 15h."
+                placeholder={t("adminPromocoes.descriptionPlaceholder")}
                 className="rounded-xl"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="offer-code">Código do cupão (opcional)</Label>
+              <Label htmlFor="offer-code">{t("adminPromocoes.codeLabel")}</Label>
               <Input
                 id="offer-code"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="Ex: KINO15"
+                placeholder={t("adminPromocoes.codePlaceholder")}
               />
             </div>
 
             <Button type="submit" className="w-full rounded-xl">
-              {editing ? "Guardar alterações" : "Criar promoção"}
+              {editing ? t("adminPromocoes.saveChanges") : t("adminPromocoes.createPromo")}
             </Button>
           </form>
         </DialogContent>
@@ -238,14 +239,18 @@ function AdminPromocoes() {
       <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
         <AlertDialogContent className="rounded-[1.5rem]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover "{deleting?.title}"?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("adminPromocoes.deleteDialogTitle", { title: deleting?.title ?? "" })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Deixa de aparecer para os clientes. Esta ação não pode ser desfeita.
+              {t("adminPromocoes.deleteDialogDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Remover</AlertDialogAction>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              {t("adminPromocoes.deleteConfirm")}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

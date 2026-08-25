@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslation } from "@/i18n";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 export const Route = createFileRoute("/admin/suporte")({
@@ -24,19 +25,22 @@ export const Route = createFileRoute("/admin/suporte")({
 const SUPPORT_EMAIL = "parceiros@kino.com";
 const SUPPORT_WHATSAPP = "https://wa.me/244930814277";
 
-const subjects = [
-  { value: "nome", label: "Alterar nome do restaurante" },
-  { value: "destaque", label: "Alterar categoria de destaque" },
-  { value: "avaliacao", label: "Contestar uma avaliação" },
-  { value: "pagamentos", label: "Dúvida sobre pagamentos/caução" },
-  { value: "tecnico", label: "Problema técnico" },
-  { value: "outro", label: "Outro assunto" },
-] as const;
+const subjectValues = ["nome", "destaque", "avaliacao", "pagamentos", "tecnico", "outro"] as const;
 
 function AdminSuporte() {
   const { restaurant } = useRestaurantAdmin();
-  const [subject, setSubject] = useState<(typeof subjects)[number]["value"]>("nome");
+  const [subject, setSubject] = useState<(typeof subjectValues)[number]>("nome");
   const [message, setMessage] = useState("");
+  const { t } = useTranslation();
+
+  const subjects = [
+    { value: "nome", label: t("adminSuporte.subjectName") },
+    { value: "destaque", label: t("adminSuporte.subjectHighlight") },
+    { value: "avaliacao", label: t("adminSuporte.subjectReview") },
+    { value: "pagamentos", label: t("adminSuporte.subjectPayments") },
+    { value: "tecnico", label: t("adminSuporte.subjectTechnical") },
+    { value: "outro", label: t("adminSuporte.subjectOther") },
+  ] as const;
 
   if (!restaurant) return null;
 
@@ -46,7 +50,7 @@ function AdminSuporte() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) {
-      toast.error("Escreva a sua mensagem primeiro.");
+      toast.error(t("adminSuporte.emptyMessageError"));
       return;
     }
     const subjectLabel = subjects.find((s) => s.value === subject)?.label ?? "Suporte";
@@ -55,16 +59,16 @@ function AdminSuporte() {
       `[Painel Kino] ${subjectLabel}`,
     )}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
-    toast.success("A abrir o seu email para enviar o pedido à equipa de parceiros.");
+    toast.success(t("adminSuporte.openingEmailToast"));
     setMessage("");
   };
 
   return (
     <div className="pb-16">
       <AdminPageHeading
-        eyebrow="Suporte"
-        title="Fale com a Kino"
-        description="Para o que não pode alterar diretamente no painel — nome, categoria de destaque, disputas — ou qualquer outra dúvida."
+        eyebrow={t("adminSuporte.eyebrow")}
+        title={t("adminSuporte.title")}
+        description={t("adminSuporte.description")}
       />
 
       <div className="mx-auto mt-8 max-w-4xl px-4 md:px-6">
@@ -78,7 +82,9 @@ function AdminSuporte() {
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-bold">+244 923 000 000</p>
-              <p className="truncate text-xs text-muted-foreground">Todos os dias, 8h - 23h</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {t("adminSuporte.phoneHint")}
+              </p>
             </div>
           </a>
           <a
@@ -90,7 +96,9 @@ function AdminSuporte() {
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-bold">{SUPPORT_EMAIL}</p>
-              <p className="truncate text-xs text-muted-foreground">Resposta em 1 dia útil</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {t("adminSuporte.emailHint")}
+              </p>
             </div>
           </a>
           <a
@@ -103,22 +111,26 @@ function AdminSuporte() {
               <MessageCircle className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold">WhatsApp</p>
-              <p className="truncate text-xs text-muted-foreground">Fale diretamente com a Kino</p>
+              <p className="truncate text-sm font-bold">{t("adminSuporte.whatsapp")}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {t("adminSuporte.whatsappHint")}
+              </p>
             </div>
           </a>
         </div>
 
         <form onSubmit={handleSubmit} className="card-soft mt-6 space-y-4 p-6">
-          <h2 className="font-display text-base font-bold text-foreground">Enviar uma mensagem</h2>
+          <h2 className="font-display text-base font-bold text-foreground">
+            {t("adminSuporte.formTitle")}
+          </h2>
 
           <div className="space-y-1.5">
-            <Label htmlFor="support-restaurant">Restaurante</Label>
+            <Label htmlFor="support-restaurant">{t("adminSuporte.restaurantLabel")}</Label>
             <Input id="support-restaurant" value={restaurant.name} disabled />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="support-subject">Assunto</Label>
+            <Label htmlFor="support-subject">{t("adminSuporte.subjectLabel")}</Label>
             <Select value={subject} onValueChange={(v) => setSubject(v as typeof subject)}>
               <SelectTrigger id="support-subject" className="rounded-xl">
                 <SelectValue />
@@ -134,18 +146,18 @@ function AdminSuporte() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="support-message">Mensagem</Label>
+            <Label htmlFor="support-message">{t("adminSuporte.messageLabel")}</Label>
             <Textarea
               id="support-message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Descreva o que precisa..."
+              placeholder={t("adminSuporte.messagePlaceholder")}
               className="min-h-32 rounded-xl"
             />
           </div>
 
           <Button type="submit" className="w-full rounded-xl">
-            <Send className="h-4 w-4" /> Enviar pedido
+            <Send className="h-4 w-4" /> {t("adminSuporte.submit")}
           </Button>
         </form>
       </div>
