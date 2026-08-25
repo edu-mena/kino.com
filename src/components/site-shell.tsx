@@ -44,11 +44,11 @@ const languageOptions = [
 ] as const;
 
 const navLinks = [
-  { to: "/", label: "Início" },
-  { to: "/restaurantes", label: "Restaurantes" },
-  { to: "/cardapio", label: "Cardápio" },
-  { to: "/ofertas", label: "Ofertas" },
-  { to: "/sobre", label: "Sobre nós" },
+  { to: "/", labelKey: "nav.home" },
+  { to: "/restaurantes", labelKey: "nav.restaurants" },
+  { to: "/cardapio", labelKey: "nav.menu" },
+  { to: "/ofertas", labelKey: "nav.offers" },
+  { to: "/sobre", labelKey: "guestNav.about" },
 ] as const;
 
 /** Links do usuário logado — mostrados no painel "três pontos" do header. */
@@ -65,10 +65,10 @@ const appNavLinks = [
 ] as const;
 
 const guestNavLinks = [
-  { to: "/", label: "Início" },
-  { to: "/kino", label: "Kino" },
-  { to: "/sobre", label: "Sobre nós" },
-  { to: "/contacto", label: "Contacto" },
+  { to: "/", labelKey: "guestNav.home" },
+  { to: "/kino", labelKey: "guestNav.kino" },
+  { to: "/sobre", labelKey: "guestNav.about" },
+  { to: "/contacto", labelKey: "guestNav.contact" },
 ] as const;
 
 const guestNavOrder = guestNavLinks.map((link) => link.to as string);
@@ -255,7 +255,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
                   }}
                   className="relative py-1 text-sm font-medium text-muted-foreground transition-colors after:absolute after:-bottom-0.5 after:left-0 after:h-0.5 after:w-0 after:bg-brand after:transition-all hover:text-primary"
                 >
-                  {link.label}
+                  {t(link.labelKey)}
                 </Link>
               ))}
             </nav>
@@ -275,7 +275,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
                 }}
                 className="relative py-1 text-sm font-medium text-muted-foreground transition-colors after:absolute after:-bottom-0.5 after:left-0 after:h-0.5 after:w-0 after:bg-brand after:transition-all hover:text-primary"
               >
-                {link.label}
+                {t(link.labelKey)}
               </Link>
             ))}
           </nav>
@@ -370,7 +370,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
               className="flex items-center gap-3 rounded-lg px-2 py-3 text-lg font-medium text-foreground hover:bg-surface"
             >
               {"icon" in link && <link.icon className="h-4 w-4 shrink-0 text-primary" />}
-              {"labelKey" in link ? t(link.labelKey) : link.label}
+              {t(link.labelKey)}
             </Link>
           ))}
         </div>
@@ -460,50 +460,49 @@ export function MobileTabBar() {
 }
 
 export function SiteFooter() {
+  const { t } = useTranslation();
   return (
     <footer className="mt-20 border-t border-border bg-card">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-[1.5fr_1fr_1fr] md:px-6">
         <div>
           <Logo />
-          <p className="mt-3 max-w-xs text-sm text-muted-foreground">
-            Comer bem, ficou fácil. Pedidos de comida online em Luanda, entregues em minutos.
-          </p>
+          <p className="mt-3 max-w-xs text-sm text-muted-foreground">{t("siteFooter.tagline")}</p>
         </div>
         <div>
-          <h3 className="text-sm font-bold text-foreground">Navegar</h3>
+          <h3 className="text-sm font-bold text-foreground">{t("siteFooter.navigate")}</h3>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             {navLinks.map((l) => (
               <li key={l.to}>
                 <Link to={l.to} className="hover:text-primary">
-                  {l.label}
+                  {t(l.labelKey)}
                 </Link>
               </li>
             ))}
           </ul>
         </div>
         <div>
-          <h3 className="text-sm font-bold text-foreground">Conta</h3>
+          <h3 className="text-sm font-bold text-foreground">{t("siteFooter.account")}</h3>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
               <Link to="/perfil" className="hover:text-primary">
-                Meu perfil
+                {t("siteFooter.myProfile")}
               </Link>
             </li>
             <li>
               <Link to="/entrega" className="hover:text-primary">
-                Acompanhar pedido
+                {t("siteFooter.trackOrder")}
               </Link>
             </li>
             <li>
               <Link to="/ajuda" className="hover:text-primary">
-                Centro de ajuda
+                {t("siteFooter.helpCenter")}
               </Link>
             </li>
           </ul>
         </div>
       </div>
       <div className="border-t border-border px-4 py-5 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Kino.com · Demonstração com dados fictícios
+        © {new Date().getFullYear()} {t("siteFooter.copyright")}
       </div>
     </footer>
   );

@@ -32,6 +32,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useTranslation } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/kino")({
@@ -96,29 +97,30 @@ function ExpandableIllustration({
   );
 }
 
-const forCustomers = [
-  { icon: MapPin, text: "Explore restaurantes, pratos e preços perto de você" },
-  { icon: BookOpen, text: "Cardápios completos e sempre atualizados" },
-  { icon: CalendarCheck, text: "Agende mesas em poucos toques" },
-  { icon: Bike, text: "Peça entrega, quando o restaurante disponibilizar" },
-  { icon: SlidersHorizontal, text: "Personalize o pedido escolhendo os ingredientes" },
-  { icon: Bell, text: "Receba promoções e novidades direto do restaurante" },
-];
-
-const forRestaurants = [
-  { icon: QrCode, text: "Cardápio digital acessível por QR Code" },
-  { icon: UtensilsCrossed, text: "Cadastre e personalize os seus pratos" },
-  { icon: CalendarCheck, text: "Gerencie mesas e reservas" },
-  { icon: Megaphone, text: "Anuncie promoções para os seus clientes" },
-  { icon: Users, text: "Acompanhe e gerencie a sua base de clientes" },
-];
-
 function Kino() {
   const videoSectionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(true);
   const [videoInView, setVideoInView] = useState(false);
+  const { t } = useTranslation();
+
+  const forCustomers = [
+    { icon: MapPin, text: t("kino.forCustomer1") },
+    { icon: BookOpen, text: t("kino.forCustomer2") },
+    { icon: CalendarCheck, text: t("kino.forCustomer3") },
+    { icon: Bike, text: t("kino.forCustomer4") },
+    { icon: SlidersHorizontal, text: t("kino.forCustomer5") },
+    { icon: Bell, text: t("kino.forCustomer6") },
+  ];
+
+  const forRestaurants = [
+    { icon: QrCode, text: t("kino.forRestaurant1") },
+    { icon: UtensilsCrossed, text: t("kino.forRestaurant2") },
+    { icon: CalendarCheck, text: t("kino.forRestaurant3") },
+    { icon: Megaphone, text: t("kino.forRestaurant4") },
+    { icon: Users, text: t("kino.forRestaurant5") },
+  ];
 
   // Hide the spinning plate whenever the video is on screen — with both
   // visible and both moving, the plate turns into a distracting element.
@@ -174,7 +176,7 @@ function Kino() {
           <button
             type="button"
             onClick={scrollToVideo}
-            aria-label="Ver vídeo"
+            aria-label={t("kino.playVideoAria")}
             className="group relative -z-10 col-span-2 row-span-2 grid place-items-center"
           >
             <img
@@ -188,27 +190,22 @@ function Kino() {
           </button>
 
           <div className="col-span-2 flex flex-col justify-center rounded-[2rem] border border-border bg-card p-6">
-            <h3 className="font-display text-xl font-bold text-primary">
-              Um cardápio digital para cada restaurante
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Pratos, preços e disponibilidade sempre atualizados — direto do restaurante para o seu
-              telemóvel.
-            </p>
+            <h3 className="font-display text-xl font-bold text-primary">{t("kino.bentoTitle")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">{t("kino.bentoDescription")}</p>
           </div>
 
           <ExpandableIllustration
             src={dateIllustration}
-            alt="Casal que já sabe onde ir com a Kino"
-            title="Já sabemos onde ir"
-            description="Explore restaurantes por perto e deixe que a Kino leve você direto à porta certa — sem perder tempo a decidir."
+            alt={t("kino.illustration1Alt")}
+            title={t("kino.illustration1Title")}
+            description={t("kino.illustration1Description")}
             className="col-span-1 row-span-1"
           />
           <ExpandableIllustration
             src={menuIllustration}
-            alt="QR Code que dá acesso ao cardápio"
-            title="Cardápio sem contacto"
-            description="Aponte a câmara para o QR Code da mesa e veja o cardápio completo do restaurante, direto no seu telemóvel."
+            alt={t("kino.illustration2Alt")}
+            title={t("kino.illustration2Title")}
+            description={t("kino.illustration2Description")}
             className="col-span-1 row-span-1"
           />
 
@@ -220,18 +217,17 @@ function Kino() {
             <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15">
               <MapPin className="h-5 w-5" />
             </span>
-            <h3 className="mt-4 font-display text-xl font-bold">Restaurantes perto de você</h3>
+            <h3 className="mt-4 font-display text-xl font-bold">{t("kino.nearYouTitle")}</h3>
             <p className="mt-2 text-sm text-primary-foreground/80">
-              Descubra o que está por perto com base na sua localização, em qualquer bairro de
-              Luanda.
+              {t("kino.nearYouDescription")}
             </p>
           </button>
 
           <ExpandableIllustration
             src={chiefIllustration}
-            alt="Chef que gere clientes através da app"
-            title="Gestão para o restaurante"
-            description="O restaurante conversa com clientes, confirma pedidos e acompanha tudo em tempo real, direto da app."
+            alt={t("kino.illustration3Alt")}
+            title={t("kino.illustration3Title")}
+            description={t("kino.illustration3Description")}
             className="col-span-2 row-span-1"
           />
         </div>
@@ -242,38 +238,38 @@ function Kino() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-surface p-8 sm:p-10">
             <h2 className="font-display text-2xl font-extrabold text-primary sm:text-3xl">
-              Tem um restaurante?
+              {t("kino.ctaRestaurantTitle")}
             </h2>
-            <p className="max-w-sm text-muted-foreground">
-              Leve o seu cardápio para a Kino: QR Code, pratos, mesas e clientes num só lugar.
-            </p>
+            <p className="max-w-sm text-muted-foreground">{t("kino.ctaRestaurantDescription")}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <Link
                 to="/parceiros"
                 className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
               >
-                Login de restaurante
+                {t("kino.restaurantLogin")}
               </Link>
             </div>
           </div>
 
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
-            <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Quer pedir?</h2>
+            <h2 className="font-display text-2xl font-extrabold sm:text-3xl">
+              {t("kino.ctaCustomerTitle")}
+            </h2>
             <p className="max-w-sm text-primary-foreground/85">
-              Entre na sua conta para explorar o cardápio dos melhores restaurantes de Luanda.
+              {t("kino.ctaCustomerDescription")}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <Link
                 to="/entrar"
                 className="rounded-full bg-background px-6 py-3 text-sm font-semibold text-primary transition-opacity hover:opacity-90"
               >
-                Fazer Login
+                {t("kino.login")}
               </Link>
               <Link
                 to="/cardapio"
                 className="rounded-full border border-primary-foreground/30 px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:border-primary-foreground"
               >
-                Ver cardápio
+                {t("kino.seeMenu")}
               </Link>
             </div>
           </div>
@@ -282,11 +278,13 @@ function Kino() {
 
       {/* Features */}
       <section className="mx-auto mt-16 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">Funcionalidades</h2>
+        <h2 className="text-2xl font-extrabold text-primary">{t("kino.featuresTitle")}</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <div className="grid gap-4">
             <div className="flex flex-col rounded-[2rem] border border-border bg-card p-6 sm:p-8">
-              <h3 className="font-display text-lg font-bold text-primary">Para quem quer comer</h3>
+              <h3 className="font-display text-lg font-bold text-primary">
+                {t("kino.forCustomersTitle")}
+              </h3>
               <ul className="mt-4 space-y-3">
                 {forCustomers.map((item) => (
                   <li key={item.text} className="flex items-start gap-3">
@@ -301,12 +299,14 @@ function Kino() {
                 to="/entrar"
                 className="mt-6 inline-flex items-center gap-1 self-start rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
-                Fazer Login <ArrowRight className="h-4 w-4" />
+                {t("kino.login")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
             <div className="flex flex-col rounded-[2rem] border border-border bg-card p-6 sm:p-8">
-              <h3 className="font-display text-lg font-bold text-primary">Para restaurantes</h3>
+              <h3 className="font-display text-lg font-bold text-primary">
+                {t("kino.forRestaurantsTitle")}
+              </h3>
               <ul className="mt-4 space-y-3">
                 {forRestaurants.map((item) => (
                   <li key={item.text} className="flex items-start gap-3">
@@ -321,7 +321,7 @@ function Kino() {
                 to="/parceiros"
                 className="mt-6 inline-flex items-center gap-1 self-start rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
               >
-                Login de restaurante <ArrowRight className="h-4 w-4" />
+                {t("kino.restaurantLogin")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -333,7 +333,7 @@ function Kino() {
             <button
               type="button"
               onClick={togglePlay}
-              aria-label={playing ? "Pausar vídeo" : "Reproduzir vídeo"}
+              aria-label={playing ? t("kino.pauseVideoAria") : t("kino.playVideoAria2")}
               className="absolute inset-0 z-10 grid place-items-center"
             >
               <video
@@ -358,7 +358,7 @@ function Kino() {
                 e.stopPropagation();
                 toggleMuted();
               }}
-              aria-label={muted ? "Ativar som" : "Desativar som"}
+              aria-label={muted ? t("kino.unmuteAria") : t("kino.muteAria")}
               className="absolute bottom-3 right-3 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-transform hover:scale-110"
             >
               {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}

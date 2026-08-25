@@ -5,6 +5,7 @@ import cocaCap from "@/assets/cocacap.webp";
 import dishDrink from "@/assets/dish-drink.png";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell, SiteHeader } from "@/components/site-shell";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/sobre")({
   head: () => ({
@@ -26,18 +27,6 @@ export const Route = createFileRoute("/sobre")({
   component: Sobre,
 });
 
-const team = [
-  { initials: "SR", name: "Sebastião Rosinho", role: "Diretor" },
-  { initials: "EM", name: "Eduardo Mena", role: "Gestor de Projeto" },
-];
-
-const stats = [
-  { icon: Users, value: "12.000+", label: "Clientes ativos" },
-  { icon: Store, value: "350+", label: "Restaurantes parceiros" },
-  { icon: UtensilsCrossed, value: "40 mil+", label: "Pratos no cardápio" },
-  { icon: Star, value: "4.8", label: "Avaliação média" },
-];
-
 const partners = [
   "Kino Grill",
   "Forno da Ilha",
@@ -49,31 +38,42 @@ const partners = [
   "Ilha Café",
 ];
 
-const testimonials = [
-  {
-    initials: "CM",
-    name: "Carla Mendes",
-    role: "Cliente",
-    quote:
-      "Nunca mais liguei para reservar mesa. Vejo o cardápio, os preços e agendo tudo pela Kino.",
-  },
-  {
-    initials: "JP",
-    name: "João Paulo",
-    role: "Dono do Forno da Ilha",
-    quote:
-      "Trocámos os cardápios de papel por um QR Code. Os clientes adoraram e nós poupamos tempo todos os dias.",
-  },
-  {
-    initials: "IN",
-    name: "Inês Neto",
-    role: "Cliente",
-    quote: "Personalizo o pedido do jeito que quero, sem trocas de mensagem. É simples assim.",
-  },
-];
-
 function Sobre() {
   const [revealed, setRevealed] = useState(false);
+  const { t } = useTranslation();
+
+  const team = [
+    { initials: "SR", name: "Sebastião Rosinho", role: t("sobre.roleDirector") },
+    { initials: "EM", name: "Eduardo Mena", role: t("sobre.roleProjectManager") },
+  ];
+
+  const stats = [
+    { icon: Users, value: "12.000+", label: t("sobre.statActiveCustomers") },
+    { icon: Store, value: "350+", label: t("sobre.statPartnerRestaurants") },
+    { icon: UtensilsCrossed, value: "40 mil+", label: t("sobre.statMenuDishes") },
+    { icon: Star, value: "4.8", label: t("sobre.statAverageRating") },
+  ];
+
+  const testimonials = [
+    {
+      initials: "CM",
+      name: "Carla Mendes",
+      role: t("sobre.testimonial1Role"),
+      quote: t("sobre.testimonial1Quote"),
+    },
+    {
+      initials: "JP",
+      name: "João Paulo",
+      role: t("sobre.testimonial2Role"),
+      quote: t("sobre.testimonial2Quote"),
+    },
+    {
+      initials: "IN",
+      name: "Inês Neto",
+      role: t("sobre.testimonial3Role"),
+      quote: t("sobre.testimonial3Quote"),
+    },
+  ];
 
   useEffect(() => {
     const onScroll = () => setRevealed(window.scrollY > 150);
@@ -101,9 +101,9 @@ function Sobre() {
 
       <div className="mx-auto flex max-w-6xl flex-nowrap items-center justify-start px-4 md:px-6">
         <PageHeading
-          eyebrow="Sobre nós"
-          title="O cardápio digital de Angola"
-          description="A Kino nasceu em Luanda para ligar restaurantes e clientes num só lugar: pratos, preços, mesas e promoções, sempre à mão — sem ligações, sem cardápios de papel. Hoje a nossa ambição é maior: levar essa mesma experiência a restaurantes e clientes em todo o país."
+          eyebrow={t("sobre.eyebrow")}
+          title={t("sobre.title")}
+          description={t("sobre.description")}
           className="w-4/5 mx-0 max-w-none px-0 md:w-auto md:px-0"
         />
         <div className="w-1/5 shrink-0 overflow-hidden md:w-44 md:overflow-visible">
@@ -118,7 +118,7 @@ function Sobre() {
 
       {/* Team */}
       <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">Quem está por trás</h2>
+        <h2 className="text-2xl font-extrabold text-primary">{t("sobre.teamHeading")}</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           {team.map((person) => (
             <div
@@ -155,7 +155,7 @@ function Sobre() {
 
       {/* Partners marquee */}
       <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">Quem já está na Kino</h2>
+        <h2 className="text-2xl font-extrabold text-primary">{t("sobre.partnersHeading")}</h2>
       </section>
       <div className="relative mt-5 overflow-hidden py-2 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
         <div className="flex w-max animate-marquee gap-4">
@@ -172,22 +172,22 @@ function Sobre() {
 
       {/* Testimonials */}
       <section className="mx-auto mb-20 mt-14 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">Testemunhos</h2>
+        <h2 className="text-2xl font-extrabold text-primary">{t("sobre.testimonialsHeading")}</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
-          {testimonials.map((t) => (
+          {testimonials.map((item) => (
             <div
-              key={t.name}
+              key={item.name}
               className="flex flex-col rounded-[2rem] border border-border bg-card p-6"
             >
               <Quote className="h-6 w-6 text-brand" />
-              <p className="mt-3 flex-1 text-sm text-foreground">{t.quote}</p>
+              <p className="mt-3 flex-1 text-sm text-foreground">{item.quote}</p>
               <div className="mt-5 flex items-center gap-3">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface font-display text-sm font-bold text-primary">
-                  {t.initials}
+                  {item.initials}
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.role}</p>
+                  <p className="text-sm font-semibold text-foreground">{item.name}</p>
+                  <p className="text-xs text-muted-foreground">{item.role}</p>
                 </div>
               </div>
             </div>
@@ -202,29 +202,29 @@ function Sobre() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-surface p-8 sm:p-10">
             <h2 className="font-display text-2xl font-extrabold text-primary sm:text-3xl">
-              Tem um restaurante?
+              {t("kino.ctaRestaurantTitle")}
             </h2>
-            <p className="max-w-sm text-muted-foreground">
-              Leve o seu cardápio para a Kino: QR Code, pratos, mesas e clientes num só lugar.
-            </p>
+            <p className="max-w-sm text-muted-foreground">{t("kino.ctaRestaurantDescription")}</p>
             <Link
               to="/parceiros"
               className="mt-2 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
             >
-              Torne-se parceiro
+              {t("sobre.becomePartner")}
             </Link>
           </div>
 
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
-            <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Quer pedir?</h2>
+            <h2 className="font-display text-2xl font-extrabold sm:text-3xl">
+              {t("kino.ctaCustomerTitle")}
+            </h2>
             <p className="max-w-sm text-primary-foreground/85">
-              Entre na sua conta para explorar o cardápio dos melhores restaurantes de Luanda.
+              {t("kino.ctaCustomerDescription")}
             </p>
             <Link
               to="/entrar"
               className="mt-2 rounded-full bg-background px-6 py-3 text-sm font-semibold text-primary transition-opacity hover:opacity-90"
             >
-              Fazer login
+              {t("kino.login")}
             </Link>
           </div>
         </div>

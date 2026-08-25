@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/parceiros")({
   head: () => ({
@@ -33,17 +34,19 @@ const inputClass =
 
 const inputWithIconClass = `${inputClass} pl-11`;
 
-const categories = [
-  { value: "angolana", label: "Angolana" },
-  { value: "burgers", label: "Burgers" },
-  { value: "pizza", label: "Pizza" },
-  { value: "sobremesas", label: "Sobremesas · Café" },
-  { value: "outra", label: "Outra" },
-];
-
 const PARTNERS_EMAIL = "parceiros@kino.com";
 
 function Parceiros() {
+  const { t } = useTranslation();
+
+  const categories = [
+    { value: "angolana", label: t("parceiros.categoryAngolan") },
+    { value: "burgers", label: t("parceiros.categoryBurgers") },
+    { value: "pizza", label: t("parceiros.categoryPizza") },
+    { value: "sobremesas", label: t("parceiros.categoryDesserts") },
+    { value: "outra", label: t("parceiros.categoryOther") },
+  ];
+
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -100,22 +103,17 @@ function Parceiros() {
             to="/"
             className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-primary"
           >
-            <ArrowLeft className="h-4 w-4" /> Voltar ao início
+            <ArrowLeft className="h-4 w-4" /> {t("parceiros.backHome")}
           </Link>
           <Link to="/admin/entrar" className="text-sm font-semibold text-primary hover:underline">
-            Já é parceiro? Aceder ao painel
+            {t("parceiros.alreadyPartner")}
           </Link>
         </div>
 
         <div className="mx-auto mt-8 flex max-w-md flex-col items-center text-center">
           <Logo />
-          <h1 className="mt-6 text-3xl font-extrabold text-primary">
-            Leve o seu restaurante para a Kino
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Preencha os dados abaixo. A nossa equipa analisa o seu pedido e confirma a entrada do
-            restaurante na plataforma por email.
-          </p>
+          <h1 className="mt-6 text-3xl font-extrabold text-primary">{t("parceiros.title")}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t("parceiros.description")}</p>
         </div>
 
         <section className="mt-10">
@@ -128,14 +126,14 @@ function Parceiros() {
               {photoPreview ? (
                 <img
                   src={photoPreview}
-                  alt="Pré-visualização do restaurante"
+                  alt={t("parceiros.photoAlt")}
                   className="h-full w-full object-cover"
                 />
               ) : (
                 <>
                   <ImagePlus className="h-6 w-6 text-muted-foreground" />
                   <span className="px-2 text-[11px] font-medium text-muted-foreground">
-                    Foto do restaurante
+                    {t("parceiros.photoPlaceholder")}
                   </span>
                 </>
               )}
@@ -148,14 +146,14 @@ function Parceiros() {
                 <input
                   required
                   name="restaurantName"
-                  placeholder="Nome do restaurante"
+                  placeholder={t("parceiros.restaurantNamePlaceholder")}
                   className={inputWithIconClass}
                 />
               </div>
 
               <Select required name="category">
                 <SelectTrigger className="h-auto rounded-xl border-border bg-background px-4 py-3 text-sm text-foreground focus:ring-1 focus:ring-primary">
-                  <SelectValue placeholder="Categoria" />
+                  <SelectValue placeholder={t("parceiros.categoryPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border-border p-2 shadow-lg">
                   {categories.map((c) => (
@@ -175,7 +173,7 @@ function Parceiros() {
                 <input
                   required
                   type="email"
-                  placeholder="Email do restaurante"
+                  placeholder={t("parceiros.emailPlaceholder")}
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -188,7 +186,7 @@ function Parceiros() {
                 <input
                   required
                   type="password"
-                  placeholder="Palavra-passe"
+                  placeholder={t("parceiros.passwordPlaceholder")}
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -201,7 +199,7 @@ function Parceiros() {
                 <input
                   required
                   type="password"
-                  placeholder="Confirmar palavra-passe"
+                  placeholder={t("parceiros.confirmPasswordPlaceholder")}
                   autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -210,7 +208,7 @@ function Parceiros() {
               </div>
               {passwordError && (
                 <p className="-mt-2 text-xs font-medium text-destructive sm:col-span-2">
-                  As palavras-passe não coincidem.
+                  {t("parceiros.passwordMismatchError")}
                 </p>
               )}
 
@@ -220,7 +218,7 @@ function Parceiros() {
                   required
                   name="phone"
                   type="tel"
-                  placeholder="Telefone"
+                  placeholder={t("parceiros.phonePlaceholder")}
                   autoComplete="tel"
                   className={inputWithIconClass}
                 />
@@ -231,14 +229,14 @@ function Parceiros() {
                 <input
                   required
                   name="address"
-                  placeholder="Morada"
+                  placeholder={t("parceiros.addressPlaceholder")}
                   className={inputWithIconClass}
                 />
               </div>
 
               <textarea
                 name="about"
-                placeholder="Fale um pouco sobre o restaurante (opcional)"
+                placeholder={t("parceiros.aboutPlaceholder")}
                 rows={4}
                 className={`${inputClass} resize-none sm:col-span-2`}
               />
@@ -248,12 +246,11 @@ function Parceiros() {
               type="submit"
               className="mt-6 w-full rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
             >
-              Enviar pedido de cadastro
+              {t("parceiros.submit")}
             </button>
 
             <p className="mt-4 text-center text-xs text-muted-foreground">
-              Ao enviar, abrimos a sua aplicação de email com os dados já preenchidos para a nossa
-              equipa de parceiros.
+              {t("parceiros.submitHint")}
             </p>
           </form>
         </section>
@@ -264,21 +261,21 @@ function Parceiros() {
               <CheckCircle2 className="h-7 w-7" />
             </span>
             <DialogTitle className="mt-4 font-display text-xl font-bold text-primary">
-              Quase lá!
+              {t("parceiros.dialogTitle")}
             </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              Preparámos um email com os seus dados para {PARTNERS_EMAIL} — confirme o envio na sua
-              aplicação de email
+              {t("parceiros.dialogDescriptionPrefix")} {PARTNERS_EMAIL}{" "}
+              {t("parceiros.dialogDescriptionMiddle")}
               {email ? (
                 <>
                   {" "}
-                  (deve ter aberto a partir de <strong className="text-foreground">{email}</strong>)
+                  {t("parceiros.dialogDescriptionOpenedFrom")}{" "}
+                  <strong className="text-foreground">{email}</strong>)
                 </>
               ) : (
                 ""
               )}
-              . A nossa equipa analisa o pedido e avisa assim que o seu restaurante for aprovado na
-              Kino.
+              . {t("parceiros.dialogDescriptionSuffix")}
             </DialogDescription>
           </DialogContent>
         </Dialog>

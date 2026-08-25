@@ -52,6 +52,7 @@ function Home() {
 }
 
 function HomeNotLoggedIn() {
+  const { t } = useTranslation();
   return (
     <PageShell header={<SiteHeader variant="guestHome" />} footer={null} showMobileTabBar={false}>
       <img
@@ -64,13 +65,13 @@ function HomeNotLoggedIn() {
       <section className="mx-auto max-w-6xl px-4 pt-4 md:px-6 md:pt-4">
         <div className="max-w-xl mt-30 md:mt-0">
           <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] text-primary sm:text-5xl lg:text-6xl">
-            Então,
+            {t("homeGuest.heroLine1")}
             <br />
-            <span className="text-brand">Hoje é aonde</span>?
+            <span className="text-brand">{t("homeGuest.heroLine2")}</span>?
           </h1>
           <p className="mt-4 text-[1.1rem] max-w-md text-muted-foreground">
-            A Melhor escolha à distância de um click!! <br />
-            <span className="text-brand">Kino.com</span> o teu cardápio online.
+            {t("homeGuest.subtitle")} <br />
+            <span className="text-brand">Kino.com</span> {t("homeGuest.subtitleBrand")}
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -78,14 +79,14 @@ function HomeNotLoggedIn() {
               to="/entrar"
               className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
-              Fazer Login
+              {t("homeGuest.login")}
             </Link>
             <Link
               to="/kino"
               viewTransition
               className="rounded-full border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-primary"
             >
-              O que é a Kino?
+              {t("homeGuest.whatIsKino")}
             </Link>
           </div>
         </div>
@@ -94,8 +95,12 @@ function HomeNotLoggedIn() {
       <section className="mx-auto mt-5 max-w-6xl px-4 md:px-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
-            { icon: Armchair, title: "Reserve uma mesa", text: "Reserve sua mesa com facilidade." },
-            { icon: Tag, title: "Ofertas exclusivas", text: "Descontos especiais só para você." },
+            {
+              icon: Armchair,
+              title: t("homeGuest.reserveTitle"),
+              text: t("homeGuest.reserveText"),
+            },
+            { icon: Tag, title: t("homeGuest.offersTitle"), text: t("homeGuest.offersText") },
           ].map((item) => (
             <div
               key={item.title}
