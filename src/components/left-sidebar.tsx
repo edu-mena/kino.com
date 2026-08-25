@@ -83,10 +83,7 @@ export function LeftSidebar() {
         <Logo className="h-12 w-auto" />
       </Link>
 
-      <nav
-        data-tour="nav-menu"
-        className="flex flex-1 flex-col justify-center gap-2 overflow-y-auto"
-      >
+      <nav data-tour="nav-menu" className="flex flex-1 flex-col gap-2 overflow-y-auto">
         {desktopNavItems.map((tab) => (
           <Link
             key={tab.to}

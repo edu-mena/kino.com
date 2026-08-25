@@ -86,6 +86,13 @@ function AdminPedidos() {
               </span>
             </div>
 
+            {order.note && (
+              <p className="mt-3 rounded-lg bg-surface p-2.5 text-xs text-foreground">
+                <span className="font-bold">{t("adminPedidos.observationLabel")}:</span>{" "}
+                {order.note}
+              </p>
+            )}
+
             <ul className="mt-4 space-y-1.5 border-t border-border pt-3">
               {order.lines.map((line) => {
                 const item = getMenuItem(line.menuItemId);

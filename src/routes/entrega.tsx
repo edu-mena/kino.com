@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Clock,
   MapPin,
+  MessageSquare,
   Package,
   Phone,
   Trash2,
@@ -228,6 +229,18 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
                 {paymentMethods.find((m) => m.id === order.paymentMethod)?.label ??
                   order.paymentMethod}
               </dd>
+            </div>
+          </div>
+        )}
+
+        {order.note && (
+          <div className="flex items-start gap-3">
+            <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                {t("entrega.observationLabel")}
+              </dt>
+              <dd className="mt-0.5">{order.note}</dd>
             </div>
           </div>
         )}

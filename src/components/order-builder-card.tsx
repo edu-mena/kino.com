@@ -15,6 +15,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
+import { useTranslation } from "@/i18n";
 import { useBill } from "@/lib/bill";
 import { useCart } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
@@ -34,6 +35,7 @@ import { useLocation } from "@/lib/location";
  * agora.
  */
 export function OrderBuilderCard() {
+  const { t } = useTranslation();
   const { restaurantId, lines, updateQty, discard } = useBill();
   const { addOrder } = useCart();
   const { allAddresses, selected: headerLocation } = useLocation();
@@ -41,6 +43,7 @@ export function OrderBuilderCard() {
   const [expanded, setExpanded] = useState(false);
   const [addressConfirmOpen, setAddressConfirmOpen] = useState(false);
   const [chosenAddressId, setChosenAddressId] = useState<string | null>(null);
+  const [note, setNote] = useState("");
 
   if (!restaurantId || lines.length === 0) return null;
   const restaurant = getRestaurant(restaurantId);
@@ -66,10 +69,12 @@ export function OrderBuilderCard() {
       restaurantId,
       lines.map((line) => ({ menuItemId: line.menuItemId, qty: line.qty })),
       address,
+      note,
     );
     discard();
     setAddressConfirmOpen(false);
-    toast.success("Pedido de entrega criado");
+    setNote("");
+    toast.success(t("orderBuilderCard.orderCreatedToast"));
     navigate({ to: "/entrega" });
   };
 
@@ -213,6 +218,20 @@ export function OrderBuilderCard() {
             <Plus className="h-3.5 w-3.5" />
             Adicionar novo endereço
           </Link>
+
+          <div className="mt-4 space-y-1.5">
+            <label htmlFor="order-note" className="text-xs font-semibold text-foreground">
+              {t("orderBuilderCard.noteLabel")}
+            </label>
+            <textarea
+              id="order-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={t("orderBuilderCard.notePlaceholder")}
+              rows={2}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
+            />
+          </div>
 
           <button
             type="button"

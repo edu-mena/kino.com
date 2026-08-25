@@ -42,6 +42,9 @@ function Checkout() {
   const { dietaryRestrictions, excludedIngredients } = usePreferences();
   const [slot, setSlot] = useState<(typeof slots)[number]["id"]>(slots[0].id);
   const [payment, setPayment] = useState(paymentMethods[0]!.id);
+  // Pré-preenche com a observação já escrita ao pedir a entrega (se houver)
+  // — o campo é editável nos dois momentos, não dois campos separados.
+  const [note, setNote] = useState(() => orders.find((o) => o.note)?.note ?? "");
   const slotLabel = (s: (typeof slots)[number]) =>
     s.time ? `${t("checkout.today")} ${s.time}` : t("checkout.slotFastest");
 
@@ -167,6 +170,20 @@ function Checkout() {
                 ))}
               </div>
             </section>
+
+            <section className="card-soft p-6">
+              <h2 className="font-display text-lg font-bold text-primary">
+                {t("checkout.noteTitle")}
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">{t("checkout.noteDescription")}</p>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={t("checkout.notePlaceholder")}
+                rows={3}
+                className="mt-4 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
+              />
+            </section>
           </div>
 
           <aside className="card-soft h-fit p-6">
@@ -224,7 +241,7 @@ function Checkout() {
                 // Os pedidos já existem (desde "Solicitar delivery") — aqui só
                 // anexamos a preferência de pagamento a cada um. Nada é
                 // limpo: continuam visíveis e acompanháveis em "Entrega".
-                for (const order of orders) confirmOrder(order.id, payment);
+                for (const order of orders) confirmOrder(order.id, payment, note);
                 toast.success(t("checkout.orderConfirmedToast"));
                 navigate({ to: "/entrega" });
               }}

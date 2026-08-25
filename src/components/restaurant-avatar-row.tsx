@@ -1,10 +1,8 @@
-import { Link } from "@tanstack/react-router";
-import { Bike, CalendarCheck, Star } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { Play, Store } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { HorizontalCarousel } from "@/components/horizontal-carousel";
-import { ReservationDialog } from "@/components/reservation-dialog";
 import { StoryViewer } from "@/components/story-viewer";
 import { getRestaurantsWithStories } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
@@ -21,7 +19,13 @@ function abbreviate(name: string) {
 
 export function RestaurantAvatarRow() {
   const { t } = useTranslation();
-  const [active, setActive] = useState<Restaurant | null>(null);
+  const navigate = useNavigate();
+  // Restaurante com story já totalmente visto — pergunta ao usuário o que
+  // quer fazer (ver o story de novo ou ir para a página do restaurante) em
+  // vez de decidir por ele. Sem story: vai direto para o restaurante (não
+  // há nada mais a mostrar aqui). Story não visto: abre o story direto,
+  // como antes.
+  const [choosing, setChoosing] = useState<Restaurant | null>(null);
   // Reage a stories criados/apagados no painel do restaurante — não os
   // usa diretamente (a lista já vem por restaurante via
   // `getRestaurantsWithStories()`), só para saber quando recalcular.
@@ -35,7 +39,6 @@ export function RestaurantAvatarRow() {
     () => new Set(restaurantsWithStories.map((r) => r.id)),
     [restaurantsWithStories],
   );
-  const [reservingRestaurant, setReservingRestaurant] = useState<Restaurant | null>(null);
   // Congela a lista + índice no momento do clique — abrir um story marca-o
   // como visto na hora, o que reordena `orderedStoryRestaurants` (não-vistos
   // primeiro); sem essa foto congelada, o StoryViewer indexaria numa lista
@@ -64,6 +67,19 @@ export function RestaurantAvatarRow() {
     ...sorted.filter((r) => !storyRestaurantIds.has(r.id)),
   ];
 
+  const openStory = (r: Restaurant) => {
+    setChoosing(null);
+    setStorySession({
+      restaurants: orderedStoryRestaurants,
+      startIndex: orderedStoryRestaurants.findIndex((sr) => sr.id === r.id),
+    });
+  };
+
+  const goToRestaurant = (r: Restaurant) => {
+    setChoosing(null);
+    navigate({ to: "/restaurantes/$id", params: { id: r.id } });
+  };
+
   return (
     <>
       <HorizontalCarousel
@@ -77,14 +93,9 @@ export function RestaurantAvatarRow() {
             <button
               type="button"
               onClick={() => {
-                if (hasStory) {
-                  setStorySession({
-                    restaurants: orderedStoryRestaurants,
-                    startIndex: orderedStoryRestaurants.findIndex((sr) => sr.id === r.id),
-                  });
-                } else {
-                  setActive(r);
-                }
+                if (!hasStory) goToRestaurant(r);
+                else if (viewed) setChoosing(r);
+                else openStory(r);
               }}
               className="flex w-20 shrink-0 flex-col items-center gap-2"
             >
@@ -105,78 +116,34 @@ export function RestaurantAvatarRow() {
         }}
       />
 
-      <Dialog open={!!active} onOpenChange={(open) => !open && setActive(null)}>
-        <DialogContent className="max-w-md rounded-[2rem] border-none bg-card p-0">
-          {active && (
+      <Dialog open={!!choosing} onOpenChange={(open) => !open && setChoosing(null)}>
+        <DialogContent className="max-w-xs rounded-[1.5rem] border-none bg-card p-6 text-center">
+          {choosing && (
             <>
-              <Carousel opts={{ loop: true }}>
-                <CarouselContent className="-ml-0">
-                  {active.galleryImages.map((src, i) => (
-                    <CarouselItem key={i} className="pl-0">
-                      <img
-                        src={src}
-                        alt={`${active.name} ${i + 1}`}
-                        className="h-56 w-full rounded-t-[2rem] object-cover"
-                      />
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-              </Carousel>
-
-              <div className="p-6 pt-4">
-                <DialogTitle className="font-display text-xl font-bold">{active.name}</DialogTitle>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {active.cuisine} · {active.priceLevel}
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
-                  <span className="flex items-center gap-1 font-semibold text-foreground">
-                    <Star className="h-4 w-4 fill-star text-star" />
-                    {active.rating}{" "}
-                    <span className="text-muted-foreground">({active.reviewCount})</span>
-                  </span>
-                  {active.isDeliveryAvailable && (
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Bike className="h-4 w-4" />
-                      {active.estimatedDeliveryMinutes} min
-                    </span>
-                  )}
-                  <span className="text-muted-foreground">{active.distanceKm} km</span>
-                </div>
-                <p className="mt-3 text-sm text-muted-foreground">{active.description}</p>
-                <div className="mt-5 flex gap-3">
-                  <Link
-                    to="/restaurantes/$id"
-                    params={{ id: active.id }}
-                    onClick={() => setActive(null)}
-                    className="flex-1 rounded-xl bg-primary px-5 py-3 text-center text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                  >
-                    {t("home.viewRestaurant")}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setReservingRestaurant(active);
-                      setActive(null);
-                    }}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-primary px-5 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
-                  >
-                    <CalendarCheck className="h-4 w-4" />
-                    {t("reservas.reserveTable")}
-                  </button>
-                </div>
+              <DialogTitle className="font-display text-lg font-bold">{choosing.name}</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                {t("restaurantAvatarRow.chooserDescription")}
+              </DialogDescription>
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => openStory(choosing)}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  <Play className="h-4 w-4" /> {t("restaurantAvatarRow.viewStoryAgain")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => goToRestaurant(choosing)}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-primary px-5 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
+                >
+                  <Store className="h-4 w-4" /> {t("home.viewRestaurant")}
+                </button>
               </div>
             </>
           )}
         </DialogContent>
       </Dialog>
-
-      {reservingRestaurant && (
-        <ReservationDialog
-          restaurant={reservingRestaurant}
-          open={!!reservingRestaurant}
-          onOpenChange={(open) => !open && setReservingRestaurant(null)}
-        />
-      )}
 
       {storySession && (
         <StoryViewer

@@ -103,6 +103,7 @@ export const en: Dictionary = {
     amount: "Amount",
     cancelOrder: "Cancel order",
     finalizeOrder: "Finalize order — choose payment",
+    observationLabel: "Note",
   },
   reservas: {
     eyebrow: "Reservations",
@@ -204,6 +205,9 @@ export const en: Dictionary = {
     footerNote: "The restaurant receives the order and arranges payment with you directly.",
     slotFastest: "As fast as possible",
     today: "Today,",
+    noteTitle: "Any special requests?",
+    noteDescription: "Optional — sent along with the order to the restaurant(s).",
+    notePlaceholder: "E.g.: no onions, deliver to the front desk...",
   },
   search: {
     buttonLabel: "Search",
@@ -340,6 +344,7 @@ export const en: Dictionary = {
     markDelivered: "Mark as delivered",
     updatedToast: "Order updated — {status}",
     rejectedToast: "Order declined",
+    observationLabel: "Customer note",
   },
   adminReservas: {
     eyebrow: "Reservations",
@@ -847,5 +852,14 @@ export const en: Dictionary = {
   },
   firstUseHint: {
     dismissAria: "Dismiss tip",
+  },
+  restaurantAvatarRow: {
+    chooserDescription: "You've already seen this restaurant's story — what would you like to do?",
+    viewStoryAgain: "Watch story",
+  },
+  orderBuilderCard: {
+    noteLabel: "Any special requests? (optional)",
+    notePlaceholder: "E.g.: no onions, deliver to the front desk...",
+    orderCreatedToast: "Delivery order created",
   },
 };

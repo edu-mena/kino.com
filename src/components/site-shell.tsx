@@ -529,7 +529,11 @@ export function PageShell({
           className={cn(
             "min-w-0 flex-1",
             isLoggedIn && "pt-16",
-            showMobileTabBar && "pb-20 md:pb-0",
+            // Sempre alguma respiração no fundo — sem isto, páginas sem
+            // footer (a maioria das logadas) terminam coladas à base do
+            // ecrã. No mobile com tabbar, mais espaço, pra não ficar por
+            // baixo da barra fixa.
+            showMobileTabBar ? "pb-20 md:pb-12" : "pb-12",
           )}
         >
           {children}

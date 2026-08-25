@@ -80,7 +80,7 @@ function DishDetail() {
               alt={item.name}
               width={768}
               height={768}
-              className="h-64 w-full max-w-sm object-contain sm:h-80"
+              className="mx-auto block h-64 w-full max-w-sm object-contain sm:h-80"
             />
           </div>
 
