@@ -19,7 +19,7 @@ import { DishFormDialog } from "@/components/dish-form-dialog";
 import { MenuManagerDialog } from "@/components/menu-manager-dialog";
 import { defaultMenuId } from "@/data/menus-store";
 import type { MenuItem } from "@/data/types";
-import { useTranslation } from "@/i18n";
+import { translateMenuCategory, useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { useMenusAdmin } from "@/lib/menus-admin";
@@ -36,7 +36,7 @@ function AdminCardapio() {
   const { items, isAvailable, toggleAvailability, createItem, updateItem, deleteItem } =
     useMenuAdmin();
   const { menusByRestaurant } = useMenusAdmin();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
   const [menuManagerOpen, setMenuManagerOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -135,7 +135,9 @@ function AdminCardapio() {
       <div className="mx-auto mt-6 max-w-4xl space-y-8 px-4 md:px-6">
         {categories.map((category) => (
           <section key={category}>
-            <h2 className="text-lg font-extrabold text-primary">{category}</h2>
+            <h2 className="text-lg font-extrabold text-primary">
+              {translateMenuCategory(category, locale)}
+            </h2>
             <div className="mt-3 card-soft divide-y divide-border">
               {dishes
                 .filter((i) => i.category === category)
