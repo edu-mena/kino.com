@@ -17,6 +17,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { getProfileEdits, saveProfileEdits } from "@/data/restaurant-profile-store";
+import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
@@ -39,6 +40,7 @@ function TextListField({
   onChange: (items: string[]) => void;
   placeholder: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -48,7 +50,7 @@ function TextListField({
           onClick={() => onChange([...items, ""])}
           className="inline-flex items-center gap-1 text-xs font-semibold text-brand"
         >
-          <Plus className="h-3.5 w-3.5" /> Adicionar
+          <Plus className="h-3.5 w-3.5" /> {t("textListField.add")}
         </button>
       </div>
       <div className="space-y-2">
@@ -62,7 +64,7 @@ function TextListField({
             />
             <button
               type="button"
-              aria-label="Remover"
+              aria-label={t("textListField.removeAria")}
               onClick={() => onChange(items.filter((_, i) => i !== index))}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             >
@@ -78,6 +80,7 @@ function TextListField({
 function AdminPerfil() {
   const { restaurant, logout } = useRestaurantAdmin();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [coverImage, setCoverImage] = useState("");
   const [description, setDescription] = useState("");
@@ -150,15 +153,15 @@ function AdminPerfil() {
       cautionPolicyNotice: cautionPolicyNotice.trim(),
       galleryImages: galleryImages.map((g) => g.trim()).filter(Boolean),
     });
-    toast.success("Perfil atualizado.");
+    toast.success(t("adminPerfil.updatedToast"));
   };
 
   return (
     <div className="pb-16">
       <AdminPageHeading
-        eyebrow="Restaurante"
-        title="Perfil do restaurante"
-        description="O que os clientes veem na sua página e no cardápio."
+        eyebrow={t("adminPerfil.eyebrow")}
+        title={t("adminPerfil.title")}
+        description={t("adminPerfil.description")}
       />
 
       <div className="mx-auto mt-8 max-w-4xl space-y-6 px-4 md:px-6">
@@ -173,16 +176,17 @@ function AdminPerfil() {
             <div className="absolute inset-x-0 bottom-0 p-5">
               <h2 className="font-display text-2xl font-extrabold text-white">{restaurant.name}</h2>
               <p className="flex items-center gap-1 text-sm text-white/90">
-                {restaurant.rating.toFixed(1)} ({restaurant.reviewCount} avaliações)
+                {restaurant.rating.toFixed(1)} ({restaurant.reviewCount}{" "}
+                {t("adminPerfil.ratingSuffix")})
               </p>
             </div>
           </div>
           <p className="p-5 pb-4 text-xs text-muted-foreground">
-            Nome, avaliação e destaque na app são geridos pela Kino —{" "}
+            {t("adminPerfil.manageNoticePrefix")}{" "}
             <Link to="/admin/suporte" className="font-semibold text-primary hover:underline">
-              contacte o suporte
+              {t("adminPerfil.contactSupport")}
             </Link>{" "}
-            para alterar.
+            {t("adminPerfil.manageNoticeSuffix")}
           </p>
         </div>
 
@@ -191,11 +195,11 @@ function AdminPerfil() {
             value={coverImage}
             onChange={setCoverImage}
             onUploadingChange={setImageUploading}
-            label="Imagem de capa"
+            label={t("adminPerfil.coverImageLabel")}
           />
 
           <div className="space-y-1.5">
-            <Label htmlFor="rest-description">Descrição</Label>
+            <Label htmlFor="rest-description">{t("adminPerfil.descriptionLabel")}</Label>
             <Textarea
               id="rest-description"
               value={description}
@@ -206,7 +210,7 @@ function AdminPerfil() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="rest-cuisine">Tipo de cozinha</Label>
+              <Label htmlFor="rest-cuisine">{t("adminPerfil.cuisineLabel")}</Label>
               <Input
                 id="rest-cuisine"
                 value={cuisine}
@@ -214,15 +218,15 @@ function AdminPerfil() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="rest-price-level">Nível de preço</Label>
+              <Label htmlFor="rest-price-level">{t("adminPerfil.priceLevelLabel")}</Label>
               <Select value={priceLevel} onValueChange={setPriceLevel}>
                 <SelectTrigger id="rest-price-level" className="rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Kz">Kz — económico</SelectItem>
-                  <SelectItem value="Kz Kz">Kz Kz — médio</SelectItem>
-                  <SelectItem value="Kz Kz Kz">Kz Kz Kz — elevado</SelectItem>
+                  <SelectItem value="Kz">{t("adminPerfil.priceLevelLow")}</SelectItem>
+                  <SelectItem value="Kz Kz">{t("adminPerfil.priceLevelMid")}</SelectItem>
+                  <SelectItem value="Kz Kz Kz">{t("adminPerfil.priceLevelHigh")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -230,7 +234,7 @@ function AdminPerfil() {
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="rest-address">Morada</Label>
+              <Label htmlFor="rest-address">{t("adminPerfil.addressLabel")}</Label>
               <Input
                 id="rest-address"
                 value={address}
@@ -238,7 +242,7 @@ function AdminPerfil() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="rest-neighborhood">Bairro</Label>
+              <Label htmlFor="rest-neighborhood">{t("adminPerfil.neighborhoodLabel")}</Label>
               <Input
                 id="rest-neighborhood"
                 value={neighborhood}
@@ -249,15 +253,15 @@ function AdminPerfil() {
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label htmlFor="rest-city">Cidade</Label>
+              <Label htmlFor="rest-city">{t("adminPerfil.cityLabel")}</Label>
               <Input id="rest-city" value={city} onChange={(e) => setCity(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="rest-phone">Telefone</Label>
+              <Label htmlFor="rest-phone">{t("adminPerfil.phoneLabel")}</Label>
               <Input id="rest-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="rest-email">Email</Label>
+              <Label htmlFor="rest-email">{t("adminPerfil.emailLabel")}</Label>
               <Input
                 id="rest-email"
                 type="email"
@@ -268,22 +272,20 @@ function AdminPerfil() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="rest-hours">Horário de funcionamento</Label>
+            <Label htmlFor="rest-hours">{t("adminPerfil.hoursLabel")}</Label>
             <Input
               id="rest-hours"
               value={openingHours}
               onChange={(e) => setOpeningHours(e.target.value)}
-              placeholder="Ex: Todos os dias, 11h - 22h"
+              placeholder={t("adminPerfil.hoursPlaceholder")}
             />
           </div>
 
           <div className="rounded-xl border border-border p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <Label htmlFor="rest-delivery">Entrega disponível</Label>
-                <p className="text-xs text-muted-foreground">
-                  Desligado: o restaurante fica só para consumo no local.
-                </p>
+                <Label htmlFor="rest-delivery">{t("adminPerfil.deliveryLabel")}</Label>
+                <p className="text-xs text-muted-foreground">{t("adminPerfil.deliveryOffHint")}</p>
               </div>
               <Switch
                 id="rest-delivery"
@@ -296,7 +298,7 @@ function AdminPerfil() {
               <div className="mt-4 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="rest-delivery-fee">Taxa de entrega (Kz)</Label>
+                    <Label htmlFor="rest-delivery-fee">{t("adminPerfil.deliveryFeeLabel")}</Label>
                     <Input
                       id="rest-delivery-fee"
                       type="number"
@@ -307,7 +309,7 @@ function AdminPerfil() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="rest-delivery-time">Tempo estimado (min)</Label>
+                    <Label htmlFor="rest-delivery-time">{t("adminPerfil.deliveryTimeLabel")}</Label>
                     <Input
                       id="rest-delivery-time"
                       type="number"
@@ -319,19 +321,20 @@ function AdminPerfil() {
                 </div>
 
                 <TextListField
-                  label="Bairros cobertos pela entrega"
+                  label={t("adminPerfil.deliveryZonesLabel")}
                   items={deliveryZones}
                   onChange={setDeliveryZones}
-                  placeholder="Ex: Talatona"
+                  placeholder={t("adminPerfil.deliveryZonePlaceholder")}
                 />
               </div>
             )}
           </div>
 
           <div className="rounded-xl border border-border p-4">
-            <Label htmlFor="rest-caution">Caução de reserva (Kz)</Label>
+            <Label htmlFor="rest-caution">{t("adminPerfil.cautionLabel")}</Label>
             <p className="text-xs text-muted-foreground">
-              0 = sem caução. {cautionAmount !== "0" && formatKz(Number(cautionAmount) || 0)}
+              {t("adminPerfil.cautionZeroHint")}{" "}
+              {cautionAmount !== "0" && formatKz(Number(cautionAmount) || 0)}
             </p>
             <Input
               id="rest-caution"
@@ -346,21 +349,21 @@ function AdminPerfil() {
               <Textarea
                 value={cautionPolicyNotice}
                 onChange={(e) => setCautionPolicyNotice(e.target.value)}
-                placeholder="Ex: reembolsada se a mesa for ocupada."
+                placeholder={t("adminPerfil.cautionPolicyPlaceholder")}
                 className="mt-3 rounded-xl"
               />
             )}
           </div>
 
           <TextListField
-            label="Galeria de fotos"
+            label={t("adminPerfil.galleryLabel")}
             items={galleryImages}
             onChange={setGalleryImages}
-            placeholder="https://..."
+            placeholder={t("adminPerfil.galleryPlaceholder")}
           />
 
           <Button type="submit" disabled={imageUploading} className="w-full rounded-xl">
-            Guardar alterações
+            {t("adminPerfil.saveChanges")}
           </Button>
         </form>
 
@@ -369,7 +372,7 @@ function AdminPerfil() {
           onClick={handleLogout}
           className="mx-auto block rounded-xl border border-dashed border-border px-5 py-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
         >
-          Sair do painel
+          {t("adminPerfil.logout")}
         </button>
       </div>
     </div>
