@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import authFood from "@/assets/auth-food.png";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
+import { useTranslation } from "@/i18n";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/entrar")({
@@ -50,13 +51,14 @@ function Entrar() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleGoogleAuth = () => {
     setLoading(true);
     // Simulação: numa integração real isto abriria o fluxo OAuth do Google.
     setTimeout(() => {
       login("Utilizador Kino", "utilizador@gmail.com");
-      toast.success("Sessão iniciada com a Google!");
+      toast.success(t("entrar.loggedInToast"));
       navigate({ to: "/" });
     }, 900);
   };
@@ -72,12 +74,9 @@ function Entrar() {
         <div className="absolute inset-0 bg-primary/55" />
         <div className="relative flex h-full flex-col justify-end p-12 text-primary-foreground">
           <h2 className="max-w-sm font-display text-4xl font-extrabold leading-tight">
-            Comer bem, ficou fácil.
+            {t("entrar.heroTitle")}
           </h2>
-          <p className="mt-3 max-w-sm text-sm opacity-90">
-            Entre com a sua conta Google e peça dos melhores restaurantes de Luanda em poucos
-            toques.
-          </p>
+          <p className="mt-3 max-w-sm text-sm opacity-90">{t("entrar.heroDescription")}</p>
         </div>
       </div>
 
@@ -87,17 +86,15 @@ function Entrar() {
             to="/"
             className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-primary"
           >
-            <ArrowLeft className="h-4 w-4" /> Voltar ao início
+            <ArrowLeft className="h-4 w-4" /> {t("entrar.backHome")}
           </Link>
 
           <div className="mt-6">
             <Logo />
           </div>
 
-          <h1 className="mt-6 text-3xl font-extrabold text-primary">Bem-vindo à Kino</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Entre ou crie a sua conta com um único toque — sem palavras-passe para memorizar.
-          </p>
+          <h1 className="mt-6 text-3xl font-extrabold text-primary">{t("entrar.title")}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t("entrar.description")}</p>
 
           <button
             type="button"
@@ -106,17 +103,17 @@ function Entrar() {
             className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card px-5 py-3.5 text-sm font-bold text-foreground transition-colors hover:border-primary disabled:opacity-60"
           >
             <GoogleIcon className="h-5 w-5" />
-            {loading ? "A entrar..." : "Continuar com Google"}
+            {loading ? t("entrar.loggingIn") : t("entrar.continueWithGoogle")}
           </button>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Ao continuar, concorda com os nossos Termos e a Política de Privacidade.
+            {t("entrar.termsNotice")}
           </p>
 
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            Ainda não tem conta?{" "}
+            {t("entrar.noAccountYet")}{" "}
             <Link to="/cadastro" className="font-bold text-primary">
-              Cadastre-se
+              {t("entrar.signUp")}
             </Link>
           </p>
         </div>

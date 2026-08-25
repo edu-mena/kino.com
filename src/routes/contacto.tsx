@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageHeading, PageShell, SiteHeader } from "@/components/site-shell";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/contacto")({
   head: () => ({
@@ -48,48 +49,41 @@ const inputClass =
 
 const CONTACT_EMAIL = "ola@kino.com";
 
-const contactInfo = [
-  { icon: Mail, title: "Email", text: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` },
-  { icon: Phone, title: "Telefone", text: "+244 923 456 789", href: "tel:+244923456789" },
-  { icon: MapPin, title: "Morada", text: "Luanda, Angola", href: undefined },
-];
-
-const subjects = [
-  { value: "duvida", label: "Dúvida geral" },
-  { value: "parceria", label: "Sou restaurante / Parceria" },
-  { value: "suporte", label: "Suporte técnico" },
-  { value: "imprensa", label: "Imprensa" },
-  { value: "outro", label: "Outro assunto" },
-];
-
-const faqs = [
-  {
-    question: "A Kino faz entregas?",
-    answer:
-      "A Kino é, antes de tudo, o cardápio digital de um restaurante. A entrega é uma funcionalidade opcional que cada restaurante ativa se quiser oferecer — nem todos entregam.",
-  },
-  {
-    question: "É grátis para usar como cliente?",
-    answer:
-      "Sim. Explorar cardápios, reservar mesas e fazer pedidos na Kino não tem qualquer custo para o cliente.",
-  },
-  {
-    question: "Como coloco o meu restaurante na Kino?",
-    answer:
-      'Escolha "Sou restaurante / Parceria" no formulário abaixo ou visite a página de parceiros — a nossa equipa entra em contacto para configurar o seu cardápio digital.',
-  },
-  {
-    question: "Posso personalizar os meus pedidos?",
-    answer:
-      "Sim, sempre que o restaurante disponibilizar essa opção você pode escolher os ingredientes do seu prato antes de finalizar o pedido.",
-  },
-  {
-    question: "Quanto tempo demora o suporte a responder?",
-    answer: "A nossa equipa costuma responder em até 24 horas úteis, por email ou telefone.",
-  },
-];
-
 function Contacto() {
+  const { t } = useTranslation();
+
+  const contactInfo = [
+    {
+      icon: Mail,
+      title: t("contacto.emailLabel"),
+      text: CONTACT_EMAIL,
+      href: `mailto:${CONTACT_EMAIL}`,
+    },
+    {
+      icon: Phone,
+      title: t("contacto.phoneLabel"),
+      text: "+244 923 456 789",
+      href: "tel:+244923456789",
+    },
+    { icon: MapPin, title: t("contacto.addressLabel"), text: "Luanda, Angola", href: undefined },
+  ];
+
+  const subjects = [
+    { value: "duvida", label: t("contacto.subjectGeneral") },
+    { value: "parceria", label: t("contacto.subjectPartnership") },
+    { value: "suporte", label: t("contacto.subjectSupport") },
+    { value: "imprensa", label: t("contacto.subjectPress") },
+    { value: "outro", label: t("contacto.subjectOther") },
+  ];
+
+  const faqs = [
+    { question: t("contacto.faq1Question"), answer: t("contacto.faq1Answer") },
+    { question: t("contacto.faq2Question"), answer: t("contacto.faq2Answer") },
+    { question: t("contacto.faq3Question"), answer: t("contacto.faq3Answer") },
+    { question: t("contacto.faq4Question"), answer: t("contacto.faq4Answer") },
+    { question: t("contacto.faq5Question"), answer: t("contacto.faq5Answer") },
+  ];
+
   // Sem backend, não há para onde a mensagem ir de verdade — em vez de
   // fingir um envio, abrimos o cliente de email do utilizador já preenchido,
   // que é a única ação real que o frontend consegue disparar sozinho.
@@ -100,7 +94,8 @@ function Contacto() {
     const name = String(data.get("name") ?? "");
     const email = String(data.get("email") ?? "");
     const subjectValue = String(data.get("subject") ?? "");
-    const subjectLabel = subjects.find((s) => s.value === subjectValue)?.label ?? "Contacto";
+    const subjectLabel =
+      subjects.find((s) => s.value === subjectValue)?.label ?? t("contacto.eyebrow");
     const message = String(data.get("message") ?? "");
 
     const body = `${message}\n\n— ${name} (${email})`;
@@ -108,7 +103,7 @@ function Contacto() {
       `[Kino.com] ${subjectLabel}`,
     )}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
-    toast.success("A abrir o seu email para enviar a mensagem à equipa Kino.");
+    toast.success(t("contacto.openingEmailToast"));
     form.reset();
   };
 
@@ -116,9 +111,9 @@ function Contacto() {
     <PageShell header={<SiteHeader variant="guestHome" />} footer={null} showMobileTabBar={false}>
       <div className="mx-auto flex max-w-6xl flex-nowrap items-center justify-start px-4 md:px-6">
         <PageHeading
-          eyebrow="Contacto"
-          title="Fale connosco"
-          description="Dúvidas, parcerias ou sugestões — a nossa equipa está aqui para ajudar."
+          eyebrow={t("contacto.eyebrow")}
+          title={t("contacto.title")}
+          description={t("contacto.description")}
           className="w-4/5 mx-0 max-w-none px-0 md:w-auto md:px-0"
         />
         <div className="w-1/5 shrink-0 overflow-hidden md:w-44 md:overflow-visible">
@@ -156,8 +151,8 @@ function Contacto() {
             className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-primary p-5 text-center text-primary-foreground transition-opacity hover:opacity-90"
           >
             <WhatsAppIcon className="h-8 w-8" />
-            <h3 className="mt-3 font-display text-base font-bold">WhatsApp</h3>
-            <p className="text-sm text-primary-foreground/85">Fale com o Diretor</p>
+            <h3 className="mt-3 font-display text-base font-bold">{t("contacto.whatsapp")}</h3>
+            <p className="text-sm text-primary-foreground/85">{t("contacto.whatsappHint")}</p>
           </a>
         </div>
       </section>
@@ -165,12 +160,12 @@ function Contacto() {
       {/* Form */}
       <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
         <div className="rounded-[2rem] border border-border bg-card p-6 sm:p-10">
-          <h2 className="text-2xl font-extrabold text-primary">Envie uma mensagem</h2>
+          <h2 className="text-2xl font-extrabold text-primary">{t("contacto.formTitle")}</h2>
           <form onSubmit={handleSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
             <input
               required
               name="name"
-              placeholder="O seu nome"
+              placeholder={t("contacto.namePlaceholder")}
               autoComplete="name"
               className={inputClass}
             />
@@ -178,14 +173,14 @@ function Contacto() {
               required
               name="email"
               type="email"
-              placeholder="O seu email"
+              placeholder={t("contacto.emailPlaceholder")}
               autoComplete="email"
               className={inputClass}
             />
 
             <Select required name="subject" defaultValue="">
               <SelectTrigger className="h-auto rounded-xl border-border bg-card px-4 py-3 text-sm text-foreground focus:ring-1 focus:ring-primary sm:col-span-2">
-                <SelectValue placeholder="Assunto" />
+                <SelectValue placeholder={t("contacto.subjectPlaceholder")} />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-border p-2 shadow-lg">
                 {subjects.map((s) => (
@@ -203,7 +198,7 @@ function Contacto() {
             <textarea
               required
               name="message"
-              placeholder="A sua mensagem"
+              placeholder={t("contacto.messagePlaceholder")}
               rows={5}
               className={`${inputClass} resize-none sm:col-span-2`}
             />
@@ -212,7 +207,7 @@ function Contacto() {
               type="submit"
               className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 sm:col-span-2"
             >
-              Enviar mensagem <Send className="h-4 w-4" />
+              {t("contacto.submit")} <Send className="h-4 w-4" />
             </button>
           </form>
         </div>
@@ -220,7 +215,7 @@ function Contacto() {
 
       {/* FAQ */}
       <section className="mx-auto mb-20 mt-14 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">Perguntas frequentes</h2>
+        <h2 className="text-2xl font-extrabold text-primary">{t("contacto.faqTitle")}</h2>
         <Accordion type="single" collapsible className="mt-5 space-y-3">
           {faqs.map((faq, i) => (
             <AccordionItem

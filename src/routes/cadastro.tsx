@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Store, Zap, Users } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/cadastro")({
   head: () => ({
@@ -18,24 +19,26 @@ export const Route = createFileRoute("/cadastro")({
   component: Cadastro,
 });
 
-const options = [
-  {
-    icon: Users,
-    title: "Sou cliente",
-    advantage: "Peça em poucos toques, sem palavra-passe para memorizar.",
-    to: "/entrar" as const,
-    cta: "Continuar com Google",
-  },
-  {
-    icon: Store,
-    title: "Tenho um restaurante",
-    advantage: "Cardápio digital, QR Code e gestão de mesas prontos em minutos.",
-    to: "/parceiros" as const,
-    cta: "Cadastrar restaurante",
-  },
-];
-
 function Cadastro() {
+  const { t } = useTranslation();
+
+  const options = [
+    {
+      icon: Users,
+      title: t("cadastro.customerTitle"),
+      advantage: t("cadastro.customerAdvantage"),
+      to: "/entrar" as const,
+      cta: t("cadastro.customerCta"),
+    },
+    {
+      icon: Store,
+      title: t("cadastro.restaurantTitle"),
+      advantage: t("cadastro.restaurantAdvantage"),
+      to: "/parceiros" as const,
+      cta: t("cadastro.restaurantCta"),
+    },
+  ];
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-background px-5 py-12 sm:px-12">
       <div className="w-full max-w-3xl">
@@ -43,15 +46,13 @@ function Cadastro() {
           to="/"
           className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-primary"
         >
-          <ArrowLeft className="h-4 w-4" /> Voltar ao início
+          <ArrowLeft className="h-4 w-4" /> {t("cadastro.backHome")}
         </Link>
 
         <div className="mx-auto mt-8 flex max-w-md flex-col items-center text-center">
           <Logo />
-          <h1 className="mt-6 text-3xl font-extrabold text-primary">Como quer usar a Kino?</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Escolha o tipo de conta que quer criar — é rápido e pode mudar depois.
-          </p>
+          <h1 className="mt-6 text-3xl font-extrabold text-primary">{t("cadastro.title")}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t("cadastro.description")}</p>
         </div>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
