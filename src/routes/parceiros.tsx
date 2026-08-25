@@ -41,6 +41,8 @@ const categories = [
   { value: "outra", label: "Outra" },
 ];
 
+const PARTNERS_EMAIL = "parceiros@kino.com";
+
 function Parceiros() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -61,6 +63,32 @@ function Parceiros() {
       return;
     }
     setPasswordError(false);
+
+    // Sem backend, o "cadastro" não tem para onde ir de verdade — em vez de
+    // fingir que o pedido foi recebido, abrimos também o email real para a
+    // equipa de parceiros (nunca a password, que fica só no formulário).
+    const data = new FormData(e.currentTarget);
+    const name = String(data.get("restaurantName") ?? "");
+    const categoryValue = String(data.get("category") ?? "");
+    const categoryLabel = categories.find((c) => c.value === categoryValue)?.label ?? "";
+    const phone = String(data.get("phone") ?? "");
+    const address = String(data.get("address") ?? "");
+    const about = String(data.get("about") ?? "");
+    const body = [
+      `Restaurante: ${name}`,
+      `Categoria: ${categoryLabel}`,
+      `Email: ${email}`,
+      `Telefone: ${phone}`,
+      `Morada: ${address}`,
+      about ? `\nSobre o restaurante:\n${about}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const mailto = `mailto:${PARTNERS_EMAIL}?subject=${encodeURIComponent(
+      `Novo pedido de parceria — ${name}`,
+    )}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+
     setSubmitted(true);
   };
 
@@ -117,7 +145,12 @@ function Parceiros() {
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <div className="relative">
                 <Store className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input required placeholder="Nome do restaurante" className={inputWithIconClass} />
+                <input
+                  required
+                  name="restaurantName"
+                  placeholder="Nome do restaurante"
+                  className={inputWithIconClass}
+                />
               </div>
 
               <Select required name="category">
@@ -185,6 +218,7 @@ function Parceiros() {
                 <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   required
+                  name="phone"
                   type="tel"
                   placeholder="Telefone"
                   autoComplete="tel"
@@ -194,10 +228,16 @@ function Parceiros() {
 
               <div className="relative">
                 <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input required placeholder="Morada" className={inputWithIconClass} />
+                <input
+                  required
+                  name="address"
+                  placeholder="Morada"
+                  className={inputWithIconClass}
+                />
               </div>
 
               <textarea
+                name="about"
                 placeholder="Fale um pouco sobre o restaurante (opcional)"
                 rows={4}
                 className={`${inputClass} resize-none sm:col-span-2`}
@@ -212,8 +252,8 @@ function Parceiros() {
             </button>
 
             <p className="mt-4 text-center text-xs text-muted-foreground">
-              Vamos enviar um email de confirmação para o endereço indicado — confirme-o para
-              avançarmos com a análise do seu pedido.
+              Ao enviar, abrimos a sua aplicação de email com os dados já preenchidos para a nossa
+              equipa de parceiros.
             </p>
           </form>
         </section>
@@ -224,20 +264,21 @@ function Parceiros() {
               <CheckCircle2 className="h-7 w-7" />
             </span>
             <DialogTitle className="mt-4 font-display text-xl font-bold text-primary">
-              Pedido recebido!
+              Quase lá!
             </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              Enviámos um email de confirmação
+              Preparámos um email com os seus dados para {PARTNERS_EMAIL} — confirme o envio na sua
+              aplicação de email
               {email ? (
                 <>
                   {" "}
-                  para <strong className="text-foreground">{email}</strong>
+                  (deve ter aberto a partir de <strong className="text-foreground">{email}</strong>)
                 </>
               ) : (
                 ""
               )}
-              . Confirme o seu email — a nossa equipa vai analisar os dados e avisamos assim que o
-              seu restaurante for aprovado na Kino.
+              . A nossa equipa analisa o pedido e avisa assim que o seu restaurante for aprovado na
+              Kino.
             </DialogDescription>
           </DialogContent>
         </Dialog>

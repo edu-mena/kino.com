@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Quote, Star, Store, UtensilsCrossed, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import cocaCap from "@/assets/cocacap.webp";
@@ -192,6 +192,41 @@ function Sobre() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Call to action — a página descreve a Kino mas, até aqui, não dava
+          nenhum próximo passo; fecha com os mesmos dois caminhos usados
+          em /kino (virar parceiro ou entrar como cliente). */}
+      <section className="mx-auto mb-20 mt-14 max-w-6xl px-4 md:px-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-surface p-8 sm:p-10">
+            <h2 className="font-display text-2xl font-extrabold text-primary sm:text-3xl">
+              Tem um restaurante?
+            </h2>
+            <p className="max-w-sm text-muted-foreground">
+              Leve o seu cardápio para a Kino: QR Code, pratos, mesas e clientes num só lugar.
+            </p>
+            <Link
+              to="/parceiros"
+              className="mt-2 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
+            >
+              Torne-se parceiro
+            </Link>
+          </div>
+
+          <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
+            <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Quer pedir?</h2>
+            <p className="max-w-sm text-primary-foreground/85">
+              Entre na sua conta para explorar o cardápio dos melhores restaurantes de Luanda.
+            </p>
+            <Link
+              to="/entrar"
+              className="mt-2 rounded-full bg-background px-6 py-3 text-sm font-semibold text-primary transition-opacity hover:opacity-90"
+            >
+              Fazer login
+            </Link>
+          </div>
         </div>
       </section>
     </PageShell>

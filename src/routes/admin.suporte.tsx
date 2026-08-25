@@ -21,6 +21,9 @@ export const Route = createFileRoute("/admin/suporte")({
   component: AdminSuporte,
 });
 
+const SUPPORT_EMAIL = "parceiros@kino.com";
+const SUPPORT_WHATSAPP = "https://wa.me/244930814277";
+
 const subjects = [
   { value: "nome", label: "Alterar nome do restaurante" },
   { value: "destaque", label: "Alterar categoria de destaque" },
@@ -34,25 +37,26 @@ function AdminSuporte() {
   const { restaurant } = useRestaurantAdmin();
   const [subject, setSubject] = useState<(typeof subjects)[number]["value"]>("nome");
   const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
 
   if (!restaurant) return null;
 
+  // Sem backend a app não tem sistema de tickets — em vez de simular um
+  // envio, abrimos o cliente de email do restaurante já preenchido, que é
+  // a única ação real que o frontend consegue disparar sozinho.
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) {
       toast.error("Escreva a sua mensagem primeiro.");
       return;
     }
-    setSending(true);
-    // Sem backend real — a app não tem sistema de tickets, isto simula o
-    // envio (mesmo espírito do resto da app: um pedido de reserva/pagamento
-    // também não é processado de verdade, só encaminhado).
-    setTimeout(() => {
-      toast.success("Pedido enviado — a equipa de parceiros Kino entra em contacto em breve.");
-      setMessage("");
-      setSending(false);
-    }, 600);
+    const subjectLabel = subjects.find((s) => s.value === subject)?.label ?? "Suporte";
+    const body = `${message}\n\n— ${restaurant.name}`;
+    const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+      `[Painel Kino] ${subjectLabel}`,
+    )}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+    toast.success("A abrir o seu email para enviar o pedido à equipa de parceiros.");
+    setMessage("");
   };
 
   return (
@@ -65,7 +69,10 @@ function AdminSuporte() {
 
       <div className="mx-auto mt-8 max-w-4xl px-4 md:px-6">
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="card-soft flex items-center gap-3 p-4">
+          <a
+            href="tel:+244923000000"
+            className="card-soft flex items-center gap-3 p-4 transition-colors hover:border-primary"
+          >
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface text-brand">
               <Phone className="h-4 w-4" />
             </span>
@@ -73,25 +80,33 @@ function AdminSuporte() {
               <p className="truncate text-sm font-bold">+244 923 000 000</p>
               <p className="truncate text-xs text-muted-foreground">Todos os dias, 8h - 23h</p>
             </div>
-          </div>
-          <div className="card-soft flex items-center gap-3 p-4">
+          </a>
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="card-soft flex items-center gap-3 p-4 transition-colors hover:border-primary"
+          >
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface text-brand">
               <Mail className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold">parceiros@kino.com</p>
+              <p className="truncate text-sm font-bold">{SUPPORT_EMAIL}</p>
               <p className="truncate text-xs text-muted-foreground">Resposta em 1 dia útil</p>
             </div>
-          </div>
-          <div className="card-soft flex items-center gap-3 p-4">
+          </a>
+          <a
+            href={SUPPORT_WHATSAPP}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="card-soft flex items-center gap-3 p-4 transition-colors hover:border-primary"
+          >
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface text-brand">
               <MessageCircle className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold">Chat ao vivo</p>
-              <p className="truncate text-xs text-muted-foreground">Resposta em ~2 minutos</p>
+              <p className="truncate text-sm font-bold">WhatsApp</p>
+              <p className="truncate text-xs text-muted-foreground">Fale diretamente com a Kino</p>
             </div>
-          </div>
+          </a>
         </div>
 
         <form onSubmit={handleSubmit} className="card-soft mt-6 space-y-4 p-6">
@@ -129,8 +144,8 @@ function AdminSuporte() {
             />
           </div>
 
-          <Button type="submit" disabled={sending} className="w-full rounded-xl">
-            <Send className="h-4 w-4" /> {sending ? "A enviar..." : "Enviar pedido"}
+          <Button type="submit" className="w-full rounded-xl">
+            <Send className="h-4 w-4" /> Enviar pedido
           </Button>
         </form>
       </div>
