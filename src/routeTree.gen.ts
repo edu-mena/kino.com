@@ -30,9 +30,14 @@ import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAvaliacoesRouteImport } from './routes/admin.avaliacoes'
 import { Route as AdminCardapioRouteImport } from './routes/admin.cardapio'
+import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
+import { Route as AdminEstatisticasRouteImport } from './routes/admin.estatisticas'
 import { Route as AdminPedidosRouteImport } from './routes/admin.pedidos'
 import { Route as AdminPerfilRouteImport } from './routes/admin.perfil'
+import { Route as AdminPromocoesRouteImport } from './routes/admin.promocoes'
 import { Route as AdminReservasRouteImport } from './routes/admin.reservas'
+import { Route as AdminStoriesRouteImport } from './routes/admin.stories'
+import { Route as AdminSuporteRouteImport } from './routes/admin.suporte'
 import { Route as AdminEntrarRouteImport } from './routes/admin_.entrar'
 import { Route as PratoDishIdRouteImport } from './routes/prato.$dishId'
 import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
@@ -142,6 +147,16 @@ const AdminCardapioRoute = AdminCardapioRouteImport.update({
   path: '/cardapio',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminClientesRoute = AdminClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEstatisticasRoute = AdminEstatisticasRouteImport.update({
+  id: '/estatisticas',
+  path: '/estatisticas',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminPedidosRoute = AdminPedidosRouteImport.update({
   id: '/pedidos',
   path: '/pedidos',
@@ -152,9 +167,24 @@ const AdminPerfilRoute = AdminPerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPromocoesRoute = AdminPromocoesRouteImport.update({
+  id: '/promocoes',
+  path: '/promocoes',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminReservasRoute = AdminReservasRouteImport.update({
   id: '/reservas',
   path: '/reservas',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStoriesRoute = AdminStoriesRouteImport.update({
+  id: '/stories',
+  path: '/stories',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSuporteRoute = AdminSuporteRouteImport.update({
+  id: '/suporte',
+  path: '/suporte',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminEntrarRoute = AdminEntrarRouteImport.update({
@@ -194,9 +224,14 @@ export interface FileRoutesByFullPath {
   '/sobre': typeof SobreRoute
   '/admin/avaliacoes': typeof AdminAvaliacoesRoute
   '/admin/cardapio': typeof AdminCardapioRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/estatisticas': typeof AdminEstatisticasRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/perfil': typeof AdminPerfilRoute
+  '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/reservas': typeof AdminReservasRoute
+  '/admin/stories': typeof AdminStoriesRoute
+  '/admin/suporte': typeof AdminSuporteRoute
   '/admin/entrar': typeof AdminEntrarRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
@@ -222,9 +257,14 @@ export interface FileRoutesByTo {
   '/sobre': typeof SobreRoute
   '/admin/avaliacoes': typeof AdminAvaliacoesRoute
   '/admin/cardapio': typeof AdminCardapioRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/estatisticas': typeof AdminEstatisticasRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/perfil': typeof AdminPerfilRoute
+  '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/reservas': typeof AdminReservasRoute
+  '/admin/stories': typeof AdminStoriesRoute
+  '/admin/suporte': typeof AdminSuporteRoute
   '/admin/entrar': typeof AdminEntrarRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
@@ -252,9 +292,14 @@ export interface FileRoutesById {
   '/sobre': typeof SobreRoute
   '/admin/avaliacoes': typeof AdminAvaliacoesRoute
   '/admin/cardapio': typeof AdminCardapioRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/estatisticas': typeof AdminEstatisticasRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/perfil': typeof AdminPerfilRoute
+  '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/reservas': typeof AdminReservasRoute
+  '/admin/stories': typeof AdminStoriesRoute
+  '/admin/suporte': typeof AdminSuporteRoute
   '/admin_/entrar': typeof AdminEntrarRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/restaurantes_/$id': typeof RestaurantesIdRoute
@@ -283,9 +328,14 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/admin/avaliacoes'
     | '/admin/cardapio'
+    | '/admin/clientes'
+    | '/admin/estatisticas'
     | '/admin/pedidos'
     | '/admin/perfil'
+    | '/admin/promocoes'
     | '/admin/reservas'
+    | '/admin/stories'
+    | '/admin/suporte'
     | '/admin/entrar'
     | '/prato/$dishId'
     | '/restaurantes/$id'
@@ -311,9 +361,14 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/admin/avaliacoes'
     | '/admin/cardapio'
+    | '/admin/clientes'
+    | '/admin/estatisticas'
     | '/admin/pedidos'
     | '/admin/perfil'
+    | '/admin/promocoes'
     | '/admin/reservas'
+    | '/admin/stories'
+    | '/admin/suporte'
     | '/admin/entrar'
     | '/prato/$dishId'
     | '/restaurantes/$id'
@@ -340,9 +395,14 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/admin/avaliacoes'
     | '/admin/cardapio'
+    | '/admin/clientes'
+    | '/admin/estatisticas'
     | '/admin/pedidos'
     | '/admin/perfil'
+    | '/admin/promocoes'
     | '/admin/reservas'
+    | '/admin/stories'
+    | '/admin/suporte'
     | '/admin_/entrar'
     | '/prato/$dishId'
     | '/restaurantes_/$id'
@@ -522,6 +582,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCardapioRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/clientes': {
+      id: '/admin/clientes'
+      path: '/clientes'
+      fullPath: '/admin/clientes'
+      preLoaderRoute: typeof AdminClientesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/estatisticas': {
+      id: '/admin/estatisticas'
+      path: '/estatisticas'
+      fullPath: '/admin/estatisticas'
+      preLoaderRoute: typeof AdminEstatisticasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/pedidos': {
       id: '/admin/pedidos'
       path: '/pedidos'
@@ -536,11 +610,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPerfilRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/promocoes': {
+      id: '/admin/promocoes'
+      path: '/promocoes'
+      fullPath: '/admin/promocoes'
+      preLoaderRoute: typeof AdminPromocoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/reservas': {
       id: '/admin/reservas'
       path: '/reservas'
       fullPath: '/admin/reservas'
       preLoaderRoute: typeof AdminReservasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/stories': {
+      id: '/admin/stories'
+      path: '/stories'
+      fullPath: '/admin/stories'
+      preLoaderRoute: typeof AdminStoriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/suporte': {
+      id: '/admin/suporte'
+      path: '/suporte'
+      fullPath: '/admin/suporte'
+      preLoaderRoute: typeof AdminSuporteRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin_/entrar': {
@@ -570,18 +665,28 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAvaliacoesRoute: typeof AdminAvaliacoesRoute
   AdminCardapioRoute: typeof AdminCardapioRoute
+  AdminClientesRoute: typeof AdminClientesRoute
+  AdminEstatisticasRoute: typeof AdminEstatisticasRoute
   AdminPedidosRoute: typeof AdminPedidosRoute
   AdminPerfilRoute: typeof AdminPerfilRoute
+  AdminPromocoesRoute: typeof AdminPromocoesRoute
   AdminReservasRoute: typeof AdminReservasRoute
+  AdminStoriesRoute: typeof AdminStoriesRoute
+  AdminSuporteRoute: typeof AdminSuporteRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAvaliacoesRoute: AdminAvaliacoesRoute,
   AdminCardapioRoute: AdminCardapioRoute,
+  AdminClientesRoute: AdminClientesRoute,
+  AdminEstatisticasRoute: AdminEstatisticasRoute,
   AdminPedidosRoute: AdminPedidosRoute,
   AdminPerfilRoute: AdminPerfilRoute,
+  AdminPromocoesRoute: AdminPromocoesRoute,
   AdminReservasRoute: AdminReservasRoute,
+  AdminStoriesRoute: AdminStoriesRoute,
+  AdminSuporteRoute: AdminSuporteRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

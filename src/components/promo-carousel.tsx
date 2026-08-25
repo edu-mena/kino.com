@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dishDrink from "@/assets/dish-drink.png";
 import heroFood from "@/assets/hero-food.jpg";
 import kinoVideo from "@/assets/kino/video.mp4";
@@ -13,8 +13,11 @@ import {
 } from "@/components/ui/carousel";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getRestaurant } from "@/data/helpers";
-import { INITIAL_MENU_ITEMS, INITIAL_OFFERS } from "@/data/mockData";
+import type { MenuItem, Offer } from "@/data/types";
+import { useMenuItems } from "@/data/use-menu-items";
+import { useOffers } from "@/data/use-offers";
 import { formatKz } from "@/lib/format";
+import { useTranslation } from "@/i18n";
 
 const MAX_SLIDES = 8;
 
@@ -51,57 +54,42 @@ type Slide =
       target: LinkTarget;
     };
 
-const promotedDishes = INITIAL_MENU_ITEMS.filter((item) => item.isPromoted);
+// Ofertas não têm imagem própria (nem as da Kino nem as criadas por
+// restaurantes) — este pool decorativo é reciclado por índice, o que
+// generaliza sem problema para qualquer número de ofertas (não só as 3
+// originais da Kino).
+const offerSlideImages = [restaurantAngolana, heroFood, dishDrink];
 
-function buildSlides(): Slide[] {
+function buildSlides(
+  t: ReturnType<typeof useTranslation>["t"],
+  offers: Offer[],
+  promotedDishes: MenuItem[],
+): Slide[] {
   const slides: Slide[] = [];
 
-  const [offer1, offer2, offer3] = INITIAL_OFFERS;
-  if (offer1) {
+  offers.forEach((offer, i) => {
+    if (slides.length >= MAX_SLIDES) return;
     slides.push({
-      id: offer1.id,
-      kind: "split",
-      title: offer1.title,
-      description: offer1.description,
-      cta: offer1.code ? `Usar código ${offer1.code}` : "Ver oferta",
-      image: restaurantAngolana,
+      id: offer.id,
+      kind: i % 2 === 0 ? "split" : "cover",
+      title: offer.title,
+      description: offer.description,
+      cta: offer.code ? t("home.promoUseCode", { code: offer.code }) : t("home.promoSeeOffer"),
+      image: offerSlideImages[i % offerSlideImages.length]!,
       target: { to: "/ofertas" },
     });
-  }
-  if (offer2) {
-    slides.push({
-      id: offer2.id,
-      kind: "cover",
-      title: offer2.title,
-      description: offer2.description,
-      cta: "Ver oferta",
-      image: heroFood,
-      target: { to: "/ofertas" },
-    });
-  }
+  });
 
   slides.push({
     id: "video-kino",
     kind: "video",
-    title: "Veja a Kino em ação",
-    description: "Do cardápio ao pagamento, peça em poucos toques.",
-    cta: "Conhecer a Kino",
+    title: t("home.promoVideoTitle"),
+    description: t("home.promoVideoDescription"),
+    cta: t("home.promoVideoCta"),
     video: kinoVideo,
     orientation: "vertical",
     target: { to: "/kino" },
   });
-
-  if (offer3) {
-    slides.push({
-      id: offer3.id,
-      kind: "split",
-      title: offer3.title,
-      description: offer3.description,
-      cta: "Ver oferta",
-      image: dishDrink,
-      target: { to: "/ofertas" },
-    });
-  }
 
   promotedDishes.forEach((item, i) => {
     if (slides.length >= MAX_SLIDES) return;
@@ -113,7 +101,7 @@ function buildSlides(): Slide[] {
       description: restaurant
         ? `${restaurant.name} — ${item.promotionLabel ?? formatKz(item.price)}`
         : (item.promotionLabel ?? formatKz(item.price)),
-      cta: "Ver no cardápio",
+      cta: t("home.promoSeeInMenu"),
       image: item.image,
       target: { to: "/cardapio", search: { restaurante: item.restaurantId } },
     });
@@ -121,8 +109,6 @@ function buildSlides(): Slide[] {
 
   return slides.slice(0, MAX_SLIDES);
 }
-
-const slides = buildSlides();
 
 function SlideCta({ target, children }: { target: LinkTarget; children: React.ReactNode }) {
   return (
@@ -158,10 +144,11 @@ function MediaLightbox({
   onOpenChange: (open: boolean) => void;
   media: { type: "image"; src: string } | { type: "video"; src: string };
 }) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl overflow-hidden rounded-[2rem] border-none bg-neutral-100 p-2">
-        <DialogTitle className="sr-only">Pré-visualização</DialogTitle>
+        <DialogTitle className="sr-only">{t("home.previewTitle")}</DialogTitle>
         {media.type === "image" ? (
           <img
             src={media.src}
@@ -183,6 +170,7 @@ function MediaLightbox({
 }
 
 function SlideCard({ slide }: { slide: Slide }) {
+  const { t } = useTranslation();
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   if (slide.kind === "split") {
@@ -199,7 +187,7 @@ function SlideCard({ slide }: { slide: Slide }) {
           />
           <MediaTrigger
             onClick={() => setLightboxOpen(true)}
-            label={`Ver imagem: ${slide.title}`}
+            label={t("home.promoImageAria", { title: slide.title })}
           />
         </div>
         <div className="order-2 flex w-full flex-col justify-center gap-[10px] p-5 sm:order-none sm:w-fit sm:shrink-0 sm:max-w-xs sm:p-8">
@@ -229,7 +217,10 @@ function SlideCard({ slide }: { slide: Slide }) {
           aria-hidden
           className="absolute inset-0 h-full w-full rounded-[2rem] object-cover"
         />
-        <MediaTrigger onClick={() => setLightboxOpen(true)} label={`Ver imagem: ${slide.title}`} />
+        <MediaTrigger
+          onClick={() => setLightboxOpen(true)}
+          label={t("home.promoImageAria", { title: slide.title })}
+        />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-[10px] p-8 text-center">
           <h3 className="w-full max-w-md truncate text-xl font-extrabold text-white sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">
@@ -268,7 +259,10 @@ function SlideCard({ slide }: { slide: Slide }) {
           playsInline
           className="h-full w-full rounded-[1.5rem] object-cover"
         />
-        <MediaTrigger onClick={() => setLightboxOpen(true)} label={`Ver vídeo: ${slide.title}`} />
+        <MediaTrigger
+          onClick={() => setLightboxOpen(true)}
+          label={t("home.promoVideoAria", { title: slide.title })}
+        />
       </div>
       <div className="order-2 flex w-full flex-col justify-center gap-[10px] p-5 sm:order-none sm:w-fit sm:shrink-0 sm:max-w-xs sm:p-8">
         <h3 className="truncate text-xl font-extrabold text-primary sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">
@@ -295,6 +289,15 @@ const INTERACTION_PAUSE = 8000;
 
 /** Slides: ofertas gerais + pratos em promoção — 3 layouts diferentes (split, cover, vídeo) pra não repetir sempre a mesma aparência. Máx. 8 slides. */
 export function PromoCarousel() {
+  // `t` muda de identidade sempre que o idioma muda (ver useTranslation),
+  // então basta como dependência pra recalcular título/descrição/cta dos
+  // slides fixos — os dados variáveis (ofertas, pratos) não mudam com o
+  // idioma, só o texto da "casca".
+  const { t } = useTranslation();
+  const offers = useOffers();
+  const menuItems = useMenuItems();
+  const promotedDishes = useMemo(() => menuItems.filter((item) => item.isPromoted), [menuItems]);
+  const slides = useMemo(() => buildSlides(t, offers, promotedDishes), [t, offers, promotedDishes]);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -345,7 +348,7 @@ export function PromoCarousel() {
           <button
             key={slide.id}
             type="button"
-            aria-label={`Ir para slide ${i + 1}`}
+            aria-label={t("home.promoSlideAria", { n: i + 1 })}
             onClick={() => {
               api?.scrollTo(i);
               scheduleAutoplay(INTERACTION_PAUSE);

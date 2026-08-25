@@ -83,7 +83,10 @@ export function LeftSidebar() {
         <Logo className="h-12 w-auto" />
       </Link>
 
-      <nav className="flex flex-1 flex-col justify-center gap-2 overflow-y-auto">
+      <nav
+        data-tour="nav-menu"
+        className="flex flex-1 flex-col justify-center gap-2 overflow-y-auto"
+      >
         {desktopNavItems.map((tab) => (
           <Link
             key={tab.to}
@@ -108,6 +111,7 @@ export function LeftSidebar() {
       <div className="mx-2 shrink-0 space-y-1 rounded-2xl bg-surface/80 p-1.5">
         <Link
           to="/preferencias"
+          data-tour="preferences"
           activeProps={{ className: "text-primary bg-card" }}
           className={`${navItemClass} mx-0`}
         >

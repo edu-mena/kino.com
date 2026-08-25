@@ -1,50 +1,64 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-
-const STORAGE_KEY = "kino_menu_unavailable";
+import {
+  createMenuItem,
+  deleteMenuItem,
+  getEffectiveMenuItems,
+  toggleMenuItemAvailability,
+  updateMenuItem,
+  type MenuItemInput,
+} from "@/data/menu-store";
+import { INITIAL_MENU_ITEMS } from "@/data/mockData";
+import type { MenuItem } from "@/data/types";
 
 /**
- * Disponibilidade de pratos, gerida pelo painel do restaurante
- * (`/admin/cardapio`) — só guarda os IDs marcados como indisponíveis (a
- * maioria fica disponível por omissão, sem precisar de entrada nenhuma).
- * `DishCard`/`MenuBrowser` leem isto pra desativar o "+" e mostrar
- * "Indisponível" nos pratos que o restaurante desligou.
+ * CRUD de pratos + disponibilidade, gerido pelo painel do restaurante
+ * (`/admin/cardapio`). A leitura/escrita de verdade vive em
+ * `@/data/menu-store` (síncrona, sem React, segura em SSR) — este ficheiro
+ * é só a camada reativa: guarda `items` em estado e ressincroniza sempre
+ * que algo muda (`kino:menu-changed`, disparado pelo próprio store) ou
+ * quando outra aba altera o localStorage (`storage`).
  */
 type MenuAdminValue = {
-  unavailableIds: string[];
+  /** Todos os pratos, já com criações/edições/eliminações do painel
+   * aplicadas — a mesma lista que `@/data/helpers` usa por baixo dos panos. */
+  items: MenuItem[];
   isAvailable: (menuItemId: string) => boolean;
   toggleAvailability: (menuItemId: string) => void;
+  createItem: (restaurantId: string, input: MenuItemInput) => MenuItem;
+  updateItem: (id: string, input: MenuItemInput) => void;
+  deleteItem: (id: string) => void;
 };
 
 const MenuAdminContext = createContext<MenuAdminValue | null>(null);
 
 export function MenuAdminProvider({ children }: { children: ReactNode }) {
-  const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  // SSR-safe: a primeira renderização (servidor, e a do cliente antes da
+  // hidratação) usa sempre o seed estático puro, sem tocar em localStorage
+  // — evita mismatch de hidratação. O `useEffect` abaixo, que só corre no
+  // cliente, é que lê o estado real guardado e ressincroniza.
+  const [items, setItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setUnavailableIds(JSON.parse(stored));
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
-    setHydrated(true);
+    // `activeMenusOnly: false` — o painel precisa de ver (e poder editar)
+    // pratos de cardápios ainda em rascunho/desativados, não só os
+    // visíveis ao cliente.
+    const sync = () => setItems(getEffectiveMenuItems({ activeMenusOnly: false }));
+    sync();
+    window.addEventListener("kino:menu-changed", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("kino:menu-changed", sync);
+      window.removeEventListener("storage", sync);
+    };
   }, []);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(unavailableIds));
-  }, [unavailableIds, hydrated]);
-
   const value: MenuAdminValue = {
-    unavailableIds,
-    isAvailable: (menuItemId) => !unavailableIds.includes(menuItemId),
-    toggleAvailability: (menuItemId) =>
-      setUnavailableIds((prev) =>
-        prev.includes(menuItemId) ? prev.filter((id) => id !== menuItemId) : [...prev, menuItemId],
-      ),
+    items,
+    isAvailable: (menuItemId) => items.find((i) => i.id === menuItemId)?.isAvailable ?? true,
+    toggleAvailability: (menuItemId) => toggleMenuItemAvailability(menuItemId),
+    createItem: (restaurantId, input) => createMenuItem(restaurantId, input),
+    updateItem: (id, input) => updateMenuItem(id, input),
+    deleteItem: (id) => deleteMenuItem(id),
   };
 
   return <MenuAdminContext.Provider value={value}>{children}</MenuAdminContext.Provider>;

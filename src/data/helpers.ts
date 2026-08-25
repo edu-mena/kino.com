@@ -1,21 +1,29 @@
-import {
-  INITIAL_MENU_ITEMS,
-  INITIAL_RESTAURANTS,
-  INITIAL_REVIEWS,
-  INITIAL_STORIES,
-} from "./mockData";
+import { INITIAL_RESTAURANTS, INITIAL_REVIEWS } from "./mockData";
+import { getEffectiveMenuItems } from "./menu-store";
+import { applyProfileEdits } from "./restaurant-profile-store";
+import { getEffectiveStories } from "./stories-store";
 import type { MenuItem, Restaurant, RestaurantStory, Review } from "./types";
 
+/** Aplica as edições guardadas em `/admin/perfil` (ver
+ * `@/data/restaurant-profile-store`) sobre o seed — assim uma mudança feita
+ * lá aparece em todo o lado que lê um restaurante, painel e cliente. */
 export function getRestaurant(id: string): Restaurant | undefined {
-  return INITIAL_RESTAURANTS.find((r) => r.id === id);
+  const restaurant = INITIAL_RESTAURANTS.find((r) => r.id === id);
+  return restaurant ? applyProfileEdits(restaurant) : undefined;
 }
 
+// Todas as funções de prato abaixo leem de `getEffectiveMenuItems()`, não do
+// seed (`INITIAL_MENU_ITEMS`) diretamente — assim refletem também o que o
+// painel do restaurante (`/admin/cardapio`) criar, editar ou apagar. É
+// síncrona e segura em SSR (ver `@/data/menu-store`), por isso pode ser
+// chamada em qualquer lado, incluindo `loader()` de rotas.
+
 export function getMenuItem(id: string): MenuItem | undefined {
-  return INITIAL_MENU_ITEMS.find((m) => m.id === id);
+  return getEffectiveMenuItems().find((m) => m.id === id);
 }
 
 export function getMenuItemsByRestaurant(restaurantId: string): MenuItem[] {
-  return INITIAL_MENU_ITEMS.filter((m) => m.restaurantId === restaurantId);
+  return getEffectiveMenuItems().filter((m) => m.restaurantId === restaurantId);
 }
 
 /** Outros restaurantes (além do informado) que têm um prato com o mesmo nome. */
@@ -24,16 +32,16 @@ export function getRestaurantsOfferingDish(
   excludeRestaurantId?: string,
 ): Restaurant[] {
   const restaurantIds = new Set(
-    INITIAL_MENU_ITEMS.filter(
-      (m) => m.name === dishName && m.restaurantId !== excludeRestaurantId,
-    ).map((m) => m.restaurantId),
+    getEffectiveMenuItems()
+      .filter((m) => m.name === dishName && m.restaurantId !== excludeRestaurantId)
+      .map((m) => m.restaurantId),
   );
   return INITIAL_RESTAURANTS.filter((r) => restaurantIds.has(r.id));
 }
 
 /** Ingredientes que aparecem em todas as versões (por nome) deste prato entre restaurantes. */
 export function getCommonIngredients(dishName: string): string[] {
-  const versions = INITIAL_MENU_ITEMS.filter((m) => m.name === dishName);
+  const versions = getEffectiveMenuItems().filter((m) => m.name === dishName);
   if (versions.length === 0) return [];
   const [first, ...rest] = versions;
   let common = new Set(first!.ingredients.map((i) => i.name));
@@ -45,14 +53,14 @@ export function getCommonIngredients(dishName: string): string[] {
 }
 
 export function getMenuCategories(): string[] {
-  return [...new Set(INITIAL_MENU_ITEMS.map((m) => m.category))];
+  return [...new Set(getEffectiveMenuItems().map((m) => m.category))];
 }
 
 /** Todos os nomes de ingrediente usados no cardápio, sem repetir — base pros
  * seletores de "ingredientes favoritos" / "ingredientes a evitar" em Preferências. */
 export function getAllIngredientNames(): string[] {
   const names = new Set<string>();
-  for (const item of INITIAL_MENU_ITEMS) {
+  for (const item of getEffectiveMenuItems()) {
     for (const ing of item.ingredients) names.add(ing.name);
   }
   return [...names].sort((a, b) => a.localeCompare(b, "pt"));
@@ -79,11 +87,14 @@ export function canDeliverToNeighborhood(restaurant: Restaurant, neighborhood?: 
   return getDeliveryZones(restaurant).includes(neighborhood);
 }
 
-/** Stories de um restaurante, do mais antigo pro mais recente (ordem de exibição). */
+/** Stories de um restaurante, do mais antigo pro mais recente (ordem de
+ * exibição) — lê de `getEffectiveStories()`, não do seed diretamente, para
+ * refletir também o que o painel do restaurante (`/admin/stories`) criar
+ * ou apagar. */
 export function getStoriesForRestaurant(restaurantId: string): RestaurantStory[] {
-  return INITIAL_STORIES.filter((s) => s.restaurantId === restaurantId).sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  );
+  return getEffectiveStories()
+    .filter((s) => s.restaurantId === restaurantId)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 }
 
 /** Avaliações de um restaurante, mais recente primeiro — usado no painel do
@@ -97,7 +108,7 @@ export function getReviewsForRestaurant(restaurantId: string): Review[] {
 /** Restaurantes que têm pelo menos um story, mais recente primeiro. */
 export function getRestaurantsWithStories(): Restaurant[] {
   const idsByLatestStory = new Map<string, number>();
-  for (const story of INITIAL_STORIES) {
+  for (const story of getEffectiveStories()) {
     const time = new Date(story.createdAt).getTime();
     const current = idsByLatestStory.get(story.restaurantId);
     if (current === undefined || time > current) {

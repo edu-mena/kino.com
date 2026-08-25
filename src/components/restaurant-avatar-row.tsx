@@ -9,18 +9,32 @@ import { StoryViewer } from "@/components/story-viewer";
 import { getRestaurantsWithStories } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
 import { INITIAL_RESTAURANTS } from "@/data/mockData";
+import { useEffectiveStories } from "@/data/use-stories";
 import { useStories } from "@/lib/stories";
+import { useTranslation } from "@/i18n";
 
 const sorted = [...INITIAL_RESTAURANTS].sort((a, b) => a.distanceKm - b.distanceKm);
-const restaurantsWithStories = getRestaurantsWithStories();
-const storyRestaurantIds = new Set(restaurantsWithStories.map((r) => r.id));
 
 function abbreviate(name: string) {
   return name.length > 14 ? `${name.slice(0, 13)}…` : name;
 }
 
 export function RestaurantAvatarRow() {
+  const { t } = useTranslation();
   const [active, setActive] = useState<Restaurant | null>(null);
+  // Reage a stories criados/apagados no painel do restaurante — não os
+  // usa diretamente (a lista já vem por restaurante via
+  // `getRestaurantsWithStories()`), só para saber quando recalcular.
+  const stories = useEffectiveStories();
+  const restaurantsWithStories = useMemo(
+    () => getRestaurantsWithStories(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `stories` not read directly, only used to know when to recompute (getRestaurantsWithStories() reads the same live store itself).
+    [stories],
+  );
+  const storyRestaurantIds = useMemo(
+    () => new Set(restaurantsWithStories.map((r) => r.id)),
+    [restaurantsWithStories],
+  );
   const [reservingRestaurant, setReservingRestaurant] = useState<Restaurant | null>(null);
   // Congela a lista + índice no momento do clique — abrir um story marca-o
   // como visto na hora, o que reordena `orderedStoryRestaurants` (não-vistos
@@ -42,7 +56,7 @@ export function RestaurantAvatarRow() {
         const bViewed = isRestaurantFullyViewed(b.id) ? 1 : 0;
         return aViewed - bViewed;
       }),
-    [isRestaurantFullyViewed],
+    [restaurantsWithStories, isRestaurantFullyViewed],
   );
 
   const avatarList = [
@@ -136,7 +150,7 @@ export function RestaurantAvatarRow() {
                     onClick={() => setActive(null)}
                     className="flex-1 rounded-xl bg-primary px-5 py-3 text-center text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                   >
-                    Ver restaurante
+                    {t("home.viewRestaurant")}
                   </Link>
                   <button
                     type="button"
@@ -147,7 +161,7 @@ export function RestaurantAvatarRow() {
                     className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-primary px-5 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
                   >
                     <CalendarCheck className="h-4 w-4" />
-                    Reservar mesa
+                    {t("reservas.reserveTable")}
                   </button>
                 </div>
               </div>

@@ -12,7 +12,15 @@
       "Bash(taskkill //PID 24768 //F)",
       "Bash(break)",
       "Bash(node shot8.mjs)",
-      "Bash(taskkill //PID 20896 //F)"
+      "Bash(taskkill //PID 20896 //F)",
+      "Bash(npx eslint *)",
+      "Bash(npx prettier *)",
+      "Bash(npx vitest *)",
+      "Bash(sed -n '/INITIAL_STORIES/,/INITIAL_USER_PROFILE/p')",
+      "Bash(awk '/export const INITIAL_STORIES/,/^\\\\];/' c:/Projects/_Kino.com/src/data/mockData.ts)",
+      "Bash(awk '/export const INITIAL_REVIEWS/,/^\\\\];/' c:/Projects/_Kino.com/src/data/mockData.ts)",
+      "Bash(awk '/export const INITIAL_RESTAURANTS/,/^\\\\];/' c:/Projects/_Kino.com/src/data/mockData.ts)",
+      "Bash(awk '/export const INITIAL_MENU_ITEMS/,/^\\\\];/' c:/Projects/_Kino.com/src/data/mockData.ts)"
     ]
   }
 }

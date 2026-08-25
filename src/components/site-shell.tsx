@@ -30,8 +30,18 @@ import {
 import { useCart } from "@/lib/cart";
 import { useLocation } from "@/lib/location";
 import { useAuth } from "@/lib/auth";
+import { usePreferences } from "@/lib/preferences";
+import { useTutorial } from "@/lib/tutorial";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
+
+/** Só no painel mobile ("três pontos") — no perfil o seletor já mostra o
+ * nome completo do idioma; aqui o espaço é curto, por isso as siglas. */
+const languageOptions = [
+  { value: "pt", label: "PT" },
+  { value: "en", label: "EN" },
+  { value: "fr", label: "FR" },
+] as const;
 
 const navLinks = [
   { to: "/", label: "Início" },
@@ -146,6 +156,7 @@ function CartButton() {
   return (
     <Link
       to="/entrega"
+      data-tour="cart"
       aria-label={t("header.viewDelivery")}
       className="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary"
     >
@@ -160,7 +171,10 @@ function CartButton() {
 }
 
 export function SiteHeader({ variant = "default" }: { variant?: "default" | "guestHome" } = {}) {
-  const [open, setOpen] = useState(false);
+  // Vive no TutorialProvider (não local) — o tour precisa poder abrir este
+  // painel sozinho para apontar para o idioma e as preferências, que só
+  // existem lá dentro no mobile.
+  const { mobileMenuOpen: open, setMobileMenuOpen: setOpen } = useTutorial();
   const { isLoggedIn, user, logout } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -169,6 +183,8 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
   // below `lg:` — desktop uses the leftbar + header Ajuda icon instead.
   const panelAlwaysAvailable = isLoggedIn && !isGuestHome;
   const panelLinks = isGuestHome ? guestNavLinks : isLoggedIn ? appNavLinks : navLinks;
+
+  const { language, setLanguage } = usePreferences();
 
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -301,8 +317,9 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
 
           <button
             type="button"
-            aria-label={panelAlwaysAvailable ? "Mais opções" : "Abrir menu"}
-            onClick={() => setOpen((v) => !v)}
+            data-tour="nav-menu"
+            aria-label={panelAlwaysAvailable ? t("header.moreOptions") : t("header.openMenu")}
+            onClick={() => setOpen(!open)}
             className={cn(
               "grid h-10 w-10 place-items-center rounded-xl lg:hidden",
               isGuestHome
@@ -347,6 +364,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
             <Link
               key={link.to}
               to={link.to}
+              data-tour={link.to === "/preferencias" ? "preferences" : undefined}
               {...(isGuestHome ? { viewTransition: { types: guestViewTransitionTypes } } : {})}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-lg px-2 py-3 text-lg font-medium text-foreground hover:bg-surface"
@@ -356,6 +374,34 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
             </Link>
           ))}
         </div>
+
+        {!isGuestHome && (
+          <div data-tour="language" className="shrink-0 border-t border-border px-4 py-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                {t("header.language")}
+              </span>
+              <div className="flex items-center gap-1 rounded-full bg-surface p-1">
+                {languageOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setLanguage(opt.value)}
+                    aria-pressed={language === opt.value}
+                    className={cn(
+                      "rounded-full px-3 py-1.5 text-xs font-bold transition-colors",
+                      language === opt.value
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="shrink-0 border-t border-border px-4 py-3">
           {isLoggedIn ? (

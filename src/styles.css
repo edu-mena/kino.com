@@ -196,6 +196,11 @@ html:active-view-transition-type(back)::view-transition-new(root) {
 }
 
 :root {
+  /* Site só suporta light. Sem isto, o dark mode forçado de alguns
+   * telemóveis (Android/browser) reescreve cores sozinho e quebra
+   * contraste em pontos com cor fixa (fundos de imagem, texto sobre cor
+   * sólida). Isto desliga essa heurística por completo. */
+  color-scheme: light;
   --radius: 0.875rem;
   --background: oklch(0.987 0.006 91);
   --foreground: oklch(0.24 0.03 150);

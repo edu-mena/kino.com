@@ -18,10 +18,14 @@ import { CartProvider } from "../lib/cart";
 import { LocationProvider } from "../lib/location";
 import { AuthProvider } from "../lib/auth";
 import { MenuAdminProvider } from "../lib/menu-admin";
+import { MenusAdminProvider } from "../lib/menus-admin";
+import { OffersAdminProvider } from "../lib/offers-admin";
 import { PreferencesProvider } from "../lib/preferences";
 import { ReservationsProvider } from "../lib/reservations";
 import { RestaurantAdminProvider } from "../lib/restaurant-admin";
 import { StoriesProvider } from "../lib/stories";
+import { StoriesAdminProvider } from "../lib/stories-admin";
+import { TutorialProvider } from "../lib/tutorial";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
@@ -89,6 +93,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      // O site só tem tema light. Sem isto, alguns telemóveis (dark mode
+      // forçado do Android/browser) tentam "escurecer" a página sozinhos e
+      // acabam por quebrar contraste em pontos com cor fixa.
+      { name: "color-scheme", content: "light" },
       { title: "Kino.com — Comida entregue em minutos" },
       {
         name: "description",
@@ -158,13 +166,21 @@ function RootComponent() {
                 <LocationProvider>
                   <ReservationsProvider>
                     <BillProvider>
-                      <MenuAdminProvider>
-                        <CartProvider>
-                          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-                          <Outlet />
-                          <Toaster />
-                        </CartProvider>
-                      </MenuAdminProvider>
+                      <MenusAdminProvider>
+                        <MenuAdminProvider>
+                          <StoriesAdminProvider>
+                            <OffersAdminProvider>
+                              <CartProvider>
+                                <TutorialProvider>
+                                  {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                                  <Outlet />
+                                  <Toaster />
+                                </TutorialProvider>
+                              </CartProvider>
+                            </OffersAdminProvider>
+                          </StoriesAdminProvider>
+                        </MenuAdminProvider>
+                      </MenusAdminProvider>
                     </BillProvider>
                   </ReservationsProvider>
                 </LocationProvider>

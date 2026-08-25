@@ -18,12 +18,11 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { getAllIngredientNames, getRestaurant } from "@/data/helpers";
-import { INITIAL_MENU_ITEMS } from "@/data/mockData";
+import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";
 import { useTranslation } from "@/i18n";
 
 const ingredientNames = getAllIngredientNames();
-const overallMaxPrice = Math.max(...INITIAL_MENU_ITEMS.map((m) => m.price));
 
 const sortOptions = [
   { value: "relevancia", labelKey: "cardapio.sortRelevance" },
@@ -57,6 +56,11 @@ export function MenuBrowser({
 }) {
   const effectiveRestaurantId = lockedRestaurantId ?? restaurantFilter?.id;
   const { t } = useTranslation();
+  const items = useMenuItems();
+  const overallMaxPrice = useMemo(
+    () => (items.length ? Math.max(...items.map((m) => m.price)) : 0),
+    [items],
+  );
 
   // Só mostra uma categoria como chip se ela tiver pelo menos um prato —
   // sem filtro de restaurante, é a lista completa de categorias do
@@ -64,11 +68,11 @@ export function MenuBrowser({
   // tem (evita chips vazios tipo "Sobremesas" num restaurante sem nenhuma).
   const categories = useMemo(() => {
     const scoped = effectiveRestaurantId
-      ? INITIAL_MENU_ITEMS.filter((m) => m.restaurantId === effectiveRestaurantId)
-      : INITIAL_MENU_ITEMS;
+      ? items.filter((m) => m.restaurantId === effectiveRestaurantId)
+      : items;
     const ids = [...new Set(scoped.map((m) => m.category))];
     return ids.map((id) => ({ id, label: id }));
-  }, [effectiveRestaurantId]);
+  }, [items, effectiveRestaurantId]);
 
   const [active, setActive] = useState<string>("todos");
   const [query, setQuery] = useState("");
@@ -81,7 +85,7 @@ export function MenuBrowser({
   const [page, setPage] = useState(1);
 
   const filteredExceptPrice = useMemo(() => {
-    return INITIAL_MENU_ITEMS.filter((item) => {
+    return items.filter((item) => {
       const restaurant = getRestaurant(item.restaurantId);
       const byCat = active === "todos" || item.category === active;
       const byRestaurant = !effectiveRestaurantId || item.restaurantId === effectiveRestaurantId;
@@ -94,7 +98,7 @@ export function MenuBrowser({
         lockedRestaurantId || matchesLocation(restaurant?.neighborhood, neighborhood);
       return byCat && byRestaurant && byQuery && byIngredient && byNeighborhood;
     });
-  }, [active, effectiveRestaurantId, lockedRestaurantId, query, ingredient, neighborhood]);
+  }, [items, active, effectiveRestaurantId, lockedRestaurantId, query, ingredient, neighborhood]);
 
   const maxAvailablePrice = filteredExceptPrice.length
     ? Math.max(...filteredExceptPrice.map((m) => m.price))
