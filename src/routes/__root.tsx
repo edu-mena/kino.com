@@ -11,7 +11,6 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import iconImage from "../assets/icon.png";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AddressesProvider } from "../lib/addresses";
 import { BillProvider } from "../lib/bill";
 import { CartProvider } from "../lib/cart";
@@ -53,9 +52,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -114,7 +110,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image:width", content: "200" },
       { property: "og:image:height", content: "200" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:image", content: iconImage },
     ],
     links: [
