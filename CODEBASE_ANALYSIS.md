@@ -5,7 +5,7 @@
 **Nome**: Kino.com - Plataforma de entrega de comida (Food Delivery)  
 **Descrição**: Webapp responsivo para pedido de comida dos melhores restaurantes de Luanda  
 **Tipo**: Frontend-first, mockdata, sem servidor/banco de dados  
-**Status**: Desenvolvido com Lovable (AI-assisted development)  
+**Status**: Frontend completo, sem backend/base de dados real  
 **Localização**: Luanda, Angola
 
 ---
@@ -133,7 +133,7 @@ export type Dish = {
 
 - Boundary errors (ErrorComponent no root)
 - 404 handling (NotFoundComponent)
-- Error capture e reporting (Lovable error tracking)
+- Error capture e reporting (boundary de erro no root)
 
 ---
 
@@ -410,7 +410,7 @@ cn(...inputs): Merge Tailwind classes (clsx + twMerge)
 ✅ Sonner (toast notifications)  
 ✅ TanStack Query  
 ✅ TanStack Router  
-✅ Lovable error reporting
+✅ Error boundary com fallback amigável
 
 ### Não Implementado (Frontend-only)
 
@@ -462,5 +462,4 @@ cn(...inputs): Merge Tailwind classes (clsx + twMerge)
 ---
 
 **Última atualização**: 16 de Agosto, 2026  
-**Conectado a**: Lovable Editor
 **Repository Status**: Sincronizado com git
