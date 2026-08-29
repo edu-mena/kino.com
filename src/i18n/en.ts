@@ -58,6 +58,7 @@ export const en: Dictionary = {
     location: "Location",
     seeResults: "See",
     unavailable: "Unavailable",
+    dietaryCta: "Dietary restrictions? Set up your preferences",
   },
   restaurantes: {
     eyebrow: "Partners",
@@ -170,6 +171,14 @@ export const en: Dictionary = {
   preferencias: {
     title: "Preferences",
     description: "Favorite ingredients and ingredients that can't be in your dish.",
+    restrictionsTitle: "Dietary restrictions",
+    restrictionsDescription: "We automatically let the restaurant know with every order.",
+    restrictionPackagesLabel: "Restriction packages",
+    restrictionOtherLabel: "Other restrictions",
+    restrictionOtherPlaceholder: "E.g.: peanut allergy, shellfish intolerance...",
+    cuisinePackagesTitle: "Preference packages",
+    cuisinePackagesDescription:
+      "Pick the cuisines you like most — we'll use this to recommend better.",
     favoriteTitle: "Favorite ingredients",
     favoriteDescription: "We'll highlight dishes that have these ingredients.",
     excludedTitle: "Ingredients that can't be in your dish",
@@ -222,6 +231,7 @@ export const en: Dictionary = {
     noResults: "No results found.",
     dishesLabel: "Dishes",
     restaurantsLabel: "Restaurants",
+    dietaryCta: "Dietary restrictions? Set up your preferences",
   },
   home: {
     restaurantsNearYou: "Restaurants near you",
@@ -232,11 +242,6 @@ export const en: Dictionary = {
     trending: "Trending",
     dietaryQuestion: "Do you have any dietary restrictions?",
     dietaryHint: "Tell us what you can't eat and we'll let the restaurant know with every order.",
-    dietaryDialogTitle: "Dietary restrictions",
-    dietaryDialogDescription: "We automatically let the restaurant know with every order.",
-    dietaryOtherLabel: "Other restrictions",
-    dietaryOtherPlaceholder: "E.g.: peanut allergy, shellfish intolerance...",
-    dietarySave: "Save",
     restrictionGlutenFree: "Gluten-free",
     restrictionLactoseFree: "Lactose-free",
     restrictionVegetarian: "Vegetarian",
@@ -862,5 +867,13 @@ export const en: Dictionary = {
     noteLabel: "Any special requests? (optional)",
     notePlaceholder: "E.g.: no onions, deliver to the front desk...",
     orderCreatedToast: "Delivery order created",
+  },
+  dietaryOnboarding: {
+    title: "Do you have any dietary restrictions?",
+    description:
+      "Pick the ones that apply to you — we'll automatically let restaurants know with every order. You can always adjust this later in Preferences.",
+    skip: "Not now",
+    save: "Save preferences",
+    savedToast: "Preferences saved!",
   },
 };

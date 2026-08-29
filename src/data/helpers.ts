@@ -63,6 +63,14 @@ export function getMenuCategories(): string[] {
   return [...new Set(getEffectiveMenuItems().map((m) => m.category))];
 }
 
+/** Tipos de cozinha únicos entre os restaurantes — base pros "pacotes de
+ * preferências" em `/preferencias` (`cuisinePreferences`). */
+export function getCuisines(): string[] {
+  return [...new Set(INITIAL_RESTAURANTS.map((r) => r.cuisine))].sort((a, b) =>
+    a.localeCompare(b, "pt"),
+  );
+}
+
 /** Todos os nomes de ingrediente usados no cardápio, sem repetir — base pros
  * seletores de "ingredientes favoritos" / "ingredientes a evitar" em Preferências. */
 export function getAllIngredientNames(): string[] {

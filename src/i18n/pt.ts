@@ -65,6 +65,7 @@ export const pt = {
     location: "Localização",
     seeResults: "Ver",
     unavailable: "Indisponível",
+    dietaryCta: "Restrição alimentar? Configure as suas preferências",
   },
   restaurantes: {
     eyebrow: "Parceiros",
@@ -177,6 +178,14 @@ export const pt = {
   preferencias: {
     title: "Preferências",
     description: "Ingredientes favoritos e ingredientes que não podem constar no prato.",
+    restrictionsTitle: "Restrições alimentares",
+    restrictionsDescription: "Avisamos automaticamente o restaurante sempre que fizer um pedido.",
+    restrictionPackagesLabel: "Pacotes de restrição",
+    restrictionOtherLabel: "Outras restrições",
+    restrictionOtherPlaceholder: "Ex: alergia a amendoim, intolerância a frutos do mar...",
+    cuisinePackagesTitle: "Pacotes de preferências",
+    cuisinePackagesDescription:
+      "Escolha os tipos de cozinha que mais gosta — vamos usar isso para recomendar melhor.",
     favoriteTitle: "Ingredientes favoritos",
     favoriteDescription: "Vamos destacar pratos que tenham estes ingredientes.",
     excludedTitle: "Ingredientes que não podem constar no prato",
@@ -229,6 +238,7 @@ export const pt = {
     noResults: "Nenhum resultado encontrado.",
     dishesLabel: "Pratos",
     restaurantsLabel: "Restaurantes",
+    dietaryCta: "Restrição alimentar? Configure as suas preferências",
   },
   home: {
     restaurantsNearYou: "Restaurantes perto de si",
@@ -240,11 +250,6 @@ export const pt = {
     dietaryQuestion: "Tem alguma restrição alimentar?",
     dietaryHint:
       "Nos informe o que não pode comer e avisaremos ao restaurante sempre que fizer um pedido.",
-    dietaryDialogTitle: "Restrições alimentares",
-    dietaryDialogDescription: "Avisamos automaticamente o restaurante sempre que fizer um pedido.",
-    dietaryOtherLabel: "Outras restrições",
-    dietaryOtherPlaceholder: "Ex: alergia a amendoim, intolerância a frutos do mar...",
-    dietarySave: "Guardar",
     restrictionGlutenFree: "Sem glúten",
     restrictionLactoseFree: "Sem lactose",
     restrictionVegetarian: "Vegetariano",
@@ -869,5 +874,13 @@ export const pt = {
     noteLabel: "Alguma observação? (opcional)",
     notePlaceholder: "Ex: sem cebola, entregar na portaria...",
     orderCreatedToast: "Pedido de entrega criado",
+  },
+  dietaryOnboarding: {
+    title: "Tem alguma restrição alimentar?",
+    description:
+      "Escolha as que se aplicam a si — avisamos automaticamente os restaurantes em cada pedido. Pode ajustar isto sempre que quiser em Preferências.",
+    skip: "Agora não",
+    save: "Guardar preferências",
+    savedToast: "Preferências guardadas!",
   },
 };

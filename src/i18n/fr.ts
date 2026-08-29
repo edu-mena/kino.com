@@ -58,6 +58,7 @@ export const fr: Dictionary = {
     location: "Localisation",
     seeResults: "Voir",
     unavailable: "Indisponible",
+    dietaryCta: "Restrictions alimentaires ? Configurez vos préférences",
   },
   restaurantes: {
     eyebrow: "Partenaires",
@@ -170,6 +171,14 @@ export const fr: Dictionary = {
   preferencias: {
     title: "Préférences",
     description: "Ingrédients favoris et ingrédients qui ne peuvent pas figurer dans le plat.",
+    restrictionsTitle: "Restrictions alimentaires",
+    restrictionsDescription: "Nous prévenons automatiquement le restaurant à chaque commande.",
+    restrictionPackagesLabel: "Formules de restriction",
+    restrictionOtherLabel: "Autres restrictions",
+    restrictionOtherPlaceholder: "Ex : allergie aux arachides, intolérance aux fruits de mer...",
+    cuisinePackagesTitle: "Formules de préférences",
+    cuisinePackagesDescription:
+      "Choisissez les cuisines que vous préférez — nous nous en servirons pour mieux vous recommander.",
     favoriteTitle: "Ingrédients favoris",
     favoriteDescription: "Nous mettrons en avant les plats qui contiennent ces ingrédients.",
     excludedTitle: "Ingrédients qui ne peuvent pas figurer dans le plat",
@@ -222,6 +231,7 @@ export const fr: Dictionary = {
     noResults: "Aucun résultat trouvé.",
     dishesLabel: "Plats",
     restaurantsLabel: "Restaurants",
+    dietaryCta: "Restrictions alimentaires ? Configurez vos préférences",
   },
   home: {
     restaurantsNearYou: "Restaurants près de vous",
@@ -233,11 +243,6 @@ export const fr: Dictionary = {
     dietaryQuestion: "Avez-vous des restrictions alimentaires ?",
     dietaryHint:
       "Dites-nous ce que vous ne pouvez pas manger et nous prévenons le restaurant à chaque commande.",
-    dietaryDialogTitle: "Restrictions alimentaires",
-    dietaryDialogDescription: "Nous prévenons automatiquement le restaurant à chaque commande.",
-    dietaryOtherLabel: "Autres restrictions",
-    dietaryOtherPlaceholder: "Ex : allergie aux arachides, intolérance aux fruits de mer...",
-    dietarySave: "Enregistrer",
     restrictionGlutenFree: "Sans gluten",
     restrictionLactoseFree: "Sans lactose",
     restrictionVegetarian: "Végétarien",
@@ -874,5 +879,13 @@ export const fr: Dictionary = {
     noteLabel: "Une remarque particulière ? (facultatif)",
     notePlaceholder: "Ex : sans oignon, livrer à la réception...",
     orderCreatedToast: "Commande de livraison créée",
+  },
+  dietaryOnboarding: {
+    title: "Avez-vous des restrictions alimentaires ?",
+    description:
+      "Choisissez celles qui vous concernent — nous préviendrons automatiquement les restaurants à chaque commande. Vous pouvez toujours ajuster cela plus tard dans Préférences.",
+    skip: "Pas maintenant",
+    save: "Enregistrer les préférences",
+    savedToast: "Préférences enregistrées !",
   },
 };

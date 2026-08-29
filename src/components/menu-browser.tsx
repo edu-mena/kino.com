@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Salad, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DishCard } from "@/components/dish-card";
 import { ListPagination } from "@/components/list-pagination";
@@ -276,10 +276,19 @@ export function MenuBrowser({
             </div>
           )}
 
+          <Link
+            to="/preferencias"
+            onClick={() => setFiltersOpen(false)}
+            className="mt-5 flex items-center gap-2 rounded-xl border border-dashed border-border p-3 text-xs font-semibold text-muted-foreground transition-colors hover:border-brand hover:text-brand"
+          >
+            <Salad className="h-4 w-4 shrink-0" />
+            {t("cardapio.dietaryCta")}
+          </Link>
+
           <button
             type="button"
             onClick={() => setFiltersOpen(false)}
-            className="mt-6 w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            className="mt-4 w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
           >
             {t("cardapio.seeResults")} {filtered.length} {t("cardapio.results")}
           </button>
