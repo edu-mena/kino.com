@@ -10,6 +10,7 @@ import { useMenuItems } from "@/data/use-menu-items";
 import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
+import { useDishConflicts } from "@/lib/use-dish-conflicts";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/prato/$dishId")({
@@ -46,9 +47,7 @@ function DishDetail() {
   const { excludedIngredients, dietaryRestrictions } = usePreferences();
   const [qty, setQty] = useState(1);
 
-  const conflicts = item.ingredients
-    .filter((i) => excludedIngredients.includes(i.name))
-    .map((i) => i.name);
+  const conflicts = useDishConflicts(item);
   const hasAnyRestriction = excludedIngredients.length > 0 || dietaryRestrictions.length > 0;
 
   const removableFree = item.ingredients.filter((i) => i.removable && !i.extraPrice);

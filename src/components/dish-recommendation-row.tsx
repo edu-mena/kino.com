@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Plus, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { HorizontalCarousel } from "@/components/horizontal-carousel";
 import { getCommonIngredients, getRestaurant, getRestaurantsOfferingDish } from "@/data/helpers";
 import type { MenuItem } from "@/data/types";
 import { useAddToBill } from "@/lib/bill";
+import { getPackageConflictIngredients } from "@/lib/dietary-packages";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
 import { useTranslation } from "@/i18n";
@@ -19,14 +20,21 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
   const { t } = useTranslation();
   const [active, setActive] = useState<MenuItem | null>(null);
   const addToBill = useAddToBill();
-  const { excludedIngredients } = usePreferences();
+  const { excludedIngredients, dietaryRestrictions } = usePreferences();
+
+  // Combina a lista livre de exclusão com os ingredientes implícitos dos
+  // pacotes de restrição activos (ex: "Vegetariano" → carne/peixe/marisco).
+  const allExcluded = useMemo(
+    () => new Set([...excludedIngredients, ...getPackageConflictIngredients(dietaryRestrictions)]),
+    [excludedIngredients, dietaryRestrictions],
+  );
 
   const commonIngredients = active ? getCommonIngredients(active.name) : [];
   const otherRestaurants = active
     ? getRestaurantsOfferingDish(active.name, active.restaurantId)
     : [];
   const activeConflicts = active
-    ? active.ingredients.filter((i) => excludedIngredients.includes(i.name)).map((i) => i.name)
+    ? active.ingredients.filter((i) => allExcluded.has(i.name)).map((i) => i.name)
     : [];
 
   return (
@@ -36,7 +44,7 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
         itemKey={(item) => item.id}
         renderItem={(item) => {
           const restaurant = getRestaurant(item.restaurantId);
-          const hasConflict = item.ingredients.some((i) => excludedIngredients.includes(i.name));
+          const hasConflict = item.ingredients.some((i) => allExcluded.has(i.name));
           return (
             <button
               type="button"

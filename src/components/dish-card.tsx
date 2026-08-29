@@ -8,22 +8,21 @@ import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { usePreferences } from "@/lib/preferences";
+import { useDishConflicts } from "@/lib/use-dish-conflicts";
 import { useTranslation } from "@/i18n";
 
 export function DishCard({ item }: { item: MenuItem }) {
   const addToBill = useAddToBill();
-  const { isFavoriteRestaurant, toggleFavoriteRestaurant, excludedIngredients } = usePreferences();
+  const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
   const { isAvailable } = useMenuAdmin();
   const { t } = useTranslation();
   const restaurant = getRestaurant(item.restaurantId);
   const liked = isFavoriteRestaurant(item.restaurantId);
   const available = item.isAvailable && isAvailable(item.id);
 
-  // Ingredientes deste prato que o usuário marcou como "não posso comer" em
-  // Preferências — dispara o aviso vermelho no canto da imagem.
-  const conflictingIngredients = item.ingredients
-    .filter((i) => excludedIngredients.includes(i.name))
-    .map((i) => i.name);
+  // Ingredientes deste prato que conflitam com as restrições/exclusões do
+  // usuário em Preferências — dispara o aviso vermelho no canto da imagem.
+  const conflictingIngredients = useDishConflicts(item);
   const hasConflict = conflictingIngredients.length > 0;
 
   return (
