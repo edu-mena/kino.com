@@ -224,12 +224,3 @@ export const RESTRICTION_PACKAGES: {
 ] as const;
 
 export const RESTRICTION_PACKAGE_LABELS: string[] = RESTRICTION_PACKAGES.map((r) => r.label);
-
-/** Ingredientes que conflitam com os pacotes de restrição activos (ex:
- * "Vegetariano" ligado → todos os ingredientes de carne/peixe/marisco) —
- * usada junto com `excludedIngredients` (a lista livre) pra decidir se um
- * prato mostra o aviso vermelho. Ver `useDishConflicts`. */
-export function getPackageConflictIngredients(dietaryRestrictions: string[]): string[] {
-  const active = RESTRICTION_PACKAGES.filter((p) => dietaryRestrictions.includes(p.label));
-  return [...new Set(active.flatMap((p) => p.conflictIngredients))];
-}

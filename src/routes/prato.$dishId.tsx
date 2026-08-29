@@ -10,7 +10,7 @@ import { useMenuItems } from "@/data/use-menu-items";
 import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
-import { useDishConflicts } from "@/lib/use-dish-conflicts";
+import { formatDishConflicts, useDishConflicts } from "@/lib/use-dish-conflicts";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/prato/$dishId")({
@@ -110,7 +110,7 @@ function DishDetail() {
             {conflicts.length > 0 ? (
               <div className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-foreground">
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                <span>{t("home.dishConflictWarning", { list: conflicts.join(", ") })}</span>
+                <span>{formatDishConflicts(conflicts, t)}</span>
               </div>
             ) : (
               !hasAnyRestriction && (
