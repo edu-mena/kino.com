@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+import { ChevronRight, Search, Star, Store, UtensilsCrossed } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
@@ -9,8 +9,13 @@ import {
   LocationFilterSelect,
   matchesLocation,
 } from "@/components/search-filters";
-import { getAllIngredientNames, getMenuCategories, getRestaurant } from "@/data/helpers";
-import type { MenuItem } from "@/data/types";
+import {
+  getAllIngredientNames,
+  getAllRestaurants,
+  getMenuCategories,
+  getRestaurant,
+} from "@/data/helpers";
+import type { MenuItem, Restaurant } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";
 import { useTranslation } from "@/i18n";
@@ -18,6 +23,7 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 const categories = getMenuCategories();
 const ingredientNames = getAllIngredientNames();
+const restaurants = getAllRestaurants();
 
 export function HeaderSearch() {
   const { t } = useTranslation();
@@ -68,6 +74,21 @@ export function HeaderSearch() {
     [filteredExceptPrice, maxPrice],
   );
 
+  // Restaurantes correspondem por nome/cozinha e localização — categoria,
+  // ingrediente e preço são atributos do prato, não fazem sentido aqui.
+  const matchedRestaurants = useMemo(() => {
+    if (!debouncedQuery) return [];
+    return restaurants.filter((r) => {
+      const byQuery =
+        r.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        r.cuisine.toLowerCase().includes(debouncedQuery.toLowerCase());
+      const byNeighborhood = matchesLocation(r.neighborhood, neighborhood);
+      return byQuery && byNeighborhood;
+    });
+  }, [debouncedQuery, neighborhood]);
+
+  const totalResults = matchedRestaurants.length + filtered.length;
+
   return (
     <>
       <div data-tour="search" className="flex items-center gap-[5px]">
@@ -89,12 +110,17 @@ export function HeaderSearch() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto rounded-[2rem] border-none bg-card p-8">
-          <DialogTitle className="font-display text-xl font-bold">
-            {t("search.dialogTitle")}
-          </DialogTitle>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto rounded-[2rem] border-none bg-card p-8 shadow-2xl">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand/15 text-brand">
+              <Search className="h-4 w-4" />
+            </span>
+            <DialogTitle className="font-display text-xl font-bold text-primary">
+              {t("search.dialogTitle")}
+            </DialogTitle>
+          </div>
 
-          <label className="mt-3 flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 transition-colors has-[:focus]:border-primary">
+          <label className="mt-4 flex min-w-0 items-center gap-2 rounded-xl border-2 border-border bg-background px-4 py-3 transition-colors has-[:focus]:border-brand">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
               autoFocus
@@ -105,7 +131,7 @@ export function HeaderSearch() {
             />
           </label>
 
-          <div className="mt-4 min-w-0">
+          <div className="mt-5 min-w-0">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
               {t("search.priceUpTo", { price: formatKz(maxPrice) })}
             </p>
@@ -121,7 +147,7 @@ export function HeaderSearch() {
             />
           </div>
 
-          <div className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2">
+          <div className="mt-5 grid min-w-0 gap-4 sm:grid-cols-2">
             <div>
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 {t("search.ingredient")}
@@ -141,7 +167,7 @@ export function HeaderSearch() {
             </div>
           </div>
 
-          <div className="mt-4 min-w-0">
+          <div className="mt-5 min-w-0">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
               {t("search.category")}
             </p>
@@ -155,7 +181,7 @@ export function HeaderSearch() {
                 <ToggleGroupItem
                   key={cat}
                   value={cat}
-                  className="shrink-0 rounded-full border border-border"
+                  className="shrink-0 rounded-full border border-border data-[state=on]:border-brand data-[state=on]:bg-brand data-[state=on]:text-brand-foreground"
                 >
                   {cat}
                 </ToggleGroupItem>
@@ -163,15 +189,43 @@ export function HeaderSearch() {
             </ToggleGroup>
           </div>
 
-          <div className="mt-6 min-w-0 max-h-80 overflow-y-auto">
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                {t("search.resultsCount", { count: filtered.length })}
-              </p>
-              {filtered.map((item) => (
-                <SearchResultRow key={item.id} item={item} onSelect={() => setOpen(false)} />
-              ))}
-              {filtered.length === 0 && (
+          <div className="mt-6 min-w-0 border-t border-border pt-5">
+            <p className="text-xs font-semibold text-muted-foreground">
+              {t("search.resultsCount", { count: totalResults })}
+            </p>
+
+            <div className="mt-3 max-h-80 space-y-5 overflow-y-auto">
+              {matchedRestaurants.length > 0 && (
+                <div className="space-y-2">
+                  <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-brand">
+                    <Store className="h-3.5 w-3.5" />
+                    {t("search.restaurantsLabel")}
+                  </p>
+                  {matchedRestaurants.map((restaurant) => (
+                    <RestaurantResultRow
+                      key={restaurant.id}
+                      restaurant={restaurant}
+                      onSelect={() => setOpen(false)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {filtered.length > 0 && (
+                <div className="space-y-2">
+                  {matchedRestaurants.length > 0 && (
+                    <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-brand">
+                      <UtensilsCrossed className="h-3.5 w-3.5" />
+                      {t("search.dishesLabel")}
+                    </p>
+                  )}
+                  {filtered.map((item) => (
+                    <SearchResultRow key={item.id} item={item} onSelect={() => setOpen(false)} />
+                  ))}
+                </div>
+              )}
+
+              {totalResults === 0 && (
                 <p className="py-8 text-center text-sm text-muted-foreground">
                   {t("search.noResults")}
                 </p>
@@ -191,18 +245,50 @@ function SearchResultRow({ item, onSelect }: { item: MenuItem; onSelect: () => v
       to="/prato/$dishId"
       params={{ dishId: item.id }}
       onClick={onSelect}
-      className="flex items-center gap-3 rounded-xl border border-border p-2 transition-colors hover:border-primary"
+      className="flex items-center gap-3 rounded-xl border border-transparent p-2 transition-colors hover:border-brand hover:bg-brand/5"
     >
       <img
         src={item.image}
         alt=""
-        className="h-11 w-11 shrink-0 rounded-lg bg-surface object-contain"
+        className="h-12 w-12 shrink-0 rounded-xl bg-surface object-contain"
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
         <p className="truncate text-xs text-muted-foreground">{restaurant?.name}</p>
       </div>
       <span className="shrink-0 text-sm font-bold text-primary">{formatKz(item.price)}</span>
+    </Link>
+  );
+}
+
+function RestaurantResultRow({
+  restaurant,
+  onSelect,
+}: {
+  restaurant: Restaurant;
+  onSelect: () => void;
+}) {
+  return (
+    <Link
+      to="/restaurantes/$id"
+      params={{ id: restaurant.id }}
+      onClick={onSelect}
+      className="flex items-center gap-3 rounded-xl border border-transparent p-2 transition-colors hover:border-brand hover:bg-brand/5"
+    >
+      <img
+        src={restaurant.coverImage}
+        alt=""
+        className="h-12 w-12 shrink-0 rounded-xl bg-surface object-cover"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-foreground">{restaurant.name}</p>
+        <p className="truncate text-xs text-muted-foreground">{restaurant.cuisine}</p>
+      </div>
+      <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-muted-foreground">
+        <Star className="h-3.5 w-3.5 fill-star text-star" />
+        {restaurant.rating}
+        <ChevronRight className="h-4 w-4 text-brand" />
+      </span>
     </Link>
   );
 }

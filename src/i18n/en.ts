@@ -220,6 +220,8 @@ export const en: Dictionary = {
     category: "Category",
     resultsCount: "{count} results",
     noResults: "No results found.",
+    dishesLabel: "Dishes",
+    restaurantsLabel: "Restaurants",
   },
   home: {
     restaurantsNearYou: "Restaurants near you",

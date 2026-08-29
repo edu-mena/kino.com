@@ -12,6 +12,13 @@ export function getRestaurant(id: string): Restaurant | undefined {
   return restaurant ? applyProfileEdits(restaurant) : undefined;
 }
 
+/** Todos os restaurantes, já com as edições do `/admin/perfil` aplicadas —
+ * base pra busca global (ver `header-search.tsx`), que precisa devolver o
+ * próprio restaurante como resultado, não só os seus pratos. */
+export function getAllRestaurants(): Restaurant[] {
+  return INITIAL_RESTAURANTS.map(applyProfileEdits);
+}
+
 // Todas as funções de prato abaixo leem de `getEffectiveMenuItems()`, não do
 // seed (`INITIAL_MENU_ITEMS`) diretamente — assim refletem também o que o
 // painel do restaurante (`/admin/cardapio`) criar, editar ou apagar. É

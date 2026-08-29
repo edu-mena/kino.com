@@ -227,6 +227,8 @@ export const pt = {
     category: "Categoria",
     resultsCount: "{count} resultados",
     noResults: "Nenhum resultado encontrado.",
+    dishesLabel: "Pratos",
+    restaurantsLabel: "Restaurantes",
   },
   home: {
     restaurantsNearYou: "Restaurantes perto de si",
