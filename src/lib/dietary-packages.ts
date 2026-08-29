@@ -1,4 +1,16 @@
-import { Fish, Flame, Leaf, MilkOff, Nut, Sprout, WheatOff, type LucideIcon } from "lucide-react";
+import {
+  Droplet,
+  Fish,
+  Flame,
+  HeartPulse,
+  Leaf,
+  MilkOff,
+  Nut,
+  Pill,
+  Sprout,
+  WheatOff,
+  type LucideIcon,
+} from "lucide-react";
 
 /**
  * "Pacotes de restrição" — atalhos de um clique pras restrições mais comuns,
@@ -17,6 +29,11 @@ export const RESTRICTION_PACKAGES: { label: string; labelKey: string; icon: Luci
   { label: "Sem amendoim", labelKey: "restrictionPeanutFree", icon: Nut },
   { label: "Sem marisco", labelKey: "restrictionShellfishFree", icon: Fish },
   { label: "Sem picante", labelKey: "restrictionSpicyFree", icon: Flame },
+  // Pacotes de condição de saúde — mais fáceis de reconhecer do que "sem
+  // açúcar"/"sem sal" pra quem não está habituado a listas de ingredientes.
+  { label: "Diabetes", labelKey: "restrictionDiabetes", icon: Droplet },
+  { label: "Hipertensão", labelKey: "restrictionHypertension", icon: HeartPulse },
+  { label: "Colesterol alto", labelKey: "restrictionHighCholesterol", icon: Pill },
 ] as const;
 
 export const RESTRICTION_PACKAGE_LABELS: string[] = RESTRICTION_PACKAGES.map((r) => r.label);

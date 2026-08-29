@@ -239,6 +239,7 @@ export const pt = {
     dishesLabel: "Pratos",
     restaurantsLabel: "Restaurantes",
     dietaryCta: "Restrição alimentar? Configure as suas preferências",
+    dietaryMoreOptions: "Mais opções em Preferências",
   },
   home: {
     restaurantsNearYou: "Restaurantes perto de si",
@@ -257,6 +258,9 @@ export const pt = {
     restrictionPeanutFree: "Sem amendoim",
     restrictionShellfishFree: "Sem marisco",
     restrictionSpicyFree: "Sem picante",
+    restrictionDiabetes: "Diabetes",
+    restrictionHypertension: "Hipertensão",
+    restrictionHighCholesterol: "Colesterol alto",
     dishConflictLabel: "Contém ingrediente que não pode comer",
     dishConflictWarning: "Este prato contém {list} — que indicou não poder comer.",
     commonIngredients: "Ingredientes comuns entre restaurantes",

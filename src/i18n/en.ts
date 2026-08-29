@@ -232,6 +232,7 @@ export const en: Dictionary = {
     dishesLabel: "Dishes",
     restaurantsLabel: "Restaurants",
     dietaryCta: "Dietary restrictions? Set up your preferences",
+    dietaryMoreOptions: "More options in Preferences",
   },
   home: {
     restaurantsNearYou: "Restaurants near you",
@@ -249,6 +250,9 @@ export const en: Dictionary = {
     restrictionPeanutFree: "Peanut-free",
     restrictionShellfishFree: "Shellfish-free",
     restrictionSpicyFree: "No spicy food",
+    restrictionDiabetes: "Diabetes",
+    restrictionHypertension: "Hypertension",
+    restrictionHighCholesterol: "High cholesterol",
     dishConflictLabel: "Contains an ingredient you can't eat",
     dishConflictWarning: "This dish contains {list} — which you marked as unable to eat.",
     commonIngredients: "Common ingredients across restaurants",
