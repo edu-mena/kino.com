@@ -12,6 +12,13 @@ export function getRestaurant(id: string): Restaurant | undefined {
   return restaurant ? applyProfileEdits(restaurant) : undefined;
 }
 
+/** Todos os restaurantes, já com as edições do `/admin/perfil` aplicadas —
+ * base pra busca global (ver `header-search.tsx`), que precisa devolver o
+ * próprio restaurante como resultado, não só os seus pratos. */
+export function getAllRestaurants(): Restaurant[] {
+  return INITIAL_RESTAURANTS.map(applyProfileEdits);
+}
+
 // Todas as funções de prato abaixo leem de `getEffectiveMenuItems()`, não do
 // seed (`INITIAL_MENU_ITEMS`) diretamente — assim refletem também o que o
 // painel do restaurante (`/admin/cardapio`) criar, editar ou apagar. É
@@ -66,21 +73,45 @@ export function getAllIngredientNames(): string[] {
   return [...names].sort((a, b) => a.localeCompare(b, "pt"));
 }
 
-/** Bairros únicos dos restaurantes — base pro seletor de "locais de recebimento". */
-export function getNeighborhoods(): string[] {
-  return [...new Set(INITIAL_RESTAURANTS.map((r) => r.neighborhood))];
+/** As 18 províncias de Angola, em ordem alfabética — lista fixa, não derivada
+ * dos restaurantes, para o seletor de localização mostrar sempre todas as
+ * opções mesmo que hoje não haja restaurante numa delas. */
+export const ANGOLA_PROVINCES = [
+  "Bengo",
+  "Benguela",
+  "Bié",
+  "Cabinda",
+  "Cuando Cubango",
+  "Cuanza Norte",
+  "Cuanza Sul",
+  "Cunene",
+  "Huambo",
+  "Huíla",
+  "Luanda",
+  "Lunda Norte",
+  "Lunda Sul",
+  "Malanje",
+  "Moxico",
+  "Namibe",
+  "Uíge",
+  "Zaire",
+] as const;
+
+/** Todas as províncias de Angola — base pro seletor de "locais de recebimento". */
+export function getProvinces(): string[] {
+  return [...ANGOLA_PROVINCES];
 }
 
-/** Bairros cobertos pela entrega deste restaurante — vazio quando não entrega
- * em lugar nenhum; assume só o próprio bairro quando `deliveryZones` não foi
- * definido explicitamente. */
+/** Províncias cobertas pela entrega deste restaurante — vazio quando não
+ * entrega em lugar nenhum; assume só a própria província quando
+ * `deliveryZones` não foi definido explicitamente. */
 export function getDeliveryZones(restaurant: Restaurant): string[] {
   if (!restaurant.isDeliveryAvailable) return [];
   return restaurant.deliveryZones ?? [restaurant.neighborhood];
 }
 
-/** Se este restaurante entrega no bairro informado. Sem bairro informado,
- * cai no simples "entrega em algum lugar" (`isDeliveryAvailable`). */
+/** Se este restaurante entrega na província informada. Sem província
+ * informada, cai no simples "entrega em algum lugar" (`isDeliveryAvailable`). */
 export function canDeliverToNeighborhood(restaurant: Restaurant, neighborhood?: string): boolean {
   if (!restaurant.isDeliveryAvailable) return false;
   if (!neighborhood) return true;

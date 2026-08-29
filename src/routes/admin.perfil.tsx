@@ -26,7 +26,7 @@ export const Route = createFileRoute("/admin/perfil")({
   component: AdminPerfil,
 });
 
-/** Lista simples de texto (bairros de entrega, imagens da galeria) — cada
+/** Lista simples de texto (províncias de entrega, imagens da galeria) — cada
  * linha um `Input`, com adicionar/remover, mesmo padrão dos ingredientes
  * em `dish-form-dialog.tsx`. */
 function TextListField({

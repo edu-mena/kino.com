@@ -7,7 +7,7 @@ import {
   getMenuCategories,
   getMenuItem,
   getMenuItemsByRestaurant,
-  getNeighborhoods,
+  getProvinces,
   getRestaurant,
   getRestaurantsOfferingDish,
   getRestaurantsWithStories,
@@ -75,7 +75,7 @@ describe("getRestaurantsOfferingDish / getCommonIngredients", () => {
   });
 });
 
-describe("getMenuCategories / getAllIngredientNames / getNeighborhoods", () => {
+describe("getMenuCategories / getAllIngredientNames / getProvinces", () => {
   it("returns unique, non-empty category names", () => {
     const categories = getMenuCategories();
     expect(categories.length).toBeGreaterThan(0);
@@ -89,10 +89,10 @@ describe("getMenuCategories / getAllIngredientNames / getNeighborhoods", () => {
     expect([...names].sort((a, b) => a.localeCompare(b, "pt"))).toEqual(names);
   });
 
-  it("returns unique neighborhood names", () => {
-    const neighborhoods = getNeighborhoods();
-    expect(neighborhoods.length).toBeGreaterThan(0);
-    expect(new Set(neighborhoods).size).toBe(neighborhoods.length);
+  it("returns unique province names", () => {
+    const provinces = getProvinces();
+    expect(provinces.length).toBeGreaterThan(0);
+    expect(new Set(provinces).size).toBe(provinces.length);
   });
 });
 
@@ -122,7 +122,7 @@ describe("getDeliveryZones / canDeliverToNeighborhood", () => {
     for (const zone of zones) {
       expect(canDeliverToNeighborhood(restaurant!, zone)).toBe(true);
     }
-    expect(canDeliverToNeighborhood(restaurant!, "Bairro Inexistente")).toBe(false);
+    expect(canDeliverToNeighborhood(restaurant!, "Província Inexistente")).toBe(false);
   });
 });
 

@@ -220,6 +220,8 @@ export const en: Dictionary = {
     category: "Category",
     resultsCount: "{count} results",
     noResults: "No results found.",
+    dishesLabel: "Dishes",
+    restaurantsLabel: "Restaurants",
   },
   home: {
     restaurantsNearYou: "Restaurants near you",
@@ -597,7 +599,7 @@ export const en: Dictionary = {
     priceLevelMid: "Kz Kz — mid-range",
     priceLevelHigh: "Kz Kz Kz — high-end",
     addressLabel: "Address",
-    neighborhoodLabel: "Neighborhood",
+    neighborhoodLabel: "Province",
     cityLabel: "City",
     phoneLabel: "Phone",
     emailLabel: "Email",
@@ -607,10 +609,10 @@ export const en: Dictionary = {
     deliveryOffHint: "Off: the restaurant is dine-in only.",
     deliveryFeeLabel: "Delivery fee (Kz)",
     deliveryTimeLabel: "Estimated time (min)",
-    deliveryZonesLabel: "Neighborhoods covered by delivery",
-    deliveryZonePlaceholder: "E.g.: Talatona",
+    deliveryZonesLabel: "Provinces covered by delivery",
+    deliveryZonePlaceholder: "E.g.: Luanda",
     deliveryZonesExplainer:
-      "Neighborhoods outside this list can't order delivery from this restaurant, even with delivery turned on.",
+      "Provinces outside this list can't order delivery from this restaurant, even with delivery turned on.",
     cautionLabel: "Reservation deposit (Kz)",
     cautionExplainer:
       "Charged to the customer when they confirm the reservation — your refund policy (below) is shown to them before they pay.",
@@ -669,8 +671,7 @@ export const en: Dictionary = {
     illustration2Description:
       "Point your camera at the table's QR Code and see the restaurant's full menu, right on your phone.",
     nearYouTitle: "Restaurants near you",
-    nearYouDescription:
-      "Discover what's nearby based on your location, in any neighborhood of Luanda.",
+    nearYouDescription: "Discover what's nearby based on your location, in any province of Angola.",
     illustration3Alt: "Chef managing customers through the app",
     illustration3Title: "Management for the restaurant",
     illustration3Description:

@@ -227,6 +227,8 @@ export const pt = {
     category: "Categoria",
     resultsCount: "{count} resultados",
     noResults: "Nenhum resultado encontrado.",
+    dishesLabel: "Pratos",
+    restaurantsLabel: "Restaurantes",
   },
   home: {
     restaurantsNearYou: "Restaurantes perto de si",
@@ -602,7 +604,7 @@ export const pt = {
     priceLevelMid: "Kz Kz — médio",
     priceLevelHigh: "Kz Kz Kz — elevado",
     addressLabel: "Morada",
-    neighborhoodLabel: "Bairro",
+    neighborhoodLabel: "Província",
     cityLabel: "Cidade",
     phoneLabel: "Telefone",
     emailLabel: "Email",
@@ -612,10 +614,10 @@ export const pt = {
     deliveryOffHint: "Desligado: o restaurante fica só para consumo no local.",
     deliveryFeeLabel: "Taxa de entrega (Kz)",
     deliveryTimeLabel: "Tempo estimado (min)",
-    deliveryZonesLabel: "Bairros cobertos pela entrega",
-    deliveryZonePlaceholder: "Ex: Talatona",
+    deliveryZonesLabel: "Províncias cobertas pela entrega",
+    deliveryZonePlaceholder: "Ex: Luanda",
     deliveryZonesExplainer:
-      "Bairros fora desta lista não conseguem pedir entrega deste restaurante, mesmo com a entrega ligada.",
+      "Províncias fora desta lista não conseguem pedir entrega deste restaurante, mesmo com a entrega ligada.",
     cautionLabel: "Caução de reserva (Kz)",
     cautionExplainer:
       "Cobrada ao cliente ao confirmar a reserva — a sua política de reembolso (abaixo) é mostrada a ele antes de pagar.",
@@ -675,7 +677,7 @@ export const pt = {
       "Aponte a câmara para o QR Code da mesa e veja o cardápio completo do restaurante, direto no seu telemóvel.",
     nearYouTitle: "Restaurantes perto de você",
     nearYouDescription:
-      "Descubra o que está por perto com base na sua localização, em qualquer bairro de Luanda.",
+      "Descubra o que está por perto com base na sua localização, em qualquer província de Angola.",
     illustration3Alt: "Chef que gere clientes através da app",
     illustration3Title: "Gestão para o restaurante",
     illustration3Description:
