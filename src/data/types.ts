@@ -18,6 +18,9 @@ export interface Restaurant {
   reviewCount: number;
   distanceKm: number;
   address: string;
+  /** Nome mantido por compatibilidade, mas o valor é a província (ex:
+   * "Luanda", "Huambo") — granularidade do seletor de localização em toda a
+   * app. O bairro/zona específico, quando relevante, vive em `address`. */
   neighborhood: string;
   city: string;
   phone: string;
@@ -26,9 +29,9 @@ export interface Restaurant {
   coverImage: string;
   galleryImages: string[];
   isDeliveryAvailable: boolean;
-  /** Bairros cobertos pela entrega — nem toda área de Luanda tem cobertura.
-   * Quando ausente e `isDeliveryAvailable` é true, assume-se cobertura só no
-   * próprio bairro (`neighborhood`). Ignorado quando `isDeliveryAvailable`
+  /** Províncias cobertas pela entrega — nem toda província tem cobertura.
+   * Quando ausente e `isDeliveryAvailable` é true, assume-se cobertura só na
+   * própria província (`neighborhood`). Ignorado quando `isDeliveryAvailable`
    * é false (o restaurante simplesmente não entrega, em nenhuma área). */
   deliveryZones?: string[];
   deliveryFee: number;

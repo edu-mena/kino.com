@@ -7,15 +7,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getNeighborhoods } from "@/data/helpers";
+import { getProvinces } from "@/data/helpers";
 import { INITIAL_USER_PROFILE } from "@/data/mockData";
 
-const neighborhoods = getNeighborhoods();
+const provinces = getProvinces();
 export const MY_AREA = "minha-area";
 
-/** Select de localização reutilizado nos filtros de busca — "A minha área"
- * (bairro do usuário, `INITIAL_USER_PROFILE.userNeighborhood`) vem sempre
- * primeiro, seguido de "Todos os bairros" e da lista completa. */
+/** Select de localização reutilizado nos filtros de busca — "A tua
+ * localização" (província do usuário, `INITIAL_USER_PROFILE.userNeighborhood`)
+ * vem sempre primeiro, seguido de "Todas as províncias" e da lista completa. */
 export function LocationFilterSelect({
   value,
   onChange,
@@ -29,9 +29,9 @@ export function LocationFilterSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={MY_AREA}>A minha área</SelectItem>
-        <SelectItem value="todos">Todos os bairros</SelectItem>
-        {neighborhoods.map((n) => (
+        <SelectItem value={MY_AREA}>A tua localização</SelectItem>
+        <SelectItem value="todos">Todas as províncias</SelectItem>
+        {provinces.map((n) => (
           <SelectItem key={n} value={n}>
             {n}
           </SelectItem>

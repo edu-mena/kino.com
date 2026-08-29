@@ -604,7 +604,7 @@ export const fr: Dictionary = {
     priceLevelMid: "Kz Kz — moyen",
     priceLevelHigh: "Kz Kz Kz — élevé",
     addressLabel: "Adresse",
-    neighborhoodLabel: "Quartier",
+    neighborhoodLabel: "Province",
     cityLabel: "Ville",
     phoneLabel: "Téléphone",
     emailLabel: "Email",
@@ -614,10 +614,10 @@ export const fr: Dictionary = {
     deliveryOffHint: "Désactivé : le restaurant fonctionne uniquement sur place.",
     deliveryFeeLabel: "Frais de livraison (Kz)",
     deliveryTimeLabel: "Temps estimé (min)",
-    deliveryZonesLabel: "Quartiers couverts par la livraison",
-    deliveryZonePlaceholder: "Ex : Talatona",
+    deliveryZonesLabel: "Provinces couvertes par la livraison",
+    deliveryZonePlaceholder: "Ex : Luanda",
     deliveryZonesExplainer:
-      "Les quartiers hors de cette liste ne peuvent pas commander de livraison auprès de ce restaurant, même avec la livraison activée.",
+      "Les provinces hors de cette liste ne peuvent pas commander de livraison auprès de ce restaurant, même avec la livraison activée.",
     cautionLabel: "Caution de réservation (Kz)",
     cautionExplainer:
       "Facturée au client à la confirmation de la réservation — votre politique de remboursement (ci-dessous) lui est montrée avant le paiement.",
@@ -678,7 +678,7 @@ export const fr: Dictionary = {
       "Pointez votre caméra vers le QR Code de la table et consultez la carte complète du restaurant, directement sur votre téléphone.",
     nearYouTitle: "Restaurants près de chez vous",
     nearYouDescription:
-      "Découvrez ce qui se trouve à proximité selon votre localisation, dans n'importe quel quartier de Luanda.",
+      "Découvrez ce qui se trouve à proximité selon votre localisation, dans n'importe quelle province d'Angola.",
     illustration3Alt: "Chef gérant ses clients via l'application",
     illustration3Title: "Gestion pour le restaurant",
     illustration3Description:
