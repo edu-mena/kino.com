@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight, Search, Star, Store, UtensilsCrossed } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { DietaryShortcutPicker } from "@/components/dietary-shortcut-picker";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -188,6 +189,11 @@ export function HeaderSearch() {
               ))}
             </ToggleGroup>
           </div>
+
+          <DietaryShortcutPicker
+            ctaLabel={t("search.dietaryCta")}
+            onNavigate={() => setOpen(false)}
+          />
 
           <div className="mt-6 min-w-0 border-t border-border pt-5">
             <p className="text-xs font-semibold text-muted-foreground">

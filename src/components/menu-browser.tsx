@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { DietaryShortcutPicker } from "@/components/dietary-shortcut-picker";
 import { DishCard } from "@/components/dish-card";
 import { ListPagination } from "@/components/list-pagination";
 import {
@@ -276,10 +277,15 @@ export function MenuBrowser({
             </div>
           )}
 
+          <DietaryShortcutPicker
+            ctaLabel={t("cardapio.dietaryCta")}
+            onNavigate={() => setFiltersOpen(false)}
+          />
+
           <button
             type="button"
             onClick={() => setFiltersOpen(false)}
-            className="mt-6 w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            className="mt-4 w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
           >
             {t("cardapio.seeResults")} {filtered.length} {t("cardapio.results")}
           </button>

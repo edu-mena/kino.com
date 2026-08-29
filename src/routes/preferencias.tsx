@@ -13,7 +13,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { getAllIngredientNames } from "@/data/helpers";
+import { Textarea } from "@/components/ui/textarea";
+import { getAllIngredientNames, getCuisines } from "@/data/helpers";
+import { RESTRICTION_PACKAGES, RESTRICTION_PACKAGE_LABELS } from "@/lib/dietary-packages";
 import { usePreferences } from "@/lib/preferences";
 import { useTranslation } from "@/i18n";
 
@@ -153,6 +155,122 @@ function IngredientPicker({
   );
 }
 
+/** Restrições alimentares — os "pacotes" (Vegetariano, Vegano, Sem
+ * glúten...) são um atalho de um clique pras mais comuns; o campo livre
+ * cobre o resto (alergias específicas, etc). Persiste a cada clique, sem
+ * botão de guardar — mesmo padrão dos pickers de ingrediente abaixo. */
+function RestrictionPackages() {
+  const { t } = useTranslation();
+  const { dietaryRestrictions, setDietaryRestrictions } = usePreferences();
+  const extra = dietaryRestrictions.find((r) => !RESTRICTION_PACKAGE_LABELS.includes(r)) ?? "";
+
+  const togglePackage = (label: string) => {
+    const next = dietaryRestrictions.includes(label)
+      ? dietaryRestrictions.filter((r) => r !== label)
+      : [...dietaryRestrictions, label];
+    setDietaryRestrictions(next);
+  };
+
+  const setExtra = (value: string) => {
+    const withoutExtra = dietaryRestrictions.filter((r) => RESTRICTION_PACKAGE_LABELS.includes(r));
+    setDietaryRestrictions(value.trim() ? [...withoutExtra, value.trim()] : withoutExtra);
+  };
+
+  return (
+    <section className="card-soft p-6" id="restricoes">
+      <h2 className="font-display text-lg font-bold text-primary">
+        {t("preferencias.restrictionsTitle")}
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {t("preferencias.restrictionsDescription")}
+      </p>
+
+      <p className="mb-2 mt-5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+        {t("preferencias.restrictionPackagesLabel")}
+      </p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {RESTRICTION_PACKAGES.map(({ label, labelKey, icon: Icon }) => {
+          const on = dietaryRestrictions.includes(label);
+          return (
+            <button
+              key={label}
+              type="button"
+              onClick={() => togglePackage(label)}
+              className={`flex items-center gap-2 rounded-xl border p-3 text-left text-sm font-semibold transition-colors ${
+                on
+                  ? "border-brand bg-brand/10 text-foreground"
+                  : "border-border bg-background text-muted-foreground hover:border-brand"
+              }`}
+            >
+              <Icon className={`h-4 w-4 shrink-0 ${on ? "text-brand" : ""}`} />
+              <span className="truncate">{t(`home.${labelKey}`)}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-5">
+        <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          {t("preferencias.restrictionOtherLabel")}
+        </p>
+        <Textarea
+          value={extra}
+          onChange={(e) => setExtra(e.target.value)}
+          placeholder={t("preferencias.restrictionOtherPlaceholder")}
+          className="rounded-xl"
+        />
+      </div>
+    </section>
+  );
+}
+
+/** "Pacotes de preferências" — tipos de cozinha favoritos, base pra
+ * recomendações melhores no futuro. Mesma UX de pacote-como-botão. */
+function CuisinePackages() {
+  const { t } = useTranslation();
+  const { cuisinePreferences, setCuisinePreferences } = usePreferences();
+  const cuisines = useMemo(() => getCuisines(), []);
+
+  const toggle = (cuisine: string) => {
+    setCuisinePreferences(
+      cuisinePreferences.includes(cuisine)
+        ? cuisinePreferences.filter((c) => c !== cuisine)
+        : [...cuisinePreferences, cuisine],
+    );
+  };
+
+  return (
+    <section className="card-soft p-6">
+      <h2 className="font-display text-lg font-bold text-primary">
+        {t("preferencias.cuisinePackagesTitle")}
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {t("preferencias.cuisinePackagesDescription")}
+      </p>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {cuisines.map((cuisine) => {
+          const on = cuisinePreferences.includes(cuisine);
+          return (
+            <button
+              key={cuisine}
+              type="button"
+              onClick={() => toggle(cuisine)}
+              className={`rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors ${
+                on
+                  ? "border-brand bg-brand text-brand-foreground"
+                  : "border-border bg-background text-muted-foreground hover:border-brand"
+              }`}
+            >
+              {cuisine}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function Preferencias() {
   const {
     favoriteIngredients,
@@ -166,6 +284,10 @@ function Preferencias() {
     <PageShell>
       <PageHeading title={t("preferencias.title")} description={t("preferencias.description")} />
       <div className="mx-auto mt-8 max-w-6xl space-y-6 px-4 md:px-6">
+        <RestrictionPackages />
+
+        <CuisinePackages />
+
         <IngredientPicker
           title={t("preferencias.favoriteTitle")}
           description={t("preferencias.favoriteDescription")}

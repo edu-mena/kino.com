@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ChevronLeft, Minus, Plus, Star } from "lucide-react";
+import { ChevronLeft, Minus, Plus, Salad, Star, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import icon from "@/assets/icon.png";
 import { DishCard } from "@/components/dish-card";
@@ -9,6 +9,9 @@ import type { SelectedIngredient } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
+import { usePreferences } from "@/lib/preferences";
+import { formatDishConflicts, useDishConflicts } from "@/lib/use-dish-conflicts";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/prato/$dishId")({
   loader: ({ params }) => {
@@ -40,7 +43,12 @@ export const Route = createFileRoute("/prato/$dishId")({
 function DishDetail() {
   const { item } = Route.useLoaderData();
   const addToBill = useAddToBill();
+  const { t } = useTranslation();
+  const { excludedIngredients, dietaryRestrictions } = usePreferences();
   const [qty, setQty] = useState(1);
+
+  const conflicts = useDishConflicts(item);
+  const hasAnyRestriction = excludedIngredients.length > 0 || dietaryRestrictions.length > 0;
 
   const removableFree = item.ingredients.filter((i) => i.removable && !i.extraPrice);
   const extras = item.ingredients.filter((i) => i.extraPrice);
@@ -98,6 +106,23 @@ function DishDetail() {
               <span>{item.portionInfo}</span>
             </div>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
+
+            {conflicts.length > 0 ? (
+              <div className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-foreground">
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                <span>{formatDishConflicts(conflicts, t)}</span>
+              </div>
+            ) : (
+              !hasAnyRestriction && (
+                <Link
+                  to="/preferencias"
+                  className="mt-4 flex items-center gap-2 rounded-xl border border-dashed border-border p-3 text-xs font-semibold text-muted-foreground transition-colors hover:border-brand hover:text-brand"
+                >
+                  <Salad className="h-4 w-4 shrink-0" />
+                  {t("search.dietaryCta")}
+                </Link>
+              )
+            )}
 
             {removableFree.length > 0 && (
               <div className="mt-7">

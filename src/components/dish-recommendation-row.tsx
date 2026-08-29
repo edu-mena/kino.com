@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Plus, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { HorizontalCarousel } from "@/components/horizontal-carousel";
 import { getCommonIngredients, getRestaurant, getRestaurantsOfferingDish } from "@/data/helpers";
@@ -8,6 +8,7 @@ import type { MenuItem } from "@/data/types";
 import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
+import { computeDishConflicts, formatDishConflicts } from "@/lib/use-dish-conflicts";
 import { useTranslation } from "@/i18n";
 
 /**
@@ -19,15 +20,25 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
   const { t } = useTranslation();
   const [active, setActive] = useState<MenuItem | null>(null);
   const addToBill = useAddToBill();
-  const { excludedIngredients } = usePreferences();
+  const { excludedIngredients, dietaryRestrictions } = usePreferences();
+  const ownListReason = t("home.dishConflictOwnListReason");
 
   const commonIngredients = active ? getCommonIngredients(active.name) : [];
   const otherRestaurants = active
     ? getRestaurantsOfferingDish(active.name, active.restaurantId)
     : [];
-  const activeConflicts = active
-    ? active.ingredients.filter((i) => excludedIngredients.includes(i.name)).map((i) => i.name)
-    : [];
+  const activeConflicts = useMemo(
+    () =>
+      active
+        ? computeDishConflicts(
+            active.ingredients,
+            excludedIngredients,
+            dietaryRestrictions,
+            ownListReason,
+          )
+        : [],
+    [active, excludedIngredients, dietaryRestrictions, ownListReason],
+  );
 
   return (
     <>
@@ -36,7 +47,13 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
         itemKey={(item) => item.id}
         renderItem={(item) => {
           const restaurant = getRestaurant(item.restaurantId);
-          const hasConflict = item.ingredients.some((i) => excludedIngredients.includes(i.name));
+          const hasConflict =
+            computeDishConflicts(
+              item.ingredients,
+              excludedIngredients,
+              dietaryRestrictions,
+              ownListReason,
+            ).length > 0;
           return (
             <button
               type="button"
@@ -94,7 +111,7 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
               {activeConflicts.length > 0 && (
                 <div className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-foreground">
                   <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                  <span>{t("home.dishConflictWarning", { list: activeConflicts.join(", ") })}</span>
+                  <span>{formatDishConflicts(activeConflicts, t)}</span>
                 </div>
               )}
 

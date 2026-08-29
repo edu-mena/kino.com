@@ -3,6 +3,7 @@ import { Armchair, ArrowRight, Tag } from "lucide-react";
 import { useMemo } from "react";
 import heroBg from "@/assets/hero.png";
 import icon from "@/assets/icon.png";
+import { DietaryOnboardingPopup } from "@/components/dietary-onboarding-popup";
 import { DietaryPreferencesCard } from "@/components/dietary-preferences-card";
 import { DishRecommendationRow } from "@/components/dish-recommendation-row";
 import { HeaderSearch } from "@/components/header-search";
@@ -171,6 +172,7 @@ function HomeLoggedIn() {
     <PageShell>
       <OnboardingTour />
       <TutorialHint />
+      <DietaryOnboardingPopup />
 
       {/* Busca (mensagem de boas-vindas mudou pro header — ver SiteHeader) */}
       <section className="mx-auto max-w-6xl px-4 pt-3 md:px-6">

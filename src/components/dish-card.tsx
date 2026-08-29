@@ -8,23 +8,24 @@ import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { usePreferences } from "@/lib/preferences";
+import { formatDishConflicts, useDishConflicts } from "@/lib/use-dish-conflicts";
 import { useTranslation } from "@/i18n";
 
 export function DishCard({ item }: { item: MenuItem }) {
   const addToBill = useAddToBill();
-  const { isFavoriteRestaurant, toggleFavoriteRestaurant, excludedIngredients } = usePreferences();
+  const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
   const { isAvailable } = useMenuAdmin();
   const { t } = useTranslation();
   const restaurant = getRestaurant(item.restaurantId);
   const liked = isFavoriteRestaurant(item.restaurantId);
   const available = item.isAvailable && isAvailable(item.id);
 
-  // Ingredientes deste prato que o usuário marcou como "não posso comer" em
-  // Preferências — dispara o aviso vermelho no canto da imagem.
-  const conflictingIngredients = item.ingredients
-    .filter((i) => excludedIngredients.includes(i.name))
-    .map((i) => i.name);
-  const hasConflict = conflictingIngredients.length > 0;
+  // Conflitos deste prato com as restrições/exclusões do usuário em
+  // Preferências, agrupados por motivo — dispara o aviso vermelho no
+  // canto da imagem, ex: "Vegetariano: não pode comer Frango Desfiado."
+  const conflicts = useDishConflicts(item);
+  const hasConflict = conflicts.length > 0;
+  const conflictMessage = hasConflict ? formatDishConflicts(conflicts, t) : "";
 
   return (
     <div className="card-soft group relative flex flex-col overflow-hidden">
@@ -40,12 +41,8 @@ export function DishCard({ item }: { item: MenuItem }) {
       {hasConflict && (
         <button
           type="button"
-          aria-label={`Atenção: ${item.name} contém ${conflictingIngredients.join(", ")}`}
-          onClick={() =>
-            toast.error(
-              `${item.name} contém ${conflictingIngredients.join(", ")} — que indicou não poder comer.`,
-            )
-          }
+          aria-label={`${t("home.dishConflictLabel")}: ${conflictMessage}`}
+          onClick={() => toast.error(conflictMessage)}
           className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition-transform hover:scale-105"
         >
           <TriangleAlert className="h-4 w-4" />
