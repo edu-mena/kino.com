@@ -118,7 +118,7 @@ export function HeaderSearch() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="w-full rounded-full border border-border bg-card px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary"
+          className="w-full rounded-2xl border border-primary bg-card px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary"
         >
           {t("search.triggerPlaceholder")}
         </button>
