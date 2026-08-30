@@ -125,10 +125,12 @@ export function HeaderSearch() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-[2rem] border-none bg-card p-6 shadow-2xl">
-          <DialogTitle className="sr-only">{t("search.dialogTitle")}</DialogTitle>
+        <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto overflow-x-hidden rounded-[2rem] border-none bg-card p-6 shadow-2xl">
+          <DialogTitle className="font-display text-lg font-bold text-primary">
+            {t("search.dialogTitle")}
+          </DialogTitle>
 
-          <label className="flex min-w-0 items-center gap-2 rounded-xl border-2 border-border bg-background px-4 py-3 transition-colors has-[:focus]:border-brand">
+          <label className="mt-3 flex min-w-0 items-center gap-2 rounded-xl border-2 border-border bg-background px-4 py-3 transition-colors has-[:focus]:border-brand">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
               autoFocus
@@ -157,7 +159,7 @@ export function HeaderSearch() {
           </button>
 
           {filtersExpanded && (
-            <div className="mt-3 space-y-5 rounded-xl border border-border p-4">
+            <div className="mt-3 min-w-0 space-y-5 rounded-xl border border-border p-4">
               <div className="min-w-0">
                 <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                   {t("search.priceUpTo", { price: formatKz(maxPrice) })}
