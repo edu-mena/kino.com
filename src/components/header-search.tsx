@@ -1,5 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Search, Star, Store, UtensilsCrossed } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Search,
+  SlidersHorizontal,
+  Star,
+  Store,
+  UtensilsCrossed,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DietaryShortcutPicker } from "@/components/dietary-shortcut-picker";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -35,6 +43,7 @@ export function HeaderSearch() {
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [neighborhood, setNeighborhood] = useState<string>("todos");
   const [ingredient, setIngredient] = useState<string | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const overallMaxPrice = useMemo(
     () => (items.length ? Math.max(...items.map((m) => m.price)) : 0),
@@ -89,6 +98,11 @@ export function HeaderSearch() {
   }, [debouncedQuery, neighborhood]);
 
   const totalResults = matchedRestaurants.length + filtered.length;
+  const activeFilterCount =
+    (category ? 1 : 0) +
+    (ingredient ? 1 : 0) +
+    (neighborhood !== "todos" ? 1 : 0) +
+    (priceTouched && maxPrice < overallMaxPrice ? 1 : 0);
 
   return (
     <>
@@ -111,91 +125,111 @@ export function HeaderSearch() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto rounded-[2rem] border-none bg-card p-8 shadow-2xl">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand/15 text-brand">
+        <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto overflow-x-hidden rounded-[2rem] border-none bg-card p-6 shadow-2xl">
+          <DialogTitle className="font-display text-lg font-bold text-primary">
+            {t("search.dialogTitle")}
+          </DialogTitle>
+
+          <div className="mt-3 flex min-w-0 items-center gap-[5px]">
+            <span className="grid shrink-0 place-items-center rounded-full bg-primary p-4 text-primary-foreground">
               <Search className="h-4 w-4" />
             </span>
-            <DialogTitle className="font-display text-xl font-bold text-primary">
-              {t("search.dialogTitle")}
-            </DialogTitle>
+            <label className="flex w-full min-w-0 items-center rounded-2xl border border-primary bg-card px-4 py-3 transition-colors has-[:focus]:border-brand">
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("search.inputPlaceholder")}
+                className="w-full min-w-0 bg-transparent text-sm outline-none"
+              />
+            </label>
           </div>
 
-          <label className="mt-4 flex min-w-0 items-center gap-2 rounded-xl border-2 border-border bg-background px-4 py-3 transition-colors has-[:focus]:border-brand">
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("search.inputPlaceholder")}
-              className="w-full bg-transparent text-sm outline-none"
+          <button
+            type="button"
+            onClick={() => setFiltersExpanded((v) => !v)}
+            className="mt-3 flex w-full items-center gap-2 rounded-xl bg-surface px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-brand"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
+            <span className="flex-1 text-left">{t("search.filters")}</span>
+            {activeFilterCount > 0 && (
+              <span className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
+                {activeFilterCount}
+              </span>
+            )}
+            <ChevronDown
+              className={`h-3.5 w-3.5 shrink-0 transition-transform ${filtersExpanded ? "rotate-180" : ""}`}
             />
-          </label>
+          </button>
 
-          <div className="mt-5 min-w-0">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {t("search.priceUpTo", { price: formatKz(maxPrice) })}
-            </p>
-            <Slider
-              min={0}
-              max={maxAvailablePrice}
-              step={500}
-              value={[maxPrice]}
-              onValueChange={([v]) => {
-                setPriceTouched(true);
-                setMaxPrice(v ?? maxAvailablePrice);
-              }}
-            />
-          </div>
+          {filtersExpanded && (
+            <div className="mt-3 min-w-0 space-y-5 rounded-xl border border-border p-4">
+              <div className="min-w-0">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {t("search.priceUpTo", { price: formatKz(maxPrice) })}
+                </p>
+                <Slider
+                  min={0}
+                  max={maxAvailablePrice}
+                  step={500}
+                  value={[maxPrice]}
+                  onValueChange={([v]) => {
+                    setPriceTouched(true);
+                    setMaxPrice(v ?? maxAvailablePrice);
+                  }}
+                />
+              </div>
 
-          <div className="mt-5 grid min-w-0 gap-4 sm:grid-cols-2">
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("search.ingredient")}
-              </p>
-              <IngredientSearchFilter
-                value={ingredient}
-                onChange={setIngredient}
-                allIngredientNames={ingredientNames}
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {t("search.ingredient")}
+                  </p>
+                  <IngredientSearchFilter
+                    value={ingredient}
+                    onChange={setIngredient}
+                    allIngredientNames={ingredientNames}
+                  />
+                </div>
+
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {t("search.location")}
+                  </p>
+                  <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {t("search.category")}
+                </p>
+                <ToggleGroup
+                  type="single"
+                  value={category ?? ""}
+                  onValueChange={(v) => setCategory(v || undefined)}
+                  className="no-scrollbar flex-nowrap justify-start overflow-x-auto"
+                >
+                  {categories.map((cat) => (
+                    <ToggleGroupItem
+                      key={cat}
+                      value={cat}
+                      className="shrink-0 rounded-full border border-border data-[state=on]:border-brand data-[state=on]:bg-brand data-[state=on]:text-brand-foreground"
+                    >
+                      {cat}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </div>
+
+              <DietaryShortcutPicker
+                ctaLabel={t("search.dietaryCta")}
+                onNavigate={() => setOpen(false)}
               />
             </div>
+          )}
 
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("search.location")}
-              </p>
-              <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
-            </div>
-          </div>
-
-          <div className="mt-5 min-w-0">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {t("search.category")}
-            </p>
-            <ToggleGroup
-              type="single"
-              value={category ?? ""}
-              onValueChange={(v) => setCategory(v || undefined)}
-              className="no-scrollbar flex-nowrap justify-start overflow-x-auto"
-            >
-              {categories.map((cat) => (
-                <ToggleGroupItem
-                  key={cat}
-                  value={cat}
-                  className="shrink-0 rounded-full border border-border data-[state=on]:border-brand data-[state=on]:bg-brand data-[state=on]:text-brand-foreground"
-                >
-                  {cat}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </div>
-
-          <DietaryShortcutPicker
-            ctaLabel={t("search.dietaryCta")}
-            onNavigate={() => setOpen(false)}
-          />
-
-          <div className="mt-6 min-w-0 border-t border-border pt-5">
+          <div className="mt-5 min-w-0 border-t border-border pt-4">
             <p className="text-xs font-semibold text-muted-foreground">
               {t("search.resultsCount", { count: totalResults })}
             </p>

@@ -230,6 +230,7 @@ export const pt = {
     triggerPlaceholder: "Pesquisar pratos, restaurantes, locais...",
     dialogTitle: "Buscar",
     inputPlaceholder: "Nome do prato, restaurante...",
+    filters: "Filtros",
     priceUpTo: "Preço até {price}",
     ingredient: "Ingrediente",
     location: "Localização",

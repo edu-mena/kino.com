@@ -223,6 +223,7 @@ export const fr: Dictionary = {
     triggerPlaceholder: "Rechercher des plats, restaurants, lieux...",
     dialogTitle: "Rechercher",
     inputPlaceholder: "Nom du plat, restaurant...",
+    filters: "Filtres",
     priceUpTo: "Prix jusqu'à {price}",
     ingredient: "Ingrédient",
     location: "Localisation",
