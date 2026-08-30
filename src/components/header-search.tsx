@@ -130,16 +130,20 @@ export function HeaderSearch() {
             {t("search.dialogTitle")}
           </DialogTitle>
 
-          <label className="mt-3 flex min-w-0 items-center gap-2 rounded-xl border-2 border-border bg-background px-4 py-3 transition-colors has-[:focus]:border-brand">
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("search.inputPlaceholder")}
-              className="w-full bg-transparent text-sm outline-none"
-            />
-          </label>
+          <div className="mt-3 flex min-w-0 items-center gap-[5px]">
+            <span className="grid shrink-0 place-items-center rounded-full bg-primary p-4 text-primary-foreground">
+              <Search className="h-4 w-4" />
+            </span>
+            <label className="flex w-full min-w-0 items-center rounded-2xl border border-primary bg-card px-4 py-3 transition-colors has-[:focus]:border-brand">
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("search.inputPlaceholder")}
+                className="w-full min-w-0 bg-transparent text-sm outline-none"
+              />
+            </label>
+          </div>
 
           <button
             type="button"
