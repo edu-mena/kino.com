@@ -33,6 +33,14 @@ export function getMenuItemsByRestaurant(restaurantId: string): MenuItem[] {
   return getEffectiveMenuItems().filter((m) => m.restaurantId === restaurantId);
 }
 
+/** Todas as versões (por restaurante) de um prato com este nome exato —
+ * base da página "visão do prato" (`/pratos/$dishName`), que mostra a
+ * faixa de preço e a lista de restaurantes antes de ir ao detalhe de um
+ * em particular. */
+export function getMenuItemsByName(dishName: string): MenuItem[] {
+  return getEffectiveMenuItems().filter((m) => m.name === dishName);
+}
+
 /** Outros restaurantes (além do informado) que têm um prato com o mesmo nome. */
 export function getRestaurantsOfferingDish(
   dishName: string,

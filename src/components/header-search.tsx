@@ -27,6 +27,7 @@ import {
 import type { MenuItem, Restaurant } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";
+import { groupMenuItemsByName, type DishGroup } from "@/lib/group-dishes-by-name";
 import { useTranslation } from "@/i18n";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
@@ -97,7 +98,16 @@ export function HeaderSearch() {
     });
   }, [debouncedQuery, neighborhood]);
 
-  const totalResults = matchedRestaurants.length + filtered.length;
+  // Agrupa por nome do prato só quando há texto pesquisado — clicar leva
+  // pra `/pratos/$dishName` (visão geral, com faixa de preço e lista de
+  // restaurantes) em vez de já ir direto ao prato de um restaurante.
+  const dishGroups = useMemo(
+    () => (debouncedQuery ? groupMenuItemsByName(filtered) : []),
+    [debouncedQuery, filtered],
+  );
+
+  const totalResults =
+    matchedRestaurants.length + (debouncedQuery ? dishGroups.length : filtered.length);
   const activeFilterCount =
     (category ? 1 : 0) +
     (ingredient ? 1 : 0) +
@@ -251,19 +261,35 @@ export function HeaderSearch() {
                 </div>
               )}
 
-              {filtered.length > 0 && (
-                <div className="space-y-2">
-                  {matchedRestaurants.length > 0 && (
-                    <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-brand">
-                      <UtensilsCrossed className="h-3.5 w-3.5" />
-                      {t("search.dishesLabel")}
-                    </p>
+              {debouncedQuery
+                ? dishGroups.length > 0 && (
+                    <div className="space-y-2">
+                      {matchedRestaurants.length > 0 && (
+                        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-brand">
+                          <UtensilsCrossed className="h-3.5 w-3.5" />
+                          {t("search.dishesLabel")}
+                        </p>
+                      )}
+                      {dishGroups.map((group) => (
+                        <DishGroupResultRow
+                          key={group.name}
+                          group={group}
+                          onSelect={() => setOpen(false)}
+                        />
+                      ))}
+                    </div>
+                  )
+                : filtered.length > 0 && (
+                    <div className="space-y-2">
+                      {filtered.map((item) => (
+                        <SearchResultRow
+                          key={item.id}
+                          item={item}
+                          onSelect={() => setOpen(false)}
+                        />
+                      ))}
+                    </div>
                   )}
-                  {filtered.map((item) => (
-                    <SearchResultRow key={item.id} item={item} onSelect={() => setOpen(false)} />
-                  ))}
-                </div>
-              )}
 
               {totalResults === 0 && (
                 <p className="py-8 text-center text-sm text-muted-foreground">
@@ -297,6 +323,39 @@ function SearchResultRow({ item, onSelect }: { item: MenuItem; onSelect: () => v
         <p className="truncate text-xs text-muted-foreground">{restaurant?.name}</p>
       </div>
       <span className="shrink-0 text-sm font-bold text-primary">{formatKz(item.price)}</span>
+    </Link>
+  );
+}
+
+function DishGroupResultRow({ group, onSelect }: { group: DishGroup; onSelect: () => void }) {
+  const prices = group.items.map((i) => i.price);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const firstItem = group.items[0]!;
+
+  return (
+    <Link
+      to="/pratos/$dishName"
+      params={{ dishName: group.name }}
+      onClick={onSelect}
+      className="flex items-center gap-3 rounded-xl border border-transparent p-2 transition-colors hover:border-brand hover:bg-brand/5"
+    >
+      <img
+        src={firstItem.image}
+        alt=""
+        className="h-12 w-12 shrink-0 rounded-xl bg-surface object-contain"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-foreground">{group.name}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {group.items.length > 1
+            ? `${group.items.length} restaurantes`
+            : (getRestaurant(firstItem.restaurantId)?.name ?? "")}
+        </p>
+      </div>
+      <span className="shrink-0 text-sm font-bold text-primary">
+        {minPrice === maxPrice ? formatKz(minPrice) : `Desde ${formatKz(minPrice)}`}
+      </span>
     </Link>
   );
 }
