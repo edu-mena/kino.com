@@ -3,7 +3,10 @@ import { INITIAL_RESERVATIONS } from "@/data/mockData";
 import type { Reservation, Restaurant } from "@/data/types";
 import { useAuth } from "@/lib/auth";
 
-const STORAGE_KEY = "kino_reservations";
+// Sufixo de versão: subir quando a seed (`INITIAL_RESERVATIONS`) muda de forma
+// relevante — invalida o snapshot antigo no browser, que de outro modo continua
+// a "esconder" as reservas novas da seed.
+const STORAGE_KEY = "kino_reservations_v2";
 
 type NewReservationInput = {
   restaurant: Restaurant;

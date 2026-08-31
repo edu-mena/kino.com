@@ -9,10 +9,15 @@
  * ecrã via `translate-x-full`, mas continuam a contar para a largura
  * scrollável do documento em alguns navegadores — sem isto o body ganha
  * scroll horizontal fantasma do tamanho do painel.
+ *
+ * `clip` (e não `hidden`) porque `overflow-x: hidden` transforma o html/body
+ * num "scroll container" e isso anula `position: sticky` em qualquer
+ * descendente (ex.: o card de detalhes em /admin/reservas). `clip` recorta
+ * na mesma sem criar container de scroll.
  */
 html,
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /*
