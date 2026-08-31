@@ -13,17 +13,8 @@ import { DietaryShortcutPicker } from "@/components/dietary-shortcut-picker";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-  IngredientSearchFilter,
-  LocationFilterSelect,
-  matchesLocation,
-} from "@/components/search-filters";
-import {
-  getAllIngredientNames,
-  getAllRestaurants,
-  getMenuCategories,
-  getRestaurant,
-} from "@/data/helpers";
+import { LocationFilterSelect, matchesLocation } from "@/components/search-filters";
+import { getAllRestaurants, getMenuCategories, getRestaurant } from "@/data/helpers";
 import type { MenuItem, Restaurant } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";
@@ -32,7 +23,6 @@ import { useTranslation } from "@/i18n";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 const categories = getMenuCategories();
-const ingredientNames = getAllIngredientNames();
 const restaurants = getAllRestaurants();
 
 export function HeaderSearch() {
@@ -43,7 +33,6 @@ export function HeaderSearch() {
   const debouncedQuery = useDebouncedValue(query);
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [neighborhood, setNeighborhood] = useState<string>("todos");
-  const [ingredient, setIngredient] = useState<string | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const overallMaxPrice = useMemo(
@@ -63,11 +52,10 @@ export function HeaderSearch() {
         item.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
         restaurant?.name.toLowerCase().includes(debouncedQuery.toLowerCase());
       const byCategory = !category || item.category === category;
-      const byIngredient = !ingredient || item.ingredients.some((i) => i.name === ingredient);
       const byNeighborhood = matchesLocation(restaurant?.neighborhood, neighborhood);
-      return byQuery && byCategory && byIngredient && byNeighborhood;
+      return byQuery && byCategory && byNeighborhood;
     });
-  }, [items, debouncedQuery, category, ingredient, neighborhood]);
+  }, [items, debouncedQuery, category, neighborhood]);
 
   const maxAvailablePrice = filteredExceptPrice.length
     ? Math.max(...filteredExceptPrice.map((m) => m.price))
@@ -85,8 +73,8 @@ export function HeaderSearch() {
     [filteredExceptPrice, maxPrice],
   );
 
-  // Restaurantes correspondem por nome/cozinha e localização — categoria,
-  // ingrediente e preço são atributos do prato, não fazem sentido aqui.
+  // Restaurantes correspondem por nome/cozinha e localização — categoria
+  // e preço são atributos do prato, não fazem sentido aqui.
   const matchedRestaurants = useMemo(() => {
     if (!debouncedQuery) return [];
     return restaurants.filter((r) => {
@@ -110,7 +98,6 @@ export function HeaderSearch() {
     matchedRestaurants.length + (debouncedQuery ? dishGroups.length : filtered.length);
   const activeFilterCount =
     (category ? 1 : 0) +
-    (ingredient ? 1 : 0) +
     (neighborhood !== "todos" ? 1 : 0) +
     (priceTouched && maxPrice < overallMaxPrice ? 1 : 0);
 
@@ -190,24 +177,11 @@ export function HeaderSearch() {
                 />
               </div>
 
-              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    {t("search.ingredient")}
-                  </p>
-                  <IngredientSearchFilter
-                    value={ingredient}
-                    onChange={setIngredient}
-                    allIngredientNames={ingredientNames}
-                  />
-                </div>
-
-                <div>
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    {t("search.location")}
-                  </p>
-                  <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
-                </div>
+              <div className="min-w-0">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {t("search.location")}
+                </p>
+                <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
               </div>
 
               <div className="min-w-0">
@@ -231,13 +205,13 @@ export function HeaderSearch() {
                   ))}
                 </ToggleGroup>
               </div>
-
-              <DietaryShortcutPicker
-                ctaLabel={t("search.dietaryCta")}
-                onNavigate={() => setOpen(false)}
-              />
             </div>
           )}
+
+          <DietaryShortcutPicker
+            ctaLabel={t("search.dietaryCta")}
+            onNavigate={() => setOpen(false)}
+          />
 
           <div className="mt-5 min-w-0 border-t border-border pt-4">
             <p className="text-xs font-semibold text-muted-foreground">

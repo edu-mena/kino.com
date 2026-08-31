@@ -5,11 +5,7 @@ import { DietaryShortcutPicker } from "@/components/dietary-shortcut-picker";
 import { DishCard } from "@/components/dish-card";
 import { DishGroupCard } from "@/components/dish-group-card";
 import { ListPagination } from "@/components/list-pagination";
-import {
-  IngredientSearchFilter,
-  LocationFilterSelect,
-  matchesLocation,
-} from "@/components/search-filters";
+import { LocationFilterSelect, matchesLocation } from "@/components/search-filters";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
@@ -19,14 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { getAllIngredientNames, getRestaurant } from "@/data/helpers";
+import { getRestaurant } from "@/data/helpers";
 import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";
 import { groupMenuItemsByName } from "@/lib/group-dishes-by-name";
 import { translateMenuCategory, useTranslation } from "@/i18n";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
-
-const ingredientNames = getAllIngredientNames();
 
 const sortOptions = [
   { value: "relevancia", labelKey: "cardapio.sortRelevance" },
@@ -83,7 +77,6 @@ export function MenuBrowser({
   const debouncedQuery = useDebouncedValue(query);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [neighborhood, setNeighborhood] = useState("todos");
-  const [ingredient, setIngredient] = useState<string | null>(null);
   const [sort, setSort] = useState<(typeof sortOptions)[number]["value"]>("relevancia");
   const [maxPrice, setMaxPrice] = useState(overallMaxPrice);
   const [priceTouched, setPriceTouched] = useState(false);
@@ -98,20 +91,11 @@ export function MenuBrowser({
         !debouncedQuery ||
         item.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
         restaurant?.name.toLowerCase().includes(debouncedQuery.toLowerCase());
-      const byIngredient = !ingredient || item.ingredients.some((i) => i.name === ingredient);
       const byNeighborhood =
         lockedRestaurantId || matchesLocation(restaurant?.neighborhood, neighborhood);
-      return byCat && byRestaurant && byQuery && byIngredient && byNeighborhood;
+      return byCat && byRestaurant && byQuery && byNeighborhood;
     });
-  }, [
-    items,
-    active,
-    effectiveRestaurantId,
-    lockedRestaurantId,
-    debouncedQuery,
-    ingredient,
-    neighborhood,
-  ]);
+  }, [items, active, effectiveRestaurantId, lockedRestaurantId, debouncedQuery, neighborhood]);
 
   const maxAvailablePrice = filteredExceptPrice.length
     ? Math.max(...filteredExceptPrice.map((m) => m.price))
@@ -139,8 +123,7 @@ export function MenuBrowser({
     return sorted;
   }, [filteredExceptPrice, maxPrice, sort]);
 
-  const activeExtraFilters =
-    (neighborhood !== "todos" ? 1 : 0) + (ingredient ? 1 : 0) + (priceTouched ? 1 : 0);
+  const activeExtraFilters = (neighborhood !== "todos" ? 1 : 0) + (priceTouched ? 1 : 0);
 
   // Pesquisando por texto (e não dentro de um restaurante específico) —
   // agrupa por nome de prato: 1 resultado por prato em vez de 1 por
@@ -158,7 +141,7 @@ export function MenuBrowser({
 
   useEffect(() => {
     setPage(1);
-  }, [active, effectiveRestaurantId, debouncedQuery, ingredient, neighborhood, maxPrice, sort]);
+  }, [active, effectiveRestaurantId, debouncedQuery, neighborhood, maxPrice, sort]);
 
   return (
     <div>
@@ -198,6 +181,8 @@ export function MenuBrowser({
           )}
         </button>
       </div>
+
+      <DietaryShortcutPicker ctaLabel={t("cardapio.dietaryCta")} />
 
       <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto pb-1">
         {[{ id: "todos", label: t("common.all") }, ...categories].map((cat) => (
@@ -270,17 +255,6 @@ export function MenuBrowser({
             />
           </div>
 
-          <div className="mt-5">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {t("cardapio.ingredient")}
-            </p>
-            <IngredientSearchFilter
-              value={ingredient}
-              onChange={setIngredient}
-              allIngredientNames={ingredientNames}
-            />
-          </div>
-
           {!lockedRestaurantId && (
             <div className="mt-5">
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
@@ -289,11 +263,6 @@ export function MenuBrowser({
               <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
             </div>
           )}
-
-          <DietaryShortcutPicker
-            ctaLabel={t("cardapio.dietaryCta")}
-            onNavigate={() => setFiltersOpen(false)}
-          />
 
           <button
             type="button"
