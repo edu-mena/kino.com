@@ -82,13 +82,13 @@ function DishDetail() {
         </Link>
 
         <div className="mt-6 grid gap-8 md:grid-cols-2">
-          <div className="grid place-items-center rounded-[2rem] bg-surface p-8">
+          <div className="mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-[2rem] bg-surface md:max-w-none">
             <img
               src={item.image}
               alt={item.name}
               width={768}
               height={768}
-              className="mx-auto block h-64 w-full max-w-sm object-contain sm:h-80"
+              className="h-full w-full object-cover"
             />
           </div>
 
