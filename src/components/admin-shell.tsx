@@ -102,7 +102,7 @@ function AdminShellContent({ children }: { children: ReactNode }) {
           <Logo className="h-12 w-auto" />
         </Link>
 
-        <nav className="flex flex-1 flex-col justify-center gap-2 overflow-y-auto">
+        <nav className="flex flex-1 flex-col gap-2 overflow-y-auto">
           {navItems.map((item) => (
             <Link
               key={item.to}
