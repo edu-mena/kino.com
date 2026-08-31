@@ -92,7 +92,7 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
         <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-[2rem] border-none bg-card p-8">
           {active && (
             <>
-              <div className="aspect-square w-full overflow-hidden rounded-2xl bg-surface">
+              <div className="relative h-48 w-full overflow-hidden rounded-2xl bg-surface">
                 <img src={active.image} alt={active.name} className="h-full w-full object-cover" />
               </div>
               <DialogTitle className="mt-4 font-display text-xl font-bold">
