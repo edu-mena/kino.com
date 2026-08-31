@@ -3,6 +3,7 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DietaryShortcutPicker } from "@/components/dietary-shortcut-picker";
 import { DishCard } from "@/components/dish-card";
+import { DishGroupCard } from "@/components/dish-group-card";
 import { ListPagination } from "@/components/list-pagination";
 import {
   IngredientSearchFilter,
@@ -21,6 +22,7 @@ import { Slider } from "@/components/ui/slider";
 import { getAllIngredientNames, getRestaurant } from "@/data/helpers";
 import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";
+import { groupMenuItemsByName } from "@/lib/group-dishes-by-name";
 import { translateMenuCategory, useTranslation } from "@/i18n";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
@@ -140,8 +142,19 @@ export function MenuBrowser({
   const activeExtraFilters =
     (neighborhood !== "todos" ? 1 : 0) + (ingredient ? 1 : 0) + (priceTouched ? 1 : 0);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Pesquisando por texto (e não dentro de um restaurante específico) —
+  // agrupa por nome de prato: 1 resultado por prato em vez de 1 por
+  // restaurante que o oferece, ver `/pratos/$dishName`.
+  const isGroupedSearch = !!debouncedQuery && !effectiveRestaurantId;
+  const dishGroups = useMemo(
+    () => (isGroupedSearch ? groupMenuItemsByName(filtered) : []),
+    [isGroupedSearch, filtered],
+  );
+  const resultCount = isGroupedSearch ? dishGroups.length : filtered.length;
+
+  const totalPages = Math.max(1, Math.ceil(resultCount / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pageGroups = dishGroups.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   useEffect(() => {
     setPage(1);
@@ -205,7 +218,7 @@ export function MenuBrowser({
 
       <div className="mt-6 flex items-center justify-between gap-4">
         <p className="text-sm text-muted-foreground">
-          {filtered.length} {t("cardapio.results")}
+          {resultCount} {t("cardapio.results")}
         </p>
         <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
           <SelectTrigger className="w-48 rounded-xl">
@@ -222,12 +235,12 @@ export function MenuBrowser({
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {pageItems.map((item) => (
-          <DishCard key={item.id} item={item} />
-        ))}
+        {isGroupedSearch
+          ? pageGroups.map((group) => <DishGroupCard key={group.name} group={group} />)
+          : pageItems.map((item) => <DishCard key={item.id} item={item} />)}
       </div>
 
-      {filtered.length === 0 && (
+      {resultCount === 0 && (
         <p className="card-soft mt-4 p-10 text-center text-sm text-muted-foreground">
           {t("cardapio.noResults")}
         </p>

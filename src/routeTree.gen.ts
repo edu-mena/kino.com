@@ -40,6 +40,7 @@ import { Route as AdminStoriesRouteImport } from './routes/admin.stories'
 import { Route as AdminSuporteRouteImport } from './routes/admin.suporte'
 import { Route as AdminEntrarRouteImport } from './routes/admin_.entrar'
 import { Route as PratoDishIdRouteImport } from './routes/prato.$dishId'
+import { Route as PratosDishNameRouteImport } from './routes/pratos.$dishName'
 import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -197,6 +198,11 @@ const PratoDishIdRoute = PratoDishIdRouteImport.update({
   path: '/prato/$dishId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PratosDishNameRoute = PratosDishNameRouteImport.update({
+  id: '/pratos/$dishName',
+  path: '/pratos/$dishName',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RestaurantesIdRoute = RestaurantesIdRouteImport.update({
   id: '/restaurantes_/$id',
   path: '/restaurantes/$id',
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/admin/suporte': typeof AdminSuporteRoute
   '/admin/entrar': typeof AdminEntrarRoute
   '/prato/$dishId': typeof PratoDishIdRoute
+  '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -267,6 +274,7 @@ export interface FileRoutesByTo {
   '/admin/suporte': typeof AdminSuporteRoute
   '/admin/entrar': typeof AdminEntrarRoute
   '/prato/$dishId': typeof PratoDishIdRoute
+  '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
   '/admin': typeof AdminIndexRoute
 }
@@ -302,6 +310,7 @@ export interface FileRoutesById {
   '/admin/suporte': typeof AdminSuporteRoute
   '/admin_/entrar': typeof AdminEntrarRoute
   '/prato/$dishId': typeof PratoDishIdRoute
+  '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes_/$id': typeof RestaurantesIdRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
     | '/admin/suporte'
     | '/admin/entrar'
     | '/prato/$dishId'
+    | '/pratos/$dishName'
     | '/restaurantes/$id'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -371,6 +381,7 @@ export interface FileRouteTypes {
     | '/admin/suporte'
     | '/admin/entrar'
     | '/prato/$dishId'
+    | '/pratos/$dishName'
     | '/restaurantes/$id'
     | '/admin'
   id:
@@ -405,6 +416,7 @@ export interface FileRouteTypes {
     | '/admin/suporte'
     | '/admin_/entrar'
     | '/prato/$dishId'
+    | '/pratos/$dishName'
     | '/restaurantes_/$id'
     | '/admin/'
   fileRoutesById: FileRoutesById
@@ -430,6 +442,7 @@ export interface RootRouteChildren {
   SobreRoute: typeof SobreRoute
   AdminEntrarRoute: typeof AdminEntrarRoute
   PratoDishIdRoute: typeof PratoDishIdRoute
+  PratosDishNameRoute: typeof PratosDishNameRoute
   RestaurantesIdRoute: typeof RestaurantesIdRoute
 }
 
@@ -652,6 +665,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PratoDishIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pratos/$dishName': {
+      id: '/pratos/$dishName'
+      path: '/pratos/$dishName'
+      fullPath: '/pratos/$dishName'
+      preLoaderRoute: typeof PratosDishNameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/restaurantes_/$id': {
       id: '/restaurantes_/$id'
       path: '/restaurantes/$id'
@@ -713,6 +733,7 @@ const rootRouteChildren: RootRouteChildren = {
   SobreRoute: SobreRoute,
   AdminEntrarRoute: AdminEntrarRoute,
   PratoDishIdRoute: PratoDishIdRoute,
+  PratosDishNameRoute: PratosDishNameRoute,
   RestaurantesIdRoute: RestaurantesIdRoute,
 }
 export const routeTree = rootRouteImport
