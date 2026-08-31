@@ -32,7 +32,7 @@ export function DietaryShortcutPicker({
   };
 
   return (
-    <div className="mt-5 rounded-xl border border-dashed border-border">
+    <div className="mt-2 rounded-xl border border-dashed border-border">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
