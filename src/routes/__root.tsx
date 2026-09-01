@@ -14,16 +14,22 @@ import iconImage from "../assets/icon.png";
 import { AddressesProvider } from "../lib/addresses";
 import { BillProvider } from "../lib/bill";
 import { CartProvider } from "../lib/cart";
+import { CouriersProvider } from "../lib/couriers";
 import { LocationProvider } from "../lib/location";
 import { AuthProvider } from "../lib/auth";
 import { MenuAdminProvider } from "../lib/menu-admin";
 import { MenusAdminProvider } from "../lib/menus-admin";
 import { OffersAdminProvider } from "../lib/offers-admin";
+import { PartnerAppsProvider } from "../lib/partner-apps";
 import { PreferencesProvider } from "../lib/preferences";
 import { ReservationsProvider } from "../lib/reservations";
 import { RestaurantAdminProvider } from "../lib/restaurant-admin";
 import { StoriesProvider } from "../lib/stories";
 import { StoriesAdminProvider } from "../lib/stories-admin";
+import { SubscriptionsProvider } from "../lib/subscriptions";
+import { SystemAdminProvider } from "../lib/system-admin";
+import { NotificationsProvider } from "../lib/notifications";
+import { TablesProvider } from "../lib/tables";
 import { TutorialProvider } from "../lib/tutorial";
 import { Toaster } from "../components/ui/sonner";
 
@@ -154,35 +160,47 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RestaurantAdminProvider>
-          <PreferencesProvider>
-            <StoriesProvider>
-              <AddressesProvider>
-                <LocationProvider>
-                  <ReservationsProvider>
-                    <BillProvider>
-                      <MenusAdminProvider>
-                        <MenuAdminProvider>
-                          <StoriesAdminProvider>
-                            <OffersAdminProvider>
-                              <CartProvider>
-                                <TutorialProvider>
-                                  {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-                                  <Outlet />
-                                  <Toaster />
-                                </TutorialProvider>
-                              </CartProvider>
-                            </OffersAdminProvider>
-                          </StoriesAdminProvider>
-                        </MenuAdminProvider>
-                      </MenusAdminProvider>
-                    </BillProvider>
-                  </ReservationsProvider>
-                </LocationProvider>
-              </AddressesProvider>
-            </StoriesProvider>
-          </PreferencesProvider>
-        </RestaurantAdminProvider>
+        <SystemAdminProvider>
+          <RestaurantAdminProvider>
+            <SubscriptionsProvider>
+              <PartnerAppsProvider>
+                <PreferencesProvider>
+                  <StoriesProvider>
+                    <AddressesProvider>
+                      <LocationProvider>
+                        <ReservationsProvider>
+                          <BillProvider>
+                            <MenusAdminProvider>
+                              <MenuAdminProvider>
+                                <StoriesAdminProvider>
+                                  <OffersAdminProvider>
+                                    <CartProvider>
+                                      <CouriersProvider>
+                                        <TablesProvider>
+                                          <NotificationsProvider>
+                                            <TutorialProvider>
+                                              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                                              <Outlet />
+                                              <Toaster />
+                                            </TutorialProvider>
+                                          </NotificationsProvider>
+                                        </TablesProvider>
+                                      </CouriersProvider>
+                                    </CartProvider>
+                                  </OffersAdminProvider>
+                                </StoriesAdminProvider>
+                              </MenuAdminProvider>
+                            </MenusAdminProvider>
+                          </BillProvider>
+                        </ReservationsProvider>
+                      </LocationProvider>
+                    </AddressesProvider>
+                  </StoriesProvider>
+                </PreferencesProvider>
+              </PartnerAppsProvider>
+            </SubscriptionsProvider>
+          </RestaurantAdminProvider>
+        </SystemAdminProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

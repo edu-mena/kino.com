@@ -1,7 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
+  Armchair,
   Bike,
   CalendarCheck,
+  CreditCard,
+  Lock,
   LayoutGrid,
   LifeBuoy,
   LogOut,
@@ -12,16 +15,20 @@ import {
   Star,
   Store,
   TrendingUp,
+  TriangleAlert,
   User,
   Users,
   X,
 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
+import { toast } from "sonner";
 import { Logo } from "./logo";
+import { NotificationsBell } from "./notifications-bell";
 import { AdminOnboardingTour, AdminTutorialHint } from "./admin-onboarding-tour";
 import { useTranslation } from "@/i18n";
 import { AdminTutorialProvider, useAdminTutorial } from "@/lib/admin-tutorial";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { useRestaurantAccess, useSubscriptions } from "@/lib/subscriptions";
 
 // `labelKey` também serve de `tourId` (data-tour="admin-<tourId>") — só
 // orders/menu/reservations/promotions/restaurant têm passo no tour hoje,
@@ -30,12 +37,14 @@ const navItems = [
   { to: "/admin", labelKey: "dashboard", icon: LayoutGrid },
   { to: "/admin/pedidos", labelKey: "orders", icon: Bike },
   { to: "/admin/reservas", labelKey: "reservations", icon: CalendarCheck },
+  { to: "/admin/mesas", labelKey: "tables", icon: Armchair },
   { to: "/admin/cardapio", labelKey: "menu", icon: Soup },
   { to: "/admin/estatisticas", labelKey: "stats", icon: TrendingUp },
   { to: "/admin/clientes", labelKey: "customers", icon: Users },
   { to: "/admin/stories", labelKey: "stories", icon: Sparkles },
   { to: "/admin/promocoes", labelKey: "promotions", icon: Megaphone },
   { to: "/admin/avaliacoes", labelKey: "reviews", icon: Star },
+  { to: "/admin/subscricao", labelKey: "subscription", icon: CreditCard },
   { to: "/admin/perfil", labelKey: "restaurant", icon: Store },
   { to: "/admin/suporte", labelKey: "support", icon: LifeBuoy },
 ] as const;
@@ -128,14 +137,17 @@ function AdminShellContent({ children }: { children: ReactNode }) {
                 {restaurant.name}
               </span>
             </div>
-            <button
-              type="button"
-              aria-label={t("adminNav.logout")}
-              onClick={handleLogout}
-              className="hidden shrink-0 place-items-center rounded-lg p-2.5 text-muted-foreground transition-colors hover:bg-card hover:text-destructive xl:grid"
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
+            <div className="hidden shrink-0 items-center gap-1 xl:flex">
+              <NotificationsBell scope="restaurant" />
+              <button
+                type="button"
+                aria-label={t("adminNav.logout")}
+                onClick={handleLogout}
+                className="grid shrink-0 place-items-center rounded-lg p-2.5 text-muted-foreground transition-colors hover:bg-card hover:text-destructive"
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -151,15 +163,18 @@ function AdminShellContent({ children }: { children: ReactNode }) {
               {restaurant.name}
             </span>
           </Link>
-          <button
-            type="button"
-            data-tour="admin-nav-menu"
-            aria-label={mobileOpen ? t("adminNav.closeMenu") : t("adminNav.openMenu")}
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground"
-          >
-            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <NotificationsBell scope="restaurant" />
+            <button
+              type="button"
+              data-tour="admin-nav-menu"
+              aria-label={mobileOpen ? t("adminNav.closeMenu") : t("adminNav.openMenu")}
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground"
+            >
+              {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
+          </div>
         </header>
 
         {mobileOpen && (
@@ -187,6 +202,7 @@ function AdminShellContent({ children }: { children: ReactNode }) {
           </div>
         )}
 
+        <SubscriptionBanner />
         <main className="min-w-0 flex-1 pb-20 lg:pb-12">{children}</main>
       </div>
 
@@ -211,6 +227,87 @@ function AdminShellContent({ children }: { children: ReactNode }) {
 
       <AdminOnboardingTour />
       <AdminTutorialHint />
+    </div>
+  );
+}
+
+/** Faixa de estado da subscrição — período grátis a acabar, mensalidade em
+ * atraso, ou painel suspenso. Lê o mesmo estado que a área de sistema. */
+function SubscriptionBanner() {
+  const { t } = useTranslation();
+  const { restaurant } = useRestaurantAdmin();
+  const access = useRestaurantAccess();
+  if (!restaurant) return null;
+
+  if (access.locked) {
+    return (
+      <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2.5 text-center text-xs font-semibold text-destructive md:px-6">
+        {t("adminSubscricao.bannerLocked")}{" "}
+        <Link to="/admin/subscricao" className="underline">
+          {t("adminSubscricao.bannerLockedCta")}
+        </Link>
+      </div>
+    );
+  }
+  if (access.warning) {
+    return (
+      <div className="flex flex-wrap items-center justify-center gap-1.5 border-b border-brand/30 bg-brand/10 px-4 py-2.5 text-center text-xs font-semibold text-brand md:px-6">
+        <TriangleAlert className="h-3.5 w-3.5" />
+        {t("adminSubscricao.bannerOverdue")}{" "}
+        <Link to="/admin/subscricao" className="underline">
+          {t("adminSubscricao.bannerOverdueCta")}
+        </Link>
+      </div>
+    );
+  }
+  if (access.status === "trial" && access.trialDaysLeft <= 14) {
+    return (
+      <div className="border-b border-border bg-surface px-4 py-2 text-center text-xs text-muted-foreground md:px-6">
+        {t("adminSubscricao.bannerTrial", { days: access.trialDaysLeft })}{" "}
+        <Link to="/admin/subscricao" className="font-semibold text-primary underline">
+          {t("adminSubscricao.bannerTrialCta")}
+        </Link>
+      </div>
+    );
+  }
+  return null;
+}
+
+/** Envolve o conteúdo das páginas que fazem escritas — quando a subscrição
+ * está suspensa, mostra "painel inativo" + Renovar (simulado) em vez do
+ * conteúdo. Estatísticas/Dashboard/Suporte não usam este gate. */
+export function RestaurantGate({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  const { restaurant } = useRestaurantAdmin();
+  const access = useRestaurantAccess();
+  const { registerPayment } = useSubscriptions();
+
+  if (!access.locked || !restaurant) return <>{children}</>;
+
+  return (
+    <div className="mx-auto max-w-lg px-4 pt-16 md:px-6">
+      <div className="card-soft grid place-items-center gap-4 p-8 text-center">
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-destructive/10 text-destructive">
+          <Lock className="h-6 w-6" />
+        </span>
+        <h2 className="font-display text-lg font-bold text-foreground">
+          {t("adminSubscricao.gateTitle")}
+        </h2>
+        <p className="text-sm text-muted-foreground">{t("adminSubscricao.gateBody")}</p>
+        <button
+          type="button"
+          onClick={() => {
+            registerPayment(restaurant.id);
+            toast.success(t("adminSubscricao.renewToast"));
+          }}
+          className="mt-1 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          {t("adminSubscricao.renewSimulated")}
+        </button>
+        <Link to="/admin/subscricao" className="text-xs font-semibold text-primary hover:underline">
+          {t("adminSubscricao.gateSeeDetails")}
+        </Link>
+      </div>
     </div>
   );
 }

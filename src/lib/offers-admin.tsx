@@ -1,5 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { createOffer, deleteOffer, getEffectiveOffers, updateOffer } from "@/data/offers-store";
+import {
+  createKinoOffer,
+  createOffer,
+  deleteOffer,
+  getEffectiveOffers,
+  updateOffer,
+} from "@/data/offers-store";
 import { INITIAL_OFFERS } from "@/data/mockData";
 import type { Offer } from "@/data/types";
 
@@ -8,7 +14,10 @@ type OfferInput = Omit<Offer, "id" | "restaurantId">;
 type OffersAdminValue = {
   offers: Offer[];
   offersByRestaurant: (restaurantId: string) => Offer[];
+  /** Ofertas globais da Kino — sem `restaurantId` (geridas em `/sistema/promocoes`). */
+  kinoOffers: Offer[];
   createOffer: (restaurantId: string, input: OfferInput) => Offer;
+  createKinoOffer: (input: OfferInput) => Offer;
   updateOffer: (id: string, input: OfferInput) => void;
   deleteOffer: (id: string) => void;
 };
@@ -34,7 +43,9 @@ export function OffersAdminProvider({ children }: { children: ReactNode }) {
   const value: OffersAdminValue = {
     offers,
     offersByRestaurant: (restaurantId) => offers.filter((o) => o.restaurantId === restaurantId),
+    kinoOffers: offers.filter((o) => !o.restaurantId),
     createOffer: (restaurantId, input) => createOffer(restaurantId, input),
+    createKinoOffer: (input) => createKinoOffer(input),
     updateOffer: (id, input) => updateOffer(id, input),
     deleteOffer: (id) => deleteOffer(id),
   };

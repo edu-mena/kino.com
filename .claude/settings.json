@@ -20,7 +20,20 @@
       "Bash(awk '/export const INITIAL_STORIES/,/^\\\\];/' c:/Projects/_Kino.com/src/data/mockData.ts)",
       "Bash(awk '/export const INITIAL_REVIEWS/,/^\\\\];/' c:/Projects/_Kino.com/src/data/mockData.ts)",
       "Bash(awk '/export const INITIAL_RESTAURANTS/,/^\\\\];/' c:/Projects/_Kino.com/src/data/mockData.ts)",
-      "Bash(awk '/export const INITIAL_MENU_ITEMS/,/^\\\\];/' c:/Projects/_Kino.com/src/data/mockData.ts)"
+      "Bash(awk '/export const INITIAL_MENU_ITEMS/,/^\\\\];/' c:/Projects/_Kino.com/src/data/mockData.ts)",
+      "Bash(awk 'NR>=587 && /^  },/{print NR; exit}' src/i18n/pt.ts)",
+      "Bash(cd \"c:/Projects/_Kino.com\" && grep -n \"dishDetail\\\\|prato:\" src/i18n/pt.ts | head; grep -n \"useMenuAdmin\\\\|isAvailable\\\\|Adicionar ao pedido\\\\|t\\(\\\\\"\" src/routes/prato.\\\\$dishId.tsx | head -20)",
+      "Read(//c/Projects/_Kino.com/src/routes/**)",
+      "Bash(cd \"c:/Projects/_Kino.com\" && grep -n \"getRestaurant\\\\|useAuth\\\\|isLoggedIn\\\\|MenuDocument\\\\|Visitar página\\\\|not-found\\\\|restaurantId\" src/routes/menu.\\\\$restaurantId.tsx | head -20)",
+      "Bash(sed -n \"/^  orderBuilderCard: {/,/^  },/p\" src/i18n/en.ts)",
+      "Bash(sed -n \"/^  orderBuilderCard: {/,/^  },/p\" src/i18n/fr.ts)",
+      "Bash(grep -n \"priceLevel: \\\\\"Price level\\\\\"\\\\|      order: {\\\\|    status: {\\\\|rejected: \\\\\"Declined\\\\\",\\\\|noDelivery: \\\\\"No delivery\" src/i18n/en.ts)",
+      "Bash(grep -n \"const { t } = useTranslation\\\\|temporarilyUnavailable\\\\|const { t, locale }\" src/routes/restaurantes.tsx)",
+      "Bash(cd \"c:/Projects/_Kino.com\" && grep -n \"useSubscriptions\\\\|byRestaurant\\\\|const paused\\\\|restaurantDetail.paused\\\\|acceptsReservations\" src/routes/restaurantes_.\\\\$id.tsx)",
+      "Bash(grep -n \"const { t } = useTranslation\\\\|CreditCard,\\\\|ChevronRight,\\\\|const { t, locale }\" src/routes/admin.index.tsx)",
+      "Bash(grep -n \"canceledToast: \\\\\"Reserva cancelada.\\\\\"\\\\|cannotCancel:\\\\|temporarilyUnavailable:\\\\|statusCanceled: \\\\\"Cancelada\\\\\",\\\\|pauseOrdersLabel\\\\|detailPeople:\\\\|myTicketsTitle\\\\|ticketSentToast\\\\|openingEmailToast\\\\|subscriptionTitle:\\\\|onboardedToast\\\\|approveToast:\\\\|support: \\\\\"Suporte\\\\\"\\\\|nav: {\" src/i18n/pt.ts)",
+      "Bash(grep -n \"viewStats: \\\\\"Ver estat\\\\|viewList:\\\\|adminReservas: {\\\\|conflictNone:\\\\|statusCanceled: \\\\\"Cancelada\\\\\",\\\\|canceledNote:\\\\|occupancyTableClash:\\\\|tableSuggest:\" src/i18n/pt.ts)",
+      "Bash(grep -n \"  adminReservas: {\\\\|secHoursHint: \\\\\"Quand le\\\\|detailReservations: \\\\\"Réservations\\\\\",\\\\|subscriptionTitle: \\\\\"Abonnement\\\\|fleet: \\\\\"Flotte\\\\\"\\\\|approveToast: \\\\\"Candidature approuvée.\\\\\"\\\\|emptyMessageError: \\\\\"Écrivez\\\\|subjectOther: \\\\\"Autre sujet\\\\\"\" src/i18n/fr.ts)"
     ]
   }
 }

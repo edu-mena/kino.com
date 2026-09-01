@@ -1,9 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
+import { useAuth } from "@/lib/auth";
 import type { SavedAddress, SelectedIngredient } from "@/data/types";
 
-const STORAGE_KEY = "kino_cart_orders";
+// Sufixo de versão: subir quando `seedOrders()` mudar de forma relevante —
+// invalida o snapshot antigo do localStorage, que de outro modo continua a
+// esconder os pedidos novos da seed.
+const STORAGE_KEY = "kino_cart_orders_v3";
 
 export type CartLine = {
   key: string;
@@ -26,13 +30,19 @@ export type CartLine = {
  */
 /** Código de estado do pedido — o texto exibido vem de `t("entrega.status." + status)`,
  * nunca guardado já traduzido (senão trocar de idioma não atualizava pedidos existentes). */
-export type CartOrderStatus = "pending" | "accepted" | "onTheWay" | "delivered" | "rejected";
+export type CartOrderStatus =
+  "pending" | "accepted" | "onTheWay" | "delivered" | "rejected" | "canceled";
 
 export type CartOrder = {
   id: string;
   restaurantId: string;
   lines: CartLine[];
   createdAt: string;
+  /** Cliente que fez o pedido — capturado da conta no momento do pedido, é
+   * o que o restaurante vê no painel (nome, telefone, email para contacto). */
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
   deliveryAddress: SavedAddress;
   status: CartOrderStatus;
   /** Estimativa (minutos) capturada do restaurante no momento do pedido. */
@@ -69,6 +79,10 @@ type CartValue = {
   ) => void;
   setQty: (orderId: string, lineKey: string, qty: number) => void;
   removeOrder: (orderId: string) => void;
+  /** Cliente cancela o próprio pedido — só possível enquanto "pending" (o
+   * restaurante ainda não aceitou). Vira estado "canceled", não é apagado,
+   * para o restaurante continuar a ver o que aconteceu. */
+  cancelOrder: (orderId: string) => void;
   /** Passo do checkout — regista a preferência de pagamento no pedido (já
    * criado desde o "Solicitar delivery"). Não cria nada novo nem limpa a
    * lista: o pedido continua o mesmo, agora com o método anexado. `note`,
@@ -96,6 +110,28 @@ export function lineUnitPrice(line: CartLine): number {
   return menuItem.price + extras;
 }
 
+/** Rótulos das personalizações de uma linha — ex: ["sem Cebola", "+ Bacon"].
+ * `t` fornece os prefixos traduzidos ("sem" / "+"). */
+export function lineCustomizations(
+  line: CartLine,
+  removedLabel: string,
+  addedLabel: string,
+): string[] {
+  const menuItem = getMenuItem(line.menuItemId);
+  if (!menuItem) return [];
+  const out: string[] = [];
+  for (const sel of line.selectedIngredients) {
+    const def = menuItem.ingredients.find((i) => i.id === sel.id);
+    if (!def) continue;
+    if (def.extraPrice) {
+      if (sel.included) out.push(`${addedLabel} ${def.name}`);
+    } else if (def.removable && !sel.included) {
+      out.push(`${removedLabel} ${def.name}`);
+    }
+  }
+  return out;
+}
+
 function makeLineKey(menuItemId: string, selectedIngredients: SelectedIngredient[]) {
   const extras = selectedIngredients
     .filter((s) => s.included)
@@ -117,6 +153,23 @@ function orderTotal(order: CartOrder): number {
   return orderSubtotal(order) + orderDeliveryFee(order);
 }
 
+/** Clientes fictícios para os pedidos seed. Alguns nomes coincidem de
+ * propósito com os das reservas mockadas, para o painel de Clientes cruzar
+ * pedidos + reservas da mesma pessoa. */
+const SEED_CUSTOMERS: { name: string; phone: string; email: string }[] = [
+  { name: "Manuel Neto", phone: "+244 923 111 222", email: "manuel.neto@gmail.com" },
+  { name: "Ana Paula Silva", phone: "+244 912 888 999", email: "anapaula.silva@gmail.com" },
+  { name: "Filomena Costa", phone: "+244 927 456 111", email: "filomena.costa@gmail.com" },
+  { name: "Rui Fernandes", phone: "+244 923 777 010", email: "rui.fernandes@gmail.com" },
+  { name: "Cátia Lourenço", phone: "+244 928 552 667", email: "catia.lourenco@gmail.com" },
+  { name: "Nelson Adão", phone: "+244 921 004 887", email: "nelson.adao@gmail.com" },
+];
+
+function seedCustomerFor(id: string) {
+  const n = Array.from(id).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return SEED_CUSTOMERS[n % SEED_CUSTOMERS.length]!;
+}
+
 /** Um pedido seed a partir de ids de prato reais — usado para dar aos
  * painéis de Pedidos/Estatísticas de vários restaurantes (não só um) algo
  * para mostrar logo de início, sem precisar de criar pedidos a viver o
@@ -126,6 +179,13 @@ function buildSeedOrder(
   menuItemIds: string[],
   status: CartOrderStatus,
   daysAgo: number,
+  extra?: {
+    note?: string;
+    paymentMethod?: string;
+    hoursAgo?: number;
+    addressIndex?: number;
+    customerIndex?: number;
+  },
 ): CartOrder | null {
   const items = menuItemIds
     .map((mid) => getMenuItem(mid))
@@ -134,6 +194,13 @@ function buildSeedOrder(
   const restaurant = getRestaurant(items[0]!.restaurantId);
   const createdAt = new Date();
   createdAt.setDate(createdAt.getDate() - daysAgo);
+  if (extra?.hoursAgo) createdAt.setHours(createdAt.getHours() - extra.hoursAgo);
+  const addr =
+    (extra?.addressIndex != null && INITIAL_SAVED_ADDRESSES[extra.addressIndex]) ||
+    INITIAL_SAVED_ADDRESSES.find((a) => a.isDefault) ||
+    INITIAL_SAVED_ADDRESSES[0]!;
+  const customer =
+    (extra?.customerIndex != null && SEED_CUSTOMERS[extra.customerIndex]) || seedCustomerFor(id);
   return {
     id,
     restaurantId: items[0]!.restaurantId,
@@ -144,10 +211,14 @@ function buildSeedOrder(
       selectedIngredients: [],
     })),
     createdAt: createdAt.toISOString(),
-    deliveryAddress:
-      INITIAL_SAVED_ADDRESSES.find((a) => a.isDefault) ?? INITIAL_SAVED_ADDRESSES[0]!,
+    customerName: customer.name,
+    customerPhone: customer.phone,
+    customerEmail: customer.email,
+    deliveryAddress: addr,
     status,
     estimatedMinutes: restaurant?.estimatedDeliveryMinutes ?? 30,
+    ...(extra?.paymentMethod ? { paymentMethod: extra.paymentMethod } : {}),
+    ...(extra?.note ? { note: extra.note } : {}),
   };
 }
 
@@ -156,10 +227,50 @@ function seedOrders(): CartOrder[] {
     buildSeedOrder("order-seed-1", ["menu-601", "menu-shared-agua-601"], "onTheWay", 0),
     buildSeedOrder("order-seed-2", ["menu-101"], "delivered", 2),
     buildSeedOrder("order-seed-3", ["menu-302"], "pending", 0),
+
+    // --- Bistrô Sabor & Arte (rest-1): histórico alargado para os painéis
+    // de Pedidos e Estatísticas. ---
+    buildSeedOrder("order-b1", ["menu-101"], "pending", 0, {
+      note: "Sem jindungo, por favor.",
+      hoursAgo: 1,
+    }),
+    buildSeedOrder("order-b2", ["menu-102", "menu-104"], "pending", 0, {
+      hoursAgo: 3,
+      addressIndex: 1,
+    }),
+    buildSeedOrder("order-b3", ["menu-103"], "accepted", 0, {
+      paymentMethod: "Multicaixa Express",
+      hoursAgo: 2,
+    }),
+    buildSeedOrder("order-b4", ["menu-101", "menu-105"], "onTheWay", 0, {
+      paymentMethod: "Numerário",
+      hoursAgo: 1,
+      addressIndex: 1,
+    }),
+    buildSeedOrder("order-b5", ["menu-104"], "delivered", 1, {
+      paymentMethod: "Multicaixa Express",
+    }),
+    buildSeedOrder("order-b6", ["menu-102"], "delivered", 2, { paymentMethod: "Numerário" }),
+    buildSeedOrder("order-b7", ["menu-101", "menu-103"], "delivered", 3, {
+      paymentMethod: "Multicaixa Express",
+      note: "Entregar na portaria.",
+      addressIndex: 1,
+    }),
+    buildSeedOrder("order-b8", ["menu-106"], "delivered", 4),
+    buildSeedOrder("order-b9", ["menu-105"], "rejected", 2, { note: "Fora da área de entrega." }),
+    buildSeedOrder("order-b10", ["menu-102", "menu-104", "menu-106"], "delivered", 5, {
+      paymentMethod: "Numerário",
+    }),
+    buildSeedOrder("order-b11", ["menu-101"], "delivered", 6, {
+      paymentMethod: "Multicaixa Express",
+      addressIndex: 1,
+    }),
+    buildSeedOrder("order-b12", ["menu-103"], "delivered", 8, { paymentMethod: "Numerário" }),
   ].filter((o): o is CartOrder => o !== null);
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<CartOrder[]>(seedOrders);
   const [hydrated, setHydrated] = useState(false);
 
@@ -212,6 +323,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
               selectedIngredients: item.selectedIngredients ?? [],
             })),
             createdAt: new Date().toISOString(),
+            customerName: user?.name ?? "Cliente Kino",
+            customerPhone: user?.phone ?? "",
+            ...(user?.email ? { customerEmail: user.email } : {}),
             deliveryAddress,
             status: "pending",
             estimatedMinutes: getRestaurant(restaurantId)?.estimatedDeliveryMinutes ?? 30,
@@ -235,6 +349,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
             .filter((o) => o.lines.length > 0),
         ),
       removeOrder: (orderId) => setOrders((prev) => prev.filter((o) => o.id !== orderId)),
+      cancelOrder: (orderId) =>
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId && o.status === "pending" ? { ...o, status: "canceled" } : o,
+          ),
+        ),
       confirmOrder: (orderId, paymentMethod, note) =>
         setOrders((prev) =>
           prev.map((o) =>
@@ -247,7 +367,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o))),
       clear: () => setOrders([]),
     };
-  }, [orders]);
+  }, [orders, user]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

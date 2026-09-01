@@ -9,7 +9,9 @@ import type { SelectedIngredient } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
+import { useMenuAdmin } from "@/lib/menu-admin";
 import { usePreferences } from "@/lib/preferences";
+import { useRestaurantStatus } from "@/lib/restaurant-status";
 import { formatDishConflicts, useDishConflicts } from "@/lib/use-dish-conflicts";
 import { useTranslation } from "@/i18n";
 
@@ -44,8 +46,13 @@ function DishDetail() {
   const { item } = Route.useLoaderData();
   const addToBill = useAddToBill();
   const { t } = useTranslation();
+  const { isAvailable } = useMenuAdmin();
+  const restaurantStatus = useRestaurantStatus(item.restaurantId);
   const { excludedIngredients, dietaryRestrictions } = usePreferences();
   const [qty, setQty] = useState(1);
+
+  const restaurantPaused = !restaurantStatus.available;
+  const available = item.isAvailable && isAvailable(item.id) && restaurantStatus.available;
 
   const conflicts = useDishConflicts(item);
   const hasAnyRestriction = excludedIngredients.length > 0 || dietaryRestrictions.length > 0;
@@ -205,12 +212,18 @@ function DishDetail() {
               </div>
               <button
                 type="button"
+                disabled={!available}
                 onClick={() => {
-                  for (let i = 0; i < qty; i++) addToBill(item.restaurantId, item.id, item.name);
+                  for (let i = 0; i < qty; i++)
+                    addToBill(item.restaurantId, item.id, item.name, selected);
                 }}
-                className="min-w-0 truncate rounded-xl bg-brand px-5 py-3.5 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90"
+                className="min-w-0 truncate rounded-xl bg-brand px-5 py-3.5 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
               >
-                Adicionar ao pedido · {formatKz(unit * qty)}
+                {restaurantPaused
+                  ? t("dishDetail.restaurantPaused")
+                  : available
+                    ? `${t("dishDetail.addToOrder")} · ${formatKz(unit * qty)}`
+                    : t("dishDetail.unavailable")}
               </button>
             </div>
 

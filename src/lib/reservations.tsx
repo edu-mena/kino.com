@@ -20,9 +20,11 @@ type ReservationsValue = {
   reservations: Reservation[];
   addReservation: (input: NewReservationInput) => void;
   /** Usado pelo painel do restaurante (`/admin/reservas`) — Pendente →
-   * Confirmada/Recusada. Não há backend real: como no resto da app, o
-   * painel lê/escreve o mesmo estado partilhado que a página de cliente. */
+   * Confirmada/Recusada/Cancelada. Não há backend real: como no resto da
+   * app, o painel lê/escreve o mesmo estado partilhado que o cliente. */
   updateReservationStatus: (id: string, status: string) => void;
+  /** Mesa atribuída pelo restaurante (opcional; `undefined` limpa). */
+  assignTable: (id: string, tableId?: string) => void;
 };
 
 const ReservationsContext = createContext<ReservationsValue | null>(null);
@@ -84,8 +86,22 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
   const updateReservationStatus = (id: string, status: string) =>
     setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
 
+  const assignTable = (id: string, tableId?: string) =>
+    setReservations((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        if (!tableId) {
+          const { tableId: _drop, ...rest } = r;
+          return rest;
+        }
+        return { ...r, tableId };
+      }),
+    );
+
   return (
-    <ReservationsContext.Provider value={{ reservations, addReservation, updateReservationStatus }}>
+    <ReservationsContext.Provider
+      value={{ reservations, addReservation, updateReservationStatus, assignTable }}
+    >
       {children}
     </ReservationsContext.Provider>
   );

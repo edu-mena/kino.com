@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { INITIAL_RESTAURANTS } from "@/data/mockData";
+import { getAllRestaurants } from "@/data/helpers";
 import { useTranslation } from "@/i18n";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
@@ -33,6 +33,7 @@ function AdminEntrar() {
   const [restaurantId, setRestaurantId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
+  const restaurants = getAllRestaurants();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +42,7 @@ function AdminEntrar() {
     // Simulação: sem backend, "entrar" é só escolher qual restaurante gerir.
     setTimeout(() => {
       login(restaurantId);
-      const restaurant = INITIAL_RESTAURANTS.find((r) => r.id === restaurantId);
+      const restaurant = restaurants.find((r) => r.id === restaurantId);
       toast.success(t("adminEntrar.successToast", { name: restaurant?.name ?? "" }));
       navigate({ to: "/admin" });
     }, 500);
@@ -73,7 +74,7 @@ function AdminEntrar() {
               </div>
             </SelectTrigger>
             <SelectContent>
-              {INITIAL_RESTAURANTS.map((r) => (
+              {restaurants.map((r) => (
                 <SelectItem key={r.id} value={r.id}>
                   {r.name}
                 </SelectItem>

@@ -18,7 +18,12 @@ import { INITIAL_MENU_ITEMS, INITIAL_RESTAURANTS } from "./mockData";
 describe("getRestaurant / getMenuItem", () => {
   it("finds a restaurant by id", () => {
     const first = INITIAL_RESTAURANTS[0]!;
-    expect(getRestaurant(first.id)).toEqual(first);
+    // `getRestaurant` funde o seed com destaque/avaliações/horário (ver
+    // `withOverrides` em `helpers.ts`) — sem edições guardadas, os campos
+    // originais mantêm-se; `hours` e `openingHours` são sempre preenchidos.
+    const result = getRestaurant(first.id);
+    expect(result).toMatchObject({ ...first, openingHours: expect.any(String) });
+    expect(result?.hours).toBeDefined();
   });
 
   it("returns undefined for an unknown restaurant id", () => {

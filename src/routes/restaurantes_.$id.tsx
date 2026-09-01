@@ -1,11 +1,14 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { Bike, CalendarCheck, MapPin, Phone, Star } from "lucide-react";
+import { Bike, CalendarCheck, Info, MapPin, Phone, Star } from "lucide-react";
 import { useState } from "react";
 import icon from "@/assets/icon.png";
 import { MenuBrowser } from "@/components/menu-browser";
 import { ReservationDialog } from "@/components/reservation-dialog";
 import { PageShell } from "@/components/site-shell";
-import { getRestaurant } from "@/data/helpers";
+import { addressProvince, canDeliverToNeighborhood, getRestaurant } from "@/data/helpers";
+import { useTranslation } from "@/i18n";
+import { useLocation } from "@/lib/location";
+import { useRestaurantStatus } from "@/lib/restaurant-status";
 import { formatKz } from "@/lib/format";
 
 export const Route = createFileRoute("/restaurantes_/$id")({
@@ -27,7 +30,18 @@ export const Route = createFileRoute("/restaurantes_/$id")({
 
 function RestaurantDetail() {
   const restaurant = Route.useLoaderData();
+  const { t } = useTranslation();
+  const { selected: userLocation } = useLocation();
+  const status = useRestaurantStatus(restaurant.id);
   const [reservingOpen, setReservingOpen] = useState(false);
+
+  const paused = !status.available;
+  const acceptsReservations = restaurant.acceptsReservations ?? true;
+  const userProvince = userLocation ? addressProvince(userLocation.line2) : undefined;
+  const outOfZone =
+    restaurant.isDeliveryAvailable &&
+    !!userProvince &&
+    !canDeliverToNeighborhood(restaurant, userProvince);
 
   return (
     <PageShell>
@@ -68,15 +82,32 @@ function RestaurantDetail() {
 
         <p className="mt-4 max-w-2xl text-sm text-muted-foreground">{restaurant.description}</p>
 
+        {paused && (
+          <p className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            {status.reason === "closed"
+              ? t("restaurantDetail.closedNow", { opensAt: status.opensAt ?? "" })
+              : t("restaurantDetail.paused")}
+          </p>
+        )}
+        {!paused && outOfZone && (
+          <p className="mt-4 flex items-start gap-2 rounded-xl border border-brand/30 bg-brand/5 p-3 text-sm text-foreground">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+            {t("restaurantDetail.outOfZone", { province: userProvince ?? "" })}
+          </p>
+        )}
+
         <div className="mt-4 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => setReservingOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-primary px-5 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
-          >
-            <CalendarCheck className="h-4 w-4" />
-            Reservar mesa
-          </button>
+          {acceptsReservations && !paused && (
+            <button
+              type="button"
+              onClick={() => setReservingOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-primary px-5 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
+            >
+              <CalendarCheck className="h-4 w-4" />
+              {t("restaurantDetail.reserveTable")}
+            </button>
+          )}
         </div>
 
         <div className="mt-8">

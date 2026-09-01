@@ -132,6 +132,47 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   }
 }
 
+/*
+ * Deslize horizontal ao trocar de aba dentro de uma página do painel
+ * (ex: Pedidos <-> Estatísticas em /admin/pedidos). Reaproveita as keyframes
+ * `kino-page-*` da navegação do site convidado, mas restrito ao elemento com
+ * `view-transition-name: admin-panel` — o resto da página (abas, título)
+ * fica imóvel. Disparado via `document.startViewTransition({ types: ["admin-tab"] })`.
+ */
+html:active-view-transition-type(admin-tab)::view-transition-group(root),
+html:active-view-transition-type(admin-tab)::view-transition-old(root),
+html:active-view-transition-type(admin-tab)::view-transition-new(root) {
+  animation: none;
+}
+
+/* Recorta o deslize à coluna do conteúdo — assim a animação não passa por
+ * cima da sidebar fixa (o painel começa depois de `lg:ml-24 xl:ml-64`). */
+html:active-view-transition-type(admin-tab)::view-transition-group(admin-panel),
+html:active-view-transition-type(admin-tab)::view-transition-image-pair(admin-panel) {
+  overflow: clip;
+}
+
+html:active-view-transition-type(admin-tab)::view-transition-group(admin-panel) {
+  animation-duration: 450ms;
+  animation-timing-function: ease-in-out;
+}
+
+html:active-view-transition-type(admin-tab)::view-transition-old(admin-panel) {
+  animation: kino-page-out 450ms ease-in-out both;
+}
+
+html:active-view-transition-type(admin-tab)::view-transition-new(admin-panel) {
+  animation: kino-page-in 450ms ease-in-out both;
+}
+
+html:active-view-transition-type(admin-tab):active-view-transition-type(back)::view-transition-old(admin-panel) {
+  animation-name: kino-page-out-back;
+}
+
+html:active-view-transition-type(admin-tab):active-view-transition-type(back)::view-transition-new(admin-panel) {
+  animation-name: kino-page-in-back;
+}
+
 @theme {
   --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;

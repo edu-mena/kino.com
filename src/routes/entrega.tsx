@@ -8,14 +8,18 @@ import {
   MessageSquare,
   Package,
   Phone,
+  Star,
   Trash2,
   Wallet,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import icon from "@/assets/icon.png";
+import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
-import { lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
+import { isRefReviewed } from "@/data/reviews-store";
+import { lineCustomizations, lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
 import { paymentMethods } from "@/lib/mock-data";
 import { useTranslation } from "@/i18n";
@@ -51,6 +55,7 @@ function statusLabel(status: CartOrder["status"], t: ReturnType<typeof useTransl
     onTheWay: "statusOnTheWay",
     delivered: "statusDelivered",
     rejected: "statusRejected",
+    canceled: "statusCanceled",
   }[status];
   return t(`entrega.${key}`);
 }
@@ -139,9 +144,13 @@ function Entrega() {
 }
 
 function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }) {
-  const { removeOrder, orderTotal } = useCart();
+  const { cancelOrder, orderTotal } = useCart();
   const restaurant = getRestaurant(order.restaurantId);
   const { t } = useTranslation();
+  const canCancel = order.status === "pending";
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const reviewRef = `order:${order.id}`;
+  const canReview = order.status === "delivered" && !isRefReviewed(reviewRef);
 
   return (
     <>
@@ -254,10 +263,22 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           {order.lines.map((line) => {
             const item = getMenuItem(line.menuItemId);
             if (!item) return null;
+            const custom = lineCustomizations(
+              line,
+              t("entrega.customRemoved"),
+              t("entrega.customAdded"),
+            );
             return (
               <li key={line.key} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm">
-                <span className="min-w-0 truncate text-muted-foreground">
-                  {line.qty}× {item.name}
+                <span className="min-w-0">
+                  <span className="block truncate text-muted-foreground">
+                    {line.qty}× {item.name}
+                  </span>
+                  {custom.length > 0 && (
+                    <span className="block truncate text-xs text-muted-foreground/80">
+                      {custom.join(" · ")}
+                    </span>
+                  )}
                 </span>
                 <span className="shrink-0 font-semibold">
                   {formatKz(lineUnitPrice(line) * line.qty)}
@@ -282,17 +303,44 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         </Link>
       )}
 
-      <button
-        type="button"
-        onClick={() => {
-          removeOrder(order.id);
-          onBack();
-        }}
-        className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-        {t("entrega.cancelOrder")}
-      </button>
+      {canReview && (
+        <button
+          type="button"
+          onClick={() => setReviewOpen(true)}
+          className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
+        >
+          <Star className="h-4 w-4" /> {t("entrega.rate")}
+        </button>
+      )}
+      {restaurant && (
+        <ReviewDialog
+          open={reviewOpen}
+          onOpenChange={setReviewOpen}
+          restaurantId={order.restaurantId}
+          restaurantName={restaurant.name}
+          sourceRef={reviewRef}
+        />
+      )}
+
+      {canCancel ? (
+        <button
+          type="button"
+          onClick={() => {
+            cancelOrder(order.id);
+            toast.success(t("entrega.canceledToast"));
+          }}
+          className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          {t("entrega.cancelOrder")}
+        </button>
+      ) : order.status !== "delivered" &&
+        order.status !== "rejected" &&
+        order.status !== "canceled" ? (
+        <p className="mt-5 rounded-xl border border-dashed border-border py-2.5 text-center text-xs text-muted-foreground">
+          {t("entrega.cannotCancel")}
+        </p>
+      ) : null}
     </>
   );
 }
