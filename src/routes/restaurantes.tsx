@@ -16,9 +16,12 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Restaurant } from "@/data/types";
+import { getAllRestaurants } from "@/data/helpers";
 import { INITIAL_RESTAURANTS } from "@/data/mockData";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
+import { computeRestaurantStatus } from "@/lib/restaurant-status";
+import { useSubscriptions } from "@/lib/subscriptions";
 import { useTranslation } from "@/i18n";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
@@ -52,8 +55,9 @@ const sortOptions = [
 const PAGE_SIZE = 9;
 
 function Restaurantes() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
+  const { byRestaurant: subByRestaurant } = useSubscriptions();
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -65,7 +69,7 @@ function Restaurantes() {
   const [reservingRestaurant, setReservingRestaurant] = useState<Restaurant | null>(null);
 
   const filtered = useMemo(() => {
-    const list = INITIAL_RESTAURANTS.filter((r) => {
+    const list = getAllRestaurants().filter((r) => {
       const byQuery =
         !debouncedQuery ||
         r.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
@@ -147,6 +151,8 @@ function Restaurantes() {
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {pageItems.map((r) => {
             const liked = isFavoriteRestaurant(r.id);
+            const rStatus = computeRestaurantStatus(r, subByRestaurant(r.id)?.status, locale);
+            const paused = !rStatus.available;
             return (
               <div
                 key={r.id}
@@ -164,15 +170,24 @@ function Restaurantes() {
                   <Heart className={`h-4 w-4 ${liked ? "fill-brand text-brand" : ""}`} />
                 </button>
                 <Link to="/restaurantes/$id" params={{ id: r.id }}>
-                  <div className="h-40 overflow-hidden bg-surface">
+                  <div className="relative h-40 overflow-hidden bg-surface">
                     <img
                       src={r.coverImage}
                       alt={`Interior do restaurante ${r.name}`}
                       loading="lazy"
                       width={1024}
                       height={768}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+                        paused ? "grayscale" : ""
+                      }`}
                     />
+                    {paused && (
+                      <span className="absolute inset-x-2 bottom-2 rounded-full bg-foreground/80 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-background">
+                        {rStatus.reason === "closed"
+                          ? t("restaurantes.closedNow")
+                          : t("restaurantes.temporarilyUnavailable")}
+                      </span>
+                    )}
                   </div>
                   <div className="p-5">
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">

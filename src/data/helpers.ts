@@ -1,22 +1,39 @@
-import { INITIAL_RESTAURANTS, INITIAL_REVIEWS } from "./mockData";
+import { INITIAL_RESTAURANTS } from "./mockData";
+import { getCustomRestaurants } from "./custom-restaurants-store";
 import { getEffectiveMenuItems } from "./menu-store";
 import { applyProfileEdits } from "./restaurant-profile-store";
+import { blendedRating, getEffectiveReviews } from "./reviews-store";
 import { getEffectiveStories } from "./stories-store";
+import { applySystemFlags } from "./system-flags-store";
 import type { MenuItem, Restaurant, RestaurantStory, Review } from "./types";
+import { formatWeeklyHours, seedHoursFor } from "@/lib/opening-hours";
 
-/** Aplica as edições guardadas em `/admin/perfil` (ver
- * `@/data/restaurant-profile-store`) sobre o seed — assim uma mudança feita
- * lá aparece em todo o lado que lê um restaurante, painel e cliente. */
-export function getRestaurant(id: string): Restaurant | undefined {
-  const restaurant = INITIAL_RESTAURANTS.find((r) => r.id === id);
-  return restaurant ? applyProfileEdits(restaurant) : undefined;
+/** Edições de `/admin/perfil` + sinalizadores da área de sistema (destaque) +
+ * avaliações de clientes + horário estruturado, aplicados sobre o seed.
+ * É o que faz uma mudança aparecer em todo o lado que lê um restaurante. */
+function withOverrides(seed: Restaurant): Restaurant {
+  const r = applySystemFlags(applyProfileEdits(seed));
+  const { rating, reviewCount } = blendedRating(r.id, seed.rating, seed.reviewCount);
+  const hours = r.hours ?? seedHoursFor(r.id);
+  return {
+    ...r,
+    rating,
+    reviewCount,
+    hours,
+    openingHours: r.openingHours || formatWeeklyHours(hours, "pt"),
+  };
 }
 
-/** Todos os restaurantes, já com as edições do `/admin/perfil` aplicadas —
- * base pra busca global (ver `header-search.tsx`), que precisa devolver o
- * próprio restaurante como resultado, não só os seus pratos. */
+export function getRestaurant(id: string): Restaurant | undefined {
+  const seed =
+    INITIAL_RESTAURANTS.find((r) => r.id === id) ?? getCustomRestaurants().find((r) => r.id === id);
+  return seed ? withOverrides(seed) : undefined;
+}
+
+/** Todos os restaurantes (seed + criados em runtime), já com edições,
+ * destaque, avaliações e horário aplicados. Base da busca global. */
 export function getAllRestaurants(): Restaurant[] {
-  return INITIAL_RESTAURANTS.map(applyProfileEdits);
+  return [...INITIAL_RESTAURANTS, ...getCustomRestaurants()].map(withOverrides);
 }
 
 // Todas as funções de prato abaixo leem de `getEffectiveMenuItems()`, não do
@@ -118,6 +135,17 @@ export function getProvinces(): string[] {
   return [...ANGOLA_PROVINCES];
 }
 
+/** Extrai a província de uma morada guardada — a última parte de `line2`
+ * (ex: "Miramar, Luanda") que bate numa província de Angola. */
+export function addressProvince(line2: string): string | undefined {
+  const parts = line2.split(",").map((p) => p.trim());
+  for (let i = parts.length - 1; i >= 0; i -= 1) {
+    const hit = ANGOLA_PROVINCES.find((p) => p.toLowerCase() === parts[i]!.toLowerCase());
+    if (hit) return hit;
+  }
+  return undefined;
+}
+
 /** Províncias cobertas pela entrega deste restaurante — vazio quando não
  * entrega em lugar nenhum; assume só a própria província quando
  * `deliveryZones` não foi definido explicitamente. */
@@ -144,12 +172,12 @@ export function getStoriesForRestaurant(restaurantId: string): RestaurantStory[]
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 }
 
-/** Avaliações de um restaurante, mais recente primeiro — usado no painel do
- * restaurante (`/admin/avaliacoes`). */
+/** Avaliações de um restaurante, mais recente primeiro — seed + as deixadas
+ * por clientes (ver `@/data/reviews-store`). */
 export function getReviewsForRestaurant(restaurantId: string): Review[] {
-  return INITIAL_REVIEWS.filter((r) => r.restaurantId === restaurantId).sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
+  return getEffectiveReviews()
+    .filter((r) => r.restaurantId === restaurantId)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
 /** Restaurantes que têm pelo menos um story, mais recente primeiro. */

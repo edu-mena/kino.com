@@ -6,7 +6,8 @@ import {
   renameMenu,
   toggleMenuActive,
 } from "@/data/menus-store";
-import { menuHasDishes } from "@/data/menu-store";
+import { createMenuItem, menuHasDishes, normalizeIngredients } from "@/data/menu-store";
+import { getMenuCategoryTemplate } from "@/data/menu-templates";
 import { INITIAL_RESTAURANTS } from "@/data/mockData";
 import type { RestaurantMenu } from "@/data/types";
 
@@ -26,7 +27,16 @@ function initialMenus(): RestaurantMenu[] {
 type MenusAdminValue = {
   menus: RestaurantMenu[];
   menusByRestaurant: (restaurantId: string) => RestaurantMenu[];
-  createMenu: (restaurantId: string, name: string) => RestaurantMenu;
+  createMenu: (restaurantId: string, name: string, category?: string) => RestaurantMenu;
+  /** Cria um cardápio de uma categoria e, se `withDishes`, semeia-o com os
+   * pratos-modelo dessa categoria (ver `@/data/menu-templates`). Devolve o
+   * cardápio e quantos pratos foram criados. */
+  createMenuFromCategory: (
+    restaurantId: string,
+    categoryKey: string,
+    withDishes: boolean,
+    name?: string,
+  ) => { menu: RestaurantMenu; dishCount: number };
   renameMenu: (id: string, name: string) => void;
   toggleMenuActive: (id: string) => void;
   /** `false` se recusado (é o último cardápio do restaurante, ou ainda tem
@@ -54,7 +64,29 @@ export function MenusAdminProvider({ children }: { children: ReactNode }) {
   const value: MenusAdminValue = {
     menus,
     menusByRestaurant: (restaurantId) => menus.filter((m) => m.restaurantId === restaurantId),
-    createMenu: (restaurantId, name) => createMenu(restaurantId, name),
+    createMenu: (restaurantId, name, category) => createMenu(restaurantId, name, category),
+    createMenuFromCategory: (restaurantId, categoryKey, withDishes, name) => {
+      const template = getMenuCategoryTemplate(categoryKey);
+      const menu = createMenu(restaurantId, name ?? template?.defaultName ?? "", categoryKey);
+      let dishCount = 0;
+      if (withDishes && template) {
+        for (const dish of template.dishes) {
+          const { ok } = createMenuItem(restaurantId, {
+            menuId: menu.id,
+            name: dish.name,
+            description: dish.description,
+            price: dish.price,
+            category: dish.category,
+            image: dish.image,
+            portionInfo: dish.portionInfo,
+            prepTimeMinutes: dish.prepTimeMinutes,
+            ingredients: normalizeIngredients(dish.ingredients),
+          });
+          if (ok) dishCount += 1;
+        }
+      }
+      return { menu, dishCount };
+    },
     renameMenu: (id, name) => renameMenu(id, name),
     toggleMenuActive: (id) => toggleMenuActive(id),
     deleteMenu: (id) => deleteMenu(id),

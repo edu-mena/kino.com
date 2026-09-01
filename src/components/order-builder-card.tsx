@@ -14,12 +14,19 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { getMenuItem, getRestaurant } from "@/data/helpers";
+import {
+  addressProvince,
+  canDeliverToNeighborhood,
+  getDeliveryZones,
+  getMenuItem,
+  getRestaurant,
+} from "@/data/helpers";
 import { useTranslation } from "@/i18n";
-import { useBill } from "@/lib/bill";
+import { billLineUnitPrice, useBill } from "@/lib/bill";
 import { useCart } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
 import { useLocation } from "@/lib/location";
+import { useRestaurantStatus } from "@/lib/restaurant-status";
 
 /**
  * Card fixo no canto inferior direito — lista temporária de tudo o que foi
@@ -38,6 +45,7 @@ export function OrderBuilderCard() {
   const { t } = useTranslation();
   const { restaurantId, lines, updateQty, discard } = useBill();
   const { addOrder } = useCart();
+  const status = useRestaurantStatus(restaurantId ?? "");
   const { allAddresses, selected: headerLocation } = useLocation();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
@@ -49,8 +57,13 @@ export function OrderBuilderCard() {
   const restaurant = getRestaurant(restaurantId);
   if (!restaurant) return null;
 
-  const canDeliver = restaurant.isDeliveryAvailable;
-  const total = lines.reduce((sum, l) => sum + (getMenuItem(l.menuItemId)?.price ?? 0) * l.qty, 0);
+  const paused = !status.available;
+  const pausedMessage =
+    status.reason === "closed"
+      ? t("orderBuilderCard.closedNow", { opensAt: status.opensAt ?? "" })
+      : t("orderBuilderCard.restaurantPaused");
+  const canDeliver = restaurant.isDeliveryAvailable && !paused;
+  const total = lines.reduce((sum, l) => sum + billLineUnitPrice(l) * l.qty, 0);
 
   const openAddressConfirm = () => {
     setChosenAddressId(headerLocation?.id ?? allAddresses[0]?.id ?? null);
@@ -60,14 +73,28 @@ export function OrderBuilderCard() {
   const handleConfirmDelivery = () => {
     const address = allAddresses.find((a) => a.id === chosenAddressId);
     if (!address) {
-      toast.error("Adicione um endereço em Perfil antes de pedir entrega.");
+      toast.error(t("orderBuilderCard.needAddress"));
+      return;
+    }
+    if (paused) {
+      toast.error(pausedMessage);
+      return;
+    }
+    const province = addressProvince(address.line2);
+    if (province && !canDeliverToNeighborhood(restaurant, province)) {
+      toast.error(t("orderBuilderCard.outOfZone", { province }));
       return;
     }
     // Tudo o que está na lista vira UM pedido de entrega só — mesmo com
-    // vários pratos diferentes, conta como um delivery único.
+    // vários pratos diferentes, conta como um delivery único. As
+    // personalizações do prato (ingredientes) seguem junto.
     addOrder(
       restaurantId,
-      lines.map((line) => ({ menuItemId: line.menuItemId, qty: line.qty })),
+      lines.map((line) => ({
+        menuItemId: line.menuItemId,
+        qty: line.qty,
+        selectedIngredients: line.selectedIngredients,
+      })),
       address,
       note,
     );
@@ -152,12 +179,11 @@ export function OrderBuilderCard() {
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90"
                 >
                   <Bike className="h-4 w-4" />
-                  Solicitar delivery
+                  {t("orderBuilderCard.requestDelivery")}
                 </button>
               ) : (
                 <p className="rounded-xl border border-dashed border-primary-foreground/30 px-3 py-2.5 text-center text-xs text-primary-foreground/80">
-                  Este restaurante não entrega nesta área. Contacte-o diretamente ou visite-o para
-                  fazer o pedido.
+                  {paused ? pausedMessage : t("orderBuilderCard.noDeliveryHere")}
                 </p>
               )}
               <button
@@ -166,7 +192,7 @@ export function OrderBuilderCard() {
                 className="flex w-full items-center justify-center gap-1.5 py-1.5 text-xs font-semibold text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Descartar lista
+                {t("orderBuilderCard.discardList")}
               </button>
             </div>
           </div>
@@ -176,11 +202,15 @@ export function OrderBuilderCard() {
       <Dialog open={addressConfirmOpen} onOpenChange={setAddressConfirmOpen}>
         <DialogContent className="max-w-sm rounded-[1.5rem] border-none bg-card p-6">
           <DialogTitle className="font-display text-lg font-bold">
-            Confirmar localização de entrega
+            {t("orderBuilderCard.confirmLocationTitle")}
           </DialogTitle>
           <p className="mt-1 text-sm text-muted-foreground">
-            Escolha para onde vai o pedido — a mesma localização indicada no topo, ou outra guardada
-            no seu perfil.
+            {t("orderBuilderCard.confirmLocationDesc")}
+          </p>
+          <p className="mt-2 rounded-lg bg-surface px-3 py-2 text-xs text-muted-foreground">
+            {t("orderBuilderCard.coveredZones", {
+              zones: getDeliveryZones(restaurant).join(", ") || restaurant.neighborhood,
+            })}
           </p>
 
           <div className="mt-4 space-y-2">

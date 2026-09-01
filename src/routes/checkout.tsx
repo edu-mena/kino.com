@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { PageShell } from "@/components/site-shell";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
-import { lineUnitPrice, useCart } from "@/lib/cart";
+import { lineCustomizations, lineUnitPrice, useCart } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
 import { paymentMethods } from "@/lib/mock-data";
 import { usePreferences } from "@/lib/preferences";
@@ -202,13 +202,25 @@ function Checkout() {
                       const item = getMenuItem(line.menuItemId);
                       if (!item) return null;
                       const unit = lineUnitPrice(line);
+                      const custom = lineCustomizations(
+                        line,
+                        t("checkout.customRemoved"),
+                        t("checkout.customAdded"),
+                      );
                       return (
                         <li
                           key={line.key}
                           className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm"
                         >
-                          <span className="min-w-0 truncate text-muted-foreground">
-                            {line.qty}× {item.name}
+                          <span className="min-w-0">
+                            <span className="block truncate text-muted-foreground">
+                              {line.qty}× {item.name}
+                            </span>
+                            {custom.length > 0 && (
+                              <span className="block truncate text-xs text-muted-foreground/80">
+                                {custom.join(" · ")}
+                              </span>
+                            )}
                           </span>
                           <span className="shrink-0 font-semibold">
                             {formatKz(unit * line.qty)}

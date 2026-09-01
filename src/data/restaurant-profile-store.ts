@@ -33,6 +33,10 @@ export type RestaurantProfileEdit = Partial<
     | "estimatedDeliveryMinutes"
     | "cautionAmount"
     | "cautionPolicyNotice"
+    | "acceptsReservations"
+    | "reservationSlotMinutes"
+    | "hours"
+    | "ordersPausedManually"
   >
 >;
 

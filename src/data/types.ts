@@ -39,7 +39,33 @@ export interface Restaurant {
   cautionAmount: number;
   cautionPolicyNotice: string;
   isFeatured: boolean;
+  /** Aceita pedidos de reserva de mesa online. Ausente = true (a maioria
+   * aceita); false esconde o fluxo de reserva no lado do cliente. */
+  acceptsReservations?: boolean;
+  /** Duração média de uma reserva, em minutos — base da janela de ocupação
+   * usada para detetar sobre-reservas em `/admin/reservas`. Ausente = 120. */
+  reservationSlotMinutes?: number;
+  /** Horário estruturado por dia da semana (índice 0 = segunda). Quando
+   * ausente, `helpers.ts` sintetiza um a partir do id. `openingHours`
+   * (string) passa a ser derivado deste. */
+  hours?: WeeklyHours;
+  /** Override manual: o restaurante pausou os pedidos agora, independente
+   * do horário. */
+  ordersPausedManually?: boolean;
 }
+
+/** Um intervalo de funcionamento, "HH:mm"–"HH:mm". `end` pode ser menor que
+ * `start` (fecha depois da meia-noite). */
+export interface HoursRange {
+  start: string;
+  end: string;
+}
+export interface DayHours {
+  open: boolean;
+  ranges: HoursRange[];
+}
+/** 7 dias, índice 0 = segunda-feira. */
+export type WeeklyHours = DayHours[];
 
 export interface MenuItemIngredient {
   id: string;
@@ -66,6 +92,11 @@ export interface RestaurantMenu {
   restaurantId: string;
   name: string;
   isActive: boolean;
+  /** Categoria de cardápio escolhida na criação (ex: "jantar", "gourmet",
+   * "bar") — usada para o selo na UI e como base para os pratos-modelo.
+   * "personalizado" (ou ausente) = cardápio criado de raiz. Ver
+   * `@/data/menu-templates`. */
+  category?: string;
 }
 
 export interface MenuItem {
@@ -121,7 +152,11 @@ export interface Reservation {
   peopleCount: number;
   cautionAmount: number;
   cautionStatus: string;
+  /** "Pendente" | "Confirmada" | "Recusada" | "Cancelada" (cancelada pelo
+   * cliente enquanto ainda "Pendente"). String livre por compatibilidade. */
   status: string;
+  /** Mesa atribuída pelo restaurante ao confirmar (ver `@/data/tables-store`). */
+  tableId?: string;
   specialRequests?: string;
   createdAt: string;
 }

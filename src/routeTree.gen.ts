@@ -26,22 +26,36 @@ import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PreferenciasRouteImport } from './routes/preferencias'
 import { Route as ReservasRouteImport } from './routes/reservas'
 import { Route as RestaurantesRouteImport } from './routes/restaurantes'
+import { Route as SistemaRouteImport } from './routes/sistema'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAvaliacoesRouteImport } from './routes/admin.avaliacoes'
 import { Route as AdminCardapioRouteImport } from './routes/admin.cardapio'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AdminEstatisticasRouteImport } from './routes/admin.estatisticas'
+import { Route as AdminMesasRouteImport } from './routes/admin.mesas'
 import { Route as AdminPedidosRouteImport } from './routes/admin.pedidos'
 import { Route as AdminPerfilRouteImport } from './routes/admin.perfil'
 import { Route as AdminPromocoesRouteImport } from './routes/admin.promocoes'
 import { Route as AdminReservasRouteImport } from './routes/admin.reservas'
 import { Route as AdminStoriesRouteImport } from './routes/admin.stories'
+import { Route as AdminSubscricaoRouteImport } from './routes/admin.subscricao'
 import { Route as AdminSuporteRouteImport } from './routes/admin.suporte'
+import { Route as AdminCardapioPdfRouteImport } from './routes/admin_.cardapio-pdf'
 import { Route as AdminEntrarRouteImport } from './routes/admin_.entrar'
+import { Route as MenuRestaurantIdRouteImport } from './routes/menu.$restaurantId'
 import { Route as PratoDishIdRouteImport } from './routes/prato.$dishId'
 import { Route as PratosDishNameRouteImport } from './routes/pratos.$dishName'
 import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
+import { Route as SistemaIndexRouteImport } from './routes/sistema.index'
+import { Route as SistemaFrotaRouteImport } from './routes/sistema.frota'
+import { Route as SistemaOperacaoRouteImport } from './routes/sistema.operacao'
+import { Route as SistemaParceirosRouteImport } from './routes/sistema.parceiros'
+import { Route as SistemaPromocoesRouteImport } from './routes/sistema.promocoes'
+import { Route as SistemaRestaurantesRouteImport } from './routes/sistema.restaurantes'
+import { Route as SistemaSubscricoesRouteImport } from './routes/sistema.subscricoes'
+import { Route as SistemaSuporteRouteImport } from './routes/sistema.suporte'
+import { Route as SistemaEntrarRouteImport } from './routes/sistema_.entrar'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -128,6 +142,11 @@ const RestaurantesRoute = RestaurantesRouteImport.update({
   path: '/restaurantes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SistemaRoute = SistemaRouteImport.update({
+  id: '/sistema',
+  path: '/sistema',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SobreRoute = SobreRouteImport.update({
   id: '/sobre',
   path: '/sobre',
@@ -158,6 +177,11 @@ const AdminEstatisticasRoute = AdminEstatisticasRouteImport.update({
   path: '/estatisticas',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminMesasRoute = AdminMesasRouteImport.update({
+  id: '/mesas',
+  path: '/mesas',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminPedidosRoute = AdminPedidosRouteImport.update({
   id: '/pedidos',
   path: '/pedidos',
@@ -183,14 +207,29 @@ const AdminStoriesRoute = AdminStoriesRouteImport.update({
   path: '/stories',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSubscricaoRoute = AdminSubscricaoRouteImport.update({
+  id: '/subscricao',
+  path: '/subscricao',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSuporteRoute = AdminSuporteRouteImport.update({
   id: '/suporte',
   path: '/suporte',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCardapioPdfRoute = AdminCardapioPdfRouteImport.update({
+  id: '/admin_/cardapio-pdf',
+  path: '/admin/cardapio-pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminEntrarRoute = AdminEntrarRouteImport.update({
   id: '/admin_/entrar',
   path: '/admin/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MenuRestaurantIdRoute = MenuRestaurantIdRouteImport.update({
+  id: '/menu/$restaurantId',
+  path: '/menu/$restaurantId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PratoDishIdRoute = PratoDishIdRouteImport.update({
@@ -206,6 +245,51 @@ const PratosDishNameRoute = PratosDishNameRouteImport.update({
 const RestaurantesIdRoute = RestaurantesIdRouteImport.update({
   id: '/restaurantes_/$id',
   path: '/restaurantes/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SistemaIndexRoute = SistemaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SistemaRoute,
+} as any)
+const SistemaFrotaRoute = SistemaFrotaRouteImport.update({
+  id: '/frota',
+  path: '/frota',
+  getParentRoute: () => SistemaRoute,
+} as any)
+const SistemaOperacaoRoute = SistemaOperacaoRouteImport.update({
+  id: '/operacao',
+  path: '/operacao',
+  getParentRoute: () => SistemaRoute,
+} as any)
+const SistemaParceirosRoute = SistemaParceirosRouteImport.update({
+  id: '/parceiros',
+  path: '/parceiros',
+  getParentRoute: () => SistemaRoute,
+} as any)
+const SistemaPromocoesRoute = SistemaPromocoesRouteImport.update({
+  id: '/promocoes',
+  path: '/promocoes',
+  getParentRoute: () => SistemaRoute,
+} as any)
+const SistemaRestaurantesRoute = SistemaRestaurantesRouteImport.update({
+  id: '/restaurantes',
+  path: '/restaurantes',
+  getParentRoute: () => SistemaRoute,
+} as any)
+const SistemaSubscricoesRoute = SistemaSubscricoesRouteImport.update({
+  id: '/subscricoes',
+  path: '/subscricoes',
+  getParentRoute: () => SistemaRoute,
+} as any)
+const SistemaSuporteRoute = SistemaSuporteRouteImport.update({
+  id: '/suporte',
+  path: '/suporte',
+  getParentRoute: () => SistemaRoute,
+} as any)
+const SistemaEntrarRoute = SistemaEntrarRouteImport.update({
+  id: '/sistema_/entrar',
+  path: '/sistema/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -227,22 +311,36 @@ export interface FileRoutesByFullPath {
   '/preferencias': typeof PreferenciasRoute
   '/reservas': typeof ReservasRoute
   '/restaurantes': typeof RestaurantesRoute
+  '/sistema': typeof SistemaRouteWithChildren
   '/sobre': typeof SobreRoute
   '/admin/avaliacoes': typeof AdminAvaliacoesRoute
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/estatisticas': typeof AdminEstatisticasRoute
+  '/admin/mesas': typeof AdminMesasRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/admin/stories': typeof AdminStoriesRoute
+  '/admin/subscricao': typeof AdminSubscricaoRoute
   '/admin/suporte': typeof AdminSuporteRoute
+  '/admin/cardapio-pdf': typeof AdminCardapioPdfRoute
   '/admin/entrar': typeof AdminEntrarRoute
+  '/menu/$restaurantId': typeof MenuRestaurantIdRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
+  '/sistema/frota': typeof SistemaFrotaRoute
+  '/sistema/operacao': typeof SistemaOperacaoRoute
+  '/sistema/parceiros': typeof SistemaParceirosRoute
+  '/sistema/promocoes': typeof SistemaPromocoesRoute
+  '/sistema/restaurantes': typeof SistemaRestaurantesRoute
+  '/sistema/subscricoes': typeof SistemaSubscricoesRoute
+  '/sistema/suporte': typeof SistemaSuporteRoute
+  '/sistema/entrar': typeof SistemaEntrarRoute
   '/admin/': typeof AdminIndexRoute
+  '/sistema/': typeof SistemaIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -266,17 +364,30 @@ export interface FileRoutesByTo {
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/estatisticas': typeof AdminEstatisticasRoute
+  '/admin/mesas': typeof AdminMesasRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/admin/stories': typeof AdminStoriesRoute
+  '/admin/subscricao': typeof AdminSubscricaoRoute
   '/admin/suporte': typeof AdminSuporteRoute
+  '/admin/cardapio-pdf': typeof AdminCardapioPdfRoute
   '/admin/entrar': typeof AdminEntrarRoute
+  '/menu/$restaurantId': typeof MenuRestaurantIdRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
+  '/sistema/frota': typeof SistemaFrotaRoute
+  '/sistema/operacao': typeof SistemaOperacaoRoute
+  '/sistema/parceiros': typeof SistemaParceirosRoute
+  '/sistema/promocoes': typeof SistemaPromocoesRoute
+  '/sistema/restaurantes': typeof SistemaRestaurantesRoute
+  '/sistema/subscricoes': typeof SistemaSubscricoesRoute
+  '/sistema/suporte': typeof SistemaSuporteRoute
+  '/sistema/entrar': typeof SistemaEntrarRoute
   '/admin': typeof AdminIndexRoute
+  '/sistema': typeof SistemaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -297,22 +408,36 @@ export interface FileRoutesById {
   '/preferencias': typeof PreferenciasRoute
   '/reservas': typeof ReservasRoute
   '/restaurantes': typeof RestaurantesRoute
+  '/sistema': typeof SistemaRouteWithChildren
   '/sobre': typeof SobreRoute
   '/admin/avaliacoes': typeof AdminAvaliacoesRoute
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/estatisticas': typeof AdminEstatisticasRoute
+  '/admin/mesas': typeof AdminMesasRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/admin/stories': typeof AdminStoriesRoute
+  '/admin/subscricao': typeof AdminSubscricaoRoute
   '/admin/suporte': typeof AdminSuporteRoute
+  '/admin_/cardapio-pdf': typeof AdminCardapioPdfRoute
   '/admin_/entrar': typeof AdminEntrarRoute
+  '/menu/$restaurantId': typeof MenuRestaurantIdRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes_/$id': typeof RestaurantesIdRoute
+  '/sistema/frota': typeof SistemaFrotaRoute
+  '/sistema/operacao': typeof SistemaOperacaoRoute
+  '/sistema/parceiros': typeof SistemaParceirosRoute
+  '/sistema/promocoes': typeof SistemaPromocoesRoute
+  '/sistema/restaurantes': typeof SistemaRestaurantesRoute
+  '/sistema/subscricoes': typeof SistemaSubscricoesRoute
+  '/sistema/suporte': typeof SistemaSuporteRoute
+  '/sistema_/entrar': typeof SistemaEntrarRoute
   '/admin/': typeof AdminIndexRoute
+  '/sistema/': typeof SistemaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -334,22 +459,36 @@ export interface FileRouteTypes {
     | '/preferencias'
     | '/reservas'
     | '/restaurantes'
+    | '/sistema'
     | '/sobre'
     | '/admin/avaliacoes'
     | '/admin/cardapio'
     | '/admin/clientes'
     | '/admin/estatisticas'
+    | '/admin/mesas'
     | '/admin/pedidos'
     | '/admin/perfil'
     | '/admin/promocoes'
     | '/admin/reservas'
     | '/admin/stories'
+    | '/admin/subscricao'
     | '/admin/suporte'
+    | '/admin/cardapio-pdf'
     | '/admin/entrar'
+    | '/menu/$restaurantId'
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes/$id'
+    | '/sistema/frota'
+    | '/sistema/operacao'
+    | '/sistema/parceiros'
+    | '/sistema/promocoes'
+    | '/sistema/restaurantes'
+    | '/sistema/subscricoes'
+    | '/sistema/suporte'
+    | '/sistema/entrar'
     | '/admin/'
+    | '/sistema/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -373,17 +512,30 @@ export interface FileRouteTypes {
     | '/admin/cardapio'
     | '/admin/clientes'
     | '/admin/estatisticas'
+    | '/admin/mesas'
     | '/admin/pedidos'
     | '/admin/perfil'
     | '/admin/promocoes'
     | '/admin/reservas'
     | '/admin/stories'
+    | '/admin/subscricao'
     | '/admin/suporte'
+    | '/admin/cardapio-pdf'
     | '/admin/entrar'
+    | '/menu/$restaurantId'
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes/$id'
+    | '/sistema/frota'
+    | '/sistema/operacao'
+    | '/sistema/parceiros'
+    | '/sistema/promocoes'
+    | '/sistema/restaurantes'
+    | '/sistema/subscricoes'
+    | '/sistema/suporte'
+    | '/sistema/entrar'
     | '/admin'
+    | '/sistema'
   id:
     | '__root__'
     | '/'
@@ -403,22 +555,36 @@ export interface FileRouteTypes {
     | '/preferencias'
     | '/reservas'
     | '/restaurantes'
+    | '/sistema'
     | '/sobre'
     | '/admin/avaliacoes'
     | '/admin/cardapio'
     | '/admin/clientes'
     | '/admin/estatisticas'
+    | '/admin/mesas'
     | '/admin/pedidos'
     | '/admin/perfil'
     | '/admin/promocoes'
     | '/admin/reservas'
     | '/admin/stories'
+    | '/admin/subscricao'
     | '/admin/suporte'
+    | '/admin_/cardapio-pdf'
     | '/admin_/entrar'
+    | '/menu/$restaurantId'
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes_/$id'
+    | '/sistema/frota'
+    | '/sistema/operacao'
+    | '/sistema/parceiros'
+    | '/sistema/promocoes'
+    | '/sistema/restaurantes'
+    | '/sistema/subscricoes'
+    | '/sistema/suporte'
+    | '/sistema_/entrar'
     | '/admin/'
+    | '/sistema/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -439,11 +605,15 @@ export interface RootRouteChildren {
   PreferenciasRoute: typeof PreferenciasRoute
   ReservasRoute: typeof ReservasRoute
   RestaurantesRoute: typeof RestaurantesRoute
+  SistemaRoute: typeof SistemaRouteWithChildren
   SobreRoute: typeof SobreRoute
+  AdminCardapioPdfRoute: typeof AdminCardapioPdfRoute
   AdminEntrarRoute: typeof AdminEntrarRoute
+  MenuRestaurantIdRoute: typeof MenuRestaurantIdRoute
   PratoDishIdRoute: typeof PratoDishIdRoute
   PratosDishNameRoute: typeof PratosDishNameRoute
   RestaurantesIdRoute: typeof RestaurantesIdRoute
+  SistemaEntrarRoute: typeof SistemaEntrarRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -567,6 +737,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RestaurantesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sistema': {
+      id: '/sistema'
+      path: '/sistema'
+      fullPath: '/sistema'
+      preLoaderRoute: typeof SistemaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sobre': {
       id: '/sobre'
       path: '/sobre'
@@ -609,6 +786,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEstatisticasRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/mesas': {
+      id: '/admin/mesas'
+      path: '/mesas'
+      fullPath: '/admin/mesas'
+      preLoaderRoute: typeof AdminMesasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/pedidos': {
       id: '/admin/pedidos'
       path: '/pedidos'
@@ -644,6 +828,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStoriesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/subscricao': {
+      id: '/admin/subscricao'
+      path: '/subscricao'
+      fullPath: '/admin/subscricao'
+      preLoaderRoute: typeof AdminSubscricaoRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/suporte': {
       id: '/admin/suporte'
       path: '/suporte'
@@ -651,11 +842,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSuporteRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin_/cardapio-pdf': {
+      id: '/admin_/cardapio-pdf'
+      path: '/admin/cardapio-pdf'
+      fullPath: '/admin/cardapio-pdf'
+      preLoaderRoute: typeof AdminCardapioPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/entrar': {
       id: '/admin_/entrar'
       path: '/admin/entrar'
       fullPath: '/admin/entrar'
       preLoaderRoute: typeof AdminEntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/menu/$restaurantId': {
+      id: '/menu/$restaurantId'
+      path: '/menu/$restaurantId'
+      fullPath: '/menu/$restaurantId'
+      preLoaderRoute: typeof MenuRestaurantIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/prato/$dishId': {
@@ -679,6 +884,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RestaurantesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sistema/': {
+      id: '/sistema/'
+      path: '/'
+      fullPath: '/sistema/'
+      preLoaderRoute: typeof SistemaIndexRouteImport
+      parentRoute: typeof SistemaRoute
+    }
+    '/sistema/frota': {
+      id: '/sistema/frota'
+      path: '/frota'
+      fullPath: '/sistema/frota'
+      preLoaderRoute: typeof SistemaFrotaRouteImport
+      parentRoute: typeof SistemaRoute
+    }
+    '/sistema/operacao': {
+      id: '/sistema/operacao'
+      path: '/operacao'
+      fullPath: '/sistema/operacao'
+      preLoaderRoute: typeof SistemaOperacaoRouteImport
+      parentRoute: typeof SistemaRoute
+    }
+    '/sistema/parceiros': {
+      id: '/sistema/parceiros'
+      path: '/parceiros'
+      fullPath: '/sistema/parceiros'
+      preLoaderRoute: typeof SistemaParceirosRouteImport
+      parentRoute: typeof SistemaRoute
+    }
+    '/sistema/promocoes': {
+      id: '/sistema/promocoes'
+      path: '/promocoes'
+      fullPath: '/sistema/promocoes'
+      preLoaderRoute: typeof SistemaPromocoesRouteImport
+      parentRoute: typeof SistemaRoute
+    }
+    '/sistema/restaurantes': {
+      id: '/sistema/restaurantes'
+      path: '/restaurantes'
+      fullPath: '/sistema/restaurantes'
+      preLoaderRoute: typeof SistemaRestaurantesRouteImport
+      parentRoute: typeof SistemaRoute
+    }
+    '/sistema/subscricoes': {
+      id: '/sistema/subscricoes'
+      path: '/subscricoes'
+      fullPath: '/sistema/subscricoes'
+      preLoaderRoute: typeof SistemaSubscricoesRouteImport
+      parentRoute: typeof SistemaRoute
+    }
+    '/sistema/suporte': {
+      id: '/sistema/suporte'
+      path: '/suporte'
+      fullPath: '/sistema/suporte'
+      preLoaderRoute: typeof SistemaSuporteRouteImport
+      parentRoute: typeof SistemaRoute
+    }
+    '/sistema_/entrar': {
+      id: '/sistema_/entrar'
+      path: '/sistema/entrar'
+      fullPath: '/sistema/entrar'
+      preLoaderRoute: typeof SistemaEntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -687,11 +955,13 @@ interface AdminRouteChildren {
   AdminCardapioRoute: typeof AdminCardapioRoute
   AdminClientesRoute: typeof AdminClientesRoute
   AdminEstatisticasRoute: typeof AdminEstatisticasRoute
+  AdminMesasRoute: typeof AdminMesasRoute
   AdminPedidosRoute: typeof AdminPedidosRoute
   AdminPerfilRoute: typeof AdminPerfilRoute
   AdminPromocoesRoute: typeof AdminPromocoesRoute
   AdminReservasRoute: typeof AdminReservasRoute
   AdminStoriesRoute: typeof AdminStoriesRoute
+  AdminSubscricaoRoute: typeof AdminSubscricaoRoute
   AdminSuporteRoute: typeof AdminSuporteRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -701,16 +971,43 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCardapioRoute: AdminCardapioRoute,
   AdminClientesRoute: AdminClientesRoute,
   AdminEstatisticasRoute: AdminEstatisticasRoute,
+  AdminMesasRoute: AdminMesasRoute,
   AdminPedidosRoute: AdminPedidosRoute,
   AdminPerfilRoute: AdminPerfilRoute,
   AdminPromocoesRoute: AdminPromocoesRoute,
   AdminReservasRoute: AdminReservasRoute,
   AdminStoriesRoute: AdminStoriesRoute,
+  AdminSubscricaoRoute: AdminSubscricaoRoute,
   AdminSuporteRoute: AdminSuporteRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface SistemaRouteChildren {
+  SistemaFrotaRoute: typeof SistemaFrotaRoute
+  SistemaOperacaoRoute: typeof SistemaOperacaoRoute
+  SistemaParceirosRoute: typeof SistemaParceirosRoute
+  SistemaPromocoesRoute: typeof SistemaPromocoesRoute
+  SistemaRestaurantesRoute: typeof SistemaRestaurantesRoute
+  SistemaSubscricoesRoute: typeof SistemaSubscricoesRoute
+  SistemaSuporteRoute: typeof SistemaSuporteRoute
+  SistemaIndexRoute: typeof SistemaIndexRoute
+}
+
+const SistemaRouteChildren: SistemaRouteChildren = {
+  SistemaFrotaRoute: SistemaFrotaRoute,
+  SistemaOperacaoRoute: SistemaOperacaoRoute,
+  SistemaParceirosRoute: SistemaParceirosRoute,
+  SistemaPromocoesRoute: SistemaPromocoesRoute,
+  SistemaRestaurantesRoute: SistemaRestaurantesRoute,
+  SistemaSubscricoesRoute: SistemaSubscricoesRoute,
+  SistemaSuporteRoute: SistemaSuporteRoute,
+  SistemaIndexRoute: SistemaIndexRoute,
+}
+
+const SistemaRouteWithChildren =
+  SistemaRoute._addFileChildren(SistemaRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -730,11 +1027,15 @@ const rootRouteChildren: RootRouteChildren = {
   PreferenciasRoute: PreferenciasRoute,
   ReservasRoute: ReservasRoute,
   RestaurantesRoute: RestaurantesRoute,
+  SistemaRoute: SistemaRouteWithChildren,
   SobreRoute: SobreRoute,
+  AdminCardapioPdfRoute: AdminCardapioPdfRoute,
   AdminEntrarRoute: AdminEntrarRoute,
+  MenuRestaurantIdRoute: MenuRestaurantIdRoute,
   PratoDishIdRoute: PratoDishIdRoute,
   PratosDishNameRoute: PratosDishNameRoute,
   RestaurantesIdRoute: RestaurantesIdRoute,
+  SistemaEntrarRoute: SistemaEntrarRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

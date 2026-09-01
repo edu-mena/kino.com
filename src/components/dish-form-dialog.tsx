@@ -65,6 +65,7 @@ export function DishFormDialog({
   menuId,
   categories,
   dish,
+  kind = "dish",
   onSave,
 }: {
   open: boolean;
@@ -73,6 +74,9 @@ export function DishFormDialog({
   menuId: string;
   categories: string[];
   dish?: MenuItem | null;
+  /** "drink" só muda os rótulos e pré-seleciona a categoria "Bebidas" — o
+   * modelo de dados é o mesmo (`MenuItem`). */
+  kind?: "dish" | "drink";
   /** `false` = a escrita falhou (ex: quota do localStorage excedida). */
   onSave: (restaurantId: string, input: MenuItemInput, editingId?: string) => boolean;
 }) {
@@ -96,14 +100,14 @@ export function DishFormDialog({
   useEffect(() => {
     if (!open) return;
     setName(dish?.name ?? "");
-    setCategory(dish?.category ?? "");
+    setCategory(dish?.category ?? (kind === "drink" ? "Bebidas" : ""));
     setPrice(dish ? String(dish.price) : "");
     setPortionInfo(dish?.portionInfo ?? "");
     setPrepTimeMinutes(dish ? String(dish.prepTimeMinutes) : "");
     setDescription(dish?.description ?? "");
     setImage(dish?.image ?? "");
     setIngredientRows(dish ? toRows(dish.ingredients) : []);
-  }, [open, dish]);
+  }, [open, dish, kind]);
 
   const nameSuggestions =
     !dish && name.trim().length >= 2
@@ -166,7 +170,11 @@ export function DishFormDialog({
       toast.error(t("dishFormDialog.saveFailedError"));
       return;
     }
-    toast.success(dish ? t("dishFormDialog.updatedToast") : t("dishFormDialog.createdToast"));
+    toast.success(
+      dish
+        ? t("dishFormDialog.updatedToast")
+        : t(kind === "drink" ? "dishFormDialog.createdDrinkToast" : "dishFormDialog.createdToast"),
+    );
     if (!dish) dishHint.dismiss();
     onOpenChange(false);
   };
@@ -175,10 +183,18 @@ export function DishFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto rounded-[1.5rem] border-none bg-card p-6">
         <DialogTitle className="font-display text-lg font-bold">
-          {dish ? t("dishFormDialog.editTitle") : t("dishFormDialog.newTitle")}
+          {dish
+            ? t(kind === "drink" ? "dishFormDialog.editDrinkTitle" : "dishFormDialog.editTitle")
+            : t(kind === "drink" ? "dishFormDialog.newDrinkTitle" : "dishFormDialog.newTitle")}
         </DialogTitle>
         <DialogDescription>
-          {dish ? t("dishFormDialog.editDescription") : t("dishFormDialog.newDescription")}
+          {dish
+            ? t("dishFormDialog.editDescription")
+            : t(
+                kind === "drink"
+                  ? "dishFormDialog.newDrinkDescription"
+                  : "dishFormDialog.newDescription",
+              )}
         </DialogDescription>
 
         {!dish && dishHint.shouldShow && (
@@ -254,7 +270,7 @@ export function DishFormDialog({
                 id="dish-price"
                 type="number"
                 min={1}
-                step={50}
+                step="any"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 required
@@ -348,7 +364,7 @@ export function DishFormDialog({
                     <Input
                       type="number"
                       min={0}
-                      step={50}
+                      step="any"
                       value={row.extraPrice}
                       onChange={(e) => updateRow(index, { extraPrice: e.target.value })}
                       placeholder={t("dishFormDialog.extraPricePlaceholder")}
@@ -377,7 +393,9 @@ export function DishFormDialog({
           </div>
 
           <Button type="submit" disabled={imageUploading} className="w-full rounded-xl">
-            {dish ? t("dishFormDialog.saveChanges") : t("dishFormDialog.createDish")}
+            {dish
+              ? t("dishFormDialog.saveChanges")
+              : t(kind === "drink" ? "dishFormDialog.createDrink" : "dishFormDialog.createDish")}
           </Button>
         </form>
       </DialogContent>

@@ -19,6 +19,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { LeftSidebar, tabs } from "./left-sidebar";
 import { Logo } from "./logo";
+import { NotificationsBell } from "./notifications-bell";
 import { OrderBuilderCard } from "./order-builder-card";
 import {
   DropdownMenu,
@@ -283,6 +284,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
 
         <div className="flex shrink-0 items-center gap-2 justify-self-end">
           {!isGuestHome && <LocationSelect />}
+          {!isGuestHome && <NotificationsBell scope="client" />}
           {!isGuestHome && <CartButton />}
 
           {isFixedDashboardHeader && (
@@ -503,8 +505,13 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-border px-4 py-5 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} {t("siteFooter.copyright")}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-5 text-center text-xs text-muted-foreground">
+        <span>
+          © {new Date().getFullYear()} {t("siteFooter.copyright")}
+        </span>
+        <Link to="/sistema/entrar" className="hover:text-primary">
+          {t("siteFooter.systemAdmin")}
+        </Link>
       </div>
     </footer>
   );

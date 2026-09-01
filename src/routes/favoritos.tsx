@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { INITIAL_RESTAURANTS } from "@/data/mockData";
+import { getAllRestaurants } from "@/data/helpers";
 import { usePreferences } from "@/lib/preferences";
 import { useTranslation } from "@/i18n";
 
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/favoritos")({
 
 function Favoritos() {
   const { favoriteRestaurantIds } = usePreferences();
-  const favorites = INITIAL_RESTAURANTS.filter((r) => favoriteRestaurantIds.includes(r.id));
+  const favorites = getAllRestaurants().filter((r) => favoriteRestaurantIds.includes(r.id));
   const { t } = useTranslation();
 
   return (

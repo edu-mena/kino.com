@@ -1,10 +1,19 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
+import type { SelectedIngredient } from "@/data/types";
+import { useTranslation } from "@/i18n";
 
 const STORAGE_KEY = "kino_active_bill";
 
-export type BillLine = { key: string; menuItemId: string; qty: number };
+export type BillLine = {
+  key: string;
+  menuItemId: string;
+  qty: number;
+  /** Ingredientes principais desmarcados + adicionais escolhidos na página
+   * do prato. Sem isto a personalização nunca chegava ao pedido. */
+  selectedIngredients: SelectedIngredient[];
+};
 
 type ActiveBill = {
   restaurantId: string | null;
@@ -13,12 +22,38 @@ type ActiveBill = {
 
 const EMPTY_BILL: ActiveBill = { restaurantId: null, lines: [] };
 
+/** Preço unitário: base do prato + adicionais selecionados com custo. */
+export function billLineUnitPrice(line: BillLine): number {
+  const menuItem = getMenuItem(line.menuItemId);
+  if (!menuItem) return 0;
+  const extras = line.selectedIngredients
+    .filter((s) => s.included)
+    .reduce(
+      (sum, s) => sum + (menuItem.ingredients.find((i) => i.id === s.id)?.extraPrice ?? 0),
+      0,
+    );
+  return menuItem.price + extras;
+}
+
 function lineTotal(line: BillLine): number {
-  return (getMenuItem(line.menuItemId)?.price ?? 0) * line.qty;
+  return billLineUnitPrice(line) * line.qty;
+}
+
+/** Chave que distingue "burger sem cebola" de "burger" e de "burger + bacon". */
+function makeBillKey(menuItemId: string, selectedIngredients: SelectedIngredient[]): string {
+  const sig = selectedIngredients
+    .map((s) => `${s.id}:${s.included ? 1 : 0}`)
+    .sort()
+    .join(",");
+  return `${menuItemId}|${sig}`;
 }
 
 type BillValue = ActiveBill & {
-  addToBill: (restaurantId: string, menuItemId: string) => void;
+  addToBill: (
+    restaurantId: string,
+    menuItemId: string,
+    selectedIngredients?: SelectedIngredient[],
+  ) => void;
   updateQty: (key: string, qty: number) => void;
   discard: () => void;
   subtotalFor: (restaurantId: string) => number;
@@ -33,7 +68,13 @@ export function BillProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return;
     try {
-      setBill(JSON.parse(stored));
+      const parsed = JSON.parse(stored) as ActiveBill;
+      // Snapshots antigos podiam não ter `selectedIngredients`.
+      parsed.lines = parsed.lines.map((l) => ({
+        ...l,
+        selectedIngredients: l.selectedIngredients ?? [],
+      }));
+      setBill(parsed);
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -51,12 +92,13 @@ export function BillProvider({ children }: { children: ReactNode }) {
 
   const value: BillValue = {
     ...bill,
-    addToBill: (restaurantId, menuItemId) => {
+    addToBill: (restaurantId, menuItemId, selectedIngredients = []) => {
       const current = ensureRestaurant(restaurantId);
-      const existing = current.lines.find((l) => l.menuItemId === menuItemId);
+      const key = makeBillKey(menuItemId, selectedIngredients);
+      const existing = current.lines.find((l) => l.key === key);
       const lines = existing
-        ? current.lines.map((l) => (l.menuItemId === menuItemId ? { ...l, qty: l.qty + 1 } : l))
-        : [...current.lines, { key: `${menuItemId}-${Date.now()}`, menuItemId, qty: 1 }];
+        ? current.lines.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l))
+        : [...current.lines, { key, menuItemId, qty: 1, selectedIngredients }];
       persist({ ...current, lines });
     },
     updateQty: (key, qty) =>
@@ -91,14 +133,18 @@ export function useBill() {
  */
 export function useAddToBill() {
   const { restaurantId: currentRestaurantId, lines, addToBill } = useBill();
-  return (restaurantId: string, menuItemId: string, itemName: string) => {
+  const { t } = useTranslation();
+  return (
+    restaurantId: string,
+    menuItemId: string,
+    itemName: string,
+    selectedIngredients?: SelectedIngredient[],
+  ) => {
     if (currentRestaurantId && currentRestaurantId !== restaurantId && lines.length > 0) {
-      const previousName = getRestaurant(currentRestaurantId)?.name ?? "outro restaurante";
-      toast.info(
-        `Lista de ${previousName} foi substituída — só pode montar o pedido de um restaurante de cada vez.`,
-      );
+      const previousName = getRestaurant(currentRestaurantId)?.name ?? t("bill.otherRestaurant");
+      toast.info(t("bill.listReplaced", { name: previousName }));
     }
-    addToBill(restaurantId, menuItemId);
-    toast.success(`${itemName} adicionado ao pedido`);
+    addToBill(restaurantId, menuItemId, selectedIngredients);
+    toast.success(t("bill.addedToOrder", { name: itemName }));
   };
 }

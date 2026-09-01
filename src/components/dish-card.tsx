@@ -8,6 +8,7 @@ import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { usePreferences } from "@/lib/preferences";
+import { useRestaurantStatus } from "@/lib/restaurant-status";
 import { formatDishConflicts, useDishConflicts } from "@/lib/use-dish-conflicts";
 import { useTranslation } from "@/i18n";
 
@@ -15,10 +16,11 @@ export function DishCard({ item }: { item: MenuItem }) {
   const addToBill = useAddToBill();
   const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
   const { isAvailable } = useMenuAdmin();
+  const restaurantStatus = useRestaurantStatus(item.restaurantId);
   const { t } = useTranslation();
   const restaurant = getRestaurant(item.restaurantId);
   const liked = isFavoriteRestaurant(item.restaurantId);
-  const available = item.isAvailable && isAvailable(item.id);
+  const available = item.isAvailable && isAvailable(item.id) && restaurantStatus.available;
 
   // Conflitos deste prato com as restrições/exclusões do usuário em
   // Preferências, agrupados por motivo — dispara o aviso vermelho no
@@ -31,7 +33,7 @@ export function DishCard({ item }: { item: MenuItem }) {
     <div className="card-soft group relative flex flex-col overflow-hidden">
       <button
         type="button"
-        aria-label="Guardar restaurante nos favoritos"
+        aria-label={t("dishCard.saveFavorite")}
         onClick={() => toggleFavoriteRestaurant(item.restaurantId)}
         className="absolute left-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/80 text-muted-foreground backdrop-blur transition-colors hover:text-brand"
       >
@@ -93,7 +95,7 @@ export function DishCard({ item }: { item: MenuItem }) {
           <button
             type="button"
             disabled={!available}
-            aria-label={`Adicionar ${item.name} ao pedido`}
+            aria-label={t("dishCard.addAria", { name: item.name })}
             onClick={() => addToBill(item.restaurantId, item.id, item.name)}
             className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
           >

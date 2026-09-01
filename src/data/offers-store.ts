@@ -39,10 +39,15 @@ function writeState(state: OffersState) {
 }
 
 /** Todas as ofertas: seed (Kino) + criadas pelos restaurantes − eliminadas,
- * com edições aplicadas. */
+ * com edições aplicadas. As edições/eliminações das seed só chegam pela
+ * área de sistema (`/sistema/promocoes`); o painel do restaurante nunca
+ * lhes mexe. */
 export function getEffectiveOffers(): Offer[] {
   const { customOffers, overrides, deletedIds } = readState();
-  const fromSeed = INITIAL_OFFERS.filter((o) => !deletedIds.includes(o.id));
+  const fromSeed = INITIAL_OFFERS.filter((o) => !deletedIds.includes(o.id)).map((o) => ({
+    ...o,
+    ...overrides[o.id],
+  }));
   const fromCustom = customOffers
     .filter((o) => !deletedIds.includes(o.id))
     .map((o) => ({ ...o, ...overrides[o.id] }));
@@ -52,6 +57,15 @@ export function getEffectiveOffers(): Offer[] {
 export function createOffer(restaurantId: string, input: OfferInput): Offer {
   const state = readState();
   const offer: Offer = { id: `offer-custom-${Date.now()}`, restaurantId, ...input };
+  writeState({ ...state, customOffers: [...state.customOffers, offer] });
+  return offer;
+}
+
+/** Oferta global da Kino — sem `restaurantId`. Criada na área de sistema
+ * (`/sistema/promocoes`). */
+export function createKinoOffer(input: OfferInput): Offer {
+  const state = readState();
+  const offer = { id: `offer-kino-${Date.now()}`, ...input } as Offer;
   writeState({ ...state, customOffers: [...state.customOffers, offer] });
   return offer;
 }

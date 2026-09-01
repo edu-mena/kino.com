@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarCheck } from "lucide-react";
+import { CalendarCheck, Star, X } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import icon from "@/assets/icon.png";
+import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
+import { isRefReviewed } from "@/data/reviews-store";
 import { useReservations } from "@/lib/reservations";
 import { useTranslation } from "@/i18n";
 
@@ -17,9 +21,21 @@ export const Route = createFileRoute("/reservas")({
   component: Reservas,
 });
 
+const STATUS_KEY: Record<string, string> = {
+  Pendente: "statusPending",
+  Confirmada: "statusConfirmed",
+  Recusada: "statusRejected",
+  Cancelada: "statusCanceled",
+};
+
 function Reservas() {
-  const { reservations } = useReservations();
+  const { reservations, updateReservationStatus } = useReservations();
   const { t } = useTranslation();
+  const statusText = (s: string) => (STATUS_KEY[s] ? t(`reservas.${STATUS_KEY[s]}`) : s);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [review, setReview] = useState<{ id: string; restaurantId: string; name: string } | null>(
+    null,
+  );
 
   return (
     <PageShell>
@@ -57,8 +73,39 @@ function Reservas() {
                 <div className="min-w-0">
                   <p className="truncate font-display text-base font-bold">{r.restaurantName}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {r.date} · {r.time} · {r.peopleCount} pessoas
+                    {r.date} · {r.time} · {t("reservas.peopleCount", { count: r.peopleCount })}
                   </p>
+                  {r.status === "Pendente" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateReservationStatus(r.id, "Cancelada");
+                        toast.success(t("reservas.canceledToast"));
+                      }}
+                      className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                      {t("reservas.cancel")}
+                    </button>
+                  )}
+                  {r.status === "Confirmada" &&
+                    r.date < todayStr &&
+                    !isRefReviewed(`reservation:${r.id}`) && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setReview({
+                            id: r.id,
+                            restaurantId: r.restaurantId,
+                            name: r.restaurantName,
+                          })
+                        }
+                        className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary transition-colors hover:underline"
+                      >
+                        <Star className="h-3 w-3" />
+                        {t("reservas.rate")}
+                      </button>
+                    )}
                 </div>
                 <span
                   className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
@@ -66,10 +113,12 @@ function Reservas() {
                       ? "bg-success/15 text-success"
                       : r.status === "Recusada"
                         ? "bg-destructive/15 text-destructive"
-                        : "bg-brand/15 text-brand"
+                        : r.status === "Cancelada"
+                          ? "bg-muted-foreground/15 text-muted-foreground"
+                          : "bg-brand/15 text-brand"
                   }`}
                 >
-                  {r.status}
+                  {statusText(r.status)}
                 </span>
               </div>
             ))}
@@ -85,6 +134,16 @@ function Reservas() {
           </p>
         )}
       </div>
+
+      {review && (
+        <ReviewDialog
+          open
+          onOpenChange={(o) => !o && setReview(null)}
+          restaurantId={review.restaurantId}
+          restaurantName={review.name}
+          sourceRef={`reservation:${review.id}`}
+        />
+      )}
     </PageShell>
   );
 }

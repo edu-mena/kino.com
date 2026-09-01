@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Mail, MessageCircle, Phone, Send } from "lucide-react";
-import { useState } from "react";
+import { CheckCircle2, Mail, MessageCircle, Phone, Send } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AdminPageHeading } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { createTicket, getTickets } from "@/data/support-tickets-store";
 import { useTranslation } from "@/i18n";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
@@ -31,7 +32,14 @@ function AdminSuporte() {
   const { restaurant } = useRestaurantAdmin();
   const [subject, setSubject] = useState<(typeof subjectValues)[number]>("nome");
   const [message, setMessage] = useState("");
+  const [refreshTick, setRefreshTick] = useState(0);
   const { t } = useTranslation();
+
+  const myTickets = useMemo(
+    () => (restaurant ? getTickets().filter((tk) => tk.restaurantId === restaurant.id) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [restaurant, refreshTick],
+  );
 
   const subjects = [
     { value: "nome", label: t("adminSuporte.subjectName") },
@@ -54,12 +62,19 @@ function AdminSuporte() {
       return;
     }
     const subjectLabel = subjects.find((s) => s.value === subject)?.label ?? "Suporte";
+    createTicket({
+      restaurantId: restaurant.id,
+      restaurantName: restaurant.name,
+      subject: subjectLabel,
+      message: message.trim(),
+    });
+    setRefreshTick((n) => n + 1);
     const body = `${message}\n\n— ${restaurant.name}`;
     const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
       `[Painel Kino] ${subjectLabel}`,
     )}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
-    toast.success(t("adminSuporte.openingEmailToast"));
+    toast.success(t("adminSuporte.ticketSentToast"));
     setMessage("");
   };
 
@@ -160,6 +175,39 @@ function AdminSuporte() {
             <Send className="h-4 w-4" /> {t("adminSuporte.submit")}
           </Button>
         </form>
+
+        {myTickets.length > 0 && (
+          <div className="card-soft mt-6 p-6">
+            <h2 className="font-display text-base font-bold text-foreground">
+              {t("adminSuporte.myTicketsTitle")}
+            </h2>
+            <ul className="mt-3 space-y-2">
+              {myTickets.map((tk) => (
+                <li key={tk.id} className="rounded-xl border border-border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-foreground">{tk.subject}</span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                        tk.status === "resolved"
+                          ? "bg-success/15 text-success"
+                          : "bg-brand/15 text-brand"
+                      }`}
+                    >
+                      {tk.status === "resolved"
+                        ? t("adminSuporte.statusResolved")
+                        : t("adminSuporte.statusOpen")}
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{tk.message}</p>
+                  <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {new Date(tk.createdAt).toLocaleDateString()}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

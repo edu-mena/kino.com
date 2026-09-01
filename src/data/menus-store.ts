@@ -72,13 +72,14 @@ export function getMenusByRestaurant(restaurantId: string): RestaurantMenu[] {
   return getEffectiveMenus().filter((m) => m.restaurantId === restaurantId);
 }
 
-export function createMenu(restaurantId: string, name: string): RestaurantMenu {
+export function createMenu(restaurantId: string, name: string, category?: string): RestaurantMenu {
   const state = readState();
   const menu: RestaurantMenu = {
     id: `menu-custom-${Date.now()}`,
     restaurantId,
     name: name.trim() || defaultMenuName(),
     isActive: true,
+    ...(category ? { category } : {}),
   };
   writeState({ ...state, customMenus: [...state.customMenus, menu] });
   return menu;
