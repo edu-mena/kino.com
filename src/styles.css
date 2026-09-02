@@ -165,11 +165,15 @@ html:active-view-transition-type(admin-tab)::view-transition-new(admin-panel) {
   animation: kino-page-in 450ms ease-in-out both;
 }
 
-html:active-view-transition-type(admin-tab):active-view-transition-type(back)::view-transition-old(admin-panel) {
+html:active-view-transition-type(admin-tab):active-view-transition-type(back)::view-transition-old(
+    admin-panel
+  ) {
   animation-name: kino-page-out-back;
 }
 
-html:active-view-transition-type(admin-tab):active-view-transition-type(back)::view-transition-new(admin-panel) {
+html:active-view-transition-type(admin-tab):active-view-transition-type(back)::view-transition-new(
+    admin-panel
+  ) {
   animation-name: kino-page-in-back;
 }
 

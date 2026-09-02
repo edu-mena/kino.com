@@ -33,7 +33,11 @@
       "Bash(grep -n \"const { t } = useTranslation\\\\|CreditCard,\\\\|ChevronRight,\\\\|const { t, locale }\" src/routes/admin.index.tsx)",
       "Bash(grep -n \"canceledToast: \\\\\"Reserva cancelada.\\\\\"\\\\|cannotCancel:\\\\|temporarilyUnavailable:\\\\|statusCanceled: \\\\\"Cancelada\\\\\",\\\\|pauseOrdersLabel\\\\|detailPeople:\\\\|myTicketsTitle\\\\|ticketSentToast\\\\|openingEmailToast\\\\|subscriptionTitle:\\\\|onboardedToast\\\\|approveToast:\\\\|support: \\\\\"Suporte\\\\\"\\\\|nav: {\" src/i18n/pt.ts)",
       "Bash(grep -n \"viewStats: \\\\\"Ver estat\\\\|viewList:\\\\|adminReservas: {\\\\|conflictNone:\\\\|statusCanceled: \\\\\"Cancelada\\\\\",\\\\|canceledNote:\\\\|occupancyTableClash:\\\\|tableSuggest:\" src/i18n/pt.ts)",
-      "Bash(grep -n \"  adminReservas: {\\\\|secHoursHint: \\\\\"Quand le\\\\|detailReservations: \\\\\"Réservations\\\\\",\\\\|subscriptionTitle: \\\\\"Abonnement\\\\|fleet: \\\\\"Flotte\\\\\"\\\\|approveToast: \\\\\"Candidature approuvée.\\\\\"\\\\|emptyMessageError: \\\\\"Écrivez\\\\|subjectOther: \\\\\"Autre sujet\\\\\"\" src/i18n/fr.ts)"
+      "Bash(grep -n \"  adminReservas: {\\\\|secHoursHint: \\\\\"Quand le\\\\|detailReservations: \\\\\"Réservations\\\\\",\\\\|subscriptionTitle: \\\\\"Abonnement\\\\|fleet: \\\\\"Flotte\\\\\"\\\\|approveToast: \\\\\"Candidature approuvée.\\\\\"\\\\|emptyMessageError: \\\\\"Écrivez\\\\|subjectOther: \\\\\"Autre sujet\\\\\"\" src/i18n/fr.ts)",
+      "Bash(git commit -m ' *)",
+      "Bash(rm src/components/dish-preview-card.tsx)",
+      "Bash(sed -i '/previewLabel:/d' src/i18n/pt.ts src/i18n/en.ts src/i18n/fr.ts)",
+      "Bash(echo \"=== tsc exit: $? ===\")"
     ]
   }
 }

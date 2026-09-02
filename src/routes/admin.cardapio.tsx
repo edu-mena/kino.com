@@ -61,6 +61,9 @@ export const Route = createFileRoute("/admin/cardapio")({
 type AvailFilter = "todos" | "sim" | "nao";
 type SortKey = "nome" | "preco-asc" | "preco-desc" | "categoria";
 
+/** Aba virtual que lista os pratos de todos os cardápios do restaurante. */
+const ALL_MENU_ID = "__all__";
+
 const selectClass =
   "rounded-lg border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground accent-brand outline-none transition-colors focus:border-brand focus:text-brand";
 
@@ -99,17 +102,21 @@ function AdminCardapio() {
 
   useEffect(() => {
     if (!restaurant) return;
+    if (selectedMenuId === ALL_MENU_ID) return;
     if (selectedMenuId && menus.some((m) => m.id === selectedMenuId)) return;
     setSelectedMenuId(menus[0]?.id ?? defaultMenuId(restaurant.id));
   }, [restaurant, menus, selectedMenuId]);
 
-  const dishes = useMemo(
-    () =>
-      restaurant && selectedMenuId
-        ? items.filter((i) => i.restaurantId === restaurant.id && i.menuId === selectedMenuId)
-        : [],
-    [items, restaurant, selectedMenuId],
-  );
+  const viewingAll = selectedMenuId === ALL_MENU_ID;
+
+  const dishes = useMemo(() => {
+    if (!restaurant || !selectedMenuId) return [];
+    const mine = items.filter((i) => i.restaurantId === restaurant.id);
+    return viewingAll ? mine : mine.filter((i) => i.menuId === selectedMenuId);
+  }, [items, restaurant, selectedMenuId, viewingAll]);
+
+  const menuNameOf = (id?: string) =>
+    menus.find((m) => m.id === id)?.name ?? t("adminCardapio.mainMenuFallback");
 
   const categories = useMemo(() => [...new Set(dishes.map((i) => i.category))], [dishes]);
 
@@ -178,7 +185,9 @@ function AdminCardapio() {
 
   if (!restaurant || !selectedMenuId) return null;
 
-  const menuId = selectedMenuId;
+  // No "cardápio geral" não há alvo único — novos pratos vão para o
+  // primeiro cardápio real; edições mantêm o cardápio de cada prato.
+  const menuId = viewingAll ? (menus[0]?.id ?? defaultMenuId(restaurant.id)) : selectedMenuId;
 
   const openCreate = (kind: "dish" | "drink" = "dish") => {
     setEditingDish(null);
@@ -267,13 +276,15 @@ function AdminCardapio() {
               <DropdownMenuItem onSelect={() => setQrOpen(true)}>
                 <QrCode className="h-4 w-4" /> {t("adminCardapio.qrCode")}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() =>
-                  window.open(`/admin/cardapio-pdf?menu=${selectedMenuId}`, "_blank", "noopener")
-                }
-              >
-                <FileDown className="h-4 w-4" /> {t("adminCardapio.exportPdfThis")}
-              </DropdownMenuItem>
+              {!viewingAll && (
+                <DropdownMenuItem
+                  onSelect={() =>
+                    window.open(`/admin/cardapio-pdf?menu=${selectedMenuId}`, "_blank", "noopener")
+                  }
+                >
+                  <FileDown className="h-4 w-4" /> {t("adminCardapio.exportPdfThis")}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 onSelect={() => window.open("/admin/cardapio-pdf?menu=all", "_blank", "noopener")}
               >
@@ -287,6 +298,21 @@ function AdminCardapio() {
       <div className="mx-auto mt-6 max-w-6xl px-4 md:px-6">
         {/* Seletor de cardápios — abas assentes numa linha cinza */}
         <div className="flex flex-wrap items-end gap-2 border-b border-border">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedMenuId(ALL_MENU_ID);
+              setActiveId(null);
+            }}
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 rounded-t-2xl rounded-b-none border border-b-0 px-4 py-2 text-sm font-semibold transition-colors",
+              viewingAll
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-muted-foreground hover:border-primary",
+            )}
+          >
+            <LayoutGrid className="h-4 w-4" /> {t("adminCardapio.generalMenu")}
+          </button>
           {menus.map((menu) => (
             <button
               key={menu.id}
@@ -456,6 +482,7 @@ function AdminCardapio() {
                             </span>
                             <span className="block truncate text-xs text-muted-foreground">
                               {translateMenuCategory(d.category, locale)}
+                              {viewingAll && ` · ${menuNameOf(d.menuId)}`}
                             </span>
                           </span>
                         </span>
@@ -494,20 +521,25 @@ function AdminCardapio() {
                         <ChevronLeft className="h-4 w-4" /> {t("common.back")}
                       </button>
 
-                      <div className="flex items-start gap-3">
-                        <img
-                          src={active.image}
-                          alt=""
-                          className="h-16 w-16 shrink-0 rounded-2xl bg-surface object-cover"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <h2 className="font-display text-lg font-bold text-primary">
-                            {active.name}
-                          </h2>
-                          <p className="text-xs text-muted-foreground">
-                            {translateMenuCategory(active.category, locale)} · {active.portionInfo}
+                      <img
+                        src={active.image}
+                        alt={active.name}
+                        className={`aspect-video w-full rounded-2xl bg-surface object-cover ${
+                          active.isAvailable ? "" : "opacity-60 grayscale"
+                        }`}
+                      />
+                      <div className="mt-3">
+                        <h2 className="font-display text-lg font-bold text-primary">
+                          {active.name}
+                        </h2>
+                        <p className="text-xs text-muted-foreground">
+                          {translateMenuCategory(active.category, locale)} · {active.portionInfo}
+                        </p>
+                        {viewingAll && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {t("adminCardapio.inMenu", { name: menuNameOf(active.menuId) })}
                           </p>
-                        </div>
+                        )}
                       </div>
 
                       {active.description && (
