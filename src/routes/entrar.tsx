@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useState, type SVGProps } from "react";
 import { toast } from "sonner";
-import authFood from "@/assets/auth-food.png";
+import authFood from "@/assets/auth-food.webp";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
 import { useTranslation } from "@/i18n";

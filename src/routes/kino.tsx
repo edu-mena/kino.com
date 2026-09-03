@@ -20,7 +20,7 @@ import { useEffect, useRef, useState } from "react";
 import icon from "@/assets/icon.png";
 import chiefIllustration from "@/assets/kino/chief.png";
 import dateIllustration from "@/assets/kino/date.png";
-import kinoHero from "@/assets/kino/hero.png";
+import kinoHero from "@/assets/kino/hero.webp";
 import menuIllustration from "@/assets/kino/menu.png";
 import pratoBg from "@/assets/kino/prato.png";
 import kinoVideo from "@/assets/kino/video.mp4";
@@ -100,7 +100,7 @@ function ExpandableIllustration({
 function Kino() {
   const videoSectionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [videoInView, setVideoInView] = useState(false);
   const { t } = useTranslation();
@@ -128,7 +128,24 @@ function Kino() {
     const el = videoSectionRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      (entries) => setVideoInView(entries[0]?.isIntersecting ?? false),
+      (entries) => {
+        const inView = entries[0]?.isIntersecting ?? false;
+        setVideoInView(inView);
+        // O vídeo tem preload="none" (14 MB) — só começa a carregar/tocar
+        // quando entra no ecrã, e pausa ao sair para não gastar rede/bateria.
+        const video = videoRef.current;
+        if (video) {
+          if (inView) {
+            void video
+              .play()
+              .then(() => setPlaying(true))
+              .catch(() => {});
+          } else if (!video.paused) {
+            video.pause();
+            setPlaying(false);
+          }
+        }
+      },
       { threshold: 0.2 },
     );
     observer.observe(el);
@@ -339,10 +356,11 @@ function Kino() {
               <video
                 ref={videoRef}
                 src={kinoVideo}
-                autoPlay
                 loop
                 muted={muted}
                 playsInline
+                preload="none"
+                poster={kinoHero}
                 className="h-full w-full object-cover"
               />
               {!playing && (

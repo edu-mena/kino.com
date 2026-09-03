@@ -1,12 +1,54 @@
+import { useEffect, useSyncExternalStore } from "react";
 import { pt } from "./pt";
-import { en } from "./en";
-import { fr } from "./fr";
 import { usePreferences } from "@/lib/preferences";
 
 export type Dictionary = typeof pt;
 export type Locale = "pt" | "en" | "fr";
 
-const dictionaries: Record<Locale, Dictionary> = { pt, en, fr };
+/**
+ * Só o português (língua padrão e fallback) entra no bundle inicial. Inglês
+ * e francês — ~150 KB juntos, texto de UI que a maioria dos utilizadores em
+ * Luanda nunca vê — são carregados sob procura na primeira vez que o locale
+ * ativo os precisa. Até chegarem, `t()` devolve português.
+ */
+const loaders: Record<Exclude<Locale, "pt">, () => Promise<Record<string, Dictionary>>> = {
+  en: () => import("./en"),
+  fr: () => import("./fr"),
+};
+
+const loaded = new Map<Locale, Dictionary>([["pt", pt]]);
+const pending = new Map<Locale, Promise<void>>();
+let version = 0;
+const listeners = new Set<() => void>();
+
+/** Dispara o carregamento do dicionário (idempotente). */
+export function loadLocale(locale: Locale): void {
+  if (locale === "pt" || loaded.has(locale) || pending.has(locale)) return;
+  const promise = loaders[locale]()
+    .then((mod) => {
+      loaded.set(locale, mod[locale] ?? (mod as { default: Dictionary }).default);
+    })
+    .catch(() => {
+      // Fica no fallback português; tenta de novo numa próxima montagem.
+    })
+    .finally(() => {
+      pending.delete(locale);
+      version += 1;
+      for (const listener of listeners) listener();
+    });
+  pending.set(locale, promise);
+}
+
+function subscribe(callback: () => void): () => void {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+}
+const getVersion = () => version;
+
+/** Dicionário já carregado para o locale, ou `pt` como fallback. */
+export function getDictionary(locale: Locale): Dictionary {
+  return loaded.get(locale) ?? pt;
+}
 
 /** `t("entrega.title")`, `{query}` etc. interpolated via the second arg. */
 type Vars = Record<string, string | number>;
@@ -36,7 +78,15 @@ export function interpolate(text: string, vars?: Vars): string {
 export function useTranslation() {
   const { language } = usePreferences();
   const locale: Locale = language === "en" || language === "fr" ? language : "pt";
-  const dict = dictionaries[locale];
+
+  // Re-renderiza quando um dicionário lazy termina de carregar.
+  useSyncExternalStore(subscribe, getVersion, getVersion);
+
+  useEffect(() => {
+    if (locale !== "pt") loadLocale(locale);
+  }, [locale]);
+
+  const dict = getDictionary(locale);
 
   const t = (path: string, vars?: Vars): string => {
     const value = lookup(dict, path) ?? lookup(pt, path) ?? path;
@@ -55,7 +105,8 @@ export function useTranslation() {
  * mostrando uma chave de tradução em bruto (o fallback de `t()` faz isso).
  */
 export function translateMenuCategory(category: string, locale: Locale): string {
-  const dict = dictionaries[locale].menuCategories as Record<string, string>;
+  loadLocale(locale);
+  const dict = getDictionary(locale).menuCategories as Record<string, string>;
   const ptDict = pt.menuCategories as Record<string, string>;
   return dict[category] ?? ptDict[category] ?? category;
 }

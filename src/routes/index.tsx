@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Armchair, ArrowRight, Tag } from "lucide-react";
 import { useMemo } from "react";
-import heroBg from "@/assets/hero.png";
+import heroBg from "@/assets/hero.webp";
 import icon from "@/assets/icon.png";
 import { DietaryOnboardingPopup } from "@/components/dietary-onboarding-popup";
 import { DietaryPreferencesCard } from "@/components/dietary-preferences-card";
@@ -60,6 +60,8 @@ function HomeNotLoggedIn() {
         src={heroBg}
         alt=""
         aria-hidden
+        fetchPriority="high"
+        decoding="async"
         className="pointer-events-none fixed right-0 top-0 -z-10 w-screen select-none md:h-screen md:object-cover"
       />
 
