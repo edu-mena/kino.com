@@ -1557,8 +1557,8 @@ export const fr: Dictionary = {
     description:
       "Kino est née à Luanda pour relier restaurants et clients en un seul endroit : plats, prix, tables et promotions, toujours à portée de main — sans appels, sans cartes en papier. Aujourd'hui notre ambition est plus grande : apporter cette même expérience aux restaurants et aux clients dans tout le pays.",
     teamHeading: "Qui est derrière",
-    roleDirector: "Directeur",
-    roleProjectManager: "Chef de projet",
+    roleDirector: "CEO",
+    roleProjectManager: "CTO",
     statActiveCustomers: "Clients actifs",
     statPartnerRestaurants: "Restaurants partenaires",
     statMenuDishes: "Plats à la carte",

@@ -43,7 +43,7 @@ function Sobre() {
   const { t } = useTranslation();
 
   const team = [
-    { initials: "SR", name: "Sebastião Rosinho", role: t("sobre.roleDirector") },
+    { initials: "CR", name: "Christopher Rosinho", role: t("sobre.roleDirector") },
     { initials: "EM", name: "Eduardo Mena", role: t("sobre.roleProjectManager") },
   ];
 
