@@ -1548,8 +1548,8 @@ export const pt = {
     description:
       "A Kino nasceu em Luanda para ligar restaurantes e clientes num só lugar: pratos, preços, mesas e promoções, sempre à mão — sem ligações, sem cardápios de papel. Hoje a nossa ambição é maior: levar essa mesma experiência a restaurantes e clientes em todo o país.",
     teamHeading: "Quem está por trás",
-    roleDirector: "Diretor",
-    roleProjectManager: "Gestor de Projeto",
+    roleDirector: "CEO",
+    roleProjectManager: "CTO",
     statActiveCustomers: "Clientes ativos",
     statPartnerRestaurants: "Restaurantes parceiros",
     statMenuDishes: "Pratos no cardápio",

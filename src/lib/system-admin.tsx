@@ -9,8 +9,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 export type SystemOperator = { id: string; name: string; role: string };
 
 export const OPERATORS: SystemOperator[] = [
-  { id: "op-rosinho", name: "Sebastião Rosinho", role: "Direção" },
-  { id: "op-mena", name: "Eduardo Mena", role: "Gestão de projeto" },
+  { id: "op-rosinho", name: "Christopher Rosinho", role: "CEO" },
+  { id: "op-mena", name: "Eduardo Mena", role: "CTO" },
 ];
 
 const STORAGE_KEY = "kino_system_operator";
