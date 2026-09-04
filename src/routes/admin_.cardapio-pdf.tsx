@@ -7,6 +7,7 @@ import type { MenuItem, RestaurantMenu } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { useMenusAdmin } from "@/lib/menus-admin";
+import { OperatorProviders } from "@/lib/operator-providers";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 export const Route = createFileRoute("/admin_/cardapio-pdf")({
@@ -15,7 +16,11 @@ export const Route = createFileRoute("/admin_/cardapio-pdf")({
     const raw = s["menu"];
     return { menu: typeof raw === "string" && raw ? raw : "all" };
   },
-  component: CardapioPdf,
+  component: () => (
+    <OperatorProviders>
+      <CardapioPdf />
+    </OperatorProviders>
+  ),
 });
 
 function CardapioPdf() {

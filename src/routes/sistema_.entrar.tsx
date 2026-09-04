@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslation } from "@/i18n";
+import { OperatorProviders } from "@/lib/operator-providers";
 import { OPERATORS, useSystemAdmin } from "@/lib/system-admin";
 
 export const Route = createFileRoute("/sistema_/entrar")({
@@ -23,7 +24,11 @@ export const Route = createFileRoute("/sistema_/entrar")({
       { property: "og:image", content: icon },
     ],
   }),
-  component: SistemaEntrar,
+  component: () => (
+    <OperatorProviders>
+      <SistemaEntrar />
+    </OperatorProviders>
+  ),
 });
 
 function SistemaEntrar() {

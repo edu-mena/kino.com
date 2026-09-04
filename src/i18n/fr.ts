@@ -10,6 +10,20 @@ export const fr: Dictionary = {
     add: "Ajouter",
     all: "Tous",
   },
+  routeError: {
+    title: "Cette page ne s'est pas chargée",
+    description: "Un problème est survenu de notre côté. Réessayez ou revenez à l'accueil.",
+    retry: "Réessayer",
+    home: "Accueil",
+  },
+  notFound: {
+    title: "Page introuvable",
+    description: "La page que vous cherchez n'existe pas ou a été déplacée.",
+    home: "Accueil",
+  },
+  emptyState: {
+    genericTitle: "Rien ici pour l'instant",
+  },
   nav: {
     home: "Accueil",
     search: "Rechercher",

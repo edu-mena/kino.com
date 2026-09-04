@@ -1,12 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  Outlet,
-  Link,
-  createRootRouteWithContext,
-  useRouter,
-  HeadContent,
-  Scripts,
-} from "@tanstack/react-router";
+import { Outlet, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
@@ -14,81 +7,19 @@ import iconImage from "../assets/icon.png";
 import { AddressesProvider } from "../lib/addresses";
 import { BillProvider } from "../lib/bill";
 import { CartProvider } from "../lib/cart";
-import { CouriersProvider } from "../lib/couriers";
 import { LocationProvider } from "../lib/location";
 import { AuthProvider } from "../lib/auth";
 import { MenuAdminProvider } from "../lib/menu-admin";
-import { MenusAdminProvider } from "../lib/menus-admin";
-import { OffersAdminProvider } from "../lib/offers-admin";
-import { PartnerAppsProvider } from "../lib/partner-apps";
 import { PreferencesProvider } from "../lib/preferences";
 import { ReservationsProvider } from "../lib/reservations";
-import { RestaurantAdminProvider } from "../lib/restaurant-admin";
 import { StoriesProvider } from "../lib/stories";
-import { StoriesAdminProvider } from "../lib/stories-admin";
 import { SubscriptionsProvider } from "../lib/subscriptions";
-import { SystemAdminProvider } from "../lib/system-admin";
 import { NotificationsProvider } from "../lib/notifications";
 import { TablesProvider } from "../lib/tables";
 import { TutorialProvider } from "../lib/tutorial";
 import { Toaster } from "../components/ui/sonner";
-
-function NotFoundComponent() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Go home
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
-  const router = useRouter();
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { RouteErrorBoundary } from "../components/route-error";
+import { RouteNotFound } from "../components/route-not-found";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -136,8 +67,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   shellComponent: RootShell,
   component: RootComponent,
-  notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent,
+  notFoundComponent: RouteNotFound,
+  errorComponent: RouteErrorBoundary,
 });
 
 function RootShell({ children }: { children: ReactNode }) {
@@ -160,47 +91,33 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <SystemAdminProvider>
-          <RestaurantAdminProvider>
-            <SubscriptionsProvider>
-              <PartnerAppsProvider>
-                <PreferencesProvider>
-                  <StoriesProvider>
-                    <AddressesProvider>
-                      <LocationProvider>
-                        <ReservationsProvider>
-                          <BillProvider>
-                            <MenusAdminProvider>
-                              <MenuAdminProvider>
-                                <StoriesAdminProvider>
-                                  <OffersAdminProvider>
-                                    <CartProvider>
-                                      <CouriersProvider>
-                                        <TablesProvider>
-                                          <NotificationsProvider>
-                                            <TutorialProvider>
-                                              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-                                              <Outlet />
-                                              <Toaster />
-                                            </TutorialProvider>
-                                          </NotificationsProvider>
-                                        </TablesProvider>
-                                      </CouriersProvider>
-                                    </CartProvider>
-                                  </OffersAdminProvider>
-                                </StoriesAdminProvider>
-                              </MenuAdminProvider>
-                            </MenusAdminProvider>
-                          </BillProvider>
-                        </ReservationsProvider>
-                      </LocationProvider>
-                    </AddressesProvider>
-                  </StoriesProvider>
-                </PreferencesProvider>
-              </PartnerAppsProvider>
-            </SubscriptionsProvider>
-          </RestaurantAdminProvider>
-        </SystemAdminProvider>
+        <SubscriptionsProvider>
+          <PreferencesProvider>
+            <StoriesProvider>
+              <AddressesProvider>
+                <LocationProvider>
+                  <ReservationsProvider>
+                    <BillProvider>
+                      <MenuAdminProvider>
+                        <CartProvider>
+                          <TablesProvider>
+                            <NotificationsProvider>
+                              <TutorialProvider>
+                                {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                                <Outlet />
+                                <Toaster />
+                              </TutorialProvider>
+                            </NotificationsProvider>
+                          </TablesProvider>
+                        </CartProvider>
+                      </MenuAdminProvider>
+                    </BillProvider>
+                  </ReservationsProvider>
+                </LocationProvider>
+              </AddressesProvider>
+            </StoriesProvider>
+          </PreferencesProvider>
+        </SubscriptionsProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

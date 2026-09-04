@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { getAllRestaurants } from "@/data/helpers";
 import { useTranslation } from "@/i18n";
+import { OperatorProviders } from "@/lib/operator-providers";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 export const Route = createFileRoute("/admin_/entrar")({
@@ -24,7 +25,11 @@ export const Route = createFileRoute("/admin_/entrar")({
       { property: "og:image", content: icon },
     ],
   }),
-  component: AdminEntrar,
+  component: () => (
+    <OperatorProviders>
+      <AdminEntrar />
+    </OperatorProviders>
+  ),
 });
 
 function AdminEntrar() {

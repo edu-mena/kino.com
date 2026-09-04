@@ -138,7 +138,7 @@ function AdminShellContent({ children }: { children: ReactNode }) {
               </span>
             </div>
             <div className="hidden shrink-0 items-center gap-1 xl:flex">
-              <NotificationsBell scope="restaurant" />
+              <NotificationsBell scope="restaurant" restaurantId={restaurant.id} />
               <button
                 type="button"
                 aria-label={t("adminNav.logout")}
@@ -164,7 +164,7 @@ function AdminShellContent({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <div className="flex shrink-0 items-center gap-2">
-            <NotificationsBell scope="restaurant" />
+            <NotificationsBell scope="restaurant" restaurantId={restaurant.id} />
             <button
               type="button"
               data-tour="admin-nav-menu"

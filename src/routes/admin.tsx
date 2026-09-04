@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { AdminShell } from "@/components/admin-shell";
+import { OperatorProviders } from "@/lib/operator-providers";
 
 /**
  * Layout do painel do restaurante — envolve todas as rotas `/admin/*`
@@ -14,8 +15,10 @@ export const Route = createFileRoute("/admin")({
 
 function AdminLayout() {
   return (
-    <AdminShell>
-      <Outlet />
-    </AdminShell>
+    <OperatorProviders>
+      <AdminShell>
+        <Outlet />
+      </AdminShell>
+    </OperatorProviders>
   );
 }
