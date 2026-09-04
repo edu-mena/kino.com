@@ -9,6 +9,8 @@ export const fr: Dictionary = {
     save: "Enregistrer",
     add: "Ajouter",
     all: "Tous",
+    location: "Emplacement",
+    sortLabel: "Trier",
   },
   routeError: {
     title: "Cette page ne s'est pas chargée",

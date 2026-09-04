@@ -473,7 +473,7 @@ export function SiteFooter() {
           <p className="mt-3 max-w-xs text-sm text-muted-foreground">{t("siteFooter.tagline")}</p>
         </div>
         <div>
-          <h3 className="text-sm font-bold text-foreground">{t("siteFooter.navigate")}</h3>
+          <h2 className="text-sm font-bold text-foreground">{t("siteFooter.navigate")}</h2>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             {navLinks.map((l) => (
               <li key={l.to}>
@@ -485,7 +485,7 @@ export function SiteFooter() {
           </ul>
         </div>
         <div>
-          <h3 className="text-sm font-bold text-foreground">{t("siteFooter.account")}</h3>
+          <h2 className="text-sm font-bold text-foreground">{t("siteFooter.account")}</h2>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
               <Link to="/perfil" className="hover:text-primary">

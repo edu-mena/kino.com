@@ -206,7 +206,7 @@ export function MenuBrowser({
           {resultCount} {t("cardapio.results")}
         </p>
         <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
-          <SelectTrigger className="w-48 rounded-xl">
+          <SelectTrigger className="w-48 rounded-xl" aria-label={t("common.sortLabel")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
