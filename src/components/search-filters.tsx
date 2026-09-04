@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/select";
 import { getProvinces } from "@/data/helpers";
 import { INITIAL_USER_PROFILE } from "@/data/mockData";
+import { useTranslation } from "@/i18n";
 
 const provinces = getProvinces();
 export const MY_AREA = "minha-area";
@@ -21,9 +22,10 @@ export function LocationFilterSelect({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="rounded-xl">
+      <SelectTrigger className="rounded-xl" aria-label={t("common.location")}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

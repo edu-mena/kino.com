@@ -117,7 +117,7 @@ function HomeNotLoggedIn() {
               <span className="grid h-11 w-11 place-items-center rounded-full border border-border bg-background text-brand">
                 <item.icon className="h-5 w-5" />
               </span>
-              <h3 className="mt-4 font-display text-base font-bold text-primary">{item.title}</h3>
+              <h2 className="mt-4 font-display text-base font-bold text-primary">{item.title}</h2>
               <p className="mt-1 text-sm text-muted-foreground">{item.text}</p>
             </div>
           ))}

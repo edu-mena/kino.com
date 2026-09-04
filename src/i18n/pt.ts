@@ -16,6 +16,8 @@ export const pt = {
     save: "Guardar",
     add: "Adicionar",
     all: "Todos",
+    location: "Localização",
+    sortLabel: "Ordenar",
   },
   routeError: {
     title: "Esta página não carregou",
