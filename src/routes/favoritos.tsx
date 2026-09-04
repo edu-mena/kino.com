@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
 import icon from "@/assets/icon.png";
+import { EmptyState } from "@/components/empty-state";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { getAllRestaurants } from "@/data/helpers";
 import { usePreferences } from "@/lib/preferences";
@@ -28,16 +29,18 @@ function Favoritos() {
       <PageHeading eyebrow={t("favoritos.eyebrow")} title={t("favoritos.title")} />
       <div className="mx-auto mt-8 max-w-6xl px-4 md:px-6">
         {favorites.length === 0 ? (
-          <div className="card-soft grid place-items-center gap-3 p-12 text-center">
-            <Heart className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{t("favoritos.emptyText")}</p>
-            <Link
-              to="/restaurantes"
-              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
-            >
-              {t("favoritos.explore")}
-            </Link>
-          </div>
+          <EmptyState
+            icon={Heart}
+            description={t("favoritos.emptyText")}
+            action={
+              <Link
+                to="/restaurantes"
+                className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+              >
+                {t("favoritos.explore")}
+              </Link>
+            }
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {favorites.map((r) => (

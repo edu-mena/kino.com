@@ -3,6 +3,7 @@ import { CalendarCheck, Star, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
+import { EmptyState } from "@/components/empty-state";
 import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { isRefReviewed } from "@/data/reviews-store";
@@ -46,16 +47,18 @@ function Reservas() {
       />
       <div className="mx-auto mt-8 max-w-6xl px-4 md:px-6">
         {reservations.length === 0 ? (
-          <div className="card-soft grid place-items-center gap-3 p-12 text-center">
-            <CalendarCheck className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{t("reservas.emptyText")}</p>
-            <Link
-              to="/restaurantes"
-              className="mt-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-            >
-              {t("reservas.reserveTable")}
-            </Link>
-          </div>
+          <EmptyState
+            icon={CalendarCheck}
+            description={t("reservas.emptyText")}
+            action={
+              <Link
+                to="/restaurantes"
+                className="mt-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                {t("reservas.reserveTable")}
+              </Link>
+            }
+          />
         ) : (
           <div className="space-y-3">
             {reservations.map((r) => (
