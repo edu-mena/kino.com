@@ -10,6 +10,20 @@ export const en: Dictionary = {
     add: "Add",
     all: "All",
   },
+  routeError: {
+    title: "This page didn't load",
+    description: "Something went wrong on our end. Try refreshing or head back home.",
+    retry: "Try again",
+    home: "Go home",
+  },
+  notFound: {
+    title: "Page not found",
+    description: "The page you're looking for doesn't exist or has been moved.",
+    home: "Go home",
+  },
+  emptyState: {
+    genericTitle: "Nothing here yet",
+  },
   nav: {
     home: "Home",
     search: "Search",

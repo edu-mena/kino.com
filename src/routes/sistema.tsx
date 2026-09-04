@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { SystemShell } from "@/components/system-shell";
+import { OperatorProviders } from "@/lib/operator-providers";
 
 /**
  * Layout da área de administração de sistema — envolve todas as rotas
@@ -12,8 +13,10 @@ export const Route = createFileRoute("/sistema")({
 
 function SystemLayout() {
   return (
-    <SystemShell>
-      <Outlet />
-    </SystemShell>
+    <OperatorProviders>
+      <SystemShell>
+        <Outlet />
+      </SystemShell>
+    </OperatorProviders>
   );
 }

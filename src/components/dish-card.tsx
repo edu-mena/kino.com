@@ -61,6 +61,8 @@ export function DishCard({ item }: { item: MenuItem }) {
           alt={item.name}
           width={768}
           height={768}
+          widths={[256, 384, 512, 768]}
+          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
           className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
             available ? "" : "grayscale"
           }`}

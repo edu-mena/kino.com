@@ -9,25 +9,32 @@ import {
 import { getRestaurant } from "@/data/helpers";
 import { useTranslation } from "@/i18n";
 import { useNotifications } from "@/lib/notifications";
-import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 /**
  * Sino de notificações. `scope="client"` mostra todas (é o navegador do
- * cliente); `scope="restaurant"` filtra pelo restaurante com sessão no painel.
+ * cliente); `scope="restaurant"` filtra pelo `restaurantId` do painel — que
+ * vem por prop, para o sino não depender de `useRestaurantAdmin` (esse
+ * provider só existe dentro dos layouts `/admin` e `/sistema`, e o sino
+ * também é usado na casca do cliente).
  */
-export function NotificationsBell({ scope }: { scope: "client" | "restaurant" }) {
+export function NotificationsBell({
+  scope,
+  restaurantId,
+}: {
+  scope: "client" | "restaurant";
+  restaurantId?: string;
+}) {
   const { all, markAllRead } = useNotifications();
   const { t } = useTranslation();
-  const { restaurant } = useRestaurantAdmin();
   const [open, setOpen] = useState(false);
 
   const list = useMemo(() => {
     const rows =
-      scope === "restaurant" && restaurant
-        ? all.filter((n) => n.restaurantId === restaurant.id)
+      scope === "restaurant" && restaurantId
+        ? all.filter((n) => n.restaurantId === restaurantId)
         : all;
     return rows.slice(0, 12);
-  }, [all, scope, restaurant]);
+  }, [all, scope, restaurantId]);
 
   const unread = list.filter((n) => !n.read).length;
 

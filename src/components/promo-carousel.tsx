@@ -5,6 +5,7 @@ import dishDrink from "@/assets/dish-drink.png";
 import heroFood from "@/assets/hero-food.jpg";
 import kinoVideo from "@/assets/kino/video.mp4";
 import restaurantAngolana from "@/assets/restaurant-angolana.jpg";
+import { LazyImage } from "@/components/lazy-image";
 import {
   Carousel,
   CarouselContent,
@@ -180,10 +181,12 @@ function SlideCard({ slide }: { slide: Slide }) {
         {/* Mobile: imagem em cima do texto. Desktop: texto encolhe pro conteúdo,
             imagem absorve o resto (com teto, senão ela estoura em telas grandes). */}
         <div className="relative order-1 h-44 w-full p-3 sm:order-none sm:h-auto sm:min-w-0 sm:max-w-[45%] sm:flex-1 sm:p-3 sm:pl-0">
-          <img
+          <LazyImage
             src={slide.image}
             alt=""
             aria-hidden
+            widths={[400, 640, 900]}
+            sizes="(min-width: 640px) 45vw, 100vw"
             className="h-full w-full rounded-[1.5rem] object-cover"
           />
           <MediaTrigger
@@ -212,10 +215,12 @@ function SlideCard({ slide }: { slide: Slide }) {
   if (slide.kind === "cover") {
     return (
       <div className="relative h-96 overflow-hidden rounded-[2rem] sm:h-72">
-        <img
+        <LazyImage
           src={slide.image}
           alt=""
           aria-hidden
+          widths={[640, 900, 1200]}
+          sizes="(min-width: 1152px) 1152px, 100vw"
           className="absolute inset-0 h-full w-full rounded-[2rem] object-cover"
         />
         <MediaTrigger

@@ -3,6 +3,7 @@ import { Play, Store } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { HorizontalCarousel } from "@/components/horizontal-carousel";
+import { LazyImage } from "@/components/lazy-image";
 import { StoryViewer } from "@/components/story-viewer";
 import { getRestaurantsWithStories } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
@@ -106,7 +107,15 @@ export function RestaurantAvatarRow() {
                     : "border border-border"
                 }`}
               >
-                <img src={r.coverImage} alt={r.name} className="h-full w-full object-cover" />
+                <LazyImage
+                  src={r.coverImage}
+                  alt={r.name}
+                  width={64}
+                  height={64}
+                  widths={[64, 128, 192]}
+                  sizes="64px"
+                  className="h-full w-full object-cover"
+                />
               </span>
               <span className="w-full truncate text-center text-xs font-semibold text-foreground">
                 {abbreviate(r.name)}

@@ -22,11 +22,12 @@ O projeto nasceu como protótipo frontend-first (mockdata, sem servidor) e foi e
 
 ## DevOps
 
-- **CI no GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.yml)): pipeline único em `format → lint → typecheck → test → build`, correndo em cada push e PR, com `concurrency` a cancelar runs obsoletas do mesmo branch para não desperdiçar minutos de CI
+- **CI no GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.yml)): pipeline `format → lint → typecheck → test → build`, correndo em cada push e PR, com `concurrency` a cancelar runs obsoletas do mesmo branch para não desperdiçar minutos de CI
+- **Lighthouse CI** ([lighthouserc.json](lighthouserc.json)) num job à parte após o pipeline: acessibilidade / SEO / boas práticas como orçamento a sério (falha se `accessibility` < 0.9); performance em `warn` enquanto a medição for contra o dev server (não minificado) — detetor de regressões grosseiras até haver um alvo de preview
 - **Node 22 fixado** em CI e em `engines`, alinhado ao requisito mínimo do TanStack Start — sem drift entre o que se testa e o que corre em produção
 - **Deploy no edge via Cloudflare** — build gerado por Nitro, sem servidor Node tradicional a manter
 - **Qualidade automatizada**: ESLint + Prettier com verificação estrita (`format:check`, não apenas `format`) e checagem de tipos isolada do build, para apanhar regressões antes do bundle
-- **Testes com Vitest**, configuração isolada da configuração de build (evita puxar plugins de SSR/Nitro para um ambiente de testes que não precisa deles) e ambiente `node` por omissão, com opt-in para `jsdom` só onde há DOM a testar
+- **Testes com Vitest**, configuração isolada da configuração de build (evita puxar plugins de SSR/Nitro para um ambiente de testes que não precisa deles) e ambiente `node` por omissão; testes de componente optam por `jsdom` com `// @vitest-environment jsdom` no topo do ficheiro e usam Testing Library + `vitest-axe` (assert de acessibilidade sobre o DOM renderizado) via [src/test-setup.ts](src/test-setup.ts) / [src/test/render.tsx](src/test/render.tsx)
 - Tratamento de erro pensado para produção: qualquer exceção não tratada no server entry devolve uma página de erro renderizada, nunca uma stack trace ou um JSON de erro interno
 
 ## Estrutura
@@ -53,9 +54,19 @@ npm run dev
 Scripts principais:
 
 ```sh
-npm run lint          # ESLint
-npm run format:check  # Prettier (verificação)
-npm run typecheck     # tsc --noEmit
-npm test              # Vitest
-npm run build         # build de produção (Vite + Nitro)
+npm run lint            # ESLint
+npm run format:check    # Prettier (verificação)
+npm run typecheck       # tsc --noEmit
+npm test                # Vitest
+npm run build           # build de produção (Vite + Nitro)
+npm run optimize:assets # re-otimiza src/assets (sharp)
 ```
+
+## Variáveis de ambiente
+
+Definidas em `.env.local` (não versionado). Prefixo `VITE_` para chegarem ao cliente.
+
+| Variável               | Valores        | Efeito                                                                                                                                                                                                            |
+| ---------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_PUBLIC_BASE_URL` | URL            | Base absoluta do link no QR code do cardápio (aponta para o IP da máquina na rede local para o telemóvel ler).                                                                                                    |
+| `VITE_IMAGE_CDN`       | `none`\|`wsrv` | `none` (omissão): fotos de conteúdo servidas tal como estão. `wsrv`: URLs de terceiros passam por [wsrv.nl](https://wsrv.nl) — redimensionadas ao tamanho pedido, em WebP, com `srcset`. Recomendado em produção. |

@@ -17,6 +17,20 @@ export const pt = {
     add: "Adicionar",
     all: "Todos",
   },
+  routeError: {
+    title: "Esta página não carregou",
+    description: "Algo correu mal do nosso lado. Tente recarregar ou volte ao início.",
+    retry: "Tentar de novo",
+    home: "Ir para o início",
+  },
+  notFound: {
+    title: "Página não encontrada",
+    description: "A página que procura não existe ou foi movida.",
+    home: "Ir para o início",
+  },
+  emptyState: {
+    genericTitle: "Nada por aqui, ainda",
+  },
   nav: {
     home: "Início",
     search: "Buscar",

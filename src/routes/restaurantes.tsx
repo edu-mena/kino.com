@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bike, CalendarCheck, Heart, MapPin, Search, SlidersHorizontal, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import icon from "@/assets/icon.png";
+import { LazyImage } from "@/components/lazy-image";
 import { ListPagination } from "@/components/list-pagination";
 import { ReservationDialog } from "@/components/reservation-dialog";
 import { LocationFilterSelect, matchesLocation } from "@/components/search-filters";
@@ -171,12 +172,13 @@ function Restaurantes() {
                 </button>
                 <Link to="/restaurantes/$id" params={{ id: r.id }}>
                   <div className="relative h-40 overflow-hidden bg-surface">
-                    <img
+                    <LazyImage
                       src={r.coverImage}
                       alt={`Interior do restaurante ${r.name}`}
-                      loading="lazy"
                       width={1024}
                       height={768}
+                      widths={[400, 640, 800]}
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                       className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
                         paused ? "grayscale" : ""
                       }`}

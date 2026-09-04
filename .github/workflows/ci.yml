@@ -40,3 +40,24 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  lighthouse:
+    name: lighthouse · a11y + perf budget
+    runs-on: ubuntu-latest
+    needs: ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Corre o Lighthouse contra o dev server. As categorias independentes
+      # do build (acessibilidade, SEO, boas práticas) são orçamento a sério;
+      # a de performance fica em `warn` porque o dev build não é minificado —
+      # é um detetor de regressões grosseiras até haver um alvo de preview.
+      - name: Lighthouse CI
+        run: npx --yes @lhci/cli@0.14.x autorun
