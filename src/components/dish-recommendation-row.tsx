@@ -3,6 +3,7 @@ import { Plus, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { HorizontalCarousel } from "@/components/horizontal-carousel";
+import { LazyImage } from "@/components/lazy-image";
 import { getCommonIngredients, getRestaurant, getRestaurantsOfferingDish } from "@/data/helpers";
 import type { MenuItem } from "@/data/types";
 import { useAddToBill } from "@/lib/bill";
@@ -61,10 +62,13 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
               className="card-soft flex w-40 shrink-0 flex-col overflow-hidden text-left transition-colors hover:border-brand"
             >
               <div className="relative h-28 w-full bg-surface sm:h-32">
-                <img
+                <LazyImage
                   src={item.image}
                   alt={item.name}
-                  loading="lazy"
+                  width={320}
+                  height={256}
+                  widths={[160, 320, 480]}
+                  sizes="160px"
                   className="h-full w-full object-cover"
                 />
                 {hasConflict && (
@@ -93,7 +97,13 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
           {active && (
             <>
               <div className="relative h-48 w-full overflow-hidden rounded-2xl bg-surface">
-                <img src={active.image} alt={active.name} className="h-full w-full object-cover" />
+                <LazyImage
+                  src={active.image}
+                  alt={active.name}
+                  widths={[448, 640, 896]}
+                  sizes="(max-width: 448px) 100vw, 448px"
+                  className="h-full w-full object-cover"
+                />
               </div>
               <DialogTitle className="mt-4 font-display text-xl font-bold">
                 {active.name}
@@ -140,9 +150,13 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
                         key={r.id}
                         className="flex items-center gap-3 rounded-xl border border-border p-2"
                       >
-                        <img
+                        <LazyImage
                           src={r.coverImage}
                           alt={r.name}
+                          width={36}
+                          height={36}
+                          widths={[36, 72, 108]}
+                          sizes="36px"
                           className="h-9 w-9 shrink-0 rounded-full object-cover"
                         />
                         <span className="min-w-0 flex-1 truncate text-sm font-semibold">

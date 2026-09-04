@@ -3,6 +3,7 @@ import { ChevronLeft, Minus, Plus, Salad, Star, TriangleAlert } from "lucide-rea
 import { useState } from "react";
 import icon from "@/assets/icon.png";
 import { DishCard } from "@/components/dish-card";
+import { LazyImage } from "@/components/lazy-image";
 import { PageShell } from "@/components/site-shell";
 import { getMenuItem, getRestaurant, getRestaurantsOfferingDish } from "@/data/helpers";
 import type { SelectedIngredient } from "@/data/types";
@@ -90,11 +91,14 @@ function DishDetail() {
 
         <div className="mt-6 grid gap-8 md:grid-cols-2">
           <div className="relative mx-auto h-72 w-full max-w-sm overflow-hidden rounded-[2rem] bg-surface sm:h-96 md:max-w-none">
-            <img
+            <LazyImage
               src={item.image}
               alt={item.name}
               width={768}
               height={768}
+              widths={[400, 640, 900]}
+              sizes="(min-width: 768px) 45vw, 100vw"
+              priority
               className="h-full w-full object-cover"
             />
           </div>
