@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Mail, MapPin, Phone, Send } from "lucide-react";
 import type { SVGProps } from "react";
 import { toast } from "sonner";
-import dishFries from "@/assets/dish-fries.png";
 import icon from "@/assets/icon.png";
 import {
   Accordion,
@@ -109,22 +108,11 @@ function Contacto() {
 
   return (
     <PageShell header={<SiteHeader variant="guestHome" />} footer={null} showMobileTabBar={false}>
-      <div className="mx-auto flex max-w-6xl flex-nowrap items-center justify-start px-4 md:px-6">
-        <PageHeading
-          eyebrow={t("contacto.eyebrow")}
-          title={t("contacto.title")}
-          description={t("contacto.description")}
-          className="w-4/5 mx-0 max-w-none px-0 md:w-auto md:px-0"
-        />
-        <div className="w-1/5 shrink-0 overflow-hidden md:w-44 md:overflow-visible">
-          <img
-            src={dishFries}
-            alt=""
-            aria-hidden
-            className="relative -z-10 w-[130%] max-w-none translate-x-1 select-none object-contain md:w-44 md:translate-x-0"
-          />
-        </div>
-      </div>
+      <PageHeading
+        eyebrow={t("contacto.eyebrow")}
+        title={t("contacto.title")}
+        description={t("contacto.description")}
+      />
 
       {/* Contact info */}
       <section className="mx-auto mt-10 max-w-6xl px-4 md:px-6">

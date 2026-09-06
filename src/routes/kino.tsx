@@ -22,7 +22,6 @@ import chiefIllustration from "@/assets/kino/chief.png";
 import dateIllustration from "@/assets/kino/date.png";
 import kinoHero from "@/assets/kino/hero.webp";
 import menuIllustration from "@/assets/kino/menu.png";
-import pratoBg from "@/assets/kino/prato.png";
 import kinoVideo from "@/assets/kino/video.mp4";
 import { PageShell, SiteHeader } from "@/components/site-shell";
 import {
@@ -38,13 +37,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/kino")({
   head: () => ({
     meta: [
-      { title: "Kino.com — o cardápio digital de Luanda" },
+      { title: "Kino.com — o cardápio digital de Angola" },
       {
         name: "description",
         content:
           "A Kino é o cardápio digital que liga restaurantes e clientes: pratos, preços, mesas e pedidos, tudo num só lugar.",
       },
-      { property: "og:title", content: "Kino.com — o cardápio digital de Luanda" },
+      { property: "og:title", content: "Kino.com — o cardápio digital de Angola" },
       { property: "og:image", content: icon },
     ],
   }),
@@ -102,7 +101,6 @@ function Kino() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
-  const [videoInView, setVideoInView] = useState(false);
   const { t } = useTranslation();
 
   const forCustomers = [
@@ -122,15 +120,12 @@ function Kino() {
     { icon: Users, text: t("kino.forRestaurant5") },
   ];
 
-  // Hide the spinning plate whenever the video is on screen — with both
-  // visible and both moving, the plate turns into a distracting element.
   useEffect(() => {
     const el = videoSectionRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       (entries) => {
         const inView = entries[0]?.isIntersecting ?? false;
-        setVideoInView(inView);
         // O vídeo tem preload="none" (14 MB) — só começa a carregar/tocar
         // quando entra no ecrã, e pausa ao sair para não gastar rede/bateria.
         const video = videoRef.current;
@@ -177,34 +172,40 @@ function Kino() {
 
   return (
     <PageShell header={<SiteHeader variant="guestHome" />} footer={null} showMobileTabBar={false}>
-      <img
-        src={pratoBg}
-        alt=""
-        aria-hidden
-        className={cn(
-          "pointer-events-none fixed right-0 top-1/2 -z-20 w-80 -translate-y-1/2 translate-x-1/2 select-none animate-[spin_20s_linear_infinite] transition-opacity duration-500 sm:w-[28rem] md:w-[34rem] lg:w-[40rem]",
-          videoInView ? "opacity-0" : "opacity-100",
-        )}
-      />
-
       {/* Bento grid */}
       <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
         <div className="grid auto-rows-[10rem] grid-cols-2 gap-4 md:grid-cols-4">
-          <button
-            type="button"
-            onClick={scrollToVideo}
-            aria-label={t("kino.playVideoAria")}
-            className="group relative -z-10 col-span-2 row-span-2 grid place-items-center"
-          >
-            <img
-              src={kinoHero}
-              alt="Ilustração Kino.com"
-              className="h-full w-full object-contain"
-            />
-            <span className="absolute grid h-16 w-16 place-items-center rounded-full bg-white text-primary shadow-lg transition-transform group-hover:scale-110">
-              <Play className="h-6 w-6 translate-x-0.5" />
-            </span>
-          </button>
+          {/* Coluna esquerda: imagem + "Restaurantes perto de si" coladas,
+              como um só cartão — a imagem enche a largura da coluna e toda a
+              altura entre as duas linhas até tocar no cartão verde. */}
+          <div className="col-span-2 row-span-3 flex flex-col overflow-hidden rounded-[2rem]">
+            <button
+              type="button"
+              onClick={scrollToVideo}
+              aria-label={t("kino.playVideoAria")}
+              className="group min-h-0 flex-1"
+            >
+              <img
+                src={kinoHero}
+                alt="Ilustração Kino.com"
+                className="h-full w-full object-cover"
+              />
+            </button>
+
+            <button
+              type="button"
+              onClick={scrollToVideo}
+              className="flex shrink-0 flex-col justify-center bg-primary p-6 text-left text-primary-foreground"
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15">
+                <MapPin className="h-5 w-5" />
+              </span>
+              <h3 className="mt-4 font-display text-xl font-bold">{t("kino.nearYouTitle")}</h3>
+              <p className="mt-2 text-sm text-primary-foreground/80">
+                {t("kino.nearYouDescription")}
+              </p>
+            </button>
+          </div>
 
           <div className="col-span-2 flex flex-col justify-center rounded-[2rem] border border-border bg-card p-6">
             <h3 className="font-display text-xl font-bold text-primary">{t("kino.bentoTitle")}</h3>
@@ -225,20 +226,6 @@ function Kino() {
             description={t("kino.illustration2Description")}
             className="col-span-1 row-span-1"
           />
-
-          <button
-            type="button"
-            onClick={scrollToVideo}
-            className="col-span-2 flex flex-col justify-center rounded-[2rem] bg-primary p-6 text-left text-primary-foreground"
-          >
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15">
-              <MapPin className="h-5 w-5" />
-            </span>
-            <h3 className="mt-4 font-display text-xl font-bold">{t("kino.nearYouTitle")}</h3>
-            <p className="mt-2 text-sm text-primary-foreground/80">
-              {t("kino.nearYouDescription")}
-            </p>
-          </button>
 
           <ExpandableIllustration
             src={chiefIllustration}

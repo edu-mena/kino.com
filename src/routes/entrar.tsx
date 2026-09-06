@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useState, type SVGProps } from "react";
 import { toast } from "sonner";
-import authFood from "@/assets/auth-food.webp";
+import authVideo from "@/assets/auth-food.mp4";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
 import { useTranslation } from "@/i18n";
@@ -66,18 +66,16 @@ function Entrar() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden lg:block">
-        <img
-          src={authFood}
-          alt="Hambúrguer artesanal com ingredientes frescos"
+        <video
+          src={authVideo}
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-hidden
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-primary/55" />
-        <div className="relative flex h-full flex-col justify-end p-12 text-primary-foreground">
-          <h2 className="max-w-sm font-display text-4xl font-extrabold leading-tight">
-            {t("entrar.heroTitle")}
-          </h2>
-          <p className="mt-3 max-w-sm text-sm opacity-90">{t("entrar.heroDescription")}</p>
-        </div>
       </div>
 
       <div className="flex flex-col justify-center px-5 py-12 sm:px-12">

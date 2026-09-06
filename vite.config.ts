@@ -12,4 +12,8 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // .jfif é JPEG mas não está na lista de assets do Vite por omissão.
+  vite: {
+    assetsInclude: ["**/*.jfif"],
+  },
 });

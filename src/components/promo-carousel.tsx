@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import dishDrink from "@/assets/dish-drink.png";
-import heroFood from "@/assets/hero-food.jpg";
+import dishDrink from "@/assets/dish-drink.webp";
+import heroFood from "@/assets/hero-food.webp";
 import kinoVideo from "@/assets/kino/video.mp4";
-import restaurantAngolana from "@/assets/restaurant-angolana.jpg";
+import restaurantAngolana from "@/assets/restaurant-angolana.webp";
 import { LazyImage } from "@/components/lazy-image";
 import {
   Carousel,

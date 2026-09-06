@@ -19,16 +19,16 @@ import { useTranslation } from "@/i18n";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Kino.com — Comida de Luanda entregue em minutos" },
+      { title: "Kino.com — Restaurantes de Angola: menu e reservas" },
       {
         name: "description",
         content:
-          "Burgers, pizza, pratos angolanos e bebidas dos melhores restaurantes de Luanda, entregues quentes em minutos.",
+          "Descubra os melhores restaurantes de Angola, veja o menu completo e reserve a sua mesa — tudo num só lugar.",
       },
-      { property: "og:title", content: "Kino.com — Comida de Luanda entregue em minutos" },
+      { property: "og:title", content: "Kino.com — Restaurantes de Angola: menu e reservas" },
       {
         property: "og:description",
-        content: "Peça em minutos dos melhores restaurantes de Luanda.",
+        content: "Descubra onde jantar em Angola e reserve a sua mesa em segundos.",
       },
       { property: "og:image", content: icon },
     ],
@@ -70,7 +70,7 @@ function HomeNotLoggedIn() {
           <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] text-primary sm:text-5xl lg:text-6xl">
             {t("homeGuest.heroLine1")}
             <br />
-            <span className="text-brand">{t("homeGuest.heroLine2")}</span>?
+            <span className="text-brand">{t("homeGuest.heroLine2")}</span>
           </h1>
           <p className="mt-4 text-[1.1rem] max-w-md text-muted-foreground">
             {t("homeGuest.subtitle")}
