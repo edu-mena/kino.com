@@ -6,14 +6,14 @@ import { safeLocalStorageSet } from "./safe-storage";
  * (`/sistema/subscricoes`). Sem backend: store pura e síncrona, segura em
  * SSR, mesmo desenho de `restaurant-profile-store.ts`.
  *
- * Cada restaurante paga mensalidade — Básico 4 999 Kz, Pro 9 999 Kz — com
- * os 2 primeiros meses grátis (trial). O estado é a fonte da verdade sobre
- * MRR, trials a terminar e pagamentos em atraso.
+ * Cada restaurante paga mensalidade — plano único Kino, 9 999 Kz — com os 2
+ * primeiros meses grátis (trial). O estado é a fonte da verdade sobre MRR,
+ * trials a terminar e pagamentos em atraso.
  */
-export type SubscriptionPlan = "basico" | "pro";
+export type SubscriptionPlan = "kino";
 export type SubStatus = "trial" | "active" | "overdue" | "suspended";
 
-export const PLAN_PRICE: Record<SubscriptionPlan, number> = { basico: 4999, pro: 9999 };
+export const PLAN_PRICE: Record<SubscriptionPlan, number> = { kino: 9999 };
 export const TRIAL_DAYS = 60;
 
 export type RestaurantSubscription = {
@@ -51,7 +51,7 @@ export function seedSubscriptions(): RestaurantSubscription[] {
     const monthsAgo = h % 10; // entrou há 0..9 meses
     const startedMs = now - monthsAgo * 30 * DAY;
     const trialEndsMs = startedMs + TRIAL_DAYS * DAY;
-    const plan: SubscriptionPlan = h % 5 < 3 ? "basico" : "pro";
+    const plan: SubscriptionPlan = "kino";
 
     let status: SubStatus = now < trialEndsMs ? "trial" : "active";
     if (status === "active") {
@@ -77,7 +77,12 @@ function read(): RestaurantSubscription[] {
   try {
     const stored = window.localStorage.getItem(KEY);
     if (!stored) return seedSubscriptions();
-    const parsed = JSON.parse(stored) as RestaurantSubscription[];
+    // coage planos antigos ("basico"/"pro") persistidos em localStorage para
+    // o plano único atual
+    const parsed = (JSON.parse(stored) as RestaurantSubscription[]).map((s) => ({
+      ...s,
+      plan: "kino" as SubscriptionPlan,
+    }));
     // garante uma linha por restaurante mesmo que o seed cresça
     const known = new Set(parsed.map((s) => s.restaurantId));
     const extra = seedSubscriptions().filter((s) => !known.has(s.restaurantId));
@@ -102,7 +107,7 @@ export function getSubscriptions(): RestaurantSubscription[] {
  * começa em período grátis de 2 meses. */
 export function createSubscription(
   restaurantId: string,
-  plan: SubscriptionPlan = "basico",
+  plan: SubscriptionPlan = "kino",
 ): RestaurantSubscription {
   const now = Date.now();
   const sub: RestaurantSubscription = {

@@ -28,7 +28,6 @@ import { PLAN_PRICE } from "@/data/subscriptions-store";
 import { formatKz } from "@/lib/format";
 import { useSubscriptions } from "@/lib/subscriptions";
 import { useMenuAdmin } from "@/lib/menu-admin";
-import { useMenusAdmin } from "@/lib/menus-admin";
 import { useOffersAdmin } from "@/lib/offers-admin";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -48,14 +47,14 @@ function AdminDashboard() {
   const { orders, orderTotal } = useCart();
   const { reservations } = useReservations();
   const { items } = useMenuAdmin();
-  const { menusByRestaurant } = useMenusAdmin();
   const { offersByRestaurant } = useOffersAdmin();
   const { storiesByRestaurant } = useStoriesAdmin();
-  const { available } = useCouriers();
+  const { availableByRestaurant } = useCouriers();
   const { byRestaurant: subByRestaurant } = useSubscriptions();
   const { t, locale } = useTranslation();
 
   const restaurantId = restaurant?.id ?? "";
+  const availableCouriers = availableByRestaurant(restaurantId);
 
   const mineOrders = useMemo(
     () => orders.filter((o) => o.restaurantId === restaurantId),
@@ -106,8 +105,6 @@ function AdminDashboard() {
 
   const menuItems = items.filter((m) => m.restaurantId === restaurant.id);
   const unavailableCount = menuItems.filter((m) => !m.isAvailable).length;
-  const menus = menusByRestaurant(restaurant.id);
-  const draftMenus = menus.filter((m) => !m.isActive).length;
 
   const reviews = getReviewsForRestaurant(restaurant.id);
   const offers = offersByRestaurant(restaurant.id);
@@ -358,18 +355,14 @@ function AdminDashboard() {
               big={false}
               label={t("adminIndex.kpiMenu")}
               value={String(menuItems.length)}
-              hint={
-                draftMenus > 0
-                  ? t("adminIndex.kpiMenuDraftHint", { count: draftMenus })
-                  : t("adminIndex.kpiMenuHint", { count: menus.length })
-              }
+              hint={t("adminIndex.kpiMenuHint", { count: unavailableCount })}
             />
             <KpiTile
               icon={Bike}
-              tone={available.length > 0 ? "success" : "brand"}
+              tone={availableCouriers.length > 0 ? "success" : "brand"}
               big={false}
               label={t("adminIndex.kpiCouriers")}
-              value={String(available.length)}
+              value={String(availableCouriers.length)}
               hint={t("adminIndex.kpiCouriersHint")}
             />
           </div>

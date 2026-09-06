@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Activity,
-  Bike,
   CreditCard,
   Inbox,
   LayoutGrid,
@@ -25,7 +24,6 @@ const navItems = [
   { to: "/sistema/subscricoes", labelKey: "subscriptions", icon: CreditCard },
   { to: "/sistema/parceiros", labelKey: "partners", icon: Inbox },
   { to: "/sistema/promocoes", labelKey: "promotions", icon: Megaphone },
-  { to: "/sistema/frota", labelKey: "fleet", icon: Bike },
   { to: "/sistema/suporte", labelKey: "support", icon: LifeBuoy },
 ] as const;
 

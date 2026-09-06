@@ -9,7 +9,6 @@ import {
   Plus,
   QrCode,
   Search,
-  Settings2,
   Share2,
   Trash2,
   Utensils,
@@ -36,7 +35,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { DishFormDialog } from "@/components/dish-form-dialog";
-import { MenuManagerDialog } from "@/components/menu-manager-dialog";
 import { MenuQrDialog } from "@/components/menu-qr-dialog";
 import { defaultMenuId } from "@/data/menus-store";
 import { normalizeIngredients, type MenuItemInput } from "@/data/menu-store";
@@ -44,10 +42,8 @@ import type { MenuItem } from "@/data/types";
 import { translateMenuCategory, useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { useMenuAdmin } from "@/lib/menu-admin";
-import { useMenusAdmin } from "@/lib/menus-admin";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/cardapio")({
   head: () => ({ meta: [{ title: "Cardápio — Painel Kino.com" }] }),
@@ -61,9 +57,6 @@ export const Route = createFileRoute("/admin/cardapio")({
 type AvailFilter = "todos" | "sim" | "nao";
 type SortKey = "nome" | "preco-asc" | "preco-desc" | "categoria";
 
-/** Aba virtual que lista os pratos de todos os cardápios do restaurante. */
-const ALL_MENU_ID = "__all__";
-
 const selectClass =
   "rounded-lg border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground accent-brand outline-none transition-colors focus:border-brand focus:text-brand";
 
@@ -71,11 +64,8 @@ function AdminCardapio() {
   const { restaurant } = useRestaurantAdmin();
   const { items, isAvailable, toggleAvailability, createItem, updateItem, deleteItem } =
     useMenuAdmin();
-  const { menusByRestaurant } = useMenusAdmin();
   const { t, locale } = useTranslation();
 
-  const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
-  const [menuManagerOpen, setMenuManagerOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [formKind, setFormKind] = useState<"dish" | "drink">("dish");
   const [editingDish, setEditingDish] = useState<MenuItem | null>(null);
@@ -95,28 +85,10 @@ function AdminCardapio() {
   const [ingExtra, setIngExtra] = useState("");
   const [priceDraft, setPriceDraft] = useState("");
 
-  const menus = useMemo(
-    () => (restaurant ? menusByRestaurant(restaurant.id) : []),
-    [restaurant, menusByRestaurant],
+  const dishes = useMemo(
+    () => (restaurant ? items.filter((i) => i.restaurantId === restaurant.id) : []),
+    [items, restaurant],
   );
-
-  useEffect(() => {
-    if (!restaurant) return;
-    if (selectedMenuId === ALL_MENU_ID) return;
-    if (selectedMenuId && menus.some((m) => m.id === selectedMenuId)) return;
-    setSelectedMenuId(menus[0]?.id ?? defaultMenuId(restaurant.id));
-  }, [restaurant, menus, selectedMenuId]);
-
-  const viewingAll = selectedMenuId === ALL_MENU_ID;
-
-  const dishes = useMemo(() => {
-    if (!restaurant || !selectedMenuId) return [];
-    const mine = items.filter((i) => i.restaurantId === restaurant.id);
-    return viewingAll ? mine : mine.filter((i) => i.menuId === selectedMenuId);
-  }, [items, restaurant, selectedMenuId, viewingAll]);
-
-  const menuNameOf = (id?: string) =>
-    menus.find((m) => m.id === id)?.name ?? t("adminCardapio.mainMenuFallback");
 
   const categories = useMemo(() => [...new Set(dishes.map((i) => i.category))], [dishes]);
 
@@ -183,11 +155,11 @@ function AdminCardapio() {
     };
   }, [dishes, categories, locale]);
 
-  if (!restaurant || !selectedMenuId) return null;
+  if (!restaurant) return null;
 
-  // No "cardápio geral" não há alvo único — novos pratos vão para o
-  // primeiro cardápio real; edições mantêm o cardápio de cada prato.
-  const menuId = viewingAll ? (menus[0]?.id ?? defaultMenuId(restaurant.id)) : selectedMenuId;
+  // Cardápio único por restaurante — todos os pratos vão para o cardápio
+  // sintético por omissão; a organização é feita só por categoria.
+  const menuId = defaultMenuId(restaurant.id);
 
   const openCreate = (kind: "dish" | "drink" = "dish") => {
     setEditingDish(null);
@@ -276,15 +248,6 @@ function AdminCardapio() {
               <DropdownMenuItem onSelect={() => setQrOpen(true)}>
                 <QrCode className="h-4 w-4" /> {t("adminCardapio.qrCode")}
               </DropdownMenuItem>
-              {!viewingAll && (
-                <DropdownMenuItem
-                  onSelect={() =>
-                    window.open(`/admin/cardapio-pdf?menu=${selectedMenuId}`, "_blank", "noopener")
-                  }
-                >
-                  <FileDown className="h-4 w-4" /> {t("adminCardapio.exportPdfThis")}
-                </DropdownMenuItem>
-              )}
               <DropdownMenuItem
                 onSelect={() => window.open("/admin/cardapio-pdf?menu=all", "_blank", "noopener")}
               >
@@ -296,76 +259,8 @@ function AdminCardapio() {
       />
 
       <div className="mx-auto mt-6 max-w-6xl px-4 md:px-6">
-        {/* Seletor de cardápios — abas assentes numa linha cinza */}
-        <div className="flex flex-wrap items-end gap-2 border-b border-border">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedMenuId(ALL_MENU_ID);
-              setActiveId(null);
-            }}
-            className={cn(
-              "flex shrink-0 items-center gap-1.5 rounded-t-2xl rounded-b-none border border-b-0 px-4 py-2 text-sm font-semibold transition-colors",
-              viewingAll
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-muted-foreground hover:border-primary",
-            )}
-          >
-            <LayoutGrid className="h-4 w-4" /> {t("adminCardapio.generalMenu")}
-          </button>
-          {menus.map((menu) => (
-            <button
-              key={menu.id}
-              type="button"
-              onClick={() => {
-                setSelectedMenuId(menu.id);
-                setActiveId(null);
-              }}
-              className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-t-2xl rounded-b-none border border-b-0 px-4 py-2 text-sm font-semibold transition-colors",
-                menu.id === selectedMenuId
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-muted-foreground hover:border-primary",
-              )}
-            >
-              {menu.name}
-              {menu.category && menu.category !== "personalizado" && (
-                <span
-                  className={cn(
-                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                    menu.id === selectedMenuId
-                      ? "bg-primary-foreground/20"
-                      : "bg-surface text-muted-foreground",
-                  )}
-                >
-                  {t(`menuTypes.${menu.category}`)}
-                </span>
-              )}
-              {!menu.isActive && (
-                <span
-                  className={cn(
-                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase",
-                    menu.id === selectedMenuId
-                      ? "bg-primary-foreground/20"
-                      : "bg-surface text-muted-foreground",
-                  )}
-                >
-                  {t("adminCardapio.draftBadge")}
-                </span>
-              )}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => setMenuManagerOpen(true)}
-            className="flex shrink-0 items-center gap-1.5 rounded-t-2xl rounded-b-none border border-b-0 border-dashed border-border px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-          >
-            <Settings2 className="h-4 w-4" /> {t("adminCardapio.manageMenus")}
-          </button>
-        </div>
-
         {dishes.length === 0 ? (
-          <div className="card-soft mt-6 grid place-items-center gap-3 p-12 text-center">
+          <div className="card-soft grid place-items-center gap-3 p-12 text-center">
             <Utensils className="h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">{t("adminCardapio.emptyText")}</p>
             <Button onClick={() => openCreate("dish")} className="rounded-xl">
@@ -454,7 +349,8 @@ function AdminCardapio() {
                     <span className="pl-3 text-right">{t("adminCardapio.colStatus")}</span>
                   </div>
 
-                  <div>
+                  {/* ~5 registos visíveis, resto com scroll vertical */}
+                  <div className="max-h-[21rem] overflow-y-auto">
                     {list.map((d, i) => (
                       <button
                         key={d.id}
@@ -482,7 +378,6 @@ function AdminCardapio() {
                             </span>
                             <span className="block truncate text-xs text-muted-foreground">
                               {translateMenuCategory(d.category, locale)}
-                              {viewingAll && ` · ${menuNameOf(d.menuId)}`}
                             </span>
                           </span>
                         </span>
@@ -535,11 +430,6 @@ function AdminCardapio() {
                         <p className="text-xs text-muted-foreground">
                           {translateMenuCategory(active.category, locale)} · {active.portionInfo}
                         </p>
-                        {viewingAll && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {t("adminCardapio.inMenu", { name: menuNameOf(active.menuId) })}
-                          </p>
-                        )}
                       </div>
 
                       {active.description && (
@@ -781,18 +671,11 @@ function AdminCardapio() {
         onOpenChange={setFormOpen}
         restaurantId={restaurant.id}
         menuId={menuId}
-        categories={categories}
         dish={editingDish}
         kind={formKind}
         onSave={(restaurantId, input, editingId) =>
           editingId ? updateItem(editingId, input) : createItem(restaurantId, input).ok
         }
-      />
-
-      <MenuManagerDialog
-        open={menuManagerOpen}
-        onOpenChange={setMenuManagerOpen}
-        restaurantId={restaurant.id}
       />
 
       <MenuQrDialog

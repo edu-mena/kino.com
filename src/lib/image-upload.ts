@@ -36,3 +36,36 @@ export function fileToResizedDataUrl(file: File, maxDimension = 800): Promise<st
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * Lê um ficheiro qualquer e devolve o data URL cru, sem redimensionar. Para
+ * vídeos de stories (não dá para "encolher" um vídeo no browser sem um
+ * codec) — o tamanho é limitado por `maxBytes` a montante, senão o data URL
+ * rebenta a quota do localStorage.
+ */
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Não foi possível ler o ficheiro."));
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(file);
+  });
+}
+
+/** Duração (segundos) de um ficheiro de vídeo, lida dos metadados. */
+export function getVideoDurationSec(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(video.duration);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Não foi possível ler o vídeo."));
+    };
+    video.src = url;
+  });
+}

@@ -51,7 +51,6 @@ function SistemaRestaurantes() {
   const restaurants = useMemo(() => getAllRestaurants(), [flagsTick]);
 
   const [query, setQuery] = useState("");
-  const [planFilter, setPlanFilter] = useState<"todos" | "basico" | "pro">("todos");
   const [statusFilter, setStatusFilter] = useState<"todos" | SubStatus>("todos");
   const [provinceFilter, setProvinceFilter] = useState("todos");
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -78,14 +77,13 @@ function SistemaRestaurantes() {
     return restaurants
       .filter((r) => {
         const sub = byRestaurant(r.id);
-        if (planFilter !== "todos" && sub?.plan !== planFilter) return false;
         if (statusFilter !== "todos" && sub?.status !== statusFilter) return false;
         if (provinceFilter !== "todos" && r.neighborhood !== provinceFilter) return false;
         if (q && !r.name.toLowerCase().includes(q)) return false;
         return true;
       })
       .sort((a, b) => a.name.localeCompare(b.name, "pt"));
-  }, [restaurants, byRestaurant, query, planFilter, statusFilter, provinceFilter]);
+  }, [restaurants, byRestaurant, query, statusFilter, provinceFilter]);
 
   const active = useMemo(
     () => restaurants.find((r) => r.id === activeId) ?? null,
@@ -118,15 +116,6 @@ function SistemaRestaurantes() {
               className="w-full min-w-0 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
             />
           </label>
-          <select
-            value={planFilter}
-            onChange={(e) => setPlanFilter(e.target.value as typeof planFilter)}
-            className={ADMIN_FILTER_SELECT}
-          >
-            <option value="todos">{t("sistema.subscricoes.planAll")}</option>
-            <option value="basico">{t("sistema.plan.basico")}</option>
-            <option value="pro">{t("sistema.plan.pro")}</option>
-          </select>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}

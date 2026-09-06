@@ -48,7 +48,6 @@ import { Route as PratoDishIdRouteImport } from './routes/prato.$dishId'
 import { Route as PratosDishNameRouteImport } from './routes/pratos.$dishName'
 import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
 import { Route as SistemaIndexRouteImport } from './routes/sistema.index'
-import { Route as SistemaFrotaRouteImport } from './routes/sistema.frota'
 import { Route as SistemaOperacaoRouteImport } from './routes/sistema.operacao'
 import { Route as SistemaParceirosRouteImport } from './routes/sistema.parceiros'
 import { Route as SistemaPromocoesRouteImport } from './routes/sistema.promocoes'
@@ -252,11 +251,6 @@ const SistemaIndexRoute = SistemaIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SistemaRoute,
 } as any)
-const SistemaFrotaRoute = SistemaFrotaRouteImport.update({
-  id: '/frota',
-  path: '/frota',
-  getParentRoute: () => SistemaRoute,
-} as any)
 const SistemaOperacaoRoute = SistemaOperacaoRouteImport.update({
   id: '/operacao',
   path: '/operacao',
@@ -331,7 +325,6 @@ export interface FileRoutesByFullPath {
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
-  '/sistema/frota': typeof SistemaFrotaRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
   '/sistema/promocoes': typeof SistemaPromocoesRoute
@@ -378,7 +371,6 @@ export interface FileRoutesByTo {
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
-  '/sistema/frota': typeof SistemaFrotaRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
   '/sistema/promocoes': typeof SistemaPromocoesRoute
@@ -428,7 +420,6 @@ export interface FileRoutesById {
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes_/$id': typeof RestaurantesIdRoute
-  '/sistema/frota': typeof SistemaFrotaRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
   '/sistema/promocoes': typeof SistemaPromocoesRoute
@@ -479,7 +470,6 @@ export interface FileRouteTypes {
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes/$id'
-    | '/sistema/frota'
     | '/sistema/operacao'
     | '/sistema/parceiros'
     | '/sistema/promocoes'
@@ -526,7 +516,6 @@ export interface FileRouteTypes {
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes/$id'
-    | '/sistema/frota'
     | '/sistema/operacao'
     | '/sistema/parceiros'
     | '/sistema/promocoes'
@@ -575,7 +564,6 @@ export interface FileRouteTypes {
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes_/$id'
-    | '/sistema/frota'
     | '/sistema/operacao'
     | '/sistema/parceiros'
     | '/sistema/promocoes'
@@ -891,13 +879,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SistemaIndexRouteImport
       parentRoute: typeof SistemaRoute
     }
-    '/sistema/frota': {
-      id: '/sistema/frota'
-      path: '/frota'
-      fullPath: '/sistema/frota'
-      preLoaderRoute: typeof SistemaFrotaRouteImport
-      parentRoute: typeof SistemaRoute
-    }
     '/sistema/operacao': {
       id: '/sistema/operacao'
       path: '/operacao'
@@ -985,7 +966,6 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface SistemaRouteChildren {
-  SistemaFrotaRoute: typeof SistemaFrotaRoute
   SistemaOperacaoRoute: typeof SistemaOperacaoRoute
   SistemaParceirosRoute: typeof SistemaParceirosRoute
   SistemaPromocoesRoute: typeof SistemaPromocoesRoute
@@ -996,7 +976,6 @@ interface SistemaRouteChildren {
 }
 
 const SistemaRouteChildren: SistemaRouteChildren = {
-  SistemaFrotaRoute: SistemaFrotaRoute,
   SistemaOperacaoRoute: SistemaOperacaoRoute,
   SistemaParceirosRoute: SistemaParceirosRoute,
   SistemaPromocoesRoute: SistemaPromocoesRoute,

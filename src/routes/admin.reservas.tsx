@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
 import { ReservationFloorPlan } from "@/components/reservation-floor-plan";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTranslation, type Locale } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { useReservations } from "@/lib/reservations";
@@ -621,12 +622,100 @@ function AdminReservas() {
                                 )}
                               </p>
                             </div>
-                            <span
-                              className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${displayStatus(active).tone}`}
-                            >
-                              {displayStatus(active).label}
-                            </span>
+                            <div className="flex shrink-0 items-center gap-2">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    aria-label={t("adminReservas.contactPopoverTitle")}
+                                    className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                                  >
+                                    <Phone className="h-4 w-4" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  align="end"
+                                  className="w-auto rounded-xl border border-border bg-card p-3 text-sm"
+                                >
+                                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                    {t("adminReservas.contactPopoverTitle")}
+                                  </p>
+                                  <a
+                                    href={`tel:${active.customerPhone.replace(/\s/g, "")}`}
+                                    className="flex items-center gap-1.5 text-foreground hover:text-primary"
+                                  >
+                                    <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                    {active.customerPhone}
+                                  </a>
+                                  {active.customerEmail && (
+                                    <a
+                                      href={`mailto:${active.customerEmail}`}
+                                      className="mt-1 flex items-center gap-1.5 text-foreground hover:text-primary"
+                                    >
+                                      <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                      <span className="truncate">{active.customerEmail}</span>
+                                    </a>
+                                  )}
+                                </PopoverContent>
+                              </Popover>
+                              <span
+                                className={`rounded-full px-3 py-1 text-xs font-bold ${displayStatus(active).tone}`}
+                              >
+                                {displayStatus(active).label}
+                              </span>
+                            </div>
                           </div>
+
+                          {/* Ações no topo — o passo mais importante sem obrigar a scroll */}
+                          {isPast(active) || active.status === "Cancelada" ? (
+                            <p className="mt-5 flex items-center gap-1.5 border-t border-border pt-5 text-xs text-muted-foreground">
+                              <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+                              {active.status === "Cancelada"
+                                ? t("adminReservas.canceledNote")
+                                : t("adminReservas.inactiveNote")}
+                            </p>
+                          ) : (
+                            <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-5">
+                              {active.status === "Pendente" && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => respond(active.id, "Recusada", "rejectedToast")}
+                                    className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                                  >
+                                    {t("adminReservas.reject")}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      respond(active.id, "Confirmada", "confirmedToast")
+                                    }
+                                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                                  >
+                                    {t("adminReservas.confirm")}
+                                  </button>
+                                </>
+                              )}
+                              {active.status === "Confirmada" && (
+                                <button
+                                  type="button"
+                                  onClick={() => respond(active.id, "Recusada", "canceledToast")}
+                                  className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                                >
+                                  {t("adminReservas.cancel")}
+                                </button>
+                              )}
+                              {active.status === "Recusada" && (
+                                <button
+                                  type="button"
+                                  onClick={() => respond(active.id, "Pendente", "reopenedToast")}
+                                  className="flex items-center justify-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-surface"
+                                >
+                                  {t("adminReservas.reopen")}
+                                </button>
+                              )}
+                            </div>
+                          )}
 
                           <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
                             <Field label={t("adminReservas.detailWhen")}>
@@ -635,24 +724,6 @@ function AdminReservas() {
                             </Field>
                             <Field label={t("adminReservas.detailPeople")}>
                               {active.peopleCount} {t("adminReservas.people")}
-                            </Field>
-                            <Field label={t("adminReservas.detailContact")}>
-                              <a
-                                href={`tel:${active.customerPhone.replace(/\s/g, "")}`}
-                                className="flex items-center gap-1.5 text-foreground hover:text-primary"
-                              >
-                                <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                {active.customerPhone}
-                              </a>
-                              {active.customerEmail && (
-                                <a
-                                  href={`mailto:${active.customerEmail}`}
-                                  className="mt-1 flex items-center gap-1.5 text-foreground hover:text-primary"
-                                >
-                                  <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                  <span className="truncate">{active.customerEmail}</span>
-                                </a>
-                              )}
                             </Field>
                             <Field label={t("adminReservas.detailDeposit")}>
                               {active.cautionAmount > 0 ? formatKz(active.cautionAmount) : "—"}
@@ -832,57 +903,6 @@ function AdminReservas() {
                                   );
                                 })}
                               </ul>
-                            </div>
-                          )}
-
-                          {/* Ações — indisponíveis quando inativa (data passada) ou cancelada pelo cliente */}
-                          {isPast(active) || active.status === "Cancelada" ? (
-                            <p className="mt-5 flex items-center gap-1.5 border-t border-border pt-5 text-xs text-muted-foreground">
-                              <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-                              {active.status === "Cancelada"
-                                ? t("adminReservas.canceledNote")
-                                : t("adminReservas.inactiveNote")}
-                            </p>
-                          ) : (
-                            <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-5">
-                              {active.status === "Pendente" && (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => respond(active.id, "Recusada", "rejectedToast")}
-                                    className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
-                                  >
-                                    {t("adminReservas.reject")}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      respond(active.id, "Confirmada", "confirmedToast")
-                                    }
-                                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
-                                  >
-                                    {t("adminReservas.confirm")}
-                                  </button>
-                                </>
-                              )}
-                              {active.status === "Confirmada" && (
-                                <button
-                                  type="button"
-                                  onClick={() => respond(active.id, "Recusada", "canceledToast")}
-                                  className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
-                                >
-                                  {t("adminReservas.cancel")}
-                                </button>
-                              )}
-                              {active.status === "Recusada" && (
-                                <button
-                                  type="button"
-                                  onClick={() => respond(active.id, "Pendente", "reopenedToast")}
-                                  className="flex items-center justify-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-surface"
-                                >
-                                  {t("adminReservas.reopen")}
-                                </button>
-                              )}
                             </div>
                           )}
                         </>

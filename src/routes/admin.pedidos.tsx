@@ -9,10 +9,13 @@ import {
   Mail,
   MapPin,
   Package,
+  Pencil,
   Phone,
+  Plus,
   Search,
   TrendingUp,
   TriangleAlert,
+  Trash2,
   UserRound,
   Users,
   Wallet,
@@ -32,6 +35,7 @@ import {
 } from "@/components/admin-stats";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getMenuItem } from "@/data/helpers";
 import { useTranslation, type Locale } from "@/i18n";
 import {
@@ -41,7 +45,7 @@ import {
   type CartOrder,
   type CartOrderStatus,
 } from "@/lib/cart";
-import { useCouriers, type CourierStatus, type CourierVehicle } from "@/lib/couriers";
+import { useCouriers, type Courier, type CourierStatus, type CourierVehicle } from "@/lib/couriers";
 import {
   assessDelivery,
   DELIVERY_RADIUS_KM,
@@ -99,6 +103,10 @@ const deliveryChipTone: Record<DeliveryLevel, string> = {
 
 const firstName = (n: string) => n.split(" ")[0] ?? n;
 
+const COURIER_VEHICLES: CourierVehicle[] = ["moto", "bicicleta", "carro"];
+type CourierDraft = { name: string; phone: string; vehicle: CourierVehicle; zone: string };
+const emptyCourierDraft: CourierDraft = { name: "", phone: "", vehicle: "moto", zone: "Luanda" };
+
 const statusTone: Record<CartOrderStatus, string> = {
   pending: "bg-brand/15 text-brand",
   accepted: "bg-primary/15 text-primary",
@@ -135,7 +143,17 @@ function weekStart(d: Date) {
 function AdminPedidos() {
   const { restaurant } = useRestaurantAdmin();
   const { orders, orderTotal, orderSubtotal, updateOrderStatus } = useCart();
-  const { couriers, available, courierForOrder, assign, releaseOrder, setStatus } = useCouriers();
+  const {
+    couriersByRestaurant,
+    availableByRestaurant,
+    courierForOrder,
+    assign,
+    releaseOrder,
+    setStatus,
+    addCourier,
+    updateCourier,
+    removeCourier,
+  } = useCouriers();
   const { t, locale } = useTranslation();
 
   const [query, setQuery] = useState("");
@@ -147,6 +165,9 @@ function AdminPedidos() {
   const [courierPick, setCourierPick] = useState("");
   const [confirmFarId, setConfirmFarId] = useState<string | null>(null);
   const [couriersOpen, setCouriersOpen] = useState(false);
+  const [editingCourier, setEditingCourier] = useState<Courier | null>(null);
+  const [courierDraft, setCourierDraft] = useState<CourierDraft>(emptyCourierDraft);
+  const [courierFormOpen, setCourierFormOpen] = useState(false);
 
   // Ao trocar de pedido, limpa a escolha de estafeta e o passo de
   // confirmação de "fora do raio" — nunca herdar decisões do pedido anterior.
@@ -338,6 +359,45 @@ function AdminPedidos() {
   if (!restaurant) return null;
 
   const now = Date.now();
+  const myCouriers = couriersByRestaurant(restaurant.id);
+  const available = availableByRestaurant(restaurant.id);
+
+  const openCourierCreate = () => {
+    setEditingCourier(null);
+    setCourierDraft(emptyCourierDraft);
+    setCourierFormOpen(true);
+  };
+  const openCourierEdit = (courier: Courier) => {
+    setEditingCourier(courier);
+    setCourierDraft({
+      name: courier.name,
+      phone: courier.phone,
+      vehicle: courier.vehicle,
+      zone: courier.zone,
+    });
+    setCourierFormOpen(true);
+  };
+  const submitCourier = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!courierDraft.name.trim() || !courierDraft.phone.trim()) {
+      toast.error(t("adminPedidos.courierMissingFields"));
+      return;
+    }
+    const payload = {
+      name: courierDraft.name.trim(),
+      phone: courierDraft.phone.trim(),
+      vehicle: courierDraft.vehicle,
+      zone: courierDraft.zone.trim() || "Luanda",
+    };
+    if (editingCourier) {
+      updateCourier(editingCourier.id, payload);
+      toast.success(t("adminPedidos.courierUpdatedToast"));
+    } else {
+      addCourier({ ...payload, restaurantId: restaurant.id });
+      toast.success(t("adminPedidos.courierAddedToast"));
+    }
+    setCourierFormOpen(false);
+  };
 
   // "Novo" → "Aceite". Se a morada está fora do raio habitual, exige uma
   // segunda confirmação antes de aceitar (evita aceitar entregas inviáveis).
@@ -353,7 +413,7 @@ function AdminPedidos() {
 
   // "Aceite" → "A caminho": obriga a atribuir um estafeta livre.
   const dispatch = (order: CartOrder) => {
-    const courier = couriers.find((c) => c.id === courierPick && c.status === "disponivel");
+    const courier = myCouriers.find((c) => c.id === courierPick && c.status === "disponivel");
     if (!courier) {
       toast.error(t("adminPedidos.courierRequired"));
       return;
@@ -489,7 +549,8 @@ function AdminPedidos() {
                         <span className="pl-3 text-right">{t("adminPedidos.colStatus")}</span>
                       </div>
 
-                      <div>
+                      {/* ~5 registos visíveis, resto com scroll vertical */}
+                      <div className="max-h-[21rem] overflow-y-auto">
                         {list.map((o, i) => (
                           <button
                             key={o.id}
@@ -586,246 +647,59 @@ function AdminPedidos() {
                                 {fmtDateTime(active.createdAt)}
                               </p>
                             </div>
-                            <span
-                              className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusTone[active.status]}`}
-                            >
-                              {statusLabels[active.status]}
-                            </span>
-                          </div>
-
-                          <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
-                            <AdminField label={t("adminPedidos.detailContact")}>
-                              {active.customerPhone ? (
-                                <a
-                                  href={`tel:${active.customerPhone.replace(/\s/g, "")}`}
-                                  className="flex items-center gap-1.5 text-foreground hover:text-primary"
-                                >
-                                  <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                  {active.customerPhone}
-                                </a>
-                              ) : (
-                                <span className="text-muted-foreground">
-                                  {t("adminPedidos.noPhone")}
-                                </span>
+                            <div className="flex shrink-0 items-center gap-2">
+                              {(active.customerPhone || active.customerEmail) && (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      type="button"
+                                      aria-label={t("adminPedidos.contactPopoverTitle")}
+                                      className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                                    >
+                                      <Phone className="h-4 w-4" />
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    align="end"
+                                    className="w-auto rounded-xl border border-border bg-card p-3 text-sm"
+                                  >
+                                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                      {t("adminPedidos.contactPopoverTitle")}
+                                    </p>
+                                    {active.customerPhone ? (
+                                      <a
+                                        href={`tel:${active.customerPhone.replace(/\s/g, "")}`}
+                                        className="flex items-center gap-1.5 text-foreground hover:text-primary"
+                                      >
+                                        <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                        {active.customerPhone}
+                                      </a>
+                                    ) : (
+                                      <span className="text-muted-foreground">
+                                        {t("adminPedidos.noPhone")}
+                                      </span>
+                                    )}
+                                    {active.customerEmail && (
+                                      <a
+                                        href={`mailto:${active.customerEmail}`}
+                                        className="mt-1 flex items-center gap-1.5 text-foreground hover:text-primary"
+                                      >
+                                        <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                        <span className="truncate">{active.customerEmail}</span>
+                                      </a>
+                                    )}
+                                  </PopoverContent>
+                                </Popover>
                               )}
-                              {active.customerEmail && (
-                                <a
-                                  href={`mailto:${active.customerEmail}`}
-                                  className="mt-1 flex items-center gap-1.5 text-foreground hover:text-primary"
-                                >
-                                  <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                  <span className="truncate">{active.customerEmail}</span>
-                                </a>
-                              )}
-                            </AdminField>
-                            <AdminField label={t("adminPedidos.detailDelivery")}>
-                              <span className="block">{active.deliveryAddress.label}</span>
-                              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                                {active.deliveryAddress.line1}
-                                {active.deliveryAddress.line2
-                                  ? ` · ${active.deliveryAddress.line2}`
-                                  : ""}
+                              <span
+                                className={`rounded-full px-3 py-1 text-xs font-bold ${statusTone[active.status]}`}
+                              >
+                                {statusLabels[active.status]}
                               </span>
-                            </AdminField>
-                            <AdminField label={t("adminPedidos.detailPayment")}>
-                              {active.paymentMethod || t("adminPedidos.noPayment")}
-                            </AdminField>
-                            <AdminField label={t("adminPedidos.detailEstimate")}>
-                              {t("adminPedidos.estimateMinutes", { min: active.estimatedMinutes })}
-                            </AdminField>
-                            <AdminField label={t("adminPedidos.detailCreatedAt")}>
-                              {fmtDateTime(active.createdAt)}
-                            </AdminField>
-                          </dl>
-
-                          {/* Avaliação da entrega — distância vs. raio habitual */}
-                          {(() => {
-                            const a = assessDelivery(active);
-                            const box =
-                              a.level === "outOfRange"
-                                ? "border-destructive/40 bg-destructive/5"
-                                : a.level === "far"
-                                  ? "border-brand/40 bg-brand/5"
-                                  : "border-border bg-surface";
-                            const badge =
-                              a.level === "outOfRange"
-                                ? "bg-destructive/15 text-destructive"
-                                : a.level === "far"
-                                  ? "bg-brand/15 text-brand"
-                                  : "bg-success/15 text-success";
-                            const label =
-                              a.level === "outOfRange"
-                                ? t("adminPedidos.levelOutOfRange")
-                                : a.level === "far"
-                                  ? t("adminPedidos.levelFar")
-                                  : t("adminPedidos.levelOk");
-                            const wait =
-                              active.status === "pending" ? minutesSince(active.createdAt, now) : 0;
-                            return (
-                              <div className={`mt-4 rounded-xl border p-3 ${box}`}>
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                    {t("adminPedidos.deliveryEval")}
-                                  </p>
-                                  <span
-                                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${badge}`}
-                                  >
-                                    {label}
-                                  </span>
-                                </div>
-                                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-foreground">
-                                  <span className="flex items-center gap-1.5">
-                                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                                    {t("adminPedidos.distanceKm", { km: a.km })}
-                                  </span>
-                                  <span className="flex items-center gap-1.5">
-                                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                    {t("adminPedidos.etaMinutes", { min: a.etaMin })}
-                                  </span>
-                                  {wait >= PENDING_SLA_MIN && (
-                                    <span className="flex items-center gap-1.5 font-semibold text-destructive">
-                                      <TriangleAlert className="h-3.5 w-3.5" />
-                                      {t("adminPedidos.waitingMin", { min: wait })}
-                                    </span>
-                                  )}
-                                </div>
-                                {a.level !== "ok" && (
-                                  <p className="mt-2 text-xs text-muted-foreground">
-                                    {a.level === "outOfRange"
-                                      ? t("adminPedidos.outOfRangeNote", { radius: a.radiusKm })
-                                      : t("adminPedidos.farNote", { radius: a.radiusKm })}
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })()}
-
-                          {/* Estafeta — atribuição obrigatória para despachar */}
-                          {(active.status === "accepted" || active.status === "onTheWay") && (
-                            <div className="mt-4 border-t border-border pt-4">
-                              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                {t("adminPedidos.courierTitle")}
-                              </p>
-                              {(() => {
-                                const assigned = courierForOrder(active.id);
-                                if (assigned) {
-                                  return (
-                                    <div className="mt-2 flex items-center gap-3 rounded-lg bg-surface p-3">
-                                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-                                        <UserRound className="h-4 w-4" />
-                                      </span>
-                                      <div className="min-w-0">
-                                        <p className="truncate text-sm font-semibold text-foreground">
-                                          {assigned.name}
-                                        </p>
-                                        <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-                                          <Bike className="h-3 w-3" />
-                                          {vehicleLabels[assigned.vehicle]}
-                                          <span aria-hidden>·</span>
-                                          <Phone className="h-3 w-3" />
-                                          {assigned.phone}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  );
-                                }
-                                if (active.status === "onTheWay") {
-                                  return (
-                                    <p className="mt-2 text-xs text-muted-foreground">
-                                      {t("adminPedidos.courierUnknown")}
-                                    </p>
-                                  );
-                                }
-                                if (available.length === 0) {
-                                  return (
-                                    <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-destructive">
-                                      <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-                                      {t("adminPedidos.noCouriers")}
-                                    </p>
-                                  );
-                                }
-                                return (
-                                  <select
-                                    value={courierPick}
-                                    onChange={(e) => setCourierPick(e.target.value)}
-                                    className={`${ADMIN_FILTER_SELECT} mt-2 w-full`}
-                                  >
-                                    <option value="">{t("adminPedidos.courierPick")}</option>
-                                    {available.map((c) => (
-                                      <option key={c.id} value={c.id}>
-                                        {c.name} — {vehicleLabels[c.vehicle]}
-                                      </option>
-                                    ))}
-                                  </select>
-                                );
-                              })()}
-                            </div>
-                          )}
-
-                          {active.note && (
-                            <div className="mt-4 border-t border-border pt-4">
-                              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                {t("adminPedidos.observationLabel")}
-                              </p>
-                              <p className="mt-1.5 rounded-lg bg-surface p-3 text-sm text-foreground">
-                                {active.note}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Itens */}
-                          <div className="mt-4 border-t border-border pt-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                              {t("adminPedidos.itemsTitle")}
-                            </p>
-                            <ul className="mt-2 space-y-1.5">
-                              {active.lines.map((line) => {
-                                const item = getMenuItem(line.menuItemId);
-                                if (!item) return null;
-                                const custom = lineCustomizations(
-                                  line,
-                                  t("adminPedidos.customRemoved"),
-                                  t("adminPedidos.customAdded"),
-                                );
-                                return (
-                                  <li
-                                    key={line.key}
-                                    className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm"
-                                  >
-                                    <span className="min-w-0">
-                                      <span className="block truncate text-muted-foreground">
-                                        {line.qty}× {item.name}
-                                      </span>
-                                      {custom.length > 0 && (
-                                        <span className="block truncate text-xs text-brand">
-                                          {custom.join(" · ")}
-                                        </span>
-                                      )}
-                                    </span>
-                                    <span className="shrink-0 font-semibold">
-                                      {formatKz(lineUnitPrice(line) * line.qty)}
-                                    </span>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                            <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
-                              <div className="flex justify-between text-muted-foreground">
-                                <span>{t("adminPedidos.subtotal")}</span>
-                                <span>{formatKz(orderSubtotal(active))}</span>
-                              </div>
-                              <div className="flex justify-between text-muted-foreground">
-                                <span>{t("adminPedidos.deliveryFee")}</span>
-                                <span>{formatKz(orderTotal(active) - orderSubtotal(active))}</span>
-                              </div>
-                              <div className="flex justify-between font-bold text-foreground">
-                                <span>{t("adminPedidos.total")}</span>
-                                <span className="text-primary">{formatKz(orderTotal(active))}</span>
-                              </div>
                             </div>
                           </div>
 
-                          {/* Ações — cada estado só permite o passo seguinte */}
+                          {/* Ações no topo — o passo mais importante sem obrigar a scroll */}
                           {active.status !== "delivered" &&
                             active.status !== "rejected" &&
                             active.status !== "canceled" && (
@@ -897,6 +771,208 @@ function AdminPedidos() {
                                   )}
                               </div>
                             )}
+
+                          {/* Estafeta — atribuição obrigatória para despachar */}
+                          {(active.status === "accepted" || active.status === "onTheWay") && (
+                            <div className="mt-4 border-t border-border pt-4">
+                              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                {t("adminPedidos.courierTitle")}
+                              </p>
+                              {(() => {
+                                const assigned = courierForOrder(active.id);
+                                if (assigned) {
+                                  return (
+                                    <div className="mt-2 flex items-center gap-3 rounded-lg bg-surface p-3">
+                                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
+                                        <UserRound className="h-4 w-4" />
+                                      </span>
+                                      <div className="min-w-0">
+                                        <p className="truncate text-sm font-semibold text-foreground">
+                                          {assigned.name}
+                                        </p>
+                                        <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                                          <Bike className="h-3 w-3" />
+                                          {vehicleLabels[assigned.vehicle]}
+                                          <span aria-hidden>·</span>
+                                          <Phone className="h-3 w-3" />
+                                          {assigned.phone}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                if (active.status === "onTheWay") {
+                                  return (
+                                    <p className="mt-2 text-xs text-muted-foreground">
+                                      {t("adminPedidos.courierUnknown")}
+                                    </p>
+                                  );
+                                }
+                                if (available.length === 0) {
+                                  return (
+                                    <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-destructive">
+                                      <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+                                      {t("adminPedidos.noCouriers")}
+                                    </p>
+                                  );
+                                }
+                                return (
+                                  <select
+                                    value={courierPick}
+                                    onChange={(e) => setCourierPick(e.target.value)}
+                                    className={`${ADMIN_FILTER_SELECT} mt-2 w-full`}
+                                  >
+                                    <option value="">{t("adminPedidos.courierPick")}</option>
+                                    {available.map((c) => (
+                                      <option key={c.id} value={c.id}>
+                                        {c.name} — {vehicleLabels[c.vehicle]}
+                                      </option>
+                                    ))}
+                                  </select>
+                                );
+                              })()}
+                            </div>
+                          )}
+
+                          <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
+                            <AdminField label={t("adminPedidos.detailDelivery")}>
+                              <span className="block">{active.deliveryAddress.label}</span>
+                              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                                {active.deliveryAddress.line1}
+                                {active.deliveryAddress.line2
+                                  ? ` · ${active.deliveryAddress.line2}`
+                                  : ""}
+                              </span>
+                            </AdminField>
+                            <AdminField label={t("adminPedidos.detailPayment")}>
+                              {active.paymentMethod || t("adminPedidos.noPayment")}
+                            </AdminField>
+                          </dl>
+
+                          {/* Avaliação da entrega — distância vs. raio habitual */}
+                          {(() => {
+                            const a = assessDelivery(active);
+                            const box =
+                              a.level === "outOfRange"
+                                ? "border-destructive/40 bg-destructive/5"
+                                : a.level === "far"
+                                  ? "border-brand/40 bg-brand/5"
+                                  : "border-border bg-surface";
+                            const badge =
+                              a.level === "outOfRange"
+                                ? "bg-destructive/15 text-destructive"
+                                : a.level === "far"
+                                  ? "bg-brand/15 text-brand"
+                                  : "bg-success/15 text-success";
+                            const label =
+                              a.level === "outOfRange"
+                                ? t("adminPedidos.levelOutOfRange")
+                                : a.level === "far"
+                                  ? t("adminPedidos.levelFar")
+                                  : t("adminPedidos.levelOk");
+                            const wait =
+                              active.status === "pending" ? minutesSince(active.createdAt, now) : 0;
+                            return (
+                              <div className={`mt-4 rounded-xl border p-3 ${box}`}>
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                    {t("adminPedidos.deliveryEval")}
+                                  </p>
+                                  <span
+                                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${badge}`}
+                                  >
+                                    {label}
+                                  </span>
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-foreground">
+                                  <span className="flex items-center gap-1.5">
+                                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                                    {t("adminPedidos.distanceKm", { km: a.km })}
+                                  </span>
+                                  <span className="flex items-center gap-1.5">
+                                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                    {t("adminPedidos.etaMinutes", { min: a.etaMin })}
+                                  </span>
+                                  {wait >= PENDING_SLA_MIN && (
+                                    <span className="flex items-center gap-1.5 font-semibold text-destructive">
+                                      <TriangleAlert className="h-3.5 w-3.5" />
+                                      {t("adminPedidos.waitingMin", { min: wait })}
+                                    </span>
+                                  )}
+                                </div>
+                                {a.level !== "ok" && (
+                                  <p className="mt-2 text-xs text-muted-foreground">
+                                    {a.level === "outOfRange"
+                                      ? t("adminPedidos.outOfRangeNote", { radius: a.radiusKm })
+                                      : t("adminPedidos.farNote", { radius: a.radiusKm })}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                          {active.note && (
+                            <div className="mt-4 border-t border-border pt-4">
+                              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                {t("adminPedidos.observationLabel")}
+                              </p>
+                              <p className="mt-1.5 rounded-lg bg-surface p-3 text-sm text-foreground">
+                                {active.note}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Itens */}
+                          <div className="mt-4 border-t border-border pt-4">
+                            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                              {t("adminPedidos.itemsTitle")}
+                            </p>
+                            <ul className="mt-2 space-y-1.5">
+                              {active.lines.map((line) => {
+                                const item = getMenuItem(line.menuItemId);
+                                if (!item) return null;
+                                const custom = lineCustomizations(
+                                  line,
+                                  t("adminPedidos.customRemoved"),
+                                  t("adminPedidos.customAdded"),
+                                );
+                                return (
+                                  <li
+                                    key={line.key}
+                                    className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm"
+                                  >
+                                    <span className="min-w-0">
+                                      <span className="block truncate text-muted-foreground">
+                                        {line.qty}× {item.name}
+                                      </span>
+                                      {custom.length > 0 && (
+                                        <span className="block truncate text-xs text-brand">
+                                          {custom.join(" · ")}
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span className="shrink-0 font-semibold">
+                                      {formatKz(lineUnitPrice(line) * line.qty)}
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                            <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
+                              <div className="flex justify-between text-muted-foreground">
+                                <span>{t("adminPedidos.subtotal")}</span>
+                                <span>{formatKz(orderSubtotal(active))}</span>
+                              </div>
+                              <div className="flex justify-between text-muted-foreground">
+                                <span>{t("adminPedidos.deliveryFee")}</span>
+                                <span>{formatKz(orderTotal(active) - orderSubtotal(active))}</span>
+                              </div>
+                              <div className="flex justify-between font-bold text-foreground">
+                                <span>{t("adminPedidos.total")}</span>
+                                <span className="text-primary">{formatKz(orderTotal(active))}</span>
+                              </div>
+                            </div>
+                          </div>
                         </>
                       ) : (
                         <div className="grid place-items-center gap-3 py-12 text-center">
@@ -977,42 +1053,157 @@ function AdminPedidos() {
             {t("adminPedidos.couriersTitle")}
           </DialogTitle>
           <DialogDescription>{t("adminPedidos.couriersDesc")}</DialogDescription>
-          <ul className="mt-4 space-y-2">
-            {couriers.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center gap-3 rounded-xl border border-border p-3"
-              >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-muted-foreground">
-                  <UserRound className="h-4 w-4" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-foreground">{c.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {vehicleLabels[c.vehicle]} · {c.phone}
-                  </p>
-                </div>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${courierStatusTone[c.status]}`}
+
+          <button
+            type="button"
+            onClick={openCourierCreate}
+            className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/50 px-4 py-2.5 text-xs font-bold text-primary transition-colors hover:bg-primary/5"
+          >
+            <Plus className="h-3.5 w-3.5" /> {t("adminPedidos.courierAdd")}
+          </button>
+
+          {myCouriers.length === 0 ? (
+            <p className="mt-4 rounded-xl bg-surface p-4 text-center text-sm text-muted-foreground">
+              {t("adminPedidos.couriersEmpty")}
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {myCouriers.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-center gap-2 rounded-xl border border-border p-3"
                 >
-                  {courierStatusLabels[c.status]}
-                </span>
-                {c.status !== "em_entrega" && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setStatus(c.id, c.status === "offline" ? "disponivel" : "offline")
-                    }
-                    className="shrink-0 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary"
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-muted-foreground">
+                    <UserRound className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">{c.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {vehicleLabels[c.vehicle]} · {c.phone}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${courierStatusTone[c.status]}`}
                   >
-                    {c.status === "offline"
-                      ? t("adminPedidos.courierActivate")
-                      : t("adminPedidos.courierPause")}
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+                    {courierStatusLabels[c.status]}
+                  </span>
+                  {c.status !== "em_entrega" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setStatus(c.id, c.status === "offline" ? "disponivel" : "offline")
+                        }
+                        className="shrink-0 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary"
+                      >
+                        {c.status === "offline"
+                          ? t("adminPedidos.courierActivate")
+                          : t("adminPedidos.courierPause")}
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={t("adminPedidos.courierEdit")}
+                        onClick={() => openCourierEdit(c)}
+                        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-primary"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={t("adminPedidos.courierRemove")}
+                        onClick={() => {
+                          removeCourier(c.id);
+                          toast.success(t("adminPedidos.courierRemovedToast"));
+                        }}
+                        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={courierFormOpen} onOpenChange={setCourierFormOpen}>
+        <DialogContent className="max-w-md rounded-[1.5rem] border-none bg-card p-6">
+          <DialogTitle className="font-display text-lg font-bold">
+            {editingCourier
+              ? t("adminPedidos.courierEditTitle")
+              : t("adminPedidos.courierAddTitle")}
+          </DialogTitle>
+          <DialogDescription>{t("adminPedidos.courierFormHint")}</DialogDescription>
+          <form onSubmit={submitCourier} className="mt-4 space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="courier-name" className="text-xs font-medium text-muted-foreground">
+                {t("adminPedidos.courierNameLabel")}
+              </label>
+              <input
+                id="courier-name"
+                value={courierDraft.name}
+                onChange={(e) => setCourierDraft((d) => ({ ...d, name: e.target.value }))}
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="courier-phone"
+                  className="text-xs font-medium text-muted-foreground"
+                >
+                  {t("adminPedidos.courierPhoneLabel")}
+                </label>
+                <input
+                  id="courier-phone"
+                  value={courierDraft.phone}
+                  onChange={(e) => setCourierDraft((d) => ({ ...d, phone: e.target.value }))}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="courier-zone" className="text-xs font-medium text-muted-foreground">
+                  {t("adminPedidos.courierZoneLabel")}
+                </label>
+                <input
+                  id="courier-zone"
+                  value={courierDraft.zone}
+                  onChange={(e) => setCourierDraft((d) => ({ ...d, zone: e.target.value }))}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="courier-vehicle"
+                className="text-xs font-medium text-muted-foreground"
+              >
+                {t("adminPedidos.courierVehicleLabel")}
+              </label>
+              <select
+                id="courier-vehicle"
+                value={courierDraft.vehicle}
+                onChange={(e) =>
+                  setCourierDraft((d) => ({ ...d, vehicle: e.target.value as CourierVehicle }))
+                }
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
+              >
+                {COURIER_VEHICLES.map((v) => (
+                  <option key={v} value={v}>
+                    {vehicleLabels[v]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              {editingCourier ? t("adminPedidos.courierSave") : t("adminPedidos.courierCreate")}
+            </button>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

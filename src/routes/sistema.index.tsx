@@ -86,14 +86,14 @@ function SistemaIndex() {
       .sort((a, b) => b.rev - a.rev)
       .slice(0, 5);
 
-    const planBars: StatBarRow[] = (["basico", "pro"] as const).map((plan, i) => {
+    const planBars: StatBarRow[] = (["kino"] as const).map((plan) => {
       const count = subscriptions.filter((s) => s.plan === plan).length;
       return {
         key: plan,
         label: `${t(`sistema.plan.${plan}`)} · ${formatKz(PLAN_PRICE[plan])}`,
         count,
         pct: subscriptions.length ? Math.round((count / subscriptions.length) * 100) : 0,
-        tone: i === 0 ? "bg-primary" : "bg-brand",
+        tone: "bg-primary",
       };
     });
     const statusTone: Record<string, string> = {

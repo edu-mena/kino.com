@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import { ADMIN_FILTER_SELECT, AdminField } from "@/components/admin-stats";
 import { SystemPageHeading } from "@/components/system-shell";
 import { createRestaurant } from "@/data/custom-restaurants-store";
-import { createMenu } from "@/data/menus-store";
 import type { PartnerAppStatus } from "@/data/partner-apps-store";
 import { addTable } from "@/data/tables-store";
 import { useTranslation } from "@/i18n";
@@ -50,8 +49,7 @@ function SistemaParceiros() {
       phone: app.phone,
       email: app.email,
     });
-    createSubscription(restaurant.id, "basico");
-    createMenu(restaurant.id, "Cardápio Principal");
+    createSubscription(restaurant.id);
     addTable({ restaurantId: restaurant.id, name: "Mesa 1", seats: 4, area: "Interior" });
     addTable({ restaurantId: restaurant.id, name: "Mesa 2", seats: 2, area: "Interior" });
     addTable({ restaurantId: restaurant.id, name: "Mesa 3", seats: 6, area: "Interior" });

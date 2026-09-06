@@ -29,7 +29,9 @@ export function StoryViewer({
   const [restaurantIdx, setRestaurantIdx] = useState(startIndex);
   const [storyIdx, setStoryIdx] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
   const pointerDownAt = useRef(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const restaurant = restaurants[restaurantIdx];
   const stories = useMemo(
@@ -37,10 +39,22 @@ export function StoryViewer({
     [restaurant],
   );
   const story = stories[storyIdx];
+  const isVideo = story?.mediaType === "video";
 
   useEffect(() => {
     if (story) markStoryViewed(story.id);
   }, [story, markStoryViewed]);
+
+  // Reinicia a barra de progresso do vídeo ao trocar de story.
+  useEffect(() => setVideoProgress(0), [storyIdx, restaurantIdx]);
+
+  // "Segurar para pausar" também controla o vídeo.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (paused) v.pause();
+    else void v.play().catch(() => {});
+  }, [paused, storyIdx, restaurantIdx]);
 
   const goNext = () => {
     if (storyIdx < stories.length - 1) {
@@ -148,15 +162,22 @@ export function StoryViewer({
                   {i < storyIdx ? (
                     <div className="h-full w-full bg-white" />
                   ) : i === storyIdx ? (
-                    <div
-                      key={`${restaurant.id}-${s.id}`}
-                      className="h-full origin-left bg-white [animation-fill-mode:forwards] [animation-name:story-progress] [animation-timing-function:linear]"
-                      style={{
-                        animationDuration: `${STORY_DURATION}ms`,
-                        animationPlayState: paused ? "paused" : "running",
-                      }}
-                      onAnimationEnd={goNext}
-                    />
+                    isVideo ? (
+                      <div
+                        className="h-full origin-left bg-white transition-transform duration-100 ease-linear"
+                        style={{ transform: `scaleX(${videoProgress})` }}
+                      />
+                    ) : (
+                      <div
+                        key={`${restaurant.id}-${s.id}`}
+                        className="h-full origin-left bg-white [animation-fill-mode:forwards] [animation-name:story-progress] [animation-timing-function:linear]"
+                        style={{
+                          animationDuration: `${STORY_DURATION}ms`,
+                          animationPlayState: paused ? "paused" : "running",
+                        }}
+                        onAnimationEnd={goNext}
+                      />
+                    )
                   ) : null}
                 </div>
               ))}
@@ -184,11 +205,28 @@ export function StoryViewer({
             </div>
 
             <div className="grid h-full place-items-center">
-              <img
-                src={story.image}
-                alt=""
-                className="max-h-full w-full object-contain lg:h-full"
-              />
+              {isVideo ? (
+                <video
+                  ref={videoRef}
+                  key={story.id}
+                  src={story.image}
+                  className="max-h-full w-full object-contain lg:h-full"
+                  autoPlay
+                  muted
+                  playsInline
+                  onTimeUpdate={(e) => {
+                    const v = e.currentTarget;
+                    if (v.duration) setVideoProgress(v.currentTime / v.duration);
+                  }}
+                  onEnded={goNext}
+                />
+              ) : (
+                <img
+                  src={story.image}
+                  alt=""
+                  className="max-h-full w-full object-contain lg:h-full"
+                />
+              )}
             </div>
           </div>
         </div>

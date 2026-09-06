@@ -1,19 +1,22 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { STORAGE_KEYS } from "@/data/storage-keys";
 
 /**
- * Frota de estafetas partilhada da Kino, usada pelo painel de Pedidos para
- * despachar entregas. Não há backend — o estado vive no localStorage e é a
- * fonte da verdade sobre quem está livre. Um estafeta em entrega não pode
- * ser reatribuído nem posto offline; ao concluir/recusar o pedido volta a
- * ficar disponível.
+ * Estafetas de cada restaurante — a Kino já não opera uma frota partilhada;
+ * cada restaurante é inteiramente responsável pelos seus estafetas, geridos
+ * no painel de Pedidos (`/admin/pedidos`). Não há backend — o estado vive no
+ * localStorage e é a fonte da verdade sobre quem está livre. Um estafeta em
+ * entrega não pode ser reatribuído nem posto offline; ao concluir/recusar o
+ * pedido volta a ficar disponível.
  */
-const STORAGE_KEY = "kino_couriers_v1";
+const STORAGE_KEY = STORAGE_KEYS.couriers;
 
 export type CourierVehicle = "moto" | "bicicleta" | "carro";
 export type CourierStatus = "disponivel" | "em_entrega" | "offline";
 
 export type Courier = {
   id: string;
+  restaurantId: string;
   name: string;
   phone: string;
   vehicle: CourierVehicle;
@@ -26,6 +29,7 @@ export type Courier = {
 const SEED: Courier[] = [
   {
     id: "cour-1",
+    restaurantId: "rest-1",
     name: "Nzola Adão",
     phone: "+244 923 118 204",
     vehicle: "moto",
@@ -35,6 +39,7 @@ const SEED: Courier[] = [
   },
   {
     id: "cour-2",
+    restaurantId: "rest-1",
     name: "Ivo Quissanga",
     phone: "+244 912 447 015",
     vehicle: "moto",
@@ -43,6 +48,7 @@ const SEED: Courier[] = [
   },
   {
     id: "cour-3",
+    restaurantId: "rest-6",
     name: "Bruno Kalunga",
     phone: "+244 928 903 771",
     vehicle: "carro",
@@ -52,6 +58,7 @@ const SEED: Courier[] = [
   },
   {
     id: "cour-4",
+    restaurantId: "rest-1",
     name: "Selma Katchi",
     phone: "+244 923 660 118",
     vehicle: "bicicleta",
@@ -60,6 +67,7 @@ const SEED: Courier[] = [
   },
   {
     id: "cour-5",
+    restaurantId: "rest-1",
     name: "Edgar Mbala",
     phone: "+244 917 205 486",
     vehicle: "moto",
@@ -68,9 +76,13 @@ const SEED: Courier[] = [
   },
 ];
 
+type CourierInput = Omit<Courier, "id" | "status" | "activeOrderId">;
+
 type CouriersValue = {
-  couriers: Courier[];
-  available: Courier[];
+  /** Estafetas de um restaurante. */
+  couriersByRestaurant: (restaurantId: string) => Courier[];
+  /** Estafetas livres de um restaurante. */
+  availableByRestaurant: (restaurantId: string) => Courier[];
   courierForOrder: (orderId: string) => Courier | undefined;
   /** Atribui um estafeta livre a um pedido (fica "em entrega"). */
   assign: (courierId: string, orderId: string) => void;
@@ -78,8 +90,8 @@ type CouriersValue = {
   releaseOrder: (orderId: string) => void;
   /** Alterna disponível ↔ offline (ignorado se estiver em entrega). */
   setStatus: (courierId: string, status: "disponivel" | "offline") => void;
-  /** Gestão da frota (área de sistema, `/sistema/frota`). */
-  addCourier: (input: Omit<Courier, "id" | "status" | "activeOrderId">) => void;
+  /** CRUD dos estafetas do restaurante (painel de Pedidos). */
+  addCourier: (input: CourierInput) => void;
   updateCourier: (
     courierId: string,
     patch: Partial<Pick<Courier, "name" | "phone" | "vehicle" | "zone">>,
@@ -112,8 +124,10 @@ export function CouriersProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<CouriersValue>(
     () => ({
-      couriers,
-      available: couriers.filter((c) => c.status === "disponivel"),
+      couriersByRestaurant: (restaurantId) =>
+        couriers.filter((c) => c.restaurantId === restaurantId),
+      availableByRestaurant: (restaurantId) =>
+        couriers.filter((c) => c.restaurantId === restaurantId && c.status === "disponivel"),
       courierForOrder: (orderId) => couriers.find((c) => c.activeOrderId === orderId),
       assign: (courierId, orderId) =>
         setCouriers((prev) =>
