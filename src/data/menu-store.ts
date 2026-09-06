@@ -118,6 +118,29 @@ export function toggleMenuItemAvailability(id: string) {
   writeUnavailableIds(ids.includes(id) ? ids.filter((existing) => existing !== id) : [...ids, id]);
 }
 
+/**
+ * Categorias de prato pré-definidas para o seletor do formulário de pratos.
+ * Alinhadas às chaves de `menuCategories` no i18n; o gestor pode sempre
+ * escrever uma categoria nova (a opção "Outra…" abre um campo livre).
+ */
+export const DISH_CATEGORY_OPTIONS = [
+  "Pratos Principais",
+  "Pequeno-Almoço",
+  "Entradas",
+  "Pizza",
+  "Massas",
+  "Sobremesas",
+  "Grelhados",
+  "Acompanhamentos",
+  "Combinados",
+  "Temakis",
+  "Uramaki",
+  "Pratos Quentes",
+  "Bebidas",
+  "Fast-Food",
+  "Snacks",
+] as const;
+
 export type MenuItemInput = {
   menuId: string;
   name: string;

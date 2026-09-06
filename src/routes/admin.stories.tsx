@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { FirstUseHint } from "@/components/first-use-hint";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { STORY_VIDEO_MAX_SEC } from "@/data/stories-store";
 import type { RestaurantStory } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { useFirstUseHint } from "@/lib/first-use-hints";
@@ -57,6 +58,9 @@ function AdminStories() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [image, setImage] = useState("");
+  const [media, setMedia] = useState<{ mediaType: "image" | "video"; durationSec?: number }>({
+    mediaType: "image",
+  });
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<RestaurantStory | null>(null);
   const [period, setPeriod] = useState<PeriodFilter>("todos");
@@ -152,7 +156,7 @@ function AdminStories() {
       toast.error(t("adminStories.missingImageError"));
       return;
     }
-    const { ok } = createStory(restaurant.id, image.trim());
+    const { ok } = createStory(restaurant.id, image.trim(), media);
     if (!ok) {
       toast.error(t("adminStories.saveFailedError"));
       return;
@@ -160,6 +164,7 @@ function AdminStories() {
     toast.success(t("adminStories.createdToast"));
     storyHint.dismiss();
     setImage("");
+    setMedia({ mediaType: "image" });
     setFormOpen(false);
   };
 
@@ -180,6 +185,7 @@ function AdminStories() {
           <Button
             onClick={() => {
               setImage("");
+              setMedia({ mediaType: "image" });
               setFormOpen(true);
             }}
             className="rounded-xl"
@@ -248,11 +254,20 @@ function AdminStories() {
                               : "hover:bg-primary/5"
                         }`}
                       >
-                        <img
-                          src={s.image}
-                          alt=""
-                          className="h-10 w-10 shrink-0 rounded-lg bg-surface object-cover"
-                        />
+                        {s.mediaType === "video" ? (
+                          <video
+                            src={s.image}
+                            muted
+                            playsInline
+                            className="h-10 w-10 shrink-0 rounded-lg bg-surface object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={s.image}
+                            alt=""
+                            className="h-10 w-10 shrink-0 rounded-lg bg-surface object-cover"
+                          />
+                        )}
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-semibold capitalize text-foreground">
                             {rel(s.createdAt)}
@@ -286,11 +301,20 @@ function AdminStories() {
                         <ChevronLeft className="h-4 w-4" /> {t("common.back")}
                       </button>
 
-                      <img
-                        src={active.image}
-                        alt=""
-                        className="mx-auto max-h-[55vh] w-full rounded-2xl bg-surface object-contain"
-                      />
+                      {active.mediaType === "video" ? (
+                        <video
+                          src={active.image}
+                          controls
+                          playsInline
+                          className="mx-auto max-h-[55vh] w-full rounded-2xl bg-surface object-contain"
+                        />
+                      ) : (
+                        <img
+                          src={active.image}
+                          alt=""
+                          className="mx-auto max-h-[55vh] w-full rounded-2xl bg-surface object-contain"
+                        />
+                      )}
 
                       <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
                         <AdminField label={t("adminStories.detailPublished")}>
@@ -389,9 +413,16 @@ function AdminStories() {
               value={image}
               onChange={setImage}
               onUploadingChange={setUploading}
+              onMediaChange={setMedia}
+              mediaType={media.mediaType}
+              accept="media"
+              maxVideoSec={STORY_VIDEO_MAX_SEC}
               label={t("adminStories.imageLabel")}
               helpText={t("adminStories.imageHelp")}
             />
+            <p className="text-xs text-muted-foreground">
+              {t("adminStories.mediaNote", { sec: STORY_VIDEO_MAX_SEC })}
+            </p>
             <Button type="submit" disabled={uploading} className="w-full rounded-xl">
               {t("adminStories.publish")}
             </Button>

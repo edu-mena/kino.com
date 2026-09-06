@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { ADMIN_FILTER_SELECT, AdminField, KpiTile, StatSection } from "@/components/admin-stats";
 import { SystemPageHeading } from "@/components/system-shell";
 import { getAllRestaurants } from "@/data/helpers";
-import { PLAN_PRICE, type SubscriptionPlan, type SubStatus } from "@/data/subscriptions-store";
+import { PLAN_PRICE, type SubStatus } from "@/data/subscriptions-store";
 import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { useSubscriptions } from "@/lib/subscriptions";
@@ -31,7 +31,7 @@ const statusTone: Record<SubStatus, string> = {
 
 function SistemaSubscricoes() {
   const { r: preselect } = Route.useSearch();
-  const { subscriptions, mrr, counts, setPlan, setStatus, registerPayment, extendTrial } =
+  const { subscriptions, mrr, counts, setStatus, registerPayment, extendTrial } =
     useSubscriptions();
   const { t, locale } = useTranslation();
   const bcp = BCP47[locale];
@@ -40,7 +40,6 @@ function SistemaSubscricoes() {
   const nameOf = (id: string) => restaurants.find((x) => x.id === id)?.name ?? id;
 
   const [query, setQuery] = useState("");
-  const [planFilter, setPlanFilter] = useState<"todos" | SubscriptionPlan>("todos");
   const [statusFilter, setStatusFilter] = useState<"todos" | SubStatus>("todos");
   const [activeId, setActiveId] = useState<string | null>(preselect ?? null);
 
@@ -63,7 +62,6 @@ function SistemaSubscricoes() {
     const q = query.trim().toLowerCase();
     return subscriptions
       .filter((s) => {
-        if (planFilter !== "todos" && s.plan !== planFilter) return false;
         if (statusFilter !== "todos" && s.status !== statusFilter) return false;
         if (q && !nameOf(s.restaurantId).toLowerCase().includes(q)) return false;
         return true;
@@ -74,7 +72,7 @@ function SistemaSubscricoes() {
         return nameOf(a.restaurantId).localeCompare(nameOf(b.restaurantId), "pt");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subscriptions, query, planFilter, statusFilter, restaurants]);
+  }, [subscriptions, query, statusFilter, restaurants]);
 
   const active = useMemo(
     () => subscriptions.find((s) => s.restaurantId === activeId) ?? null,
@@ -145,15 +143,6 @@ function SistemaSubscricoes() {
                 className="w-full min-w-0 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
               />
             </label>
-            <select
-              value={planFilter}
-              onChange={(e) => setPlanFilter(e.target.value as typeof planFilter)}
-              className={ADMIN_FILTER_SELECT}
-            >
-              <option value="todos">{t("sistema.subscricoes.planAll")}</option>
-              <option value="basico">{t("sistema.plan.basico")}</option>
-              <option value="pro">{t("sistema.plan.pro")}</option>
-            </select>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
@@ -275,40 +264,6 @@ function SistemaSubscricoes() {
                           : "—"}
                       </AdminField>
                     </dl>
-
-                    {/* Plano */}
-                    <div className="mt-5 border-t border-border pt-5">
-                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                        {t("sistema.subscricoes.changePlan")}
-                      </p>
-                      <div className="mt-2 flex gap-2">
-                        {(["basico", "pro"] as const).map((plan) => (
-                          <button
-                            key={plan}
-                            type="button"
-                            onClick={() => {
-                              setPlan(active.restaurantId, plan);
-                              toast.success(
-                                t("sistema.subscricoes.planToast", {
-                                  plan: t(`sistema.plan.${plan}`),
-                                }),
-                              );
-                            }}
-                            className={`flex-1 rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${
-                              active.plan === plan
-                                ? "border-primary bg-primary/10 text-primary"
-                                : "border-border text-muted-foreground hover:border-primary"
-                            }`}
-                          >
-                            {t(`sistema.plan.${plan}`)}
-                            <span className="mt-0.5 block text-[11px] font-medium">
-                              {formatKz(PLAN_PRICE[plan])}
-                              {t("sistema.subscricoes.perMonth")}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
 
                     {/* Ações */}
                     <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-5">

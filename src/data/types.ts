@@ -81,21 +81,18 @@ export interface MenuItemIngredient {
 
 /**
  * Cardápio nomeado de um restaurante (ex: "Cardápio Principal", "Menu de
- * Fim de Semana") — um restaurante pode ter vários, geridos em
- * `/admin/cardapio`. Só pratos de cardápios com `isActive: true` aparecem
- * para os clientes; os restantes ficam como rascunho, visíveis só no
- * painel. Todo restaurante tem sempre pelo menos um (o "Cardápio
- * Principal" sintético, criado automaticamente — ver `@/data/menus-store`).
+ * cada restaurante tem um único cardápio, o "Cardápio Principal" sintético
+ * criado automaticamente (ver `@/data/menus-store`, `defaultMenuId`) — a
+ * organização dos pratos é feita só por categoria. Este tipo mantém-se
+ * porque o documento do cardápio (PDF / `/menu/$restaurantId`) ainda itera
+ * sobre uma lista de cardápios (agora sempre com um só elemento).
  */
 export interface RestaurantMenu {
   id: string;
   restaurantId: string;
   name: string;
   isActive: boolean;
-  /** Categoria de cardápio escolhida na criação (ex: "jantar", "gourmet",
-   * "bar") — usada para o selo na UI e como base para os pratos-modelo.
-   * "personalizado" (ou ausente) = cardápio criado de raiz. Ver
-   * `@/data/menu-templates`. */
+  /** Chave de tipo de cardápio, legado — hoje sempre ausente. */
   category?: string;
 }
 
@@ -234,10 +231,19 @@ export interface SavedAddress {
   isDefault?: boolean;
 }
 
-/** Story de um restaurante (imagem única, expira depois de 24h — igual WhatsApp/Instagram). */
+/**
+ * Story de um restaurante (imagem ou vídeo curto). Stories criados no painel
+ * auto-expiram 24h depois de `createdAt` — igual WhatsApp/Instagram (ver
+ * `STORY_TTL_MS` em `@/data/stories-store`).
+ */
 export interface RestaurantStory {
   id: string;
   restaurantId: string;
+  /** Fonte da media — data URL (upload) ou URL. Vale para imagem e vídeo. */
   image: string;
+  /** Ausente = "image" (compatibilidade com o seed). */
+  mediaType?: "image" | "video";
+  /** Duração real do vídeo, em segundos (só quando `mediaType === "video"`). */
+  durationSec?: number;
   createdAt: string; // ISO
 }

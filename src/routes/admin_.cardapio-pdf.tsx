@@ -2,11 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Printer } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { MenuDocument } from "@/components/menu-document";
-import { defaultMenuId } from "@/data/menus-store";
+import { defaultMenuId, getMenusByRestaurant } from "@/data/menus-store";
 import type { MenuItem, RestaurantMenu } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { useMenuAdmin } from "@/lib/menu-admin";
-import { useMenusAdmin } from "@/lib/menus-admin";
 import { OperatorProviders } from "@/lib/operator-providers";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
@@ -26,14 +25,13 @@ export const Route = createFileRoute("/admin_/cardapio-pdf")({
 function CardapioPdf() {
   const { menu: menuParam } = Route.useSearch();
   const { restaurant, hydrated } = useRestaurantAdmin();
-  const { menusByRestaurant } = useMenusAdmin();
   const { items } = useMenuAdmin();
   const { t, locale } = useTranslation();
   const printed = useRef(false);
 
   const menus = useMemo<RestaurantMenu[]>(
-    () => (restaurant ? menusByRestaurant(restaurant.id) : []),
-    [restaurant, menusByRestaurant],
+    () => (restaurant ? getMenusByRestaurant(restaurant.id) : []),
+    [restaurant],
   );
 
   const menusToPrint = useMemo(

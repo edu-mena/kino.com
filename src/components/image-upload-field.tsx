@@ -3,28 +3,47 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { fileToResizedDataUrl } from "@/lib/image-upload";
+import { fileToDataUrl, fileToResizedDataUrl, getVideoDurationSec } from "@/lib/image-upload";
+
+/** Vídeo até este tamanho — um data URL maior rebenta a quota do localStorage. */
+const MAX_VIDEO_BYTES = 5 * 1024 * 1024;
+
+export type UploadMediaMeta = { mediaType: "image" | "video"; durationSec?: number };
 
 /**
- * Campo de imagem reutilizável — link OU upload do dispositivo (extraído
+ * Campo de media reutilizável — link OU upload do dispositivo (extraído
  * de `dish-form-dialog.tsx`, agora também usado pelo formulário de
  * stories). Controlado: `value`/`onChange` guardam sempre a string final
- * (URL colada ou data URL redimensionado), nunca o `File` em si.
+ * (URL colada ou data URL), nunca o `File` em si.
+ *
+ * `accept="media"` (usado pelos stories) aceita também vídeo: valida a
+ * duração (`maxVideoSec`) e o tamanho, guarda o data URL cru e informa o
+ * `mediaType`/`durationSec` via `onMediaChange`.
  */
 export function ImageUploadField({
   value,
   onChange,
   onUploadingChange,
+  onMediaChange,
+  accept = "image",
+  maxVideoSec = 20,
   label = "Imagem",
   helpText = "Cole um link de imagem ou carregue uma foto do dispositivo. Em branco, usa uma imagem genérica.",
+  mediaType = "image",
 }: {
   value: string;
   onChange: (value: string) => void;
   /** Avisa quem usa o campo enquanto um upload está a processar — útil
    * para desativar o botão de submeter do formulário nesse intervalo. */
   onUploadingChange?: (uploading: boolean) => void;
+  /** Só no modo `accept="media"`: informa o tipo/duração da media escolhida. */
+  onMediaChange?: (meta: UploadMediaMeta) => void;
+  accept?: "image" | "media";
+  maxVideoSec?: number;
   label?: string;
   helpText?: string;
+  /** Tipo da media atual (para o preview escolher `<img>` vs `<video>`). */
+  mediaType?: "image" | "video";
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -36,9 +55,24 @@ export function ImageUploadField({
     setUploading(true);
     onUploadingChange?.(true);
     try {
-      onChange(await fileToResizedDataUrl(file));
+      if (accept === "media" && file.type.startsWith("video/")) {
+        const durationSec = await getVideoDurationSec(file);
+        if (durationSec > maxVideoSec + 0.5) {
+          toast.error(`O vídeo tem de ter no máximo ${maxVideoSec} segundos.`);
+          return;
+        }
+        if (file.size > MAX_VIDEO_BYTES) {
+          toast.error("O vídeo é demasiado grande (máx. 5 MB).");
+          return;
+        }
+        onChange(await fileToDataUrl(file));
+        onMediaChange?.({ mediaType: "video", durationSec: Math.round(durationSec) });
+      } else {
+        onChange(await fileToResizedDataUrl(file));
+        onMediaChange?.({ mediaType: "image" });
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível carregar a imagem.");
+      toast.error(err instanceof Error ? err.message : "Não foi possível carregar o ficheiro.");
     } finally {
       setUploading(false);
       onUploadingChange?.(false);
@@ -46,6 +80,7 @@ export function ImageUploadField({
   };
 
   const isUploaded = value.startsWith("data:");
+  const showVideo = mediaType === "video";
 
   return (
     <div className="space-y-1.5">
@@ -55,7 +90,11 @@ export function ImageUploadField({
           {uploading ? (
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           ) : value ? (
-            <img src={value} alt="" className="h-full w-full object-cover" />
+            showVideo ? (
+              <video src={value} className="h-full w-full object-cover" muted playsInline />
+            ) : (
+              <img src={value} alt="" className="h-full w-full object-cover" />
+            )
           ) : (
             <ImagePlus className="h-5 w-5 text-muted-foreground" />
           )}
@@ -63,15 +102,18 @@ export function ImageUploadField({
         <div className="min-w-0 flex-1 space-y-2">
           <Input
             value={isUploaded ? "" : value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={isUploaded ? "Imagem carregada do dispositivo" : "https://..."}
+            onChange={(e) => {
+              onChange(e.target.value);
+              onMediaChange?.({ mediaType: "image" });
+            }}
+            placeholder={isUploaded ? "Ficheiro carregado do dispositivo" : "https://..."}
             disabled={isUploaded}
           />
           <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept={accept === "media" ? "image/*,video/*" : "image/*"}
               onChange={handleFileChange}
               className="hidden"
             />
@@ -85,7 +127,10 @@ export function ImageUploadField({
             {isUploaded && (
               <button
                 type="button"
-                onClick={() => onChange("")}
+                onClick={() => {
+                  onChange("");
+                  onMediaChange?.({ mediaType: "image" });
+                }}
                 className="text-xs font-semibold text-muted-foreground hover:text-destructive"
               >
                 Remover

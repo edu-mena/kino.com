@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { CouriersProvider } from "./couriers";
-import { MenusAdminProvider } from "./menus-admin";
 import { OffersAdminProvider } from "./offers-admin";
 import { PartnerAppsProvider } from "./partner-apps";
 import { RestaurantAdminProvider } from "./restaurant-admin";
@@ -22,17 +21,15 @@ import { SystemAdminProvider } from "./system-admin";
 export function OperatorProviders({ children }: { children: ReactNode }) {
   return (
     <RestaurantAdminProvider>
-      <MenusAdminProvider>
-        <StoriesAdminProvider>
-          <OffersAdminProvider>
-            <CouriersProvider>
-              <SystemAdminProvider>
-                <PartnerAppsProvider>{children}</PartnerAppsProvider>
-              </SystemAdminProvider>
-            </CouriersProvider>
-          </OffersAdminProvider>
-        </StoriesAdminProvider>
-      </MenusAdminProvider>
+      <StoriesAdminProvider>
+        <OffersAdminProvider>
+          <CouriersProvider>
+            <SystemAdminProvider>
+              <PartnerAppsProvider>{children}</PartnerAppsProvider>
+            </SystemAdminProvider>
+          </CouriersProvider>
+        </OffersAdminProvider>
+      </StoriesAdminProvider>
     </RestaurantAdminProvider>
   );
 }

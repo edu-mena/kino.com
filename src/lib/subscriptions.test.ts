@@ -6,7 +6,7 @@ const DAY = 86_400_000;
 function makeSub(over: Partial<RestaurantSubscription>): RestaurantSubscription {
   return {
     restaurantId: "rest-1",
-    plan: "basico",
+    plan: "kino",
     startedAt: new Date().toISOString(),
     trialEndsAt: new Date(Date.now() + 10 * DAY).toISOString(),
     status: "trial",

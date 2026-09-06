@@ -3,7 +3,7 @@ import { CalendarClock, CheckCircle2, CreditCard, TriangleAlert } from "lucide-r
 import { toast } from "sonner";
 import { AdminPageHeading } from "@/components/admin-shell";
 import { KpiTile } from "@/components/admin-stats";
-import { PLAN_PRICE, type SubscriptionPlan } from "@/data/subscriptions-store";
+import { PLAN_PRICE } from "@/data/subscriptions-store";
 import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -19,7 +19,7 @@ const DAY = 86_400_000;
 
 function AdminSubscricao() {
   const { restaurant } = useRestaurantAdmin();
-  const { byRestaurant, setPlan, registerPayment } = useSubscriptions();
+  const { byRestaurant, registerPayment } = useSubscriptions();
   const { t, locale } = useTranslation();
 
   if (!restaurant) return null;
@@ -120,42 +120,17 @@ function AdminSubscricao() {
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">{t("adminSubscricao.actionsHint")}</p>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {(["basico", "pro"] as SubscriptionPlan[]).map((plan) => (
-              <button
-                key={plan}
-                type="button"
-                onClick={() => {
-                  setPlan(restaurant.id, plan);
-                  toast.success(
-                    t("adminSubscricao.planToast", { plan: t(`sistema.plan.${plan}`) }),
-                  );
-                }}
-                className={`rounded-xl border p-4 text-left transition-colors ${
-                  sub.plan === plan
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary"
-                }`}
-              >
-                <p className="font-display text-sm font-bold text-foreground">
-                  {t(`sistema.plan.${plan}`)}
-                </p>
-                <p className="mt-0.5 text-lg font-extrabold text-primary">
-                  {formatKz(PLAN_PRICE[plan])}
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {t("adminSubscricao.perMonth")}
-                  </span>
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {plan === "pro" ? t("adminSubscricao.proPerks") : t("adminSubscricao.basicPerks")}
-                </p>
-                {sub.plan === plan && (
-                  <span className="mt-2 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
-                    {t("adminSubscricao.currentBadge")}
-                  </span>
-                )}
-              </button>
-            ))}
+          <div className="mt-4 rounded-xl border border-primary bg-primary/5 p-4">
+            <p className="font-display text-sm font-bold text-foreground">
+              {t("sistema.plan.kino")}
+            </p>
+            <p className="mt-0.5 text-lg font-extrabold text-primary">
+              {formatKz(PLAN_PRICE.kino)}
+              <span className="text-xs font-medium text-muted-foreground">
+                {t("adminSubscricao.perMonth")}
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("adminSubscricao.perks")}</p>
           </div>
 
           <button

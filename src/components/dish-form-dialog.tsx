@@ -9,9 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import icon from "@/assets/icon.png";
 import { FirstUseHint } from "@/components/first-use-hint";
-import { getEffectiveMenuItems, normalizeIngredients, type MenuItemInput } from "@/data/menu-store";
+import {
+  DISH_CATEGORY_OPTIONS,
+  getEffectiveMenuItems,
+  normalizeIngredients,
+  type MenuItemInput,
+} from "@/data/menu-store";
 import type { MenuItem, MenuItemIngredient } from "@/data/types";
-import { useTranslation } from "@/i18n";
+import { translateMenuCategory, useTranslation } from "@/i18n";
 import { useFirstUseHint } from "@/lib/first-use-hints";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +37,10 @@ function toRows(ingredients: MenuItemIngredient[]): IngredientRow[] {
 }
 
 const emptyRow: IngredientRow = { name: "", kind: "main", extraPrice: "" };
+
+/** Valor do `<select>` de categoria que revela o campo de texto livre. */
+const CUSTOM_CATEGORY = "__custom__";
+const isPresetCategory = (c: string) => (DISH_CATEGORY_OPTIONS as readonly string[]).includes(c);
 
 // Um prato por nome (o mais recente) — base para a sugestão de nome e o
 // preenchimento automático ao escolher uma sugestão. Inclui pratos de
@@ -63,7 +72,6 @@ export function DishFormDialog({
   onOpenChange,
   restaurantId,
   menuId,
-  categories,
   dish,
   kind = "dish",
   onSave,
@@ -72,7 +80,6 @@ export function DishFormDialog({
   onOpenChange: (open: boolean) => void;
   restaurantId: string;
   menuId: string;
-  categories: string[];
   dish?: MenuItem | null;
   /** "drink" só muda os rótulos e pré-seleciona a categoria "Bebidas" — o
    * modelo de dados é o mesmo (`MenuItem`). */
@@ -81,12 +88,14 @@ export function DishFormDialog({
   onSave: (restaurantId: string, input: MenuItemInput, editingId?: string) => boolean;
 }) {
   const suggestions = useDishSuggestions();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const dishHint = useFirstUseHint("dish");
 
   const [name, setName] = useState("");
   const [nameSuggestionsOpen, setNameSuggestionsOpen] = useState(false);
   const [category, setCategory] = useState("");
+  /** Opção escolhida no `<select>`: uma das predefinidas ou `CUSTOM_CATEGORY`. */
+  const [categoryChoice, setCategoryChoice] = useState("");
   const [price, setPrice] = useState("");
   const [portionInfo, setPortionInfo] = useState("");
   const [prepTimeMinutes, setPrepTimeMinutes] = useState("");
@@ -100,7 +109,11 @@ export function DishFormDialog({
   useEffect(() => {
     if (!open) return;
     setName(dish?.name ?? "");
-    setCategory(dish?.category ?? (kind === "drink" ? "Bebidas" : ""));
+    const initialCategory = dish?.category ?? (kind === "drink" ? "Bebidas" : "");
+    setCategory(initialCategory);
+    setCategoryChoice(
+      initialCategory && !isPresetCategory(initialCategory) ? CUSTOM_CATEGORY : initialCategory,
+    );
     setPrice(dish ? String(dish.price) : "");
     setPortionInfo(dish?.portionInfo ?? "");
     setPrepTimeMinutes(dish ? String(dish.prepTimeMinutes) : "");
@@ -123,6 +136,11 @@ export function DishFormDialog({
   const applySuggestion = (suggestion: MenuItem) => {
     setName(suggestion.name);
     setCategory(suggestion.category);
+    setCategoryChoice(
+      suggestion.category && !isPresetCategory(suggestion.category)
+        ? CUSTOM_CATEGORY
+        : suggestion.category,
+    );
     setPortionInfo(suggestion.portionInfo);
     setPrepTimeMinutes(String(suggestion.prepTimeMinutes));
     setDescription(suggestion.description);
@@ -250,19 +268,38 @@ export function DishFormDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="dish-category">{t("dishFormDialog.categoryLabel")}</Label>
-              <Input
+              <select
                 id="dish-category"
-                list="dish-category-options"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder={t("dishFormDialog.categoryPlaceholder")}
+                value={categoryChoice}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setCategoryChoice(v);
+                  setCategory(v === CUSTOM_CATEGORY ? "" : v);
+                }}
                 required
-              />
-              <datalist id="dish-category-options">
-                {categories.map((c) => (
-                  <option key={c} value={c} />
+                className={cn(
+                  "h-9 w-full rounded-xl border border-border bg-background px-2 text-sm",
+                )}
+              >
+                <option value="" disabled>
+                  {t("dishFormDialog.categoryPlaceholder")}
+                </option>
+                {DISH_CATEGORY_OPTIONS.map((c) => (
+                  <option key={c} value={c}>
+                    {translateMenuCategory(c, locale)}
+                  </option>
                 ))}
-              </datalist>
+                <option value={CUSTOM_CATEGORY}>{t("dishFormDialog.categoryOther")}</option>
+              </select>
+              {categoryChoice === CUSTOM_CATEGORY && (
+                <Input
+                  aria-label={t("dishFormDialog.categoryLabel")}
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder={t("dishFormDialog.categoryCustomPlaceholder")}
+                  required
+                />
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="dish-price">{t("dishFormDialog.priceLabel")}</Label>
