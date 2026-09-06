@@ -159,7 +159,7 @@ export function MenuBrowser({
 
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-border bg-card p-2 transition-colors has-[:focus]:border-primary">
         <label className="flex min-w-0 items-center gap-2 px-2">
-          <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <Search className="h-4 w-4 shrink-0 text-primary" strokeWidth={2.5} />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}

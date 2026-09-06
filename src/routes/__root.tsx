@@ -30,17 +30,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // forçado do Android/browser) tentam "escurecer" a página sozinhos e
       // acabam por quebrar contraste em pontos com cor fixa.
       { name: "color-scheme", content: "light" },
-      { title: "Kino.com — Comida entregue em minutos" },
+      { title: "Kino.com — Os melhores restaurantes de Angola" },
       {
         name: "description",
         content:
-          "Peça dos melhores restaurantes de Luanda e receba em minutos. Burgers, pizza, pratos e bebidas no Kino.com.",
+          "Descubra os melhores restaurantes de Angola, veja o menu completo e reserve a sua mesa. Tudo no Kino.com.",
       },
       { name: "author", content: "Kino.com" },
-      { property: "og:title", content: "Kino.com — Comida entregue em minutos" },
+      { property: "og:title", content: "Kino.com — Os melhores restaurantes de Angola" },
       {
         property: "og:description",
-        content: "Peça dos melhores restaurantes de Luanda e receba em minutos.",
+        content: "Descubra onde jantar em Angola, veja o menu e reserve a sua mesa.",
       },
       { property: "og:type", content: "website" },
       { property: "og:image", content: iconImage },

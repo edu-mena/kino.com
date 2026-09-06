@@ -59,8 +59,6 @@ export const fr: Dictionary = {
   },
   cardapio: {
     eyebrow: "Menu",
-    title: "Choisissez votre prochain plat",
-    description: "Filtrez par catégorie ou recherchez par nom de plat ou de restaurant.",
     searchPlaceholder: "Rechercher des plats, restaurants...",
     filters: "Filtres",
     results: "résultats",
@@ -76,9 +74,6 @@ export const fr: Dictionary = {
     dietaryCta: "Restrictions alimentaires ? Configurez vos préférences",
   },
   restaurantes: {
-    eyebrow: "Partenaires",
-    title: "Restaurants près de vous",
-    description: "Cuisines sélectionnées, notées par nos clients à Luanda.",
     searchPlaceholder: "Rechercher des restaurants, cuisines...",
     filters: "Filtres",
     resultsSuffix: "restaurants",
@@ -1674,9 +1669,6 @@ export const fr: Dictionary = {
     restaurantCta: "Inscrire mon restaurant",
   },
   entrar: {
-    heroTitle: "Bien manger, c'est devenu facile.",
-    heroDescription:
-      "Connectez-vous avec votre compte Google et commandez dans les meilleurs restaurants de Luanda en quelques clics.",
     backHome: "Retour à l'accueil",
     title: "Bienvenue sur Kino",
     description: "Connectez-vous ou créez votre compte en un clic — sans mot de passe à retenir.",

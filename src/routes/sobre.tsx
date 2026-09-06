@@ -1,8 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Quote, Star, Store, UtensilsCrossed, Users } from "lucide-react";
-import { useEffect, useState } from "react";
-import cocaCap from "@/assets/cocacap.webp";
-import dishDrink from "@/assets/dish-drink.png";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell, SiteHeader } from "@/components/site-shell";
 import { useTranslation } from "@/i18n";
@@ -39,7 +36,6 @@ const partners = [
 ];
 
 function Sobre() {
-  const [revealed, setRevealed] = useState(false);
   const { t } = useTranslation();
 
   const team = [
@@ -75,46 +71,13 @@ function Sobre() {
     },
   ];
 
-  useEffect(() => {
-    const onScroll = () => setRevealed(window.scrollY > 150);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
     <PageShell header={<SiteHeader variant="guestHome" />} footer={null} showMobileTabBar={false}>
-      {/* Coca-cola cap: same fixed/spinning treatment as the plate on /kino, but it
-          stays off-screen to the right until the user scrolls, then slides in. */}
-      <div
-        className={`pointer-events-none fixed right-0 top-1/2 -z-20 -translate-y-1/2 transition-transform duration-700 ease-out ${
-          revealed ? "translate-x-[30%]" : "translate-x-full"
-        }`}
-      >
-        <img
-          src={cocaCap}
-          alt=""
-          aria-hidden
-          className="w-40 select-none animate-[spin_20s_linear_infinite] sm:w-56 md:w-64"
-        />
-      </div>
-
-      <div className="mx-auto flex max-w-6xl flex-nowrap items-center justify-start px-4 md:px-6">
-        <PageHeading
-          eyebrow={t("sobre.eyebrow")}
-          title={t("sobre.title")}
-          description={t("sobre.description")}
-          className="w-4/5 mx-0 max-w-none px-0 md:w-auto md:px-0"
-        />
-        <div className="w-1/5 shrink-0 overflow-hidden md:w-44 md:overflow-visible">
-          <img
-            src={dishDrink}
-            alt=""
-            aria-hidden
-            className="relative -z-10 w-[130%] max-w-none translate-x-1 select-none object-contain md:w-44 md:translate-x-0"
-          />
-        </div>
-      </div>
+      <PageHeading
+        eyebrow={t("sobre.eyebrow")}
+        title={t("sobre.title")}
+        description={t("sobre.description")}
+      />
 
       {/* Team */}
       <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">

@@ -6,7 +6,7 @@ import { LazyImage } from "@/components/lazy-image";
 import { ListPagination } from "@/components/list-pagination";
 import { ReservationDialog } from "@/components/reservation-dialog";
 import { LocationFilterSelect, matchesLocation } from "@/components/search-filters";
-import { PageHeading, PageShell } from "@/components/site-shell";
+import { PageShell } from "@/components/site-shell";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
@@ -99,13 +99,7 @@ function Restaurantes() {
 
   return (
     <PageShell>
-      <PageHeading
-        eyebrow={t("restaurantes.eyebrow")}
-        title={t("restaurantes.title")}
-        description={t("restaurantes.description")}
-      />
-
-      <div className="mx-auto mt-8 max-w-6xl px-4 md:px-6">
+      <div className="mx-auto mt-6 max-w-6xl px-4 md:px-6">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-border bg-card p-2">
           <label className="flex min-w-0 items-center gap-2 px-2">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />

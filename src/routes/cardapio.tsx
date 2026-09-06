@@ -35,15 +35,15 @@ function Cardapio() {
 
   return (
     <PageShell>
-      <PageHeading
-        eyebrow={t("cardapio.eyebrow")}
-        title={restaurantFilter ? restaurantFilter.name : t("cardapio.title")}
-        description={
-          restaurantFilter
-            ? `${t("cardapio.eyebrow")} ${restaurantFilter.name} — ${restaurantFilter.cuisine}.`
-            : t("cardapio.description")
-        }
-      />
+      {/* Sem restaurante escolhido a página é só a busca — o cabeçalho genérico
+          ("Cardápio / Escolha o seu próximo prato / …") só ocupava espaço. */}
+      {restaurantFilter && (
+        <PageHeading
+          eyebrow={t("cardapio.eyebrow")}
+          title={restaurantFilter.name}
+          description={`${t("cardapio.eyebrow")} ${restaurantFilter.name} — ${restaurantFilter.cuisine}.`}
+        />
+      )}
 
       <div className="mx-auto mt-6 max-w-6xl px-4 md:px-6">
         <MenuBrowser

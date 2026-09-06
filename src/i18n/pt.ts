@@ -66,8 +66,6 @@ export const pt = {
   },
   cardapio: {
     eyebrow: "Cardápio",
-    title: "Escolha o seu próximo prato",
-    description: "Filtre por categoria ou pesquise pelo nome do prato ou restaurante.",
     searchPlaceholder: "Pesquisar pratos, restaurantes...",
     filters: "Filtros",
     results: "resultados",
@@ -83,9 +81,6 @@ export const pt = {
     dietaryCta: "Restrição alimentar? Configure as suas preferências",
   },
   restaurantes: {
-    eyebrow: "Parceiros",
-    title: "Restaurantes perto de você",
-    description: "Cozinhas selecionadas, avaliadas pelos nossos clientes em Luanda.",
     searchPlaceholder: "Pesquisar restaurantes, cozinhas...",
     filters: "Filtros",
     resultsSuffix: "restaurantes",
@@ -1499,16 +1494,16 @@ export const pt = {
     contact: "Contacto",
   },
   homeGuest: {
-    heroLine1: "Então,",
-    heroLine2: "Hoje é aonde",
-    subtitle: "Sua próxima refeição a um toque de distância.",
-    subtitleBrandPrefix: "Conecte-se ao cardápio online de",
-    login: "Fazer Login",
+    heroLine1: "A mesa",
+    heroLine2: "está posta",
+    subtitle: "Veja o menu, escolha o restaurante e reserve em segundos.",
+    subtitleBrandPrefix: "Tudo começa na",
+    login: "Criar conta",
     whatIsKino: "O que é a Kino?",
     reserveTitle: "Reserve uma mesa",
-    reserveText: "Reserve sua mesa com facilidade.",
-    offersTitle: "Ofertas exclusivas",
-    offersText: "Descontos especiais só para você.",
+    reserveText: "Escolha o restaurante, o dia e a hora. Sem chamadas.",
+    offersTitle: "Menus e novidades",
+    offersText: "Acompanhe menus especiais, eventos e novidades dos seus restaurantes.",
   },
   kino: {
     playVideoAria: "Ver vídeo",
@@ -1522,12 +1517,12 @@ export const pt = {
     illustration1Alt: "Casal que já sabe onde ir com a Kino",
     illustration1Title: "Já sabemos onde ir",
     illustration1Description:
-      "Explore restaurantes por perto e deixe que a Kino leve você direto à porta certa — sem perder tempo a decidir.",
+      "Explore os restaurantes perto de si e deixe que a Kino o leve diretamente à porta certa — sem perder tempo a decidir.",
     illustration2Alt: "QR Code que dá acesso ao cardápio",
     illustration2Title: "Cardápio sem contacto",
     illustration2Description:
       "Aponte a câmara para o QR Code da mesa e veja o cardápio completo do restaurante, direto no seu telemóvel.",
-    nearYouTitle: "Restaurantes perto de você",
+    nearYouTitle: "Restaurantes perto de si",
     nearYouDescription:
       "Descubra o que está por perto com base na sua localização, em qualquer província de Angola.",
     illustration3Alt: "Chef que gere clientes através da app",
@@ -1538,14 +1533,14 @@ export const pt = {
     ctaRestaurantDescription:
       "Leve o seu cardápio para a Kino: QR Code, pratos, mesas e clientes num só lugar.",
     restaurantLogin: "Login de restaurante",
-    ctaCustomerTitle: "Quer pedir?",
+    ctaCustomerTitle: "Pronto para começar?",
     ctaCustomerDescription:
-      "Entre na sua conta para explorar o cardápio dos melhores restaurantes de Luanda.",
-    login: "Fazer Login",
+      "Entre na sua conta para explorar o cardápio dos melhores restaurantes de Angola.",
+    login: "Entrar",
     seeMenu: "Ver cardápio",
     featuresTitle: "Funcionalidades",
-    forCustomersTitle: "Para quem quer comer",
-    forCustomer1: "Explore restaurantes, pratos e preços perto de você",
+    forCustomersTitle: "Para quem gosta de sair à mesa",
+    forCustomer1: "Explore restaurantes, pratos e preços perto de si",
     forCustomer2: "Cardápios completos e sempre atualizados",
     forCustomer3: "Agende mesas em poucos toques",
     forCustomer4: "Peça entrega, quando o restaurante disponibilizar",
@@ -1553,10 +1548,10 @@ export const pt = {
     forCustomer6: "Receba promoções e novidades direto do restaurante",
     forRestaurantsTitle: "Para restaurantes",
     forRestaurant1: "Cardápio digital acessível por QR Code",
-    forRestaurant2: "Cadastre e personalize os seus pratos",
-    forRestaurant3: "Gerencie mesas e reservas",
-    forRestaurant4: "Anuncie promoções para os seus clientes",
-    forRestaurant5: "Acompanhe e gerencie a sua base de clientes",
+    forRestaurant2: "Registe e personalize os seus pratos",
+    forRestaurant3: "Faça a gestão de mesas e reservas",
+    forRestaurant4: "Divulgue promoções aos seus clientes",
+    forRestaurant5: "Acompanhe e faça a gestão da sua base de clientes",
   },
   sobre: {
     eyebrow: "Sobre nós",
@@ -1664,9 +1659,6 @@ export const pt = {
     restaurantCta: "Cadastrar restaurante",
   },
   entrar: {
-    heroTitle: "Comer bem, ficou fácil.",
-    heroDescription:
-      "Entre com a sua conta Google e peça dos melhores restaurantes de Luanda em poucos toques.",
     backHome: "Voltar ao início",
     title: "Bem-vindo à Kino",
     description:
