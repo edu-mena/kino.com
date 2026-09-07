@@ -22,6 +22,8 @@ export type RestaurantProfileEdit = Partial<
     | "address"
     | "neighborhood"
     | "city"
+    | "lat"
+    | "lng"
     | "phone"
     | "email"
     | "openingHours"

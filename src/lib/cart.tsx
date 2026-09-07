@@ -47,6 +47,9 @@ export type CartOrder = {
   status: CartOrderStatus;
   /** Estimativa (minutos) capturada do restaurante no momento do pedido. */
   estimatedMinutes: number;
+  /** ISO — quando o pedido passou a "delivered". Base da estimativa de
+   * entrega por histórico (ver `@/lib/delivery-history`). */
+  deliveredAt?: string;
   /** Preferência de pagamento enviada ao restaurante — só existe depois de
    * passar pelo checkout (`confirmOrder`). A Kino não processa o pagamento
    * em si, isto é só a preferência relayed ao restaurante. */
@@ -195,6 +198,21 @@ function buildSeedOrder(
   const createdAt = new Date();
   createdAt.setDate(createdAt.getDate() - daysAgo);
   if (extra?.hoursAgo) createdAt.setHours(createdAt.getHours() - extra.hoursAgo);
+
+  // Entregas seed ganham um `deliveredAt` plausível — a estimativa de entrega
+  // por histórico (`@/lib/delivery-history`) precisa de durações reais. A
+  // duração varia com a hora do pedido (rush ao almoço/jantar) e com o id.
+  let deliveredAt: string | undefined;
+  if (status === "delivered") {
+    const base = restaurant?.estimatedDeliveryMinutes ?? 30;
+    const hour = createdAt.getHours();
+    const rush = (hour >= 11 && hour <= 13) || (hour >= 18 && hour <= 20) ? 1.3 : 1;
+    let seed = 0;
+    for (let i = 0; i < id.length; i += 1) seed = (seed * 31 + id.charCodeAt(i)) >>> 0;
+    const jitter = (seed % 21) - 8; // -8..+12 min
+    const durationMin = Math.max(12, Math.round(base * rush + jitter));
+    deliveredAt = new Date(createdAt.getTime() + durationMin * 60_000).toISOString();
+  }
   const addr =
     (extra?.addressIndex != null && INITIAL_SAVED_ADDRESSES[extra.addressIndex]) ||
     INITIAL_SAVED_ADDRESSES.find((a) => a.isDefault) ||
@@ -217,6 +235,7 @@ function buildSeedOrder(
     deliveryAddress: addr,
     status,
     estimatedMinutes: restaurant?.estimatedDeliveryMinutes ?? 30,
+    ...(deliveredAt ? { deliveredAt } : {}),
     ...(extra?.paymentMethod ? { paymentMethod: extra.paymentMethod } : {}),
     ...(extra?.note ? { note: extra.note } : {}),
   };
@@ -364,7 +383,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ),
         ),
       updateOrderStatus: (orderId, status) =>
-        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o))),
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId
+              ? {
+                  ...o,
+                  status,
+                  ...(status === "delivered" && !o.deliveredAt
+                    ? { deliveredAt: new Date().toISOString() }
+                    : {}),
+                }
+              : o,
+          ),
+        ),
       clear: () => setOrders([]),
     };
   }, [orders, user]);

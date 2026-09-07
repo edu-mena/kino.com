@@ -1,3 +1,4 @@
+import { deriveRestaurantCoords } from "./restaurant-coordinates";
 import { safeLocalStorageSet } from "./safe-storage";
 import { CHANGE_EVENT, STORAGE_KEYS } from "./storage-keys";
 import type { Restaurant } from "./types";
@@ -45,6 +46,7 @@ export function getCustomRestaurants(): Restaurant[] {
 
 export function createRestaurant(input: CreateInput): Restaurant {
   const id = `rest-new-${Date.now()}`;
+  const coords = deriveRestaurantCoords(id, input.neighborhood);
   const restaurant: Restaurant = {
     id,
     name: input.name,
@@ -57,6 +59,8 @@ export function createRestaurant(input: CreateInput): Restaurant {
     address: input.address || "",
     neighborhood: input.neighborhood,
     city: input.city || input.neighborhood,
+    lat: coords.lat,
+    lng: coords.lng,
     phone: input.phone,
     email: input.email,
     openingHours: "",

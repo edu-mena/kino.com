@@ -23,6 +23,11 @@ export interface Restaurant {
    * app. O bairro/zona específico, quando relevante, vive em `address`. */
   neighborhood: string;
   city: string;
+  /** Localização exata no mapa. Ausente no seed — derivada da província em
+   * `withOverrides` (`@/data/helpers`) até o gestor a definir em
+   * `/admin/perfil`. */
+  lat?: number;
+  lng?: number;
   phone: string;
   email: string;
   openingHours: string;

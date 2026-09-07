@@ -1,6 +1,7 @@
 import { INITIAL_RESTAURANTS } from "./mockData";
 import { getCustomRestaurants } from "./custom-restaurants-store";
 import { getEffectiveMenuItems } from "./menu-store";
+import { deriveRestaurantCoords } from "./restaurant-coordinates";
 import { applyProfileEdits } from "./restaurant-profile-store";
 import { blendedRating, getEffectiveReviews } from "./reviews-store";
 import { getEffectiveStories } from "./stories-store";
@@ -15,11 +16,17 @@ function withOverrides(seed: Restaurant): Restaurant {
   const r = applySystemFlags(applyProfileEdits(seed));
   const { rating, reviewCount } = blendedRating(r.id, seed.rating, seed.reviewCount);
   const hours = r.hours ?? seedHoursFor(r.id);
+  const coords =
+    r.lat != null && r.lng != null
+      ? { lat: r.lat, lng: r.lng }
+      : deriveRestaurantCoords(r.id, r.neighborhood);
   return {
     ...r,
     rating,
     reviewCount,
     hours,
+    lat: coords.lat,
+    lng: coords.lng,
     openingHours: r.openingHours || formatWeeklyHours(hours, "pt"),
   };
 }

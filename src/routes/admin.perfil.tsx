@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { LocationMap, LocationPicker } from "@/components/location-map";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -32,6 +33,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { WeeklyHoursEditor } from "@/components/weekly-hours-editor";
+import { deriveRestaurantCoords } from "@/data/restaurant-coordinates";
 import { saveProfileEdits } from "@/data/restaurant-profile-store";
 import type { WeeklyHours } from "@/data/types";
 import { useTranslation } from "@/i18n";
@@ -201,6 +203,10 @@ function AdminPerfil() {
   const [address, setAddress] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
   const [city, setCity] = useState("");
+  const [coords, setCoords] = useState<{ lat: number; lng: number }>({
+    lat: -8.839,
+    lng: 13.2894,
+  });
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [hours, setHours] = useState<WeeklyHours>(defaultWeeklyHours);
@@ -223,6 +229,11 @@ function AdminPerfil() {
     setAddress(restaurant.address);
     setNeighborhood(restaurant.neighborhood);
     setCity(restaurant.city);
+    setCoords(
+      restaurant.lat != null && restaurant.lng != null
+        ? { lat: restaurant.lat, lng: restaurant.lng }
+        : deriveRestaurantCoords(restaurant.id, restaurant.neighborhood),
+    );
     setPhone(restaurant.phone);
     setEmail(restaurant.email);
     setHours(restaurant.hours ?? defaultWeeklyHours());
@@ -271,6 +282,8 @@ function AdminPerfil() {
       address: address.trim(),
       neighborhood: neighborhood.trim(),
       city: city.trim(),
+      lat: coords.lat,
+      lng: coords.lng,
       phone: phone.trim(),
       email: email.trim(),
       openingHours: "",
@@ -460,6 +473,26 @@ function AdminPerfil() {
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <Label>{t("adminPerfil.mapLabel")}</Label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCoords(deriveRestaurantCoords(restaurant.id, neighborhood.trim()))
+                      }
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      {t("adminPerfil.useProvinceCenter")}
+                    </button>
+                  </div>
+                  <LocationPicker value={coords} onChange={setCoords} height={280} />
+                  <p className="text-xs text-muted-foreground">
+                    {t("adminPerfil.mapPickHint")} · {coords.lat.toFixed(5)},{" "}
+                    {coords.lng.toFixed(5)}
+                  </p>
                 </div>
               </div>
             </Section>
@@ -708,6 +741,25 @@ function AdminPerfil() {
                   )}
                 </ReadRow>
               </dl>
+              {restaurant.lat != null && restaurant.lng != null && (
+                <div className="mt-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {t("adminPerfil.mapReadLabel")}
+                  </p>
+                  <LocationMap
+                    className="mt-2"
+                    height={200}
+                    points={[
+                      {
+                        id: restaurant.id,
+                        lat: restaurant.lat,
+                        lng: restaurant.lng,
+                        label: restaurant.name,
+                      },
+                    ]}
+                  />
+                </div>
+              )}
             </Section>
 
             <Section
