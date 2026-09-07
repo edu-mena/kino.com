@@ -63,12 +63,10 @@ export function DishCard({ item }: { item: MenuItem }) {
           height={768}
           widths={[256, 384, 512, 768]}
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-          className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
-            available ? "" : "grayscale"
-          }`}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         {!available && (
-          <span className="absolute inset-x-2 bottom-2 rounded-full bg-foreground/80 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-background">
+          <span className="absolute bottom-2 right-2 rounded-full bg-foreground/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-background shadow-sm">
             {t("cardapio.unavailable")}
           </span>
         )}
