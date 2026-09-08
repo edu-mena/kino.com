@@ -14,12 +14,12 @@ import { useTranslation } from "@/i18n";
 
 export function DishCard({ item }: { item: MenuItem }) {
   const addToBill = useAddToBill();
-  const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
+  const { isFavoriteDish, toggleFavoriteDish } = usePreferences();
   const { isAvailable } = useMenuAdmin();
   const restaurantStatus = useRestaurantStatus(item.restaurantId);
   const { t } = useTranslation();
   const restaurant = getRestaurant(item.restaurantId);
-  const liked = isFavoriteRestaurant(item.restaurantId);
+  const liked = isFavoriteDish(item.id);
   const available = item.isAvailable && isAvailable(item.id) && restaurantStatus.available;
 
   // Conflitos deste prato com as restrições/exclusões do usuário em
@@ -33,8 +33,9 @@ export function DishCard({ item }: { item: MenuItem }) {
     <div className="card-soft group relative flex flex-col overflow-hidden">
       <button
         type="button"
-        aria-label={t("dishCard.saveFavorite")}
-        onClick={() => toggleFavoriteRestaurant(item.restaurantId)}
+        aria-label={liked ? t("dishCard.removeFavorite") : t("dishCard.saveFavorite")}
+        aria-pressed={liked}
+        onClick={() => toggleFavoriteDish(item.id)}
         className="absolute left-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/80 text-muted-foreground backdrop-blur transition-colors hover:text-brand"
       >
         <Heart className={`h-4 w-4 ${liked ? "fill-brand text-brand" : ""}`} />

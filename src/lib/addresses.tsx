@@ -5,7 +5,14 @@ const STORAGE_KEY = "kino_custom_addresses";
 
 type AddressesValue = {
   customAddresses: SavedAddress[];
-  addAddress: (label: string, line1: string, line2?: string) => void;
+  /** `coords` fica disponível para quando o autocomplete de morada
+   * (geocoding via `@/lib/maps`) estiver ligado — hoje nenhum caller o passa. */
+  addAddress: (
+    label: string,
+    line1: string,
+    line2?: string,
+    coords?: { lat: number; lng: number },
+  ) => void;
 };
 
 const AddressesContext = createContext<AddressesValue | null>(null);
@@ -23,10 +30,21 @@ export function AddressesProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const addAddress = (label: string, line1: string, line2?: string) => {
+  const addAddress = (
+    label: string,
+    line1: string,
+    line2?: string,
+    coords?: { lat: number; lng: number },
+  ) => {
     const next: SavedAddress[] = [
       ...customAddresses,
-      { id: `addr-custom-${Date.now()}`, label, line1, line2: line2 ?? "" },
+      {
+        id: `addr-custom-${Date.now()}`,
+        label,
+        line1,
+        line2: line2 ?? "",
+        ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
+      },
     ];
     setCustomAddresses(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));

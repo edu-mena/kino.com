@@ -9,15 +9,19 @@ import {
   MapPin,
   Pencil,
   Phone,
+  Play,
   Plus,
   ShieldCheck,
+  ShoppingBag,
   Star,
   Store,
   Trash2,
+  Utensils,
+  Wallet,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
+import { RestaurantGate } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { LocationMap, LocationPicker } from "@/components/location-map";
@@ -32,13 +36,17 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { VideoTrimmer } from "@/components/video-trimmer";
 import { WeeklyHoursEditor } from "@/components/weekly-hours-editor";
+import { getRestaurantFulfillmentModes, getRestaurantPaymentMethodIds } from "@/data/helpers";
 import { deriveRestaurantCoords } from "@/data/restaurant-coordinates";
 import { saveProfileEdits } from "@/data/restaurant-profile-store";
-import type { WeeklyHours } from "@/data/types";
+import type { FulfillmentType, WeeklyHours } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
-import { fileToResizedDataUrl } from "@/lib/image-upload";
+import { paymentMethods } from "@/lib/mock-data";
+import { fileToResizedDataUrl, getVideoDurationSec } from "@/lib/image-upload";
+import { isVideoSrc } from "@/lib/video-trim";
 import { defaultWeeklyHours, formatWeeklyHours, isOpenNow, nextOpenAt } from "@/lib/opening-hours";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
@@ -100,11 +108,25 @@ function GalleryEditor({
   const { t } = useTranslation();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [trimFile, setTrimFile] = useState<File | null>(null);
 
   const addFromDevice = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    if (file.type.startsWith("video/")) {
+      try {
+        if ((await getVideoDurationSec(file)) < 2.9) {
+          toast.error(t("videoTrimmer.tooShort", { min: 3 }));
+          return;
+        }
+      } catch {
+        toast.error(t("adminPerfil.uploadError"));
+        return;
+      }
+      setTrimFile(file);
+      return;
+    }
     setBusy(true);
     try {
       onChange([...items, await fileToResizedDataUrl(file)]);
@@ -124,12 +146,19 @@ function GalleryEditor({
               key={index}
               className="group relative aspect-video overflow-hidden rounded-xl border border-border bg-surface"
             >
-              {src.trim() ? (
-                <img src={src} alt="" className="h-full w-full object-cover" />
-              ) : (
+              {!src.trim() ? (
                 <span className="grid h-full w-full place-items-center text-muted-foreground">
                   <ImagePlus className="h-5 w-5" />
                 </span>
+              ) : isVideoSrc(src) ? (
+                <>
+                  <video src={src} muted playsInline className="h-full w-full object-cover" />
+                  <span className="pointer-events-none absolute inset-0 grid place-items-center">
+                    <Play className="h-6 w-6 fill-white/90 text-white/90 drop-shadow" />
+                  </span>
+                </>
+              ) : (
+                <img src={src} alt="" className="h-full w-full object-cover" />
               )}
               <button
                 type="button"
@@ -144,6 +173,16 @@ function GalleryEditor({
         </div>
       )}
 
+      <VideoTrimmer
+        file={trimFile}
+        open={trimFile !== null}
+        onOpenChange={(o) => !o && setTrimFile(null)}
+        onConfirm={(r) => {
+          onChange([...items, r.src]);
+          setTrimFile(null);
+        }}
+      />
+
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -155,7 +194,7 @@ function GalleryEditor({
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/*"
           onChange={addFromDevice}
           className="hidden"
         />
@@ -168,6 +207,8 @@ function GalleryEditor({
           <ImagePlus className="h-3.5 w-3.5" /> {t("adminPerfil.uploadFromDevice")}
         </button>
       </div>
+
+      <p className="text-xs text-muted-foreground">{t("adminPerfil.galleryVideoHint")}</p>
 
       {items.some((s) => !s.startsWith("data:")) && (
         <div className="space-y-2">
@@ -212,11 +253,15 @@ function AdminPerfil() {
   const [hours, setHours] = useState<WeeklyHours>(defaultWeeklyHours);
   const [ordersPaused, setOrdersPaused] = useState(false);
   const [isDeliveryAvailable, setIsDeliveryAvailable] = useState(false);
+  const [modeTakeaway, setModeTakeaway] = useState(true);
+  const [modeDinein, setModeDinein] = useState(true);
   const [deliveryFee, setDeliveryFee] = useState("0");
   const [estimatedDeliveryMinutes, setEstimatedDeliveryMinutes] = useState("30");
   const [deliveryZones, setDeliveryZones] = useState<string[]>([]);
+  const [acceptedPay, setAcceptedPay] = useState<string[]>([]);
   const [cautionAmount, setCautionAmount] = useState("0");
   const [cautionPolicyNotice, setCautionPolicyNotice] = useState("");
+  const [cautionModes, setCautionModes] = useState<FulfillmentType[]>([]);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [imageUploading, setImageUploading] = useState(false);
 
@@ -239,11 +284,16 @@ function AdminPerfil() {
     setHours(restaurant.hours ?? defaultWeeklyHours());
     setOrdersPaused(restaurant.ordersPausedManually ?? false);
     setIsDeliveryAvailable(restaurant.isDeliveryAvailable);
+    const modes = getRestaurantFulfillmentModes(restaurant);
+    setModeTakeaway(modes.includes("takeaway"));
+    setModeDinein(modes.includes("dinein"));
     setDeliveryFee(String(restaurant.deliveryFee));
     setEstimatedDeliveryMinutes(String(restaurant.estimatedDeliveryMinutes));
     setDeliveryZones(restaurant.deliveryZones ?? []);
+    setAcceptedPay(getRestaurantPaymentMethodIds(restaurant));
     setCautionAmount(String(restaurant.cautionAmount));
     setCautionPolicyNotice(restaurant.cautionPolicyNotice);
+    setCautionModes(restaurant.cautionModesForOrders ?? []);
     setGalleryImages(restaurant.galleryImages);
   };
 
@@ -274,6 +324,12 @@ function AdminPerfil() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const fulfillmentModes: FulfillmentType[] = [
+      ...(isDeliveryAvailable ? (["delivery"] as const) : []),
+      ...(modeTakeaway ? (["takeaway"] as const) : []),
+      ...(modeDinein ? (["dinein"] as const) : []),
+    ];
+    const cautionOn = Number(cautionAmount) > 0;
     const ok = saveProfileEdits(restaurant.id, {
       coverImage: coverImage.trim() || restaurant.coverImage,
       description: description.trim(),
@@ -290,11 +346,14 @@ function AdminPerfil() {
       hours,
       ordersPausedManually: ordersPaused,
       isDeliveryAvailable,
+      fulfillmentModes,
+      acceptedPaymentMethods: acceptedPay.length === paymentMethods.length ? [] : acceptedPay,
       deliveryFee: Number(deliveryFee) || 0,
       estimatedDeliveryMinutes: Number(estimatedDeliveryMinutes) || 0,
       deliveryZones: deliveryZones.map((z) => z.trim()).filter(Boolean),
       cautionAmount: Number(cautionAmount) || 0,
       cautionPolicyNotice: cautionPolicyNotice.trim(),
+      cautionModesForOrders: cautionOn ? cautionModes : [],
       galleryImages: galleryImages.map((g) => g.trim()).filter(Boolean),
     });
     if (!ok) {
@@ -313,23 +372,10 @@ function AdminPerfil() {
 
   return (
     <div className="pb-16">
-      <AdminPageHeading
-        eyebrow={t("adminPerfil.eyebrow")}
-        title={t("adminPerfil.title")}
-        description={t("adminPerfil.description")}
-        action={
-          !editing ? (
-            <Button type="button" onClick={startEditing} className="rounded-xl">
-              <Pencil className="h-4 w-4" /> {t("adminPerfil.editProfile")}
-            </Button>
-          ) : undefined
-        }
-      />
-
-      <div className="mx-auto mt-8 max-w-4xl space-y-6 px-4 md:px-6">
+      <div className="mx-auto mt-8 max-w-[1792px] space-y-6 px-4 md:px-6">
         {/* ---------- Cartão do restaurante ---------- */}
         <div className="card-soft overflow-hidden">
-          <div className="relative h-48">
+          <div className="relative h-64 sm:h-80 lg:h-[26rem]">
             <img src={heroCover} alt="" className="h-full w-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
             <Link
@@ -376,6 +422,14 @@ function AdminPerfil() {
             <span>{t("adminPerfil.manageNoticeSuffix")}</span>
           </p>
         </div>
+
+        {!editing && (
+          <div className="flex justify-end">
+            <Button type="button" onClick={startEditing} className="rounded-xl">
+              <Pencil className="h-4 w-4" /> {t("adminPerfil.editProfile")}
+            </Button>
+          </div>
+        )}
 
         {editing ? (
           /* ========================= MODO DE EDIÇÃO ========================= */
@@ -522,18 +576,42 @@ function AdminPerfil() {
               hint={t("adminPerfil.secDeliveryHint")}
             >
               <div className="space-y-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {t("adminPerfil.modesLabel")}
+                </p>
                 <div className="flex items-center justify-between gap-3 rounded-xl bg-surface p-4">
-                  <div>
-                    <Label htmlFor="rest-delivery">{t("adminPerfil.deliveryLabel")}</Label>
-                    <p className="text-xs text-muted-foreground">
-                      {t("adminPerfil.deliveryOffHint")}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <Bike className="h-4 w-4 shrink-0 text-primary" />
+                    <div>
+                      <Label htmlFor="rest-delivery">{t("fulfillment.delivery")}</Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t("adminPerfil.deliveryOffHint")}
+                      </p>
+                    </div>
                   </div>
                   <Switch
                     id="rest-delivery"
                     checked={isDeliveryAvailable}
                     onCheckedChange={setIsDeliveryAvailable}
                   />
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-surface p-4">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="h-4 w-4 shrink-0 text-primary" />
+                    <Label htmlFor="rest-takeaway">{t("fulfillment.takeaway")}</Label>
+                  </div>
+                  <Switch
+                    id="rest-takeaway"
+                    checked={modeTakeaway}
+                    onCheckedChange={setModeTakeaway}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-surface p-4">
+                  <div className="flex items-center gap-2">
+                    <Utensils className="h-4 w-4 shrink-0 text-primary" />
+                    <Label htmlFor="rest-dinein">{t("fulfillment.dinein")}</Label>
+                  </div>
+                  <Switch id="rest-dinein" checked={modeDinein} onCheckedChange={setModeDinein} />
                 </div>
                 {isDeliveryAvailable && (
                   <div className="space-y-4">
@@ -617,6 +695,47 @@ function AdminPerfil() {
             </Section>
 
             <Section
+              icon={Wallet}
+              title={t("adminPerfil.secPaymentsTitle")}
+              hint={t("adminPerfil.secPaymentsHint")}
+            >
+              <div className="space-y-2">
+                {paymentMethods.map((m) => {
+                  const on = acceptedPay.includes(m.id);
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() =>
+                        setAcceptedPay((prev) =>
+                          prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id],
+                        )
+                      }
+                      aria-pressed={on}
+                      className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border p-3 text-left ${
+                        on ? "border-brand bg-brand/5" : "border-border"
+                      }`}
+                    >
+                      <span className="grid h-8 w-14 shrink-0 place-items-center rounded-lg bg-surface text-[10px] font-bold text-primary">
+                        {m.brand}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold">{m.label}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {m.detail}
+                        </span>
+                      </span>
+                      <Switch checked={on} tabIndex={-1} className="pointer-events-none" />
+                    </button>
+                  );
+                })}
+                <p className="text-xs text-muted-foreground">
+                  {t("adminPerfil.paymentsExplainer")}
+                </p>
+              </div>
+            </Section>
+
+            <Section
               icon={ShieldCheck}
               title={t("adminPerfil.secCautionTitle")}
               hint={t("adminPerfil.secCautionHint")}
@@ -642,18 +761,50 @@ function AdminPerfil() {
                   </p>
                 </div>
                 {Number(cautionAmount) > 0 && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="rest-caution-policy">
-                      {t("adminPerfil.cautionPolicyLabel")}
-                    </Label>
-                    <Textarea
-                      id="rest-caution-policy"
-                      value={cautionPolicyNotice}
-                      onChange={(e) => setCautionPolicyNotice(e.target.value)}
-                      placeholder={t("adminPerfil.cautionPolicyPlaceholder")}
-                      className="rounded-xl"
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="rest-caution-policy">
+                        {t("adminPerfil.cautionPolicyLabel")}
+                      </Label>
+                      <Textarea
+                        id="rest-caution-policy"
+                        value={cautionPolicyNotice}
+                        onChange={(e) => setCautionPolicyNotice(e.target.value)}
+                        placeholder={t("adminPerfil.cautionPolicyPlaceholder")}
+                        className="rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("adminPerfil.cautionModesLabel")}</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {(["delivery", "takeaway", "dinein"] as const).map((m) => {
+                          const on = cautionModes.includes(m);
+                          return (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() =>
+                                setCautionModes((prev) =>
+                                  prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m],
+                                )
+                              }
+                              aria-pressed={on}
+                              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                on
+                                  ? "border-brand bg-brand/10 text-brand"
+                                  : "border-border text-muted-foreground hover:border-primary/40"
+                              }`}
+                            >
+                              {t(`fulfillment.${m}`)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t("adminPerfil.cautionModesExplainer")}
+                      </p>
+                    </div>
+                  </>
                 )}
               </div>
             </Section>
@@ -806,6 +957,21 @@ function AdminPerfil() {
               title={t("adminPerfil.secDeliveryTitle")}
               hint={t("adminPerfil.secDeliveryHint")}
             >
+              <div className="mb-4">
+                <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {t("adminPerfil.modesLabel")}
+                </dt>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {getRestaurantFulfillmentModes(restaurant).map((m) => (
+                    <span
+                      key={m}
+                      className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-foreground"
+                    >
+                      {t(`fulfillment.${m}`)}
+                    </span>
+                  ))}
+                </div>
+              </div>
               {restaurant.isDeliveryAvailable ? (
                 <div className="space-y-4">
                   <dl className="grid gap-4 sm:grid-cols-2">
@@ -846,6 +1012,31 @@ function AdminPerfil() {
             </Section>
 
             <Section
+              icon={Wallet}
+              title={t("adminPerfil.secPaymentsTitle")}
+              hint={t("adminPerfil.secPaymentsHint")}
+            >
+              {(() => {
+                const ids = getRestaurantPaymentMethodIds(restaurant);
+                const all = ids.length === paymentMethods.length;
+                return all ? (
+                  <p className="text-sm text-muted-foreground">{t("adminPerfil.paymentsAll")}</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {ids.map((id) => (
+                      <span
+                        key={id}
+                        className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-foreground"
+                      >
+                        {paymentMethods.find((m) => m.id === id)?.label ?? id}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })()}
+            </Section>
+
+            <Section
               icon={ShieldCheck}
               title={t("adminPerfil.secCautionTitle")}
               hint={t("adminPerfil.secCautionHint")}
@@ -858,6 +1049,18 @@ function AdminPerfil() {
                   <p className="text-sm text-muted-foreground">
                     {restaurant.cautionPolicyNotice || t("adminPerfil.cautionNoPolicy")}
                   </p>
+                  <div className="pt-1">
+                    <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      {t("adminPerfil.cautionModesLabel")}
+                    </dt>
+                    <p className="mt-1 text-sm text-foreground">
+                      {restaurant.cautionModesForOrders?.length
+                        ? restaurant.cautionModesForOrders
+                            .map((m) => t(`fulfillment.${m}`))
+                            .join(" · ")
+                        : t("adminPerfil.cautionModesNone")}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">{t("adminPerfil.cautionNone")}</p>
@@ -876,7 +1079,16 @@ function AdminPerfil() {
                       key={i}
                       className="aspect-video overflow-hidden rounded-xl border border-border bg-surface"
                     >
-                      <img src={src} alt="" className="h-full w-full object-cover" />
+                      {isVideoSrc(src) ? (
+                        <video
+                          src={src}
+                          controls
+                          playsInline
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <img src={src} alt="" className="h-full w-full object-cover" />
+                      )}
                     </div>
                   ))}
                 </div>

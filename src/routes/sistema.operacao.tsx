@@ -29,7 +29,9 @@ const orderStatusTone: Record<CartOrderStatus, string> = {
   pending: "bg-brand/15 text-brand",
   accepted: "bg-primary/15 text-primary",
   onTheWay: "bg-primary/15 text-primary",
+  ready: "bg-primary/15 text-primary",
   delivered: "bg-success/15 text-success",
+  completed: "bg-success/15 text-success",
   rejected: "bg-destructive/15 text-destructive",
   canceled: "bg-muted-foreground/15 text-muted-foreground",
 };
@@ -37,7 +39,9 @@ const orderBarTone: Record<CartOrderStatus, string> = {
   pending: "bg-brand",
   accepted: "bg-primary",
   onTheWay: "bg-primary/60",
+  ready: "bg-primary/60",
   delivered: "bg-success",
+  completed: "bg-success",
   rejected: "bg-destructive",
   canceled: "bg-muted-foreground/50",
 };
@@ -157,7 +161,7 @@ function SistemaOperacao() {
         if (restFilter !== "todos" && o.restaurantId !== restFilter) return false;
         if (q) {
           const hay =
-            `${nameOf(o.restaurantId)} ${o.customerName} ${o.deliveryAddress.line1} ${o.lines
+            `${nameOf(o.restaurantId)} ${o.customerName} ${o.deliveryAddress?.line1 ?? ""} ${o.lines
               .map((l) => getMenuItem(l.menuItemId)?.name ?? "")
               .join(" ")}`.toLowerCase();
           if (!hay.includes(q)) return false;

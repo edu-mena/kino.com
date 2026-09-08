@@ -8,6 +8,7 @@ export type NotificationSettings = {
 
 export type Preferences = {
   favoriteRestaurantIds: string[];
+  favoriteDishIds: string[];
   dietaryRestrictions: string[];
   priceRange: string | null;
   cuisinePreferences: string[];
@@ -20,6 +21,7 @@ export type Preferences = {
 
 const DEFAULT_PREFERENCES: Preferences = {
   favoriteRestaurantIds: [],
+  favoriteDishIds: [],
   dietaryRestrictions: [],
   priceRange: null,
   cuisinePreferences: [],
@@ -33,6 +35,8 @@ const DEFAULT_PREFERENCES: Preferences = {
 type PreferencesValue = Preferences & {
   isFavoriteRestaurant: (restaurantId: string) => boolean;
   toggleFavoriteRestaurant: (restaurantId: string) => void;
+  isFavoriteDish: (dishId: string) => boolean;
+  toggleFavoriteDish: (dishId: string) => void;
   setDietaryRestrictions: (list: string[]) => void;
   setPriceRange: (value: string | null) => void;
   setCuisinePreferences: (list: string[]) => void;
@@ -74,6 +78,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         favoriteRestaurantIds: prefs.favoriteRestaurantIds.includes(restaurantId)
           ? prefs.favoriteRestaurantIds.filter((id) => id !== restaurantId)
           : [...prefs.favoriteRestaurantIds, restaurantId],
+      }),
+    isFavoriteDish: (dishId) => prefs.favoriteDishIds.includes(dishId),
+    toggleFavoriteDish: (dishId) =>
+      persist({
+        ...prefs,
+        favoriteDishIds: prefs.favoriteDishIds.includes(dishId)
+          ? prefs.favoriteDishIds.filter((id) => id !== dishId)
+          : [...prefs.favoriteDishIds, dishId],
       }),
     setDietaryRestrictions: (list) => persist({ ...prefs, dietaryRestrictions: list }),
     setPriceRange: (value) => persist({ ...prefs, priceRange: value }),
