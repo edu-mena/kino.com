@@ -20,6 +20,10 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Capacitor — projeto nativo Android regenerado com `npx cap add android`
+/android
+/ios
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
