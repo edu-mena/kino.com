@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FirstUseHint } from "@/components/first-use-hint";
+import { ImageUploadField } from "@/components/image-upload-field";
 import type { Offer } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { useFirstUseHint } from "@/lib/first-use-hints";
@@ -86,6 +87,10 @@ function AdminPromocoes() {
   const [description, setDescription] = useState("");
   const [type, setType] = useState<Offer["type"]>("discount");
   const [code, setCode] = useState("");
+  const [image, setImage] = useState("");
+  const [layout, setLayout] = useState<NonNullable<Offer["layout"]>>("split");
+  const [percentOff, setPercentOff] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const typeLabels = useMemo<Record<Offer["type"], string>>(
     () => ({
@@ -102,6 +107,9 @@ function AdminPromocoes() {
     setDescription(editing?.description ?? "");
     setType(editing?.type ?? "discount");
     setCode(editing?.code ?? "");
+    setImage(editing?.image ?? "");
+    setLayout(editing?.layout ?? "split");
+    setPercentOff(editing?.percentOff ? String(editing.percentOff) : "");
   }, [formOpen, editing]);
 
   const offers = useMemo(
@@ -164,11 +172,15 @@ function AdminPromocoes() {
       toast.error(t("adminPromocoes.missingFieldsError"));
       return;
     }
+    const pct = Math.round(Number(percentOff));
     const input = {
       type,
       title: title.trim(),
       description: description.trim(),
+      layout,
+      image: image.trim(),
       ...(code.trim() ? { code: code.trim() } : {}),
+      ...(type !== "delivery" && pct > 0 ? { percentOff: Math.min(100, pct) } : {}),
     };
     if (editing) {
       updateOffer(editing.id, input);
@@ -336,6 +348,14 @@ function AdminPromocoes() {
                         </div>
                       </div>
 
+                      {active.image && (
+                        <img
+                          src={active.image}
+                          alt=""
+                          className="mt-4 h-32 w-full rounded-lg object-cover"
+                        />
+                      )}
+
                       <p className="mt-4 rounded-lg bg-surface p-3 text-sm text-foreground">
                         {active.description}
                       </p>
@@ -352,6 +372,18 @@ function AdminPromocoes() {
                           ) : (
                             t("adminPromocoes.noCode")
                           )}
+                        </AdminField>
+                        {active.type !== "delivery" && (
+                          <AdminField label={t("adminPromocoes.percentOffLabel")}>
+                            {active.percentOff
+                              ? `${active.percentOff}%`
+                              : t("adminPromocoes.percentOffNone")}
+                          </AdminField>
+                        )}
+                        <AdminField label={t("adminPromocoes.layoutLabel")}>
+                          {active.layout === "cover"
+                            ? t("adminPromocoes.layoutCover")
+                            : t("adminPromocoes.layoutSplit")}
                         </AdminField>
                       </dl>
 
@@ -434,17 +466,28 @@ function AdminPromocoes() {
       </div>
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-md rounded-[1.5rem] border-none bg-card p-6">
-          <DialogTitle className="font-display text-lg font-bold">
-            {editing ? t("adminPromocoes.editDialogTitle") : t("adminPromocoes.newDialogTitle")}
-          </DialogTitle>
-          <DialogDescription>{t("adminPromocoes.dialogDescription")}</DialogDescription>
+        <DialogContent className="flex max-h-[88dvh] max-w-lg flex-col gap-0 rounded-[1.5rem] border-none bg-card p-0">
+          <div className="px-6 pt-6">
+            <DialogTitle className="font-display text-lg font-bold">
+              {editing ? t("adminPromocoes.editDialogTitle") : t("adminPromocoes.newDialogTitle")}
+            </DialogTitle>
+            <DialogDescription>{t("adminPromocoes.dialogDescription")}</DialogDescription>
+          </div>
 
-          {!editing && promoHint.shouldShow && (
-            <FirstUseHint text={t("adminPromocoes.firstUseHint")} onDismiss={promoHint.dismiss} />
-          )}
+          <form
+            id="promo-form"
+            onSubmit={handleSubmit}
+            className="mt-3 grid grid-cols-2 gap-3 overflow-y-auto px-6 pb-2"
+          >
+            {!editing && promoHint.shouldShow && (
+              <div className="col-span-2">
+                <FirstUseHint
+                  text={t("adminPromocoes.firstUseHint")}
+                  onDismiss={promoHint.dismiss}
+                />
+              </div>
+            )}
 
-          <form onSubmit={handleSubmit} className="mt-2 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="offer-type">{t("adminPromocoes.typeLabel")}</Label>
               <Select value={type} onValueChange={(v) => setType(v as Offer["type"])}>
@@ -460,6 +503,34 @@ function AdminPromocoes() {
             </div>
 
             <div className="space-y-1.5">
+              <Label htmlFor="offer-code">{t("adminPromocoes.codeLabel")}</Label>
+              <Input
+                id="offer-code"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                placeholder={t("adminPromocoes.codePlaceholder")}
+              />
+            </div>
+
+            {type !== "delivery" && (
+              <div className="col-span-2 space-y-1.5">
+                <Label htmlFor="offer-percent">{t("adminPromocoes.percentOffLabel")}</Label>
+                <Input
+                  id="offer-percent"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={percentOff}
+                  onChange={(e) => setPercentOff(e.target.value)}
+                  placeholder="10"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t("adminPromocoes.percentOffHint")}
+                </p>
+              </div>
+            )}
+
+            <div className="col-span-2 space-y-1.5">
               <Label htmlFor="offer-title">{t("adminPromocoes.titleLabel")}</Label>
               <Input
                 id="offer-title"
@@ -470,32 +541,90 @@ function AdminPromocoes() {
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="col-span-2 space-y-1.5">
               <Label htmlFor="offer-description">{t("adminPromocoes.descriptionLabel")}</Label>
               <Textarea
                 id="offer-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t("adminPromocoes.descriptionPlaceholder")}
+                rows={2}
                 className="rounded-xl"
                 required
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="offer-code">{t("adminPromocoes.codeLabel")}</Label>
-              <Input
-                id="offer-code"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder={t("adminPromocoes.codePlaceholder")}
+            <div className="col-span-2">
+              <ImageUploadField
+                value={image}
+                onChange={setImage}
+                onUploadingChange={setUploading}
+                label={t("adminPromocoes.imageLabel")}
+                helpText={t("adminPromocoes.imageHelp")}
               />
             </div>
 
-            <Button type="submit" className="w-full rounded-xl">
+            <div className="col-span-2 space-y-1.5">
+              <Label>{t("adminPromocoes.layoutLabel")}</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(["split", "cover"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setLayout(opt)}
+                    aria-pressed={layout === opt}
+                    className={`flex flex-col gap-2 rounded-xl border-2 p-3 text-left transition-colors ${
+                      layout === opt
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <span
+                      aria-hidden
+                      className={`flex h-10 gap-1 rounded-md bg-surface p-1 ${
+                        opt === "cover" ? "relative" : ""
+                      }`}
+                    >
+                      {opt === "split" ? (
+                        <>
+                          <span className="h-full w-1/2 rounded bg-primary/30" />
+                          <span className="flex h-full w-1/2 flex-col justify-center gap-1">
+                            <span className="h-1.5 w-full rounded bg-muted-foreground/30" />
+                            <span className="h-1.5 w-2/3 rounded bg-muted-foreground/20" />
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="absolute inset-1 rounded bg-primary/30" />
+                          <span className="relative m-auto flex flex-col items-center gap-1">
+                            <span className="h-1.5 w-10 rounded bg-white/70" />
+                            <span className="h-1.5 w-7 rounded bg-white/50" />
+                          </span>
+                        </>
+                      )}
+                    </span>
+                    <span className="text-xs font-semibold text-foreground">
+                      {opt === "split"
+                        ? t("adminPromocoes.layoutSplit")
+                        : t("adminPromocoes.layoutCover")}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">{t("adminPromocoes.layoutHelp")}</p>
+            </div>
+          </form>
+
+          <div className="border-t border-border px-6 py-4">
+            <Button
+              type="submit"
+              form="promo-form"
+              className="w-full rounded-xl"
+              disabled={uploading}
+            >
               {editing ? t("adminPromocoes.saveChanges") : t("adminPromocoes.createPromo")}
             </Button>
-          </form>
+          </div>
         </DialogContent>
       </Dialog>
 

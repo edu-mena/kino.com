@@ -55,10 +55,9 @@ type Slide =
       target: LinkTarget;
     };
 
-// Ofertas não têm imagem própria (nem as da Kino nem as criadas por
-// restaurantes) — este pool decorativo é reciclado por índice, o que
-// generaliza sem problema para qualquer número de ofertas (não só as 3
-// originais da Kino).
+// Fallback decorativo para ofertas sem imagem própria — reciclado por
+// índice, generaliza para qualquer número de ofertas. Quando a oferta
+// tem `image` (definida no painel), essa tem prioridade.
 const offerSlideImages = [restaurantAngolana, heroFood, dishDrink];
 
 function buildSlides(
@@ -71,14 +70,17 @@ function buildSlides(
   offers.forEach((offer, i) => {
     if (slides.length >= MAX_SLIDES) return;
     const { title, description } = translateOffer(offer, t);
+    const restaurant = offer.restaurantId ? getRestaurant(offer.restaurantId) : undefined;
     slides.push({
       id: offer.id,
-      kind: i % 2 === 0 ? "split" : "cover",
+      kind: offer.layout ?? (i % 2 === 0 ? "split" : "cover"),
       title,
-      description,
+      description: restaurant ? `${restaurant.name} — ${description}` : description,
       cta: offer.code ? t("home.promoUseCode", { code: offer.code }) : t("home.promoSeeOffer"),
-      image: offerSlideImages[i % offerSlideImages.length]!,
-      target: { to: "/ofertas" },
+      image: offer.image || offerSlideImages[i % offerSlideImages.length]!,
+      target: restaurant
+        ? { to: "/cardapio", search: { restaurante: restaurant.id } }
+        : { to: "/ofertas" },
     });
   });
 

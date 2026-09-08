@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { ImageUploadField } from "@/components/image-upload-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import icon from "@/assets/icon.png";
 import { FirstUseHint } from "@/components/first-use-hint";
@@ -103,6 +104,8 @@ export function DishFormDialog({
   const [image, setImage] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
   const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([]);
+  const [isPromoted, setIsPromoted] = useState(false);
+  const [promotionLabel, setPromotionLabel] = useState("");
 
   // Reabastece o formulário sempre que o diálogo abre — quer para um prato
   // novo (tudo vazio) quer para editar um existente (campos preenchidos).
@@ -120,6 +123,8 @@ export function DishFormDialog({
     setDescription(dish?.description ?? "");
     setImage(dish?.image ?? "");
     setIngredientRows(dish ? toRows(dish.ingredients) : []);
+    setIsPromoted(dish?.isPromoted ?? false);
+    setPromotionLabel(dish?.promotionLabel ?? "");
   }, [open, dish, kind]);
 
   const nameSuggestions =
@@ -181,6 +186,8 @@ export function DishFormDialog({
           extraPrice: r.kind === "extra" ? Number(r.extraPrice) || 0 : undefined,
         })),
       ),
+      isPromoted,
+      ...(isPromoted && promotionLabel.trim() ? { promotionLabel: promotionLabel.trim() } : {}),
     };
 
     const ok = onSave(restaurantId, input, dish?.id);
@@ -354,6 +361,25 @@ export function DishFormDialog({
             onChange={setImage}
             onUploadingChange={setImageUploading}
           />
+
+          <div className="space-y-2 rounded-xl border border-border p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label htmlFor="dish-promoted">{t("dishFormDialog.promotedLabel")}</Label>
+                <p className="text-xs text-muted-foreground">{t("dishFormDialog.promotedHint")}</p>
+              </div>
+              <Switch id="dish-promoted" checked={isPromoted} onCheckedChange={setIsPromoted} />
+            </div>
+            {isPromoted && (
+              <Input
+                aria-label={t("dishFormDialog.promotionTagLabel")}
+                value={promotionLabel}
+                onChange={(e) => setPromotionLabel(e.target.value)}
+                placeholder={t("dishFormDialog.promotionTagPlaceholder")}
+                maxLength={16}
+              />
+            )}
+          </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">

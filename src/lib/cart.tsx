@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
+import type { PromoEffect } from "@/data/offers-store";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { useAuth } from "@/lib/auth";
-import type { SavedAddress, SelectedIngredient } from "@/data/types";
+import { viewerKey } from "@/lib/customer";
+import type { FulfillmentType, SavedAddress, SelectedIngredient } from "@/data/types";
 
 // Sufixo de versão: subir quando `seedOrders()` mudar de forma relevante —
 // invalida o snapshot antigo do localStorage, que de outro modo continua a
@@ -31,30 +33,66 @@ export type CartLine = {
 /** Código de estado do pedido — o texto exibido vem de `t("entrega.status." + status)`,
  * nunca guardado já traduzido (senão trocar de idioma não atualizava pedidos existentes). */
 export type CartOrderStatus =
-  "pending" | "accepted" | "onTheWay" | "delivered" | "rejected" | "canceled";
+  | "pending"
+  | "accepted"
+  | "onTheWay"
+  | "delivered"
+  | "ready"
+  | "completed"
+  | "rejected"
+  | "canceled";
 
 export type CartOrder = {
   id: string;
   restaurantId: string;
+  /** Dono do pedido no lado do cliente (`viewerKey` no momento do pedido:
+   * conta autenticada ou convidado). Ausente nos pedidos da seed — que por
+   * isso nunca aparecem em `/entrega` como sendo de quem está a ver. */
+  ownerKey?: string;
   lines: CartLine[];
   createdAt: string;
+  /** Como o pedido é recebido/consumido. `delivery` usa `deliveryAddress`;
+   * `takeaway` usa `pickupAsap`/`pickupAt`; `dinein` usa `partySize`. */
+  fulfillmentType: FulfillmentType;
   /** Cliente que fez o pedido — capturado da conta no momento do pedido, é
    * o que o restaurante vê no painel (nome, telefone, email para contacto). */
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
-  deliveryAddress: SavedAddress;
+  /** Só em `delivery`. */
+  deliveryAddress?: SavedAddress;
+  /** `takeaway`: `true` = levantar assim que estiver pronto; senão `pickupAt`. */
+  pickupAsap?: boolean;
+  /** `takeaway`: hora de levantamento agendada (ISO). */
+  pickupAt?: string;
+  /** `dinein`: nº de pessoas à mesa. */
+  partySize?: number;
   status: CartOrderStatus;
   /** Estimativa (minutos) capturada do restaurante no momento do pedido. */
   estimatedMinutes: number;
-  /** Preferência de pagamento enviada ao restaurante — só existe depois de
-   * passar pelo checkout (`confirmOrder`). A Kino não processa o pagamento
-   * em si, isto é só a preferência relayed ao restaurante. */
+  /** ISO — quando o pedido passou a "delivered". Base da estimativa de
+   * entrega por histórico (ver `@/lib/delivery-history`). */
+  deliveredAt?: string;
+  /** Método de pagamento EXIGIDO pelo restaurante — definido por ele ao
+   * aceitar o pedido (`acceptOrder`). É o que o cliente vê na confirmação.
+   * Id de `paymentMethods` (`@/lib/mock-data`). A Kino não processa o
+   * pagamento; o cliente combina-o diretamente com o restaurante. */
   paymentMethod?: string;
+  /** Caução (Kz) exigida como garantia para este pedido — anexada pelo
+   * restaurante ao aceitar, quando o modo está em `cautionModesForOrders`. */
+  cautionRequired?: number;
   /** Observação livre do cliente para o restaurante (ex: "sem cebola",
-   * "entregar na portaria") — pode ser escrita ao pedir a entrega ou
-   * editada depois, no checkout; opcional nos dois momentos. */
+   * "entregar na portaria") — escrita ao fazer o pedido. */
   note?: string;
+  /** Código promocional aplicado no momento do pedido, com o efeito já
+   * resolvido (a promoção pode mudar ou desaparecer depois — o pedido
+   * mantém o que valia na altura). Ver `resolvePromoCode` em
+   * `@/data/offers-store`. */
+  promoCode?: string;
+  promoLabel?: string;
+  /** 0–100, desconto sobre o subtotal de produtos. */
+  promoPercentOff?: number;
+  promoFreeDelivery?: boolean;
 };
 
 type NewCartLine = {
@@ -63,6 +101,12 @@ type NewCartLine = {
   selectedIngredients?: SelectedIngredient[];
 };
 
+/** Dados do modo de pedido, passados ao `addOrder`. */
+export type OrderFulfillment =
+  | { type: "delivery"; deliveryAddress: SavedAddress }
+  | { type: "takeaway"; pickupAsap: boolean; pickupAt?: string }
+  | { type: "dinein"; partySize: number };
+
 type CartValue = {
   orders: CartOrder[];
   count: number;
@@ -70,12 +114,15 @@ type CartValue = {
   deliveryFee: number;
   total: number;
   orderSubtotal: (order: CartOrder) => number;
+  /** Desconto (Kz) do código promocional deste pedido — 0 quando não há. */
+  orderDiscount: (order: CartOrder) => number;
   orderTotal: (order: CartOrder) => number;
   addOrder: (
     restaurantId: string,
     items: NewCartLine[],
-    deliveryAddress: SavedAddress,
+    fulfillment: OrderFulfillment,
     note?: string,
+    promo?: PromoEffect | null,
   ) => void;
   setQty: (orderId: string, lineKey: string, qty: number) => void;
   removeOrder: (orderId: string) => void;
@@ -83,14 +130,17 @@ type CartValue = {
    * restaurante ainda não aceitou). Vira estado "canceled", não é apagado,
    * para o restaurante continuar a ver o que aconteceu. */
   cancelOrder: (orderId: string) => void;
-  /** Passo do checkout — regista a preferência de pagamento no pedido (já
-   * criado desde o "Solicitar delivery"). Não cria nada novo nem limpa a
-   * lista: o pedido continua o mesmo, agora com o método anexado. `note`,
-   * se passada, substitui a observação existente (o campo é editável nos
-   * dois momentos — pedido e checkout). */
+  /** Restaurante aceita o pedido (`/admin/pedidos`): fixa o método de
+   * pagamento exigido e, se aplicável, a caução — e passa a "accepted". É o
+   * que o cliente vê depois como exigência na confirmação. */
+  acceptOrder: (orderId: string, paymentMethod: string, cautionRequired?: number) => void;
+  /** @deprecated Passo antigo do checkout do cliente — substituído por
+   * `acceptOrder` (o restaurante é que fixa o pagamento). Mantido até o
+   * fluxo do cliente ser migrado. */
   confirmOrder: (orderId: string, paymentMethod: string, note?: string) => void;
   /** Usado pelo painel do restaurante (`/admin/pedidos`) pra avançar o
-   * pedido: pending → accepted → onTheWay → delivered, ou pending → rejected. */
+   * pedido. Delivery: accepted → onTheWay → delivered. Takeaway/dinein:
+   * accepted → ready → completed. Ou pending → rejected. */
   updateOrderStatus: (orderId: string, status: CartOrderStatus) => void;
   clear: () => void;
 };
@@ -145,12 +195,22 @@ function orderSubtotal(order: CartOrder): number {
   return order.lines.reduce((sum, line) => sum + lineUnitPrice(line) * line.qty, 0);
 }
 
+/** Desconto do código promocional — percentagem sobre o subtotal de
+ * produtos, arredondada. 0 quando o pedido não tem código ou o código só
+ * dá entrega grátis. */
+function orderDiscount(order: CartOrder): number {
+  if (!order.promoPercentOff) return 0;
+  return Math.round(orderSubtotal(order) * (order.promoPercentOff / 100));
+}
+
 function orderDeliveryFee(order: CartOrder): number {
+  if (order.fulfillmentType !== "delivery") return 0;
+  if (order.promoFreeDelivery) return 0;
   return getRestaurant(order.restaurantId)?.deliveryFee ?? 0;
 }
 
 function orderTotal(order: CartOrder): number {
-  return orderSubtotal(order) + orderDeliveryFee(order);
+  return orderSubtotal(order) - orderDiscount(order) + orderDeliveryFee(order);
 }
 
 /** Clientes fictícios para os pedidos seed. Alguns nomes coincidem de
@@ -185,6 +245,8 @@ function buildSeedOrder(
     hoursAgo?: number;
     addressIndex?: number;
     customerIndex?: number;
+    fulfillmentType?: FulfillmentType;
+    partySize?: number;
   },
 ): CartOrder | null {
   const items = menuItemIds
@@ -195,12 +257,28 @@ function buildSeedOrder(
   const createdAt = new Date();
   createdAt.setDate(createdAt.getDate() - daysAgo);
   if (extra?.hoursAgo) createdAt.setHours(createdAt.getHours() - extra.hoursAgo);
+
+  // Entregas seed ganham um `deliveredAt` plausível — a estimativa de entrega
+  // por histórico (`@/lib/delivery-history`) precisa de durações reais. A
+  // duração varia com a hora do pedido (rush ao almoço/jantar) e com o id.
+  let deliveredAt: string | undefined;
+  if (status === "delivered") {
+    const base = restaurant?.estimatedDeliveryMinutes ?? 30;
+    const hour = createdAt.getHours();
+    const rush = (hour >= 11 && hour <= 13) || (hour >= 18 && hour <= 20) ? 1.3 : 1;
+    let seed = 0;
+    for (let i = 0; i < id.length; i += 1) seed = (seed * 31 + id.charCodeAt(i)) >>> 0;
+    const jitter = (seed % 21) - 8; // -8..+12 min
+    const durationMin = Math.max(12, Math.round(base * rush + jitter));
+    deliveredAt = new Date(createdAt.getTime() + durationMin * 60_000).toISOString();
+  }
   const addr =
     (extra?.addressIndex != null && INITIAL_SAVED_ADDRESSES[extra.addressIndex]) ||
     INITIAL_SAVED_ADDRESSES.find((a) => a.isDefault) ||
     INITIAL_SAVED_ADDRESSES[0]!;
   const customer =
     (extra?.customerIndex != null && SEED_CUSTOMERS[extra.customerIndex]) || seedCustomerFor(id);
+  const fulfillmentType: FulfillmentType = extra?.fulfillmentType ?? "delivery";
   return {
     id,
     restaurantId: items[0]!.restaurantId,
@@ -211,12 +289,16 @@ function buildSeedOrder(
       selectedIngredients: [],
     })),
     createdAt: createdAt.toISOString(),
+    fulfillmentType,
     customerName: customer.name,
     customerPhone: customer.phone,
     customerEmail: customer.email,
-    deliveryAddress: addr,
+    ...(fulfillmentType === "delivery" ? { deliveryAddress: addr } : {}),
+    ...(fulfillmentType === "takeaway" ? { pickupAsap: true } : {}),
+    ...(fulfillmentType === "dinein" ? { partySize: extra?.partySize ?? 2 } : {}),
     status,
     estimatedMinutes: restaurant?.estimatedDeliveryMinutes ?? 30,
+    ...(deliveredAt ? { deliveredAt } : {}),
     ...(extra?.paymentMethod ? { paymentMethod: extra.paymentMethod } : {}),
     ...(extra?.note ? { note: extra.note } : {}),
   };
@@ -226,7 +308,7 @@ function seedOrders(): CartOrder[] {
   return [
     buildSeedOrder("order-seed-1", ["menu-601", "menu-shared-agua-601"], "onTheWay", 0),
     buildSeedOrder("order-seed-2", ["menu-101"], "delivered", 2),
-    buildSeedOrder("order-seed-3", ["menu-302"], "pending", 0),
+    buildSeedOrder("order-seed-3", ["menu-302"], "pending", 0, { fulfillmentType: "dinein" }),
 
     // --- Bistrô Sabor & Arte (rest-1): histórico alargado para os painéis
     // de Pedidos e Estatísticas. ---
@@ -238,9 +320,10 @@ function seedOrders(): CartOrder[] {
       hoursAgo: 3,
       addressIndex: 1,
     }),
-    buildSeedOrder("order-b3", ["menu-103"], "accepted", 0, {
-      paymentMethod: "Multicaixa Express",
+    buildSeedOrder("order-b3", ["menu-103"], "ready", 0, {
+      paymentMethod: "multicaixa-express",
       hoursAgo: 2,
+      fulfillmentType: "takeaway",
     }),
     buildSeedOrder("order-b4", ["menu-101", "menu-105"], "onTheWay", 0, {
       paymentMethod: "Numerário",
@@ -297,6 +380,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CartValue>(() => {
     const subtotal = orders.reduce((sum, o) => sum + orderSubtotal(o), 0);
     const deliveryFee = orders.reduce((sum, o) => sum + orderDeliveryFee(o), 0);
+    const discount = orders.reduce((sum, o) => sum + orderDiscount(o), 0);
 
     return {
       orders,
@@ -305,17 +389,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
       count: orders.length,
       subtotal,
       deliveryFee,
-      total: subtotal + deliveryFee,
+      total: subtotal - discount + deliveryFee,
       orderSubtotal,
+      orderDiscount,
       orderTotal,
       // Sempre cria um pedido NOVO — cada "Solicitar delivery" é um delivery
       // à parte, mesmo que já haja um pedido pendente do mesmo restaurante.
-      addOrder: (restaurantId, items, deliveryAddress, note) =>
+      addOrder: (restaurantId, items, fulfillment, note, promo) =>
         setOrders((prev) => [
           ...prev,
           {
             id: `order-${Date.now()}`,
             restaurantId,
+            ownerKey: viewerKey(user),
             lines: items.map((item) => ({
               key: makeLineKey(item.menuItemId, item.selectedIngredients ?? []),
               menuItemId: item.menuItemId,
@@ -323,13 +409,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
               selectedIngredients: item.selectedIngredients ?? [],
             })),
             createdAt: new Date().toISOString(),
+            fulfillmentType: fulfillment.type,
             customerName: user?.name ?? "Cliente Kino",
             customerPhone: user?.phone ?? "",
             ...(user?.email ? { customerEmail: user.email } : {}),
-            deliveryAddress,
+            ...(fulfillment.type === "delivery"
+              ? { deliveryAddress: fulfillment.deliveryAddress }
+              : {}),
+            ...(fulfillment.type === "takeaway"
+              ? {
+                  pickupAsap: fulfillment.pickupAsap,
+                  ...(fulfillment.pickupAt ? { pickupAt: fulfillment.pickupAt } : {}),
+                }
+              : {}),
+            ...(fulfillment.type === "dinein" ? { partySize: fulfillment.partySize } : {}),
             status: "pending",
             estimatedMinutes: getRestaurant(restaurantId)?.estimatedDeliveryMinutes ?? 30,
             ...(note?.trim() ? { note: note.trim() } : {}),
+            ...(promo
+              ? {
+                  promoCode: promo.code,
+                  promoLabel: promo.label,
+                  ...(promo.percentOff ? { promoPercentOff: promo.percentOff } : {}),
+                  ...(promo.freeDelivery ? { promoFreeDelivery: true } : {}),
+                }
+              : {}),
           },
         ]),
       setQty: (orderId, key, qty) =>
@@ -355,6 +459,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
             o.id === orderId && o.status === "pending" ? { ...o, status: "canceled" } : o,
           ),
         ),
+      acceptOrder: (orderId, paymentMethod, cautionRequired) =>
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId
+              ? {
+                  ...o,
+                  status: "accepted",
+                  paymentMethod,
+                  ...(cautionRequired && cautionRequired > 0 ? { cautionRequired } : {}),
+                }
+              : o,
+          ),
+        ),
       confirmOrder: (orderId, paymentMethod, note) =>
         setOrders((prev) =>
           prev.map((o) =>
@@ -364,7 +481,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ),
         ),
       updateOrderStatus: (orderId, status) =>
-        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o))),
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId
+              ? {
+                  ...o,
+                  status,
+                  ...(status === "delivered" && !o.deliveredAt
+                    ? { deliveredAt: new Date().toISOString() }
+                    : {}),
+                }
+              : o,
+          ),
+        ),
       clear: () => setOrders([]),
     };
   }, [orders, user]);

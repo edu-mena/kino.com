@@ -8,6 +8,7 @@ function makeOrder(id: string, addressId: string): CartOrder {
     restaurantId: "rest-1",
     lines: [],
     createdAt: new Date().toISOString(),
+    fulfillmentType: "delivery",
     customerName: "Cliente",
     customerPhone: "",
     deliveryAddress: { id: addressId, label: "Casa", line1: "", line2: "" },

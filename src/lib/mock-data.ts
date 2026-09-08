@@ -5,42 +5,79 @@
  */
 
 /**
- * A Kino não processa pagamentos — isto é só a preferência que enviamos ao
- * restaurante junto do pedido; o valor é combinado e pago diretamente com
- * ele (por isso nenhum destes tem número de cartão guardado, só o método).
+ * A Kino não processa pagamentos — o pagamento é combinado e feito
+ * diretamente com o restaurante. O restaurante escolhe, ao aceitar um
+ * pedido, qual destes métodos EXIGE; o cliente recebe essa exigência na
+ * confirmação e paga por esse meio. Nenhum guarda dados de cartão/conta,
+ * só o método.
+ *
+ * `digital: true` → o cliente transfere/paga pela app do método e combina o
+ * comprovativo com o restaurante. `digital: false` → pago em numerário
+ * presencialmente (na entrega, ao balcão ou no local).
  */
-export const paymentMethods = [
+export type PaymentMethod = {
+  id: string;
+  label: string;
+  detail: string;
+  brand: string;
+  digital: boolean;
+};
+
+export const paymentMethods: PaymentMethod[] = [
   {
-    id: "cash",
-    label: "Dinheiro na entrega",
-    detail: "Pague ao estafeta na entrega",
-    brand: "CASH",
+    id: "multicaixa-express",
+    label: "Multicaixa Express",
+    detail: "Pagamento pela app Multicaixa Express (referência ou telefone)",
+    brand: "MCX",
+    digital: true,
   },
   {
-    id: "pos",
-    label: "Cartão (POS na entrega)",
-    detail: "Multicaixa, Visa ou Mastercard",
-    brand: "POS",
+    id: "kwik",
+    label: "KWiK",
+    detail: "Transferência instantânea KWiK (BFA)",
+    brand: "KWiK",
+    digital: true,
   },
   {
-    id: "mpesa",
-    label: "M-Pesa",
-    detail: "Transferência combinada com o restaurante",
-    brand: "M-PESA",
+    id: "bai-directo",
+    label: "BAI Directo",
+    detail: "Transferência pela app BAI Directo",
+    brand: "BAI",
+    digital: true,
   },
   {
-    id: "unitel",
+    id: "paypay",
+    label: "PayPay",
+    detail: "Pagamento pela carteira PayPay AO",
+    brand: "PayPay",
+    digital: true,
+  },
+  {
+    id: "unitel-money",
     label: "Unitel Money",
-    detail: "Transferência combinada com o restaurante",
+    detail: "Transferência pela carteira Unitel Money",
     brand: "UNITEL",
+    digital: true,
   },
   {
     id: "transferencia",
     label: "Transferência bancária",
-    detail: "Combinada diretamente com o restaurante",
+    detail: "Transferência interbancária combinada com o restaurante",
     brand: "BANCO",
+    digital: true,
+  },
+  {
+    id: "cash",
+    label: "Numerário",
+    detail: "Pago em dinheiro na entrega, ao balcão ou no local",
+    brand: "CASH",
+    digital: false,
   },
 ];
+
+export function getPaymentMethod(id: string | undefined): PaymentMethod | undefined {
+  return id ? paymentMethods.find((m) => m.id === id) : undefined;
+}
 
 // O FAQ da Central de Ajuda mudou-se para `@/lib/help-articles` — é texto
 // puro de "casca" (sem ligação a nenhum restaurante/prato concreto), por

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { INITIAL_RESERVATIONS } from "@/data/mockData";
 import type { Reservation, Restaurant } from "@/data/types";
 import { useAuth } from "@/lib/auth";
+import { viewerKey } from "@/lib/customer";
 
 // Sufixo de versão: subir quando a seed (`INITIAL_RESERVATIONS`) muda de forma
 // relevante — invalida o snapshot antigo no browser, que de outro modo continua
@@ -64,9 +65,10 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     const reservation: Reservation = {
       id: `res-custom-${Date.now()}`,
       restaurantId: restaurant.id,
+      ownerKey: viewerKey(user),
       restaurantName: restaurant.name,
       restaurantImage: restaurant.coverImage,
-      customerName: user?.name ?? "Utilizador Kino",
+      customerName: user?.name ?? "Cliente Kino",
       customerPhone: user?.phone ?? "",
       customerEmail: user?.email ?? "",
       date,

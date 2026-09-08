@@ -3,10 +3,12 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { fileToDataUrl, fileToResizedDataUrl, getVideoDurationSec } from "@/lib/image-upload";
+import { VideoTrimmer } from "@/components/video-trimmer";
+import { useTranslation } from "@/i18n";
+import { fileToResizedDataUrl, getVideoDurationSec } from "@/lib/image-upload";
 
-/** Vídeo até este tamanho — um data URL maior rebenta a quota do localStorage. */
-const MAX_VIDEO_BYTES = 5 * 1024 * 1024;
+/** Janela mínima aceite pelo controlador de corte. */
+const MIN_VIDEO_SEC = 3;
 
 export type UploadMediaMeta = { mediaType: "image" | "video"; durationSec?: number };
 
@@ -45,8 +47,10 @@ export function ImageUploadField({
   /** Tipo da media atual (para o preview escolher `<img>` vs `<video>`). */
   mediaType?: "image" | "video";
 }) {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [trimFile, setTrimFile] = useState<File | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,16 +61,12 @@ export function ImageUploadField({
     try {
       if (accept === "media" && file.type.startsWith("video/")) {
         const durationSec = await getVideoDurationSec(file);
-        if (durationSec > maxVideoSec + 0.5) {
-          toast.error(`O vídeo tem de ter no máximo ${maxVideoSec} segundos.`);
+        if (durationSec < MIN_VIDEO_SEC - 0.1) {
+          toast.error(t("videoTrimmer.tooShort", { min: MIN_VIDEO_SEC }));
           return;
         }
-        if (file.size > MAX_VIDEO_BYTES) {
-          toast.error("O vídeo é demasiado grande (máx. 5 MB).");
-          return;
-        }
-        onChange(await fileToDataUrl(file));
-        onMediaChange?.({ mediaType: "video", durationSec: Math.round(durationSec) });
+        // Vídeo → abre o controlador de corte (a confirmação recodifica).
+        setTrimFile(file);
       } else {
         onChange(await fileToResizedDataUrl(file));
         onMediaChange?.({ mediaType: "image" });
@@ -140,6 +140,19 @@ export function ImageUploadField({
         </div>
       </div>
       {helpText && <p className="text-xs text-muted-foreground">{helpText}</p>}
+
+      <VideoTrimmer
+        file={trimFile}
+        open={trimFile !== null}
+        onOpenChange={(o) => !o && setTrimFile(null)}
+        minSec={MIN_VIDEO_SEC}
+        maxSec={maxVideoSec}
+        onConfirm={(r) => {
+          onChange(r.src);
+          onMediaChange?.({ mediaType: "video", durationSec: r.durationSec });
+          setTrimFile(null);
+        }}
+      />
     </div>
   );
 }

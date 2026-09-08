@@ -8,6 +8,11 @@
  * revisitar quando este dataset for ligado à aplicação de verdade.
  */
 
+/** Modo de entrega/consumo de um pedido.
+ * `delivery` = entrega ao domicílio · `takeaway` = levantar ao balcão ·
+ * `dinein` = consumir no local. */
+export type FulfillmentType = "delivery" | "takeaway" | "dinein";
+
 export interface Restaurant {
   id: string;
   name: string;
@@ -23,12 +28,30 @@ export interface Restaurant {
    * app. O bairro/zona específico, quando relevante, vive em `address`. */
   neighborhood: string;
   city: string;
+  /** Localização exata no mapa. Ausente no seed — derivada da província em
+   * `withOverrides` (`@/data/helpers`) até o gestor a definir em
+   * `/admin/perfil`. */
+  lat?: number;
+  lng?: number;
   phone: string;
   email: string;
   openingHours: string;
   coverImage: string;
   galleryImages: string[];
   isDeliveryAvailable: boolean;
+  /** Modos de pedido que o restaurante oferece. Ausente = derivado:
+   * `delivery` só se `isDeliveryAvailable`, mais `takeaway` e `dinein`
+   * (qualquer restaurante pode servir ao balcão / no local). Ver
+   * `getRestaurantFulfillmentModes` em `@/data/helpers`. */
+  fulfillmentModes?: FulfillmentType[];
+  /** Ids de métodos de pagamento aceites (ver `paymentMethods` em
+   * `@/lib/mock-data`). Ausente/vazio = aceita todos. O restaurante escolhe
+   * de entre estes o método exigido ao aceitar cada pedido. */
+  acceptedPaymentMethods?: string[];
+  /** Modos de pedido para os quais a caução (`cautionAmount`) é exigida como
+   * garantia — a par do uso em reservas. Ausente = nenhum (caução fica só
+   * nas reservas). */
+  cautionModesForOrders?: FulfillmentType[];
   /** Províncias cobertas pela entrega — nem toda província tem cobertura.
    * Quando ausente e `isDeliveryAvailable` é true, assume-se cobertura só na
    * própria província (`neighborhood`). Ignorado quando `isDeliveryAvailable`
@@ -139,6 +162,10 @@ export interface CartItem {
 export interface Reservation {
   id: string;
   restaurantId: string;
+  /** Dono da reserva no lado do cliente (`viewerKey` no momento do pedido:
+   * conta autenticada ou convidado). Ausente nas reservas da seed — que por
+   * isso nunca aparecem em `/reservas` como sendo de quem está a ver. */
+  ownerKey?: string;
   restaurantName: string;
   restaurantImage: string;
   customerName: string;
@@ -149,8 +176,11 @@ export interface Reservation {
   peopleCount: number;
   cautionAmount: number;
   cautionStatus: string;
-  /** "Pendente" | "Confirmada" | "Recusada" | "Cancelada" (cancelada pelo
-   * cliente enquanto ainda "Pendente"). String livre por compatibilidade. */
+  /** "Pendente" | "Confirmada" | "Recusada" | "Cancelada" | "Anulada".
+   * `Cancelada` = o cliente desistiu enquanto ainda "Pendente"; `Recusada` =
+   * o restaurante recusou um pedido "Pendente"; `Anulada` = o restaurante
+   * cancelou uma reserva que já tinha confirmado. String livre por
+   * compatibilidade. */
   status: string;
   /** Mesa atribuída pelo restaurante ao confirmar (ver `@/data/tables-store`). */
   tableId?: string;
@@ -221,6 +251,17 @@ export interface Offer {
   title: string;
   description: string;
   code?: string;
+  /** Só em `type: "discount"` / `"happy-hour"`. Percentagem descontada do
+   * subtotal de produtos quando o cliente aplica `code` no pedido. Ausente
+   * (ou em `type: "delivery"`, que dá entrega grátis) = o código é apenas
+   * informativo. */
+  percentOff?: number;
+  /** Imagem da promoção — URL colada ou data URL (upload). Ausente = usa
+   * uma imagem decorativa genérica no carrossel da home. */
+  image?: string;
+  /** Formato de exibição no carrossel da home. Ausente = alterna
+   * automaticamente (`split`/`cover`) pela posição. */
+  layout?: "split" | "cover";
 }
 
 export interface SavedAddress {
@@ -229,6 +270,12 @@ export interface SavedAddress {
   line1: string;
   line2: string;
   isDefault?: boolean;
+  /** Coordenadas da morada. Hoje ausentes (moradas são texto livre);
+   * preenchidas pelo autocomplete/geocoding quando o backend de mapas
+   * estiver ligado — ver `@/lib/maps`. Consumidores devem tolerar
+   * `undefined` e recair na província extraída de `line2`. */
+  lat?: number;
+  lng?: number;
 }
 
 /**

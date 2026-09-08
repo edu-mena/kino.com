@@ -1,11 +1,14 @@
 import { INITIAL_RESTAURANTS } from "./mockData";
 import { getCustomRestaurants } from "./custom-restaurants-store";
 import { getEffectiveMenuItems } from "./menu-store";
+import { deriveRestaurantCoords } from "./restaurant-coordinates";
 import { applyProfileEdits } from "./restaurant-profile-store";
 import { blendedRating, getEffectiveReviews } from "./reviews-store";
 import { getEffectiveStories } from "./stories-store";
+import { getSubscriptions } from "./subscriptions-store";
 import { applySystemFlags } from "./system-flags-store";
-import type { MenuItem, Restaurant, RestaurantStory, Review } from "./types";
+import type { FulfillmentType, MenuItem, Restaurant, RestaurantStory, Review } from "./types";
+import { paymentMethods } from "@/lib/mock-data";
 import { formatWeeklyHours, seedHoursFor } from "@/lib/opening-hours";
 
 /** Edições de `/admin/perfil` + sinalizadores da área de sistema (destaque) +
@@ -15,13 +18,35 @@ function withOverrides(seed: Restaurant): Restaurant {
   const r = applySystemFlags(applyProfileEdits(seed));
   const { rating, reviewCount } = blendedRating(r.id, seed.rating, seed.reviewCount);
   const hours = r.hours ?? seedHoursFor(r.id);
+  const coords =
+    r.lat != null && r.lng != null
+      ? { lat: r.lat, lng: r.lng }
+      : deriveRestaurantCoords(r.id, r.neighborhood);
   return {
     ...r,
     rating,
     reviewCount,
     hours,
+    lat: coords.lat,
+    lng: coords.lng,
     openingHours: r.openingHours || formatWeeklyHours(hours, "pt"),
   };
+}
+
+/** Ids de restaurantes com subscrição suspensa. Continuam a resolver em
+ * `getRestaurant()` (a página de detalhe mostra o estado "indisponível"),
+ * mas o cliente esconde-os das superfícies de descoberta — ofertas e stories
+ * — e bloqueia-lhes o cardápio. O painel do restaurante não é afetado. */
+export function suspendedRestaurantIds(): Set<string> {
+  return new Set(
+    getSubscriptions()
+      .filter((s) => s.status === "suspended")
+      .map((s) => s.restaurantId),
+  );
+}
+
+export function isRestaurantSuspended(restaurantId: string): boolean {
+  return suspendedRestaurantIds().has(restaurantId);
 }
 
 export function getRestaurant(id: string): Restaurant | undefined {
@@ -160,6 +185,32 @@ export function canDeliverToNeighborhood(restaurant: Restaurant, neighborhood?: 
   if (!restaurant.isDeliveryAvailable) return false;
   if (!neighborhood) return true;
   return getDeliveryZones(restaurant).includes(neighborhood);
+}
+
+/** Modos de pedido oferecidos pelo restaurante. Explícito quando o gestor
+ * os definiu em `/admin/perfil`; caso contrário derivado: `delivery` só se
+ * o restaurante entrega, `takeaway` e `dinein` sempre (qualquer casa pode
+ * servir ao balcão ou no local). */
+export function getRestaurantFulfillmentModes(restaurant: Restaurant): FulfillmentType[] {
+  if (restaurant.fulfillmentModes?.length) return restaurant.fulfillmentModes;
+  return [
+    ...(restaurant.isDeliveryAvailable ? (["delivery"] as const) : []),
+    "takeaway" as const,
+    "dinein" as const,
+  ];
+}
+
+/** Ids de métodos de pagamento que o restaurante aceita — todos quando não
+ * restringiu a lista. */
+export function getRestaurantPaymentMethodIds(restaurant: Restaurant): string[] {
+  const all = paymentMethods.map((m) => m.id);
+  const chosen = restaurant.acceptedPaymentMethods?.filter((id) => all.includes(id)) ?? [];
+  return chosen.length ? chosen : all;
+}
+
+/** A caução configurada aplica-se a pedidos neste modo? */
+export function orderModeRequiresCaution(restaurant: Restaurant, mode: FulfillmentType): boolean {
+  return restaurant.cautionAmount > 0 && (restaurant.cautionModesForOrders ?? []).includes(mode);
 }
 
 /** Stories de um restaurante, do mais antigo pro mais recente (ordem de

@@ -36,7 +36,11 @@ import {
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { getMenuItem } from "@/data/helpers";
+import {
+  getMenuItem,
+  getRestaurantPaymentMethodIds,
+  orderModeRequiresCaution,
+} from "@/data/helpers";
 import { useTranslation, type Locale } from "@/i18n";
 import {
   lineCustomizations,
@@ -45,6 +49,7 @@ import {
   type CartOrder,
   type CartOrderStatus,
 } from "@/lib/cart";
+import { getPaymentMethod } from "@/lib/mock-data";
 import { useCouriers, type Courier, type CourierStatus, type CourierVehicle } from "@/lib/couriers";
 import {
   assessDelivery,
@@ -71,7 +76,9 @@ const STATUS_ORDER: CartOrderStatus[] = [
   "pending",
   "accepted",
   "onTheWay",
+  "ready",
   "delivered",
+  "completed",
   "rejected",
   "canceled",
 ];
@@ -84,7 +91,9 @@ const statusRank: Record<CartOrderStatus, number> = {
   pending: 0,
   accepted: 1,
   onTheWay: 2,
+  ready: 2,
   delivered: 3,
+  completed: 3,
   rejected: 4,
   canceled: 5,
 };
@@ -111,7 +120,9 @@ const statusTone: Record<CartOrderStatus, string> = {
   pending: "bg-brand/15 text-brand",
   accepted: "bg-primary/15 text-primary",
   onTheWay: "bg-primary/15 text-primary",
+  ready: "bg-primary/15 text-primary",
   delivered: "bg-success/15 text-success",
+  completed: "bg-success/15 text-success",
   rejected: "bg-destructive/15 text-destructive",
   canceled: "bg-muted-foreground/15 text-muted-foreground",
 };
@@ -119,7 +130,9 @@ const statusBarTone: Record<CartOrderStatus, string> = {
   pending: "bg-brand",
   accepted: "bg-primary",
   onTheWay: "bg-primary/70",
+  ready: "bg-primary/70",
   delivered: "bg-success",
+  completed: "bg-success",
   rejected: "bg-destructive",
   canceled: "bg-muted-foreground/50",
 };
@@ -142,7 +155,8 @@ function weekStart(d: Date) {
 
 function AdminPedidos() {
   const { restaurant } = useRestaurantAdmin();
-  const { orders, orderTotal, orderSubtotal, updateOrderStatus } = useCart();
+  const { orders, orderTotal, orderSubtotal, orderDiscount, updateOrderStatus, acceptOrder } =
+    useCart();
   const {
     couriersByRestaurant,
     availableByRestaurant,
@@ -164,6 +178,8 @@ function AdminPedidos() {
   const [navTab, setNavTab] = useState<"pedidos" | "stats">("pedidos");
   const [courierPick, setCourierPick] = useState("");
   const [confirmFarId, setConfirmFarId] = useState<string | null>(null);
+  const [acceptFor, setAcceptFor] = useState<CartOrder | null>(null);
+  const [payChoice, setPayChoice] = useState("");
   const [couriersOpen, setCouriersOpen] = useState(false);
   const [editingCourier, setEditingCourier] = useState<Courier | null>(null);
   const [courierDraft, setCourierDraft] = useState<CourierDraft>(emptyCourierDraft);
@@ -174,6 +190,7 @@ function AdminPedidos() {
   useEffect(() => {
     setCourierPick("");
     setConfirmFarId(null);
+    setAcceptFor(null);
   }, [activeId]);
 
   // Troca de aba com deslize horizontal — reaproveita a transição de página
@@ -209,7 +226,9 @@ function AdminPedidos() {
       pending: t("adminPedidos.statusPending"),
       accepted: t("adminPedidos.statusAccepted"),
       onTheWay: t("adminPedidos.statusOnTheWay"),
+      ready: t("orderStatus.ready"),
       delivered: t("adminPedidos.statusDelivered"),
+      completed: t("orderStatus.completed"),
       rejected: t("adminPedidos.statusRejected"),
       canceled: t("adminPedidos.statusCanceled"),
     }),
@@ -244,7 +263,9 @@ function AdminPedidos() {
       pending: 0,
       accepted: 0,
       onTheWay: 0,
+      ready: 0,
       delivered: 0,
+      completed: 0,
       rejected: 0,
       canceled: 0,
     };
@@ -264,9 +285,9 @@ function AdminPedidos() {
           o.customerName,
           o.customerPhone,
           o.customerEmail ?? "",
-          o.deliveryAddress.label,
-          o.deliveryAddress.line1,
-          o.deliveryAddress.line2,
+          o.deliveryAddress?.label ?? "",
+          o.deliveryAddress?.line1 ?? "",
+          o.deliveryAddress?.line2 ?? "",
           ...o.lines.map((l) => getMenuItem(l.menuItemId)?.name ?? ""),
         ]
           .join(" ")
@@ -305,12 +326,13 @@ function AdminPedidos() {
       start.setDate(start.getDate() - (7 - i) * 7);
       return { key: start.getTime(), start, total: 0, delivered: 0 };
     });
+    const isDone = (s: CartOrderStatus) => s === "delivered" || s === "completed";
     const byKey = new Map(weeks.map((w) => [w.key, w]));
     for (const o of mine) {
       const w = byKey.get(weekStart(new Date(o.createdAt)).getTime());
       if (!w) continue;
       w.total += 1;
-      if (o.status === "delivered") w.delivered += 1;
+      if (isDone(o.status)) w.delivered += 1;
     }
     const prev = weeks[5]?.total ?? 0;
     const weekDelta = prev > 0 ? Math.round((((weeks[6]?.total ?? 0) - prev) / prev) * 100) : null;
@@ -337,7 +359,7 @@ function AdminPedidos() {
       };
     });
 
-    const delivered = mine.filter((o) => o.status === "delivered");
+    const delivered = mine.filter((o) => isDone(o.status));
     const revenue = delivered.reduce((s, o) => s + orderTotal(o), 0);
     return {
       points: weeks.map((w) => ({
@@ -399,19 +421,36 @@ function AdminPedidos() {
     setCourierFormOpen(false);
   };
 
-  // "Novo" → "Aceite". Se a morada está fora do raio habitual, exige uma
-  // segunda confirmação antes de aceitar (evita aceitar entregas inviáveis).
-  const acceptPending = (order: CartOrder) => {
-    if (assessDelivery(order).level === "outOfRange" && confirmFarId !== order.id) {
+  // "Novo" → abre o diálogo de aceitação (escolha do pagamento exigido). Em
+  // delivery, se a morada está fora do raio habitual, exige uma segunda
+  // confirmação antes de abrir (evita aceitar entregas inviáveis).
+  const openAccept = (order: CartOrder) => {
+    if (
+      order.fulfillmentType === "delivery" &&
+      assessDelivery(order).level === "outOfRange" &&
+      confirmFarId !== order.id
+    ) {
       setConfirmFarId(order.id);
       return;
     }
     setConfirmFarId(null);
-    updateOrderStatus(order.id, "accepted");
-    toast.success(t("adminPedidos.updatedToast", { status: statusLabels.accepted }));
+    setPayChoice(getRestaurantPaymentMethodIds(restaurant)[0] ?? "");
+    setAcceptFor(order);
   };
 
-  // "Aceite" → "A caminho": obriga a atribuir um estafeta livre.
+  // Confirma a aceitação: fixa o método de pagamento exigido e, se o modo
+  // estiver marcado para caução, anexa o valor configurado no perfil.
+  const confirmAccept = () => {
+    if (!acceptFor || !payChoice) return;
+    const caution = orderModeRequiresCaution(restaurant, acceptFor.fulfillmentType)
+      ? restaurant.cautionAmount
+      : undefined;
+    acceptOrder(acceptFor.id, payChoice, caution);
+    toast.success(t("adminPedidos.updatedToast", { status: statusLabels.accepted }));
+    setAcceptFor(null);
+  };
+
+  // "Aceite" → "A caminho" (delivery): obriga a atribuir um estafeta livre.
   const dispatch = (order: CartOrder) => {
     const courier = myCouriers.find((c) => c.id === courierPick && c.status === "disponivel");
     if (!courier) {
@@ -428,6 +467,16 @@ function AdminPedidos() {
     releaseOrder(order.id);
     updateOrderStatus(order.id, "delivered");
     toast.success(t("adminPedidos.updatedToast", { status: statusLabels.delivered }));
+  };
+
+  // Take away / no local: "Aceite" → "Pronto" → "Concluído" (sem estafeta).
+  const markReady = (order: CartOrder) => {
+    updateOrderStatus(order.id, "ready");
+    toast.success(t("adminPedidos.updatedToast", { status: statusLabels.ready }));
+  };
+  const markCompleted = (order: CartOrder) => {
+    updateOrderStatus(order.id, "completed");
+    toast.success(t("adminPedidos.updatedToast", { status: statusLabels.completed }));
   };
 
   const reject = (order: CartOrder) => {
@@ -566,23 +615,38 @@ function AdminPedidos() {
                           >
                             <span className="min-w-0">
                               <span className="block truncate text-sm font-semibold text-foreground">
-                                {o.customerName || o.deliveryAddress.label}
+                                {o.customerName ||
+                                  o.deliveryAddress?.label ||
+                                  t("adminPedidos.customerFallback")}
                               </span>
                               <span className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
-                                <MapPin className="h-3 w-3 shrink-0" />
-                                {o.deliveryAddress.label} · {o.deliveryAddress.line1}
+                                {o.deliveryAddress ? (
+                                  <>
+                                    <MapPin className="h-3 w-3 shrink-0" />
+                                    {o.deliveryAddress.label} · {o.deliveryAddress.line1}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Package className="h-3 w-3 shrink-0" />
+                                    {t(`fulfillment.${o.fulfillmentType}`)}
+                                  </>
+                                )}
                               </span>
                               <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
-                                {(() => {
-                                  const a = assessDelivery(o);
-                                  return (
-                                    <span
-                                      className={`rounded-full px-1.5 py-0.5 ${deliveryChipTone[a.level]}`}
-                                    >
-                                      {t("adminPedidos.distanceKm", { km: a.km })}
-                                    </span>
-                                  );
-                                })()}
+                                <span className="rounded-full bg-surface px-1.5 py-0.5 text-muted-foreground">
+                                  {t(`fulfillment.${o.fulfillmentType}`)}
+                                </span>
+                                {o.fulfillmentType === "delivery" &&
+                                  (() => {
+                                    const a = assessDelivery(o);
+                                    return (
+                                      <span
+                                        className={`rounded-full px-1.5 py-0.5 ${deliveryChipTone[a.level]}`}
+                                      >
+                                        {t("adminPedidos.distanceKm", { km: a.km })}
+                                      </span>
+                                    );
+                                  })()}
                                 {o.status === "pending" &&
                                   minutesSince(o.createdAt, now) >= PENDING_SLA_MIN && (
                                     <span className="rounded-full bg-destructive/15 px-1.5 py-0.5 font-bold text-destructive">
@@ -595,6 +659,11 @@ function AdminPedidos() {
                                   <span className="flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 font-medium text-primary">
                                     <Bike className="h-3 w-3" />
                                     {firstName(courierForOrder(o.id)!.name)}
+                                  </span>
+                                )}
+                                {o.promoCode && (
+                                  <span className="rounded-full bg-success/15 px-1.5 py-0.5 font-bold text-success">
+                                    {o.promoCode}
                                   </span>
                                 )}
                                 <span className="text-muted-foreground">
@@ -701,6 +770,7 @@ function AdminPedidos() {
 
                           {/* Ações no topo — o passo mais importante sem obrigar a scroll */}
                           {active.status !== "delivered" &&
+                            active.status !== "completed" &&
                             active.status !== "rejected" &&
                             active.status !== "canceled" && (
                               <div className="mt-5 border-t border-border pt-5">
@@ -719,7 +789,7 @@ function AdminPedidos() {
                                   {active.status === "pending" && (
                                     <button
                                       type="button"
-                                      onClick={() => acceptPending(active)}
+                                      onClick={() => openAccept(active)}
                                       className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition-opacity hover:opacity-90 ${
                                         confirmFarId === active.id
                                           ? "bg-brand text-brand-foreground"
@@ -732,17 +802,30 @@ function AdminPedidos() {
                                     </button>
                                   )}
 
-                                  {active.status === "accepted" && (
-                                    <button
-                                      type="button"
-                                      disabled={!courierPick}
-                                      onClick={() => dispatch(active)}
-                                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-                                    >
-                                      <Bike className="h-3.5 w-3.5" />
-                                      {t("adminPedidos.markOnTheWay")}
-                                    </button>
-                                  )}
+                                  {active.status === "accepted" &&
+                                    active.fulfillmentType === "delivery" && (
+                                      <button
+                                        type="button"
+                                        disabled={!courierPick}
+                                        onClick={() => dispatch(active)}
+                                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                                      >
+                                        <Bike className="h-3.5 w-3.5" />
+                                        {t("adminPedidos.markOnTheWay")}
+                                      </button>
+                                    )}
+
+                                  {active.status === "accepted" &&
+                                    active.fulfillmentType !== "delivery" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => markReady(active)}
+                                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                                      >
+                                        <Package className="h-3.5 w-3.5" />
+                                        {t("adminPedidos.markReady")}
+                                      </button>
+                                    )}
 
                                   {active.status === "onTheWay" && (
                                     <button
@@ -751,6 +834,16 @@ function AdminPedidos() {
                                       className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
                                     >
                                       {t("adminPedidos.markDelivered")}
+                                    </button>
+                                  )}
+
+                                  {active.status === "ready" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => markCompleted(active)}
+                                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                                    >
+                                      {t("adminPedidos.markCompleted")}
                                     </button>
                                   )}
                                 </div>
@@ -763,6 +856,7 @@ function AdminPedidos() {
                                   </p>
                                 )}
                                 {active.status === "accepted" &&
+                                  active.fulfillmentType === "delivery" &&
                                   !courierPick &&
                                   available.length > 0 && (
                                     <p className="mt-2 text-xs text-muted-foreground">
@@ -772,144 +866,163 @@ function AdminPedidos() {
                               </div>
                             )}
 
-                          {/* Estafeta — atribuição obrigatória para despachar */}
-                          {(active.status === "accepted" || active.status === "onTheWay") && (
-                            <div className="mt-4 border-t border-border pt-4">
-                              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                {t("adminPedidos.courierTitle")}
-                              </p>
-                              {(() => {
-                                const assigned = courierForOrder(active.id);
-                                if (assigned) {
-                                  return (
-                                    <div className="mt-2 flex items-center gap-3 rounded-lg bg-surface p-3">
-                                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-                                        <UserRound className="h-4 w-4" />
-                                      </span>
-                                      <div className="min-w-0">
-                                        <p className="truncate text-sm font-semibold text-foreground">
-                                          {assigned.name}
-                                        </p>
-                                        <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-                                          <Bike className="h-3 w-3" />
-                                          {vehicleLabels[assigned.vehicle]}
-                                          <span aria-hidden>·</span>
-                                          <Phone className="h-3 w-3" />
-                                          {assigned.phone}
-                                        </p>
+                          {/* Estafeta — atribuição obrigatória para despachar (só delivery) */}
+                          {active.fulfillmentType === "delivery" &&
+                            (active.status === "accepted" || active.status === "onTheWay") && (
+                              <div className="mt-4 border-t border-border pt-4">
+                                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                  {t("adminPedidos.courierTitle")}
+                                </p>
+                                {(() => {
+                                  const assigned = courierForOrder(active.id);
+                                  if (assigned) {
+                                    return (
+                                      <div className="mt-2 flex items-center gap-3 rounded-lg bg-surface p-3">
+                                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
+                                          <UserRound className="h-4 w-4" />
+                                        </span>
+                                        <div className="min-w-0">
+                                          <p className="truncate text-sm font-semibold text-foreground">
+                                            {assigned.name}
+                                          </p>
+                                          <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                                            <Bike className="h-3 w-3" />
+                                            {vehicleLabels[assigned.vehicle]}
+                                            <span aria-hidden>·</span>
+                                            <Phone className="h-3 w-3" />
+                                            {assigned.phone}
+                                          </p>
+                                        </div>
                                       </div>
-                                    </div>
-                                  );
-                                }
-                                if (active.status === "onTheWay") {
+                                    );
+                                  }
+                                  if (active.status === "onTheWay") {
+                                    return (
+                                      <p className="mt-2 text-xs text-muted-foreground">
+                                        {t("adminPedidos.courierUnknown")}
+                                      </p>
+                                    );
+                                  }
+                                  if (available.length === 0) {
+                                    return (
+                                      <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-destructive">
+                                        <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+                                        {t("adminPedidos.noCouriers")}
+                                      </p>
+                                    );
+                                  }
                                   return (
-                                    <p className="mt-2 text-xs text-muted-foreground">
-                                      {t("adminPedidos.courierUnknown")}
-                                    </p>
+                                    <select
+                                      value={courierPick}
+                                      onChange={(e) => setCourierPick(e.target.value)}
+                                      className={`${ADMIN_FILTER_SELECT} mt-2 w-full`}
+                                    >
+                                      <option value="">{t("adminPedidos.courierPick")}</option>
+                                      {available.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                          {c.name} — {vehicleLabels[c.vehicle]}
+                                        </option>
+                                      ))}
+                                    </select>
                                   );
-                                }
-                                if (available.length === 0) {
-                                  return (
-                                    <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-destructive">
-                                      <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-                                      {t("adminPedidos.noCouriers")}
-                                    </p>
-                                  );
-                                }
-                                return (
-                                  <select
-                                    value={courierPick}
-                                    onChange={(e) => setCourierPick(e.target.value)}
-                                    className={`${ADMIN_FILTER_SELECT} mt-2 w-full`}
-                                  >
-                                    <option value="">{t("adminPedidos.courierPick")}</option>
-                                    {available.map((c) => (
-                                      <option key={c.id} value={c.id}>
-                                        {c.name} — {vehicleLabels[c.vehicle]}
-                                      </option>
-                                    ))}
-                                  </select>
-                                );
-                              })()}
-                            </div>
-                          )}
+                                })()}
+                              </div>
+                            )}
 
                           <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
-                            <AdminField label={t("adminPedidos.detailDelivery")}>
-                              <span className="block">{active.deliveryAddress.label}</span>
-                              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                                {active.deliveryAddress.line1}
-                                {active.deliveryAddress.line2
-                                  ? ` · ${active.deliveryAddress.line2}`
-                                  : ""}
-                              </span>
+                            <AdminField label={t("adminPedidos.detailFulfillment")}>
+                              {t(`fulfillment.${active.fulfillmentType}`)}
+                              {active.fulfillmentType === "dinein" && active.partySize
+                                ? ` · ${active.partySize}`
+                                : ""}
                             </AdminField>
+                            {active.deliveryAddress ? (
+                              <AdminField label={t("adminPedidos.detailDelivery")}>
+                                <span className="block">{active.deliveryAddress.label}</span>
+                                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                                  {active.deliveryAddress.line1}
+                                  {active.deliveryAddress.line2
+                                    ? ` · ${active.deliveryAddress.line2}`
+                                    : ""}
+                                </span>
+                              </AdminField>
+                            ) : null}
                             <AdminField label={t("adminPedidos.detailPayment")}>
-                              {active.paymentMethod || t("adminPedidos.noPayment")}
+                              {getPaymentMethod(active.paymentMethod)?.label ??
+                                active.paymentMethod ??
+                                t("adminPedidos.noPayment")}
                             </AdminField>
+                            {active.cautionRequired ? (
+                              <AdminField label={t("adminPedidos.detailCaution")}>
+                                {formatKz(active.cautionRequired)}
+                              </AdminField>
+                            ) : null}
                           </dl>
 
-                          {/* Avaliação da entrega — distância vs. raio habitual */}
-                          {(() => {
-                            const a = assessDelivery(active);
-                            const box =
-                              a.level === "outOfRange"
-                                ? "border-destructive/40 bg-destructive/5"
-                                : a.level === "far"
-                                  ? "border-brand/40 bg-brand/5"
-                                  : "border-border bg-surface";
-                            const badge =
-                              a.level === "outOfRange"
-                                ? "bg-destructive/15 text-destructive"
-                                : a.level === "far"
-                                  ? "bg-brand/15 text-brand"
-                                  : "bg-success/15 text-success";
-                            const label =
-                              a.level === "outOfRange"
-                                ? t("adminPedidos.levelOutOfRange")
-                                : a.level === "far"
-                                  ? t("adminPedidos.levelFar")
-                                  : t("adminPedidos.levelOk");
-                            const wait =
-                              active.status === "pending" ? minutesSince(active.createdAt, now) : 0;
-                            return (
-                              <div className={`mt-4 rounded-xl border p-3 ${box}`}>
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                    {t("adminPedidos.deliveryEval")}
-                                  </p>
-                                  <span
-                                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${badge}`}
-                                  >
-                                    {label}
-                                  </span>
-                                </div>
-                                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-foreground">
-                                  <span className="flex items-center gap-1.5">
-                                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                                    {t("adminPedidos.distanceKm", { km: a.km })}
-                                  </span>
-                                  <span className="flex items-center gap-1.5">
-                                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                    {t("adminPedidos.etaMinutes", { min: a.etaMin })}
-                                  </span>
-                                  {wait >= PENDING_SLA_MIN && (
-                                    <span className="flex items-center gap-1.5 font-semibold text-destructive">
-                                      <TriangleAlert className="h-3.5 w-3.5" />
-                                      {t("adminPedidos.waitingMin", { min: wait })}
+                          {/* Avaliação da entrega — distância vs. raio habitual (só delivery) */}
+                          {active.fulfillmentType === "delivery" &&
+                            (() => {
+                              const a = assessDelivery(active);
+                              const box =
+                                a.level === "outOfRange"
+                                  ? "border-destructive/40 bg-destructive/5"
+                                  : a.level === "far"
+                                    ? "border-brand/40 bg-brand/5"
+                                    : "border-border bg-surface";
+                              const badge =
+                                a.level === "outOfRange"
+                                  ? "bg-destructive/15 text-destructive"
+                                  : a.level === "far"
+                                    ? "bg-brand/15 text-brand"
+                                    : "bg-success/15 text-success";
+                              const label =
+                                a.level === "outOfRange"
+                                  ? t("adminPedidos.levelOutOfRange")
+                                  : a.level === "far"
+                                    ? t("adminPedidos.levelFar")
+                                    : t("adminPedidos.levelOk");
+                              const wait =
+                                active.status === "pending"
+                                  ? minutesSince(active.createdAt, now)
+                                  : 0;
+                              return (
+                                <div className={`mt-4 rounded-xl border p-3 ${box}`}>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                      {t("adminPedidos.deliveryEval")}
+                                    </p>
+                                    <span
+                                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${badge}`}
+                                    >
+                                      {label}
                                     </span>
+                                  </div>
+                                  <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-foreground">
+                                    <span className="flex items-center gap-1.5">
+                                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                                      {t("adminPedidos.distanceKm", { km: a.km })}
+                                    </span>
+                                    <span className="flex items-center gap-1.5">
+                                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                      {t("adminPedidos.etaMinutes", { min: a.etaMin })}
+                                    </span>
+                                    {wait >= PENDING_SLA_MIN && (
+                                      <span className="flex items-center gap-1.5 font-semibold text-destructive">
+                                        <TriangleAlert className="h-3.5 w-3.5" />
+                                        {t("adminPedidos.waitingMin", { min: wait })}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {a.level !== "ok" && (
+                                    <p className="mt-2 text-xs text-muted-foreground">
+                                      {a.level === "outOfRange"
+                                        ? t("adminPedidos.outOfRangeNote", { radius: a.radiusKm })
+                                        : t("adminPedidos.farNote", { radius: a.radiusKm })}
+                                    </p>
                                   )}
                                 </div>
-                                {a.level !== "ok" && (
-                                  <p className="mt-2 text-xs text-muted-foreground">
-                                    {a.level === "outOfRange"
-                                      ? t("adminPedidos.outOfRangeNote", { radius: a.radiusKm })
-                                      : t("adminPedidos.farNote", { radius: a.radiusKm })}
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })()}
+                              );
+                            })()}
 
                           {active.note && (
                             <div className="mt-4 border-t border-border pt-4">
@@ -963,9 +1076,27 @@ function AdminPedidos() {
                                 <span>{t("adminPedidos.subtotal")}</span>
                                 <span>{formatKz(orderSubtotal(active))}</span>
                               </div>
+                              {active.promoCode && (
+                                <div className="flex justify-between text-success">
+                                  <span>
+                                    {t("adminPedidos.promoLine", { code: active.promoCode })}
+                                  </span>
+                                  <span>
+                                    {orderDiscount(active) > 0
+                                      ? `− ${formatKz(orderDiscount(active))}`
+                                      : t("adminPedidos.promoFreeDelivery")}
+                                  </span>
+                                </div>
+                              )}
                               <div className="flex justify-between text-muted-foreground">
                                 <span>{t("adminPedidos.deliveryFee")}</span>
-                                <span>{formatKz(orderTotal(active) - orderSubtotal(active))}</span>
+                                <span>
+                                  {formatKz(
+                                    orderTotal(active) -
+                                      orderSubtotal(active) +
+                                      orderDiscount(active),
+                                  )}
+                                </span>
                               </div>
                               <div className="flex justify-between font-bold text-foreground">
                                 <span>{t("adminPedidos.total")}</span>
@@ -1045,6 +1176,73 @@ function AdminPedidos() {
           </div>
         )}
       </div>
+
+      {/* Aceitar pedido — escolher o método de pagamento exigido */}
+      <Dialog open={!!acceptFor} onOpenChange={(o) => !o && setAcceptFor(null)}>
+        <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-[1.5rem] border-none bg-card p-6">
+          <DialogTitle className="font-display text-lg font-bold">
+            {t("adminPedidos.acceptDialogTitle")}
+          </DialogTitle>
+          <DialogDescription>{t("adminPedidos.acceptDialogDesc")}</DialogDescription>
+
+          <p className="mt-4 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            {t("adminPedidos.requiredPaymentLabel")}
+          </p>
+          <div className="mt-2 space-y-2">
+            {getRestaurantPaymentMethodIds(restaurant).map((id) => {
+              const m = getPaymentMethod(id);
+              if (!m) return null;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setPayChoice(id)}
+                  className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border p-3 text-left ${
+                    payChoice === id ? "border-brand bg-brand/5" : "border-border"
+                  }`}
+                >
+                  <span className="grid h-8 w-14 shrink-0 place-items-center rounded-lg bg-surface text-[10px] font-bold text-primary">
+                    {m.brand}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold">{m.label}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{m.detail}</span>
+                  </span>
+                  <span
+                    className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
+                      payChoice === id ? "border-brand bg-brand" : "border-border"
+                    }`}
+                  >
+                    {payChoice === id && (
+                      <span className="h-2 w-2 rounded-full bg-brand-foreground" />
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {acceptFor && orderModeRequiresCaution(restaurant, acceptFor.fulfillmentType) && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-brand/40 bg-brand/5 p-3 text-xs">
+              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+              <p className="text-muted-foreground">
+                {t("adminPedidos.cautionAutoNotice", {
+                  amount: formatKz(restaurant.cautionAmount),
+                })}
+              </p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            disabled={!payChoice}
+            onClick={confirmAccept}
+            className="mt-5 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {t("adminPedidos.confirmAccept")}
+          </button>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={couriersOpen} onOpenChange={setCouriersOpen}>
         <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-[1.5rem] border-none bg-card p-6">

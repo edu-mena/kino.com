@@ -1,9 +1,11 @@
+import { Link } from "@tanstack/react-router";
 import { X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getStoriesForRestaurant } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
 import { useStories } from "@/lib/stories";
+import { parseTimeFragment } from "@/lib/video-trim";
 
 const STORY_DURATION = 5000;
 
@@ -40,6 +42,7 @@ export function StoryViewer({
   );
   const story = stories[storyIdx];
   const isVideo = story?.mediaType === "video";
+  const storyFrag = story ? parseTimeFragment(story.image) : null;
 
   useEffect(() => {
     if (story) markStoryViewed(story.id);
@@ -184,7 +187,14 @@ export function StoryViewer({
             </div>
 
             <div className="absolute inset-x-0 top-6 z-20 flex items-center justify-between px-3">
-              <div className="flex items-center gap-2">
+              <Link
+                to="/restaurantes/$id"
+                params={{ id: restaurant.id }}
+                onClick={onClose}
+                onPointerDown={(e) => e.stopPropagation()}
+                onPointerUp={(e) => e.stopPropagation()}
+                className="flex items-center gap-2 rounded-full py-1 pr-2 transition-colors hover:bg-white/10"
+              >
                 <img
                   src={restaurant.coverImage}
                   alt=""
@@ -193,7 +203,7 @@ export function StoryViewer({
                 <span className="text-sm font-semibold text-white drop-shadow">
                   {restaurant.name}
                 </span>
-              </div>
+              </Link>
               <button
                 type="button"
                 onClick={onClose}
@@ -210,12 +220,21 @@ export function StoryViewer({
                   ref={videoRef}
                   key={story.id}
                   src={story.image}
-                  className="max-h-full w-full object-contain lg:h-full"
+                  className="max-h-full w-full object-contain lg:h-full lg:w-auto lg:max-w-[15rem]"
                   autoPlay
                   muted
                   playsInline
+                  onLoadedMetadata={(e) => {
+                    if (storyFrag) e.currentTarget.currentTime = storyFrag.start;
+                  }}
                   onTimeUpdate={(e) => {
                     const v = e.currentTarget;
+                    if (storyFrag) {
+                      const span = storyFrag.end - storyFrag.start;
+                      setVideoProgress(span > 0 ? (v.currentTime - storyFrag.start) / span : 0);
+                      if (v.currentTime >= storyFrag.end) goNext();
+                      return;
+                    }
                     if (v.duration) setVideoProgress(v.currentTime / v.duration);
                   }}
                   onEnded={goNext}
@@ -224,7 +243,7 @@ export function StoryViewer({
                 <img
                   src={story.image}
                   alt=""
-                  className="max-h-full w-full object-contain lg:h-full"
+                  className="max-h-full w-full object-contain lg:h-full lg:w-auto lg:max-w-[15rem]"
                 />
               )}
             </div>

@@ -1,8 +1,19 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bike, CalendarCheck, Heart, MapPin, Search, SlidersHorizontal, Star } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  Bike,
+  CalendarCheck,
+  Heart,
+  LayoutGrid,
+  Map as MapIcon,
+  MapPin,
+  Search,
+  SlidersHorizontal,
+  Star,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import icon from "@/assets/icon.png";
 import { LazyImage } from "@/components/lazy-image";
+import { LocationMap } from "@/components/location-map";
 import { ListPagination } from "@/components/list-pagination";
 import { ReservationDialog } from "@/components/reservation-dialog";
 import { LocationFilterSelect, matchesLocation } from "@/components/search-filters";
@@ -19,6 +30,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Restaurant } from "@/data/types";
 import { getAllRestaurants } from "@/data/helpers";
 import { INITIAL_RESTAURANTS } from "@/data/mockData";
+import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
 import { computeRestaurantStatus } from "@/lib/restaurant-status";
@@ -54,9 +66,11 @@ const sortOptions = [
 ] as const;
 
 const PAGE_SIZE = 9;
+const VIEW_KEY = "kino_restaurantes_view";
 
 function Restaurantes() {
   const { t, locale } = useTranslation();
+  const navigate = useNavigate();
   const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
   const { byRestaurant: subByRestaurant } = useSubscriptions();
   const [query, setQuery] = useState("");
@@ -68,6 +82,24 @@ function Restaurantes() {
   const [sort, setSort] = useState<(typeof sortOptions)[number]["value"]>("proximidade");
   const [page, setPage] = useState(1);
   const [reservingRestaurant, setReservingRestaurant] = useState<Restaurant | null>(null);
+  const [view, setView] = useState<"grid" | "map">("grid");
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(VIEW_KEY) === "map") setView("map");
+    } catch {
+      /* localStorage indisponível — fica em grelha */
+    }
+  }, []);
+
+  const changeView = (next: "grid" | "map") => {
+    setView(next);
+    try {
+      localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const filtered = useMemo(() => {
     const list = getAllRestaurants().filter((r) => {
@@ -125,25 +157,77 @@ function Restaurantes() {
           </button>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-4">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             {filtered.length} {t("restaurantes.resultsSuffix")}
           </p>
-          <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
-            <SelectTrigger className="w-48 rounded-xl" aria-label={t("common.sortLabel")}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {sortOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {t(opt.labelKey)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-xl border border-border bg-card p-0.5">
+              <button
+                type="button"
+                onClick={() => changeView("grid")}
+                aria-pressed={view === "grid"}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  view === "grid"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                {t("restaurantes.viewGrid")}
+              </button>
+              <button
+                type="button"
+                onClick={() => changeView("map")}
+                aria-pressed={view === "map"}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  view === "map"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <MapIcon className="h-3.5 w-3.5" />
+                {t("restaurantes.viewMap")}
+              </button>
+            </div>
+            <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
+              <SelectTrigger className="w-44 rounded-xl" aria-label={t("common.sortLabel")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {t(opt.labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {view === "map" &&
+          (() => {
+            // Filtrado a uma província: abre centrado nela (zoom de cidade).
+            // Caso contrário, ajusta a vista a todos os pontos.
+            const province = PROVINCE_CENTERS[neighborhood];
+            return (
+              <LocationMap
+                className="mt-4"
+                height={520}
+                points={filtered
+                  .filter((r) => r.lat != null && r.lng != null)
+                  .map((r) => ({ id: r.id, lat: r.lat!, lng: r.lng!, label: r.name }))}
+                {...(province
+                  ? { initialView: { lat: province.lat, lng: province.lng, zoom: 10 } }
+                  : {})}
+                onSelectPoint={(id) => navigate({ to: "/restaurantes/$id", params: { id } })}
+              />
+            );
+          })()}
+
+        <div
+          className={`mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${view === "map" ? "hidden" : ""}`}
+        >
           {pageItems.map((r) => {
             const liked = isFavoriteRestaurant(r.id);
             const rStatus = computeRestaurantStatus(r, subByRestaurant(r.id)?.status, locale);
@@ -231,7 +315,9 @@ function Restaurantes() {
           </p>
         )}
 
-        <ListPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        {view === "grid" && (
+          <ListPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        )}
       </div>
 
       <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>

@@ -23,9 +23,11 @@ function hashStr(s: string): number {
   return h >>> 0;
 }
 
-/** Distância estável (km, 1 casa decimal) entre restaurante e morada do pedido. */
+/** Distância estável (km, 1 casa decimal) entre restaurante e morada do
+ * pedido. Só faz sentido em `fulfillmentType === "delivery"`; sem morada
+ * cai no id do pedido, mantendo o valor determinístico. */
 export function orderDistanceKm(order: CartOrder): number {
-  const h = hashStr(`${order.deliveryAddress.id}:${order.id}`);
+  const h = hashStr(`${order.deliveryAddress?.id ?? order.id}:${order.id}`);
   return Math.round((1.5 + (h % 1650) / 100) * 10) / 10;
 }
 
