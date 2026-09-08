@@ -5401,18 +5401,22 @@ export const INITIAL_OFFERS: Offer[] = [
     title: "20% OFF no seu primeiro pedido",
     description: "Válido para novos clientes em qualquer restaurante parceiro.",
     code: "KINO20",
+    percentOff: 20,
   },
   {
     id: "offer-2",
     type: "delivery",
     title: "Entrega Grátis",
     description: "Em pedidos acima de 15.000 Kz, em qualquer restaurante.",
+    code: "KINOFRETE",
   },
   {
     id: "offer-3",
     type: "happy-hour",
     title: "Happy Hour",
     description: "15% OFF em todas as bebidas, das 14h às 17h.",
+    code: "HAPPY15",
+    percentOff: 15,
   },
 ];
 

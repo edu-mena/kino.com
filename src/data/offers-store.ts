@@ -79,3 +79,36 @@ export function deleteOffer(id: string) {
   const state = readState();
   writeState({ ...state, deletedIds: [...state.deletedIds, id] });
 }
+
+/** Efeito resolvido de um código promocional aplicado a um pedido. */
+export type PromoEffect = {
+  code: string;
+  offerId: string;
+  /** Título da promoção — mostrado na confirmação e no recibo. */
+  label: string;
+  /** 0–100. Percentagem descontada do subtotal de produtos. */
+  percentOff: number;
+  /** Isenta a taxa de entrega. */
+  freeDelivery: boolean;
+};
+
+/**
+ * Resolve um código para o efeito a aplicar num pedido deste restaurante — a
+ * própria promoção do restaurante ou uma promoção global da Kino (sem
+ * `restaurantId`). `null` = código inexistente ou sem nada a descontar.
+ * Case-insensitive.
+ */
+export function resolvePromoCode(restaurantId: string, rawCode: string): PromoEffect | null {
+  const code = rawCode.trim().toUpperCase();
+  if (!code) return null;
+  const offer = getEffectiveOffers().find(
+    (o) =>
+      o.code?.trim().toUpperCase() === code && (!o.restaurantId || o.restaurantId === restaurantId),
+  );
+  if (!offer) return null;
+  const freeDelivery = offer.type === "delivery";
+  const percentOff =
+    offer.type === "delivery" ? 0 : Math.max(0, Math.min(100, Math.round(offer.percentOff ?? 0)));
+  if (!freeDelivery && percentOff === 0) return null;
+  return { code, offerId: offer.id, label: offer.title, percentOff, freeDelivery };
+}

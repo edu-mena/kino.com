@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getRestaurant } from "@/data/helpers";
 import { useTranslation } from "@/i18n";
+import { useAuth } from "@/lib/auth";
+import { viewerKey } from "@/lib/customer";
 import { useNotifications } from "@/lib/notifications";
 
 /**
@@ -25,16 +27,20 @@ export function NotificationsBell({
   restaurantId?: string;
 }) {
   const { all, markAllRead } = useNotifications();
+  const { user } = useAuth();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const list = useMemo(() => {
+    const mineKey = viewerKey(user);
     const rows =
       scope === "restaurant" && restaurantId
         ? all.filter((n) => n.restaurantId === restaurantId)
-        : all;
+        : // Cliente: só as notificações dos seus pedidos/reservas (conta ou
+          // convidado) — as da seed não têm `ownerKey`.
+          all.filter((n) => n.ownerKey === mineKey);
     return rows.slice(0, 12);
-  }, [all, scope, restaurantId]);
+  }, [all, scope, restaurantId, user]);
 
   const unread = list.filter((n) => !n.read).length;
 

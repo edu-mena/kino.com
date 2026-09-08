@@ -8,21 +8,35 @@ import {
   MessageSquare,
   Package,
   Phone,
+  ShieldAlert,
+  ShoppingBag,
   Star,
   Trash2,
+  Users,
+  Utensils,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
 import { isRefReviewed } from "@/data/reviews-store";
+import type { FulfillmentType } from "@/data/types";
+import { useAuth } from "@/lib/auth";
 import { lineCustomizations, lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
+import { readCourierForOrder } from "@/lib/couriers";
+import { viewerKey } from "@/lib/customer";
 import { formatKz } from "@/lib/format";
-import { paymentMethods } from "@/lib/mock-data";
+import { getPaymentMethod } from "@/lib/mock-data";
 import { useTranslation } from "@/i18n";
+
+const MODE_ICON: Record<FulfillmentType, typeof Bike> = {
+  delivery: Bike,
+  takeaway: ShoppingBag,
+  dinein: Utensils,
+};
 
 export const Route = createFileRoute("/entrega")({
   head: () => ({
@@ -40,10 +54,15 @@ export const Route = createFileRoute("/entrega")({
   component: Entrega,
 });
 
-/** "19:45" — hora estimada de chegada, calculada a partir de quando o pedido foi criado. */
-function arrivalTime(order: CartOrder) {
-  const arrival = new Date(new Date(order.createdAt).getTime() + order.estimatedMinutes * 60_000);
-  return arrival.toLocaleTimeString("pt-AO", { hour: "2-digit", minute: "2-digit" });
+const hhmm = (d: Date) => d.toLocaleTimeString("pt-AO", { hour: "2-digit", minute: "2-digit" });
+
+/** Hora prevista mostrada ao cliente: para takeaway agendado é a hora de
+ * levantamento escolhida; nos restantes, criação + estimativa. */
+function etaTime(order: CartOrder) {
+  if (order.fulfillmentType === "takeaway" && !order.pickupAsap && order.pickupAt) {
+    return hhmm(new Date(order.pickupAt));
+  }
+  return hhmm(new Date(new Date(order.createdAt).getTime() + order.estimatedMinutes * 60_000));
 }
 
 /** O estado fica guardado como código, nunca já traduzido — assim trocar
@@ -53,7 +72,9 @@ function statusLabel(status: CartOrder["status"], t: ReturnType<typeof useTransl
     pending: "statusPending",
     accepted: "statusAccepted",
     onTheWay: "statusOnTheWay",
+    ready: "statusReady",
     delivered: "statusDelivered",
+    completed: "statusCompleted",
     rejected: "statusRejected",
     canceled: "statusCanceled",
   }[status];
@@ -61,7 +82,15 @@ function statusLabel(status: CartOrder["status"], t: ReturnType<typeof useTransl
 }
 
 function Entrega() {
-  const { orders } = useCart();
+  const { orders: allOrders } = useCart();
+  const { user } = useAuth();
+  // Só os pedidos de quem está a ver (conta ou convidado) — os da seed, sem
+  // `ownerKey`, servem os painéis do restaurante, não esta página.
+  const mineKey = viewerKey(user);
+  const orders = useMemo(
+    () => allOrders.filter((o) => o.ownerKey === mineKey),
+    [allOrders, mineKey],
+  );
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const active = activeIndex !== null ? (orders[activeIndex] ?? null) : null;
   const { t } = useTranslation();
@@ -94,6 +123,7 @@ function Entrega() {
                 {orders.map((order, index) => {
                   const restaurant = getRestaurant(order.restaurantId);
                   const itemCount = order.lines.reduce((sum, l) => sum + l.qty, 0);
+                  const ModeIcon = MODE_ICON[order.fulfillmentType];
                   return (
                     <button
                       key={order.id}
@@ -104,14 +134,14 @@ function Entrega() {
                       }`}
                     >
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-                        <Bike className="h-4 w-4" />
+                        <ModeIcon className="h-4 w-4" />
                       </span>
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-bold">
                           {restaurant?.name ?? "Restaurante"}
                         </span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {itemCount}{" "}
+                          {t(`fulfillment.${order.fulfillmentType}`)} · {itemCount}{" "}
                           {itemCount === 1 ? t("entrega.itemSingular") : t("entrega.itemPlural")} ·{" "}
                           {statusLabel(order.status, t)}
                         </span>
@@ -144,13 +174,16 @@ function Entrega() {
 }
 
 function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }) {
-  const { cancelOrder, orderTotal } = useCart();
+  const { cancelOrder, orderTotal, orderDiscount } = useCart();
   const restaurant = getRestaurant(order.restaurantId);
   const { t } = useTranslation();
   const canCancel = order.status === "pending";
   const [reviewOpen, setReviewOpen] = useState(false);
   const reviewRef = `order:${order.id}`;
-  const canReview = order.status === "delivered" && !isRefReviewed(reviewRef);
+  const canReview =
+    (order.status === "delivered" || order.status === "completed") && !isRefReviewed(reviewRef);
+  const ModeIcon = MODE_ICON[order.fulfillmentType];
+  const requiredPayment = getPaymentMethod(order.paymentMethod);
 
   return (
     <>
@@ -184,12 +217,14 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
 
       <dl className="mt-5 space-y-4 text-sm">
         <div className="flex items-start gap-3">
-          <Bike className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <ModeIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <div className="min-w-0">
             <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               {t("entrega.deliveryStatus")}
             </dt>
-            <dd className="mt-0.5">{statusLabel(order.status, t)}</dd>
+            <dd className="mt-0.5">
+              {t(`fulfillment.${order.fulfillmentType}`)} · {statusLabel(order.status, t)}
+            </dd>
           </div>
         </div>
 
@@ -197,23 +232,84 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <div className="min-w-0">
             <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {t("entrega.eta")}
+              {order.fulfillmentType === "takeaway" ? t("entrega.pickupTime") : t("entrega.eta")}
             </dt>
-            <dd className="mt-0.5">~{arrivalTime(order)}</dd>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-3">
-          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <div className="min-w-0">
-            <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {t("entrega.deliverTo")}
-            </dt>
-            <dd className="mt-0.5 truncate">
-              {order.deliveryAddress.label} — {order.deliveryAddress.line1}
+            <dd className="mt-0.5">
+              {order.fulfillmentType === "takeaway" && order.pickupAsap
+                ? t("entrega.pickupAsap")
+                : `~${etaTime(order)}`}
             </dd>
           </div>
         </div>
+
+        {order.deliveryAddress && (
+          <div className="flex items-start gap-3">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                {t("entrega.deliverTo")}
+              </dt>
+              <dd className="mt-0.5 truncate">
+                {order.deliveryAddress.label} — {order.deliveryAddress.line1}
+              </dd>
+            </div>
+          </div>
+        )}
+
+        {order.fulfillmentType === "takeaway" && restaurant && (
+          <div className="flex items-start gap-3">
+            <ShoppingBag className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                {t("entrega.modeLabel")}
+              </dt>
+              <dd className="mt-0.5">{t("entrega.pickupHere", { name: restaurant.name })}</dd>
+            </div>
+          </div>
+        )}
+
+        {order.fulfillmentType === "dinein" && (
+          <div className="flex items-start gap-3">
+            <Users className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                {t("entrega.dineInHere")}
+              </dt>
+              <dd className="mt-0.5">
+                {order.partySize ? t("entrega.partySize", { count: order.partySize }) : "—"}
+              </dd>
+            </div>
+          </div>
+        )}
+
+        {order.fulfillmentType === "delivery" &&
+          order.status === "onTheWay" &&
+          (() => {
+            const courier = readCourierForOrder(order.id);
+            if (!courier) return null;
+            return (
+              <div className="flex items-start gap-3">
+                <Bike className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {t("entrega.courierTitle")}
+                  </dt>
+                  <dd className="mt-0.5">
+                    {courier.name} · {t(`entrega.veh.${courier.vehicle}`)}
+                  </dd>
+                  <dd className="mt-0.5">
+                    <a
+                      href={`tel:${courier.phone.replace(/\s/g, "")}`}
+                      className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                    >
+                      <Phone className="h-3.5 w-3.5" />
+                      {courier.phone}
+                    </a>
+                  </dd>
+                </div>
+              </div>
+            );
+          })()}
 
         {restaurant && (
           <div className="flex items-start gap-3">
@@ -227,20 +323,42 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           </div>
         )}
 
-        {order.paymentMethod && (
+        <div className="flex items-start gap-3">
+          <Wallet className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              {t("entrega.paymentRequired")}
+            </dt>
+            {order.paymentMethod ? (
+              <>
+                <dd className="mt-0.5 font-semibold text-foreground">
+                  {requiredPayment?.label ?? order.paymentMethod}
+                </dd>
+                {requiredPayment?.digital && (
+                  <dd className="mt-0.5 text-xs text-muted-foreground">
+                    {t("entrega.digitalPaymentHint")}
+                  </dd>
+                )}
+              </>
+            ) : (
+              <dd className="mt-0.5 text-muted-foreground">{t("entrega.paymentPending")}</dd>
+            )}
+          </div>
+        </div>
+
+        {order.cautionRequired ? (
           <div className="flex items-start gap-3">
-            <Wallet className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
             <div className="min-w-0">
               <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("entrega.paymentPreference")}
+                {t("entrega.cautionRequired")}
               </dt>
-              <dd className="mt-0.5">
-                {paymentMethods.find((m) => m.id === order.paymentMethod)?.label ??
-                  order.paymentMethod}
+              <dd className="mt-0.5 font-semibold text-foreground">
+                {formatKz(order.cautionRequired)}
               </dd>
             </div>
           </div>
-        )}
+        ) : null}
 
         {order.note && (
           <div className="flex items-start gap-3">
@@ -289,19 +407,34 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         </ul>
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-border pt-4 text-base">
+      {order.promoCode && (
+        <div className="mt-4 space-y-1 border-t border-border pt-4 text-sm">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span>{t("entrega.subtotal")}</span>
+            <span>{formatKz(order.lines.reduce((s, l) => s + lineUnitPrice(l) * l.qty, 0))}</span>
+          </div>
+          <div className="flex items-center justify-between text-success">
+            <span>
+              {t("entrega.promoLine", { code: order.promoCode })}
+              {order.promoLabel ? ` · ${order.promoLabel}` : ""}
+            </span>
+            <span>
+              {orderDiscount(order) > 0
+                ? `− ${formatKz(orderDiscount(order))}`
+                : t("entrega.promoFreeDelivery")}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`mt-4 flex items-center justify-between border-t border-border pt-4 text-base ${
+          order.promoCode ? "border-t-0 pt-1" : ""
+        }`}
+      >
         <span className="font-bold">{t("entrega.amount")}</span>
         <span className="font-extrabold text-primary">{formatKz(orderTotal(order))}</span>
       </div>
-
-      {!order.paymentMethod && (
-        <Link
-          to="/checkout"
-          className="mt-4 block rounded-xl bg-brand px-5 py-3 text-center text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90"
-        >
-          {t("entrega.finalizeOrder")}
-        </Link>
-      )}
 
       {canReview && (
         <button
@@ -335,6 +468,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           {t("entrega.cancelOrder")}
         </button>
       ) : order.status !== "delivered" &&
+        order.status !== "completed" &&
         order.status !== "rejected" &&
         order.status !== "canceled" ? (
         <p className="mt-5 rounded-xl border border-dashed border-border py-2.5 text-center text-xs text-muted-foreground">

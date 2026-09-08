@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarCheck, Star, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { EmptyState } from "@/components/empty-state";
 import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { isRefReviewed } from "@/data/reviews-store";
+import { useAuth } from "@/lib/auth";
+import { viewerKey } from "@/lib/customer";
 import { useReservations } from "@/lib/reservations";
 import { useTranslation } from "@/i18n";
 
@@ -27,10 +29,19 @@ const STATUS_KEY: Record<string, string> = {
   Confirmada: "statusConfirmed",
   Recusada: "statusRejected",
   Cancelada: "statusCanceled",
+  Anulada: "statusAnnulled",
 };
 
 function Reservas() {
-  const { reservations, updateReservationStatus } = useReservations();
+  const { reservations: allReservations, updateReservationStatus } = useReservations();
+  const { user } = useAuth();
+  // Só as reservas de quem está a ver — as da seed (sem `ownerKey`) ficam
+  // para o painel do restaurante.
+  const mineKey = viewerKey(user);
+  const reservations = useMemo(
+    () => allReservations.filter((r) => r.ownerKey === mineKey),
+    [allReservations, mineKey],
+  );
   const { t } = useTranslation();
   const statusText = (s: string) => (STATUS_KEY[s] ? t(`reservas.${STATUS_KEY[s]}`) : s);
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -116,7 +127,7 @@ function Reservas() {
                       ? "bg-success/15 text-success"
                       : r.status === "Recusada"
                         ? "bg-destructive/15 text-destructive"
-                        : r.status === "Cancelada"
+                        : r.status === "Cancelada" || r.status === "Anulada"
                           ? "bg-muted-foreground/15 text-muted-foreground"
                           : "bg-brand/15 text-brand"
                   }`}

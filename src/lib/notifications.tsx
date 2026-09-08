@@ -30,6 +30,9 @@ export type KinoNotification = {
   event: string;
   /** estado novo, para compor o texto */
   status: string;
+  /** `ownerKey` do pedido/reserva de origem — o sino do cliente só mostra as
+   * do próprio (conta ou convidado). Ausente para registos da seed. */
+  ownerKey?: string;
   at: string;
   read: boolean;
 };
@@ -76,9 +79,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       for (const o of orders) {
         const was = prev.get(o.id);
         if (was === undefined) {
-          fresh.push(makeNote("order", o.id, o.restaurantId, "orderNew", o.status));
+          fresh.push(makeNote("order", o.id, o.restaurantId, "orderNew", o.status, o.ownerKey));
         } else if (was !== o.status) {
-          fresh.push(makeNote("order", o.id, o.restaurantId, "orderStatus", o.status));
+          fresh.push(makeNote("order", o.id, o.restaurantId, "orderStatus", o.status, o.ownerKey));
         }
       }
       if (fresh.length) pushNotes(fresh);
@@ -95,9 +98,20 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       for (const r of reservations) {
         const was = prev.get(r.id);
         if (was === undefined) {
-          fresh.push(makeNote("reservation", r.id, r.restaurantId, "reservationNew", r.status));
+          fresh.push(
+            makeNote("reservation", r.id, r.restaurantId, "reservationNew", r.status, r.ownerKey),
+          );
         } else if (was !== r.status) {
-          fresh.push(makeNote("reservation", r.id, r.restaurantId, "reservationStatus", r.status));
+          fresh.push(
+            makeNote(
+              "reservation",
+              r.id,
+              r.restaurantId,
+              "reservationStatus",
+              r.status,
+              r.ownerKey,
+            ),
+          );
         }
       }
       if (fresh.length) pushNotes(fresh);
@@ -112,6 +126,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     restaurantId: string,
     event: string,
     status: string,
+    ownerKey?: string,
   ): KinoNotification {
     return {
       id: `ntf-${kind}-${refId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -120,6 +135,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       restaurantId,
       event,
       status,
+      ...(ownerKey ? { ownerKey } : {}),
       at: new Date().toISOString(),
       read: false,
     };

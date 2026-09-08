@@ -12,7 +12,9 @@ export const ORDER_STATUSES: CartOrderStatus[] = [
   "pending",
   "accepted",
   "onTheWay",
+  "ready",
   "delivered",
+  "completed",
   "rejected",
   "canceled",
 ];
@@ -21,7 +23,9 @@ const ORDER_TONE: Record<CartOrderStatus, string> = {
   pending: "bg-brand/15 text-brand",
   accepted: "bg-primary/15 text-primary",
   onTheWay: "bg-primary/15 text-primary",
+  ready: "bg-primary/15 text-primary",
   delivered: "bg-success/15 text-success",
+  completed: "bg-success/15 text-success",
   rejected: "bg-destructive/15 text-destructive",
   canceled: "bg-muted-foreground/15 text-muted-foreground",
 };
@@ -29,7 +33,9 @@ const ORDER_BAR: Record<CartOrderStatus, string> = {
   pending: "bg-brand",
   accepted: "bg-primary",
   onTheWay: "bg-primary/70",
+  ready: "bg-primary/70",
   delivered: "bg-success",
+  completed: "bg-success",
   rejected: "bg-destructive",
   canceled: "bg-muted-foreground/50",
 };
@@ -43,12 +49,13 @@ export function orderStatusMeta(status: CartOrderStatus, t: T): StatusMeta {
   };
 }
 
-export type ReservationStatus = "Pendente" | "Confirmada" | "Recusada" | "Cancelada";
+export type ReservationStatus = "Pendente" | "Confirmada" | "Recusada" | "Cancelada" | "Anulada";
 export const RESERVATION_STATUSES: ReservationStatus[] = [
   "Pendente",
   "Confirmada",
   "Recusada",
   "Cancelada",
+  "Anulada",
 ];
 
 const RESV_TONE: Record<string, string> = {
@@ -56,18 +63,21 @@ const RESV_TONE: Record<string, string> = {
   Confirmada: "bg-success/15 text-success",
   Recusada: "bg-destructive/15 text-destructive",
   Cancelada: "bg-muted-foreground/15 text-muted-foreground",
+  Anulada: "bg-muted-foreground/15 text-muted-foreground",
 };
 const RESV_BAR: Record<string, string> = {
   Pendente: "bg-brand",
   Confirmada: "bg-success",
   Recusada: "bg-destructive",
   Cancelada: "bg-muted-foreground/50",
+  Anulada: "bg-muted-foreground/50",
 };
 const RESV_KEY: Record<string, string> = {
   Pendente: "pending",
   Confirmada: "confirmed",
   Recusada: "rejected",
   Cancelada: "canceled",
+  Anulada: "annulled",
 };
 
 export function reservationStatusMeta(status: string, t: T): StatusMeta {

@@ -53,12 +53,13 @@ const timeToMin = (t: string) => {
   return h * 60 + m;
 };
 const statusTier = (s: string) =>
-  s === "Pendente" ? 0 : s === "Confirmada" ? 1 : s === "Recusada" ? 2 : 3;
+  s === "Pendente" ? 0 : s === "Confirmada" ? 1 : s === "Recusada" || s === "Anulada" ? 2 : 3;
 
 const statusTone: Record<string, string> = {
   Confirmada: "bg-success/15 text-success",
   Recusada: "bg-destructive/15 text-destructive",
   Cancelada: "bg-muted-foreground/15 text-muted-foreground",
+  Anulada: "bg-muted-foreground/15 text-muted-foreground",
   Pendente: "bg-brand/15 text-brand",
 };
 
@@ -125,6 +126,7 @@ function AdminReservas() {
     Confirmada: t("adminReservas.statusConfirmed"),
     Recusada: t("adminReservas.statusRejected"),
     Cancelada: t("adminReservas.statusCanceled"),
+    Anulada: t("adminReservas.statusAnnulled"),
   };
 
   const mine = useMemo(
@@ -169,7 +171,12 @@ function AdminReservas() {
       confirmedCount: confirmed.length,
       decidedCount: decided.length,
       deposit: mine
-        .filter((r) => r.status !== "Recusada" && r.cautionStatus?.startsWith("Paga"))
+        .filter(
+          (r) =>
+            r.status !== "Recusada" &&
+            r.status !== "Anulada" &&
+            r.cautionStatus?.startsWith("Paga"),
+        )
         .reduce((s, r) => s + r.cautionAmount, 0),
     };
   }, [mine]);
@@ -221,7 +228,8 @@ function AdminReservas() {
       next7Count: next7.reduce((s, d) => s + d.count, 0),
       next7Covers: next7.reduce((s, d) => s + d.covers, 0),
       depositCount: mine.filter(
-        (r) => r.status !== "Recusada" && r.cautionStatus?.startsWith("Paga"),
+        (r) =>
+          r.status !== "Recusada" && r.status !== "Anulada" && r.cautionStatus?.startsWith("Paga"),
       ).length,
     };
   }, [mine, statusCounts, todayStr, locale]);
@@ -699,13 +707,13 @@ function AdminReservas() {
                               {active.status === "Confirmada" && (
                                 <button
                                   type="button"
-                                  onClick={() => respond(active.id, "Recusada", "canceledToast")}
+                                  onClick={() => respond(active.id, "Anulada", "annulledToast")}
                                   className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
                                 >
-                                  {t("adminReservas.cancel")}
+                                  {t("adminReservas.annul")}
                                 </button>
                               )}
-                              {active.status === "Recusada" && (
+                              {(active.status === "Recusada" || active.status === "Anulada") && (
                                 <button
                                   type="button"
                                   onClick={() => respond(active.id, "Pendente", "reopenedToast")}
@@ -1112,7 +1120,7 @@ function AdminReservas() {
                           {displayStatus(r).label}
                         </span>
                       </div>
-                      {r.status !== "Recusada" && (
+                      {r.status !== "Recusada" && r.status !== "Anulada" && (
                         <div className="mt-1.5 flex gap-1.5">
                           {r.status === "Pendente" && (
                             <button
@@ -1128,14 +1136,14 @@ function AdminReservas() {
                             onClick={() =>
                               respond(
                                 r.id,
-                                "Recusada",
-                                r.status === "Confirmada" ? "canceledToast" : "rejectedToast",
+                                r.status === "Confirmada" ? "Anulada" : "Recusada",
+                                r.status === "Confirmada" ? "annulledToast" : "rejectedToast",
                               )
                             }
                             className="rounded-lg border border-dashed border-destructive/50 px-2.5 py-1 text-[11px] font-semibold text-destructive transition-colors hover:bg-destructive/5"
                           >
                             {r.status === "Confirmada"
-                              ? t("adminReservas.cancel")
+                              ? t("adminReservas.annul")
                               : t("adminReservas.reject")}
                           </button>
                         </div>

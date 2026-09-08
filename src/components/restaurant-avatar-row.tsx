@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { HorizontalCarousel } from "@/components/horizontal-carousel";
 import { LazyImage } from "@/components/lazy-image";
 import { StoryViewer } from "@/components/story-viewer";
-import { getRestaurantsWithStories } from "@/data/helpers";
+import { getRestaurantsWithStories, suspendedRestaurantIds } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
 import { INITIAL_RESTAURANTS } from "@/data/mockData";
 import { useEffectiveStories } from "@/data/use-stories";
@@ -32,7 +32,10 @@ export function RestaurantAvatarRow() {
   // `getRestaurantsWithStories()`), só para saber quando recalcular.
   const stories = useEffectiveStories();
   const restaurantsWithStories = useMemo(
-    () => getRestaurantsWithStories(),
+    () => {
+      const suspended = suspendedRestaurantIds();
+      return getRestaurantsWithStories().filter((r) => !suspended.has(r.id));
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `stories` not read directly, only used to know when to recompute (getRestaurantsWithStories() reads the same live store itself).
     [stories],
   );

@@ -1,6 +1,7 @@
 import { INITIAL_MENU_ITEMS } from "./mockData";
 import { defaultMenuId, getEffectiveMenus } from "./menus-store";
 import { safeLocalStorageSet } from "./safe-storage";
+import { STORAGE_KEYS } from "./storage-keys";
 import type { MenuItem, MenuItemIngredient } from "./types";
 
 /**
@@ -86,9 +87,49 @@ function writeUnavailableIds(ids: string[]) {
  * porque precisa de ver e editar também os pratos de cardápios ainda em
  * rascunho/desativados.
  */
+/** Só ids de pedidos criados por um cliente (`order-<timestamp>`) — exclui
+ * os da seed (`order-seed-*`, `order-bN`). */
+const REAL_ORDER_ID = /^order-\d+$/;
+/** Estados que "contam" um pedido para a popularidade de um prato. */
+const COUNTED_ORDER_STATUS = new Set([
+  "pending",
+  "accepted",
+  "onTheWay",
+  "ready",
+  "delivered",
+  "completed",
+]);
+
+/** Quantas unidades de cada prato foram pedidas de verdade (pedidos do
+ * cliente, não a seed). Somado a `orderCount` para alimentar a ordenação
+ * "populares" (`@/components/menu-browser`) e as "Tendências" da home. */
+function realOrderCounts(): Map<string, number> {
+  if (typeof window === "undefined") return new Map();
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEYS.cartOrders);
+    if (!raw) return new Map();
+    const orders = JSON.parse(raw) as {
+      id: string;
+      status: string;
+      lines: { menuItemId: string; qty: number }[];
+    }[];
+    const counts = new Map<string, number>();
+    for (const order of orders) {
+      if (!REAL_ORDER_ID.test(order.id) || !COUNTED_ORDER_STATUS.has(order.status)) continue;
+      for (const line of order.lines) {
+        counts.set(line.menuItemId, (counts.get(line.menuItemId) ?? 0) + (line.qty ?? 0));
+      }
+    }
+    return counts;
+  } catch {
+    return new Map();
+  }
+}
+
 export function getEffectiveMenuItems({ activeMenusOnly = true } = {}): MenuItem[] {
   const { customItems, overrides, deletedIds } = readItemsState();
   const unavailableIds = readUnavailableIds();
+  const realCounts = realOrderCounts();
 
   const fromSeed = INITIAL_MENU_ITEMS.filter((item) => !deletedIds.includes(item.id)).map(
     (item) => ({
@@ -98,10 +139,14 @@ export function getEffectiveMenuItems({ activeMenusOnly = true } = {}): MenuItem
     }),
   );
 
-  const merged = [...fromSeed, ...customItems].map((item) => ({
-    ...item,
-    isAvailable: item.isAvailable && !unavailableIds.includes(item.id),
-  }));
+  const merged = [...fromSeed, ...customItems].map((item) => {
+    const realCount = realCounts.get(item.id) ?? 0;
+    return {
+      ...item,
+      isAvailable: item.isAvailable && !unavailableIds.includes(item.id),
+      ...(realCount ? { orderCount: (item.orderCount ?? 0) + realCount } : {}),
+    };
+  });
 
   if (!activeMenusOnly) return merged;
 
@@ -151,6 +196,10 @@ export type MenuItemInput = {
   portionInfo: string;
   prepTimeMinutes: number;
   ingredients: MenuItemIngredient[];
+  /** O restaurante marcou o prato para destaque (carrossel da home). */
+  isPromoted?: boolean;
+  /** Rótulo curto mostrado no destaque, ex: "−20%" ou "Novo". */
+  promotionLabel?: string;
 };
 
 function nextIngredientId() {

@@ -176,3 +176,25 @@ export function useCouriers() {
   if (!ctx) throw new Error("useCouriers must be used inside CouriersProvider");
   return ctx;
 }
+
+/**
+ * Leitura pura e síncrona do estafeta atribuído a um pedido — para o lado do
+ * cliente (`/entrega`), que não monta o `CouriersProvider` (esse fica só nos
+ * ramos de operador). Não é reativa: quem chama re-renderiza quando o estado
+ * do pedido muda, o que cobre o caso principal (o estafeta é atribuído no
+ * mesmo passo em que o pedido passa a "A caminho").
+ */
+export function readCourierForOrder(
+  orderId: string,
+): Pick<Courier, "name" | "phone" | "vehicle"> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const couriers = JSON.parse(raw) as Courier[];
+    const hit = couriers.find((c) => c.activeOrderId === orderId);
+    return hit ? { name: hit.name, phone: hit.phone, vehicle: hit.vehicle } : null;
+  } catch {
+    return null;
+  }
+}

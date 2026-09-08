@@ -47,6 +47,7 @@ type SortKey = "recent" | "reservas" | "pessoas" | "nome";
 const statusTone: Record<string, string> = {
   Confirmada: "bg-success/15 text-success",
   Recusada: "bg-destructive/15 text-destructive",
+  Anulada: "bg-muted-foreground/15 text-muted-foreground",
   Pendente: "bg-brand/15 text-brand",
 };
 
@@ -99,6 +100,7 @@ function AdminClientes() {
     Pendente: t("adminClientes.statusPending"),
     Confirmada: t("adminClientes.statusConfirmed"),
     Recusada: t("adminClientes.statusRejected"),
+    Anulada: t("adminClientes.statusAnnulled"),
   };
 
   const customers = useMemo(() => {

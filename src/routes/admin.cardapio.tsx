@@ -187,6 +187,8 @@ function AdminCardapio() {
       portionInfo: dish.portionInfo,
       prepTimeMinutes: dish.prepTimeMinutes,
       ingredients: dish.ingredients,
+      ...(dish.isPromoted ? { isPromoted: true } : {}),
+      ...(dish.promotionLabel ? { promotionLabel: dish.promotionLabel } : {}),
       ...patch,
     });
     if (!ok) toast.error(t("dishFormDialog.saveFailedError"));
@@ -424,9 +426,16 @@ function AdminCardapio() {
                         }`}
                       />
                       <div className="mt-3">
-                        <h2 className="font-display text-lg font-bold text-primary">
-                          {active.name}
-                        </h2>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="font-display text-lg font-bold text-primary">
+                            {active.name}
+                          </h2>
+                          {active.isPromoted && (
+                            <span className="rounded-full bg-brand/15 px-2 py-0.5 text-[11px] font-bold text-brand">
+                              {active.promotionLabel || t("adminCardapio.promotedBadge")}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {translateMenuCategory(active.category, locale)} · {active.portionInfo}
                         </p>
