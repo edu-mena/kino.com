@@ -23,17 +23,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { RestaurantGate } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
+import { ImageCropper } from "@/components/image-cropper";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { LocationMap, LocationPicker } from "@/components/location-map";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { VideoTrimmer } from "@/components/video-trimmer";
@@ -45,10 +39,12 @@ import type { FulfillmentType, WeeklyHours } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { paymentMethods } from "@/lib/mock-data";
-import { fileToResizedDataUrl, getVideoDurationSec } from "@/lib/image-upload";
+import { CROP_PRESETS } from "@/lib/image-crop-presets";
+import { getVideoDurationSec } from "@/lib/image-upload";
 import { isVideoSrc } from "@/lib/video-trim";
 import { defaultWeeklyHours, formatWeeklyHours, isOpenNow, nextOpenAt } from "@/lib/opening-hours";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 
 export const Route = createFileRoute("/admin/perfil")({
   head: () => ({ meta: [{ title: "Restaurante — Painel Kino.com" }] }),
@@ -109,12 +105,14 @@ function GalleryEditor({
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [trimFile, setTrimFile] = useState<File | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   const addFromDevice = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     if (file.type.startsWith("video/")) {
+      setBusy(true);
       try {
         if ((await getVideoDurationSec(file)) < 2.9) {
           toast.error(t("videoTrimmer.tooShort", { min: 3 }));
@@ -123,18 +121,14 @@ function GalleryEditor({
       } catch {
         toast.error(t("adminPerfil.uploadError"));
         return;
+      } finally {
+        setBusy(false);
       }
       setTrimFile(file);
       return;
     }
-    setBusy(true);
-    try {
-      onChange([...items, await fileToResizedDataUrl(file)]);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("adminPerfil.uploadError"));
-    } finally {
-      setBusy(false);
-    }
+    // Imagem → editor de corte (rácio de galeria).
+    setCropFile(file);
   };
 
   return (
@@ -180,6 +174,19 @@ function GalleryEditor({
         onConfirm={(r) => {
           onChange([...items, r.src]);
           setTrimFile(null);
+        }}
+      />
+
+      <ImageCropper
+        file={cropFile}
+        open={cropFile !== null}
+        onOpenChange={(o) => !o && setCropFile(null)}
+        aspect={CROP_PRESETS.gallery.aspect}
+        maxDimension={CROP_PRESETS.gallery.maxDimension}
+        hint={t(CROP_PRESETS.gallery.hintKey)}
+        onConfirm={(dataUrl) => {
+          onChange([...items, dataUrl]);
+          setCropFile(null);
         }}
       />
 
@@ -232,6 +239,7 @@ function GalleryEditor({
 
 function AdminPerfil() {
   const { restaurant, logout } = useRestaurantAdmin();
+  const deliveryPolicy = useDeliveryPolicy();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -240,7 +248,6 @@ function AdminPerfil() {
   const [coverImage, setCoverImage] = useState("");
   const [description, setDescription] = useState("");
   const [cuisine, setCuisine] = useState("");
-  const [priceLevel, setPriceLevel] = useState("Kz Kz");
   const [address, setAddress] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
   const [city, setCity] = useState("");
@@ -259,6 +266,7 @@ function AdminPerfil() {
   const [estimatedDeliveryMinutes, setEstimatedDeliveryMinutes] = useState("30");
   const [deliveryZones, setDeliveryZones] = useState<string[]>([]);
   const [acceptedPay, setAcceptedPay] = useState<string[]>([]);
+  const [paymentDetails, setPaymentDetails] = useState<Record<string, string>>({});
   const [cautionAmount, setCautionAmount] = useState("0");
   const [cautionPolicyNotice, setCautionPolicyNotice] = useState("");
   const [cautionModes, setCautionModes] = useState<FulfillmentType[]>([]);
@@ -270,7 +278,6 @@ function AdminPerfil() {
     setCoverImage(restaurant.coverImage);
     setDescription(restaurant.description);
     setCuisine(restaurant.cuisine);
-    setPriceLevel(restaurant.priceLevel);
     setAddress(restaurant.address);
     setNeighborhood(restaurant.neighborhood);
     setCity(restaurant.city);
@@ -291,6 +298,7 @@ function AdminPerfil() {
     setEstimatedDeliveryMinutes(String(restaurant.estimatedDeliveryMinutes));
     setDeliveryZones(restaurant.deliveryZones ?? []);
     setAcceptedPay(getRestaurantPaymentMethodIds(restaurant));
+    setPaymentDetails(restaurant.paymentDetails ?? {});
     setCautionAmount(String(restaurant.cautionAmount));
     setCautionPolicyNotice(restaurant.cautionPolicyNotice);
     setCautionModes(restaurant.cautionModesForOrders ?? []);
@@ -334,7 +342,6 @@ function AdminPerfil() {
       coverImage: coverImage.trim() || restaurant.coverImage,
       description: description.trim(),
       cuisine: cuisine.trim(),
-      priceLevel,
       address: address.trim(),
       neighborhood: neighborhood.trim(),
       city: city.trim(),
@@ -348,6 +355,11 @@ function AdminPerfil() {
       isDeliveryAvailable,
       fulfillmentModes,
       acceptedPaymentMethods: acceptedPay.length === paymentMethods.length ? [] : acceptedPay,
+      paymentDetails: Object.fromEntries(
+        Object.entries(paymentDetails)
+          .map(([id, v]) => [id, v.trim()] as const)
+          .filter(([id, v]) => v !== "" && acceptedPay.includes(id)),
+      ),
       deliveryFee: Number(deliveryFee) || 0,
       estimatedDeliveryMinutes: Number(estimatedDeliveryMinutes) || 0,
       deliveryZones: deliveryZones.map((z) => z.trim()).filter(Boolean),
@@ -365,7 +377,7 @@ function AdminPerfil() {
   };
 
   const heroCuisine = editing ? cuisine : restaurant.cuisine;
-  const heroPrice = editing ? priceLevel : restaurant.priceLevel;
+  const heroPrice = restaurant.priceLevel;
   const heroDelivery = editing ? isDeliveryAvailable : restaurant.isDeliveryAvailable;
   const heroCover = editing ? coverImage || restaurant.coverImage : restaurant.coverImage;
   const na = t("adminPerfil.notProvided");
@@ -445,6 +457,7 @@ function AdminPerfil() {
                   onChange={setCoverImage}
                   onUploadingChange={setImageUploading}
                   label={t("adminPerfil.coverImageLabel")}
+                  crop="cover"
                 />
                 <div className="space-y-1.5">
                   <Label htmlFor="rest-description">{t("adminPerfil.descriptionLabel")}</Label>
@@ -465,17 +478,13 @@ function AdminPerfil() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="rest-price-level">{t("adminPerfil.priceLevelLabel")}</Label>
-                    <Select value={priceLevel} onValueChange={setPriceLevel}>
-                      <SelectTrigger id="rest-price-level" className="rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Kz">{t("adminPerfil.priceLevelLow")}</SelectItem>
-                        <SelectItem value="Kz Kz">{t("adminPerfil.priceLevelMid")}</SelectItem>
-                        <SelectItem value="Kz Kz Kz">{t("adminPerfil.priceLevelHigh")}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>{t("adminPerfil.priceLevelLabel")}</Label>
+                    <div className="flex h-9 items-center rounded-xl border border-border bg-surface px-3 text-sm font-semibold text-foreground">
+                      {restaurant.priceLevel}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {t("adminPerfil.priceLevelAuto")}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -628,6 +637,12 @@ function AdminPerfil() {
                           value={deliveryFee}
                           onChange={(e) => setDeliveryFee(e.target.value)}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          {t("adminPerfil.deliveryFeeHint", {
+                            km: deliveryPolicy.freeRadiusKm,
+                            surcharge: formatKz(deliveryPolicy.perKmSurchargeKz),
+                          })}
+                        </p>
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="rest-delivery-time">
@@ -702,31 +717,67 @@ function AdminPerfil() {
               <div className="space-y-2">
                 {paymentMethods.map((m) => {
                   const on = acceptedPay.includes(m.id);
+                  const needsDetail = on && m.digital;
+                  const detailMissing = needsDetail && !paymentDetails[m.id]?.trim();
                   return (
-                    <button
+                    <div
                       key={m.id}
-                      type="button"
-                      onClick={() =>
-                        setAcceptedPay((prev) =>
-                          prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id],
-                        )
-                      }
-                      aria-pressed={on}
-                      className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border p-3 text-left ${
-                        on ? "border-brand bg-brand/5" : "border-border"
+                      className={`overflow-hidden rounded-xl border ${
+                        on ? "border-brand" : "border-border"
                       }`}
                     >
-                      <span className="grid h-8 w-14 shrink-0 place-items-center rounded-lg bg-surface text-[10px] font-bold text-primary">
-                        {m.brand}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-bold">{m.label}</span>
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {m.detail}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAcceptedPay((prev) =>
+                            prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id],
+                          )
+                        }
+                        aria-pressed={on}
+                        className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-3 text-left ${
+                          on ? "bg-brand/5" : ""
+                        }`}
+                      >
+                        <span className="grid h-8 w-14 shrink-0 place-items-center rounded-lg bg-surface text-[10px] font-bold text-primary">
+                          {m.brand}
                         </span>
-                      </span>
-                      <Switch checked={on} tabIndex={-1} className="pointer-events-none" />
-                    </button>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-bold">{m.label}</span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {m.detail}
+                          </span>
+                        </span>
+                        <Switch checked={on} tabIndex={-1} className="pointer-events-none" />
+                      </button>
+                      {needsDetail && (
+                        <div className="border-t border-brand/30 bg-brand/5 px-3 py-2.5">
+                          <label
+                            htmlFor={`pay-detail-${m.id}`}
+                            className="text-xs font-semibold text-foreground"
+                          >
+                            {t("adminPerfil.paymentDetailLabel", { method: m.label })}
+                          </label>
+                          <Input
+                            id={`pay-detail-${m.id}`}
+                            value={paymentDetails[m.id] ?? ""}
+                            onChange={(e) =>
+                              setPaymentDetails((prev) => ({ ...prev, [m.id]: e.target.value }))
+                            }
+                            placeholder={t(
+                              m.id === "transferencia"
+                                ? "adminPerfil.paymentDetailIbanPlaceholder"
+                                : "adminPerfil.paymentDetailWalletPlaceholder",
+                            )}
+                            className="mt-1"
+                          />
+                          {detailMissing && (
+                            <p className="mt-1 text-xs text-destructive">
+                              {t("adminPerfil.paymentDetailMissing")}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
                 <p className="text-xs text-muted-foreground">
@@ -849,6 +900,9 @@ function AdminPerfil() {
                   </ReadRow>
                   <ReadRow label={t("adminPerfil.priceLevelLabel")}>
                     {restaurant.priceLevel}
+                    <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                      {t("adminPerfil.priceLevelAuto")}
+                    </span>
                   </ReadRow>
                 </dl>
               </div>
@@ -977,6 +1031,12 @@ function AdminPerfil() {
                   <dl className="grid gap-4 sm:grid-cols-2">
                     <ReadRow label={t("adminPerfil.deliveryFeeLabel")}>
                       {formatKz(restaurant.deliveryFee)}
+                      <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                        {t("adminPerfil.deliveryFeeHint", {
+                          km: deliveryPolicy.freeRadiusKm,
+                          surcharge: formatKz(deliveryPolicy.perKmSurchargeKz),
+                        })}
+                      </span>
                     </ReadRow>
                     <ReadRow label={t("adminPerfil.deliveryTimeLabel")}>
                       {t("adminPerfil.minutesValue", { min: restaurant.estimatedDeliveryMinutes })}
@@ -1019,18 +1079,48 @@ function AdminPerfil() {
               {(() => {
                 const ids = getRestaurantPaymentMethodIds(restaurant);
                 const all = ids.length === paymentMethods.length;
-                return all ? (
-                  <p className="text-sm text-muted-foreground">{t("adminPerfil.paymentsAll")}</p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {ids.map((id) => (
-                      <span
-                        key={id}
-                        className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-foreground"
-                      >
-                        {paymentMethods.find((m) => m.id === id)?.label ?? id}
-                      </span>
-                    ))}
+                return (
+                  <div className="space-y-3">
+                    {all ? (
+                      <p className="text-sm text-muted-foreground">
+                        {t("adminPerfil.paymentsAll")}
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {ids.map((id) => (
+                          <span
+                            key={id}
+                            className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-foreground"
+                          >
+                            {paymentMethods.find((m) => m.id === id)?.label ?? id}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {ids.some((id) => paymentMethods.find((m) => m.id === id)?.digital) && (
+                      <dl className="space-y-2 border-t border-border pt-3">
+                        {ids
+                          .map((id) => paymentMethods.find((m) => m.id === id))
+                          .filter((m): m is NonNullable<typeof m> => !!m && m.digital)
+                          .map((m) => {
+                            const dest = restaurant.paymentDetails?.[m.id]?.trim();
+                            return (
+                              <div key={m.id} className="text-sm">
+                                <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                  {m.label}
+                                </dt>
+                                <dd
+                                  className={`mt-0.5 ${
+                                    dest ? "text-foreground" : "text-destructive"
+                                  }`}
+                                >
+                                  {dest || t("adminPerfil.paymentDetailReadNone")}
+                                </dd>
+                              </div>
+                            );
+                          })}
+                      </dl>
+                    )}
                   </div>
                 );
               })()}

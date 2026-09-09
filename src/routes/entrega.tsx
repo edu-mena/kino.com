@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   Star,
   Trash2,
+  Upload,
   Users,
   Utensils,
   Wallet,
@@ -28,8 +29,11 @@ import { useAuth } from "@/lib/auth";
 import { lineCustomizations, lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
 import { readCourierForOrder } from "@/lib/couriers";
 import { viewerKey } from "@/lib/customer";
+import { orderDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
+import { fileToResizedDataUrl } from "@/lib/image-upload";
 import { getPaymentMethod } from "@/lib/mock-data";
+import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { useTranslation } from "@/i18n";
 
 const MODE_ICON: Record<FulfillmentType, typeof Bike> = {
@@ -174,16 +178,51 @@ function Entrega() {
 }
 
 function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }) {
-  const { cancelOrder, orderTotal, orderDiscount } = useCart();
+  const { cancelOrder, orderTotal, orderDiscount, setPaymentProof } = useCart();
+  const deliveryPolicy = useDeliveryPolicy();
   const restaurant = getRestaurant(order.restaurantId);
   const { t } = useTranslation();
+  const [proofUploading, setProofUploading] = useState(false);
   const canCancel = order.status === "pending";
+  const isDelivery = order.fulfillmentType === "delivery";
+  const subtotal = order.lines.reduce((s, l) => s + lineUnitPrice(l) * l.qty, 0);
+  const deliveryFee = isDelivery ? orderTotal(order) - subtotal + orderDiscount(order) : 0;
+  const surchargeKm = isDelivery
+    ? Math.max(0, Math.ceil(orderDistanceKm(order) - deliveryPolicy.freeRadiusKm))
+    : 0;
   const [reviewOpen, setReviewOpen] = useState(false);
   const reviewRef = `order:${order.id}`;
   const canReview =
     (order.status === "delivered" || order.status === "completed") && !isRefReviewed(reviewRef);
   const ModeIcon = MODE_ICON[order.fulfillmentType];
   const requiredPayment = getPaymentMethod(order.paymentMethod);
+  const payDestination =
+    order.paymentMethod && requiredPayment?.digital
+      ? restaurant?.paymentDetails?.[order.paymentMethod]?.trim()
+      : undefined;
+  // O pagamento é devido depois de o restaurante aceitar e fixar um método
+  // digital, e enquanto o pedido não terminou/foi recusado.
+  const paymentDue =
+    !!requiredPayment?.digital &&
+    order.status !== "pending" &&
+    order.status !== "rejected" &&
+    order.status !== "canceled";
+
+  const onProofFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setProofUploading(true);
+    try {
+      const dataUrl = await fileToResizedDataUrl(file, 1000);
+      setPaymentProof(order.id, dataUrl);
+      toast.success(t("entrega.proofSentToast"));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("entrega.proofError"));
+    } finally {
+      setProofUploading(false);
+    }
+  };
 
   return (
     <>
@@ -334,10 +373,21 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
                 <dd className="mt-0.5 font-semibold text-foreground">
                   {requiredPayment?.label ?? order.paymentMethod}
                 </dd>
-                {requiredPayment?.digital && (
-                  <dd className="mt-0.5 text-xs text-muted-foreground">
-                    {t("entrega.digitalPaymentHint")}
+                {payDestination ? (
+                  <dd className="mt-1 rounded-lg bg-surface px-2.5 py-1.5 text-xs">
+                    <span className="font-bold uppercase tracking-wide text-muted-foreground">
+                      {t("entrega.payToLabel")}
+                    </span>
+                    <span className="mt-0.5 block whitespace-pre-wrap break-words font-medium text-foreground">
+                      {payDestination}
+                    </span>
                   </dd>
+                ) : (
+                  requiredPayment?.digital && (
+                    <dd className="mt-0.5 text-xs text-muted-foreground">
+                      {t("entrega.digitalPaymentHint")}
+                    </dd>
+                  )
                 )}
               </>
             ) : (
@@ -373,6 +423,51 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         )}
       </dl>
 
+      {/* Carregar comprovativo — depois de o restaurante fixar um método digital */}
+      {(paymentDue || order.paymentProof) && (
+        <div className="mt-5 rounded-xl border border-border p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            {t("entrega.proofTitle")}
+          </p>
+          {order.paymentProof ? (
+            <div className="mt-2 space-y-2">
+              <img
+                src={order.paymentProof}
+                alt=""
+                className="max-h-56 w-full rounded-lg border border-border object-contain"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-success">{t("entrega.proofSent")}</span>
+                {paymentDue && (
+                  <button
+                    type="button"
+                    onClick={() => setPaymentProof(order.id, null)}
+                    className="text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive"
+                  >
+                    {t("entrega.proofReplace")}
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="mt-1 text-xs text-muted-foreground">{t("entrega.proofHint")}</p>
+              <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 px-4 py-3 text-xs font-bold text-primary transition-colors hover:bg-primary/5">
+                <Upload className="h-4 w-4" />
+                {proofUploading ? t("entrega.proofUploading") : t("entrega.proofUpload")}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={proofUploading}
+                  onChange={onProofFile}
+                />
+              </label>
+            </>
+          )}
+        </div>
+      )}
+
       <div className="mt-5 border-t border-border pt-4">
         <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
           {t("entrega.products")}
@@ -407,29 +502,47 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         </ul>
       </div>
 
-      {order.promoCode && (
+      {(order.promoCode || isDelivery) && (
         <div className="mt-4 space-y-1 border-t border-border pt-4 text-sm">
           <div className="flex items-center justify-between text-muted-foreground">
             <span>{t("entrega.subtotal")}</span>
-            <span>{formatKz(order.lines.reduce((s, l) => s + lineUnitPrice(l) * l.qty, 0))}</span>
+            <span>{formatKz(subtotal)}</span>
           </div>
-          <div className="flex items-center justify-between text-success">
-            <span>
-              {t("entrega.promoLine", { code: order.promoCode })}
-              {order.promoLabel ? ` · ${order.promoLabel}` : ""}
-            </span>
-            <span>
-              {orderDiscount(order) > 0
-                ? `− ${formatKz(orderDiscount(order))}`
-                : t("entrega.promoFreeDelivery")}
-            </span>
-          </div>
+          {order.promoCode && (
+            <div className="flex items-center justify-between text-success">
+              <span>
+                {t("entrega.promoLine", { code: order.promoCode })}
+                {order.promoLabel ? ` · ${order.promoLabel}` : ""}
+              </span>
+              <span>
+                {orderDiscount(order) > 0
+                  ? `− ${formatKz(orderDiscount(order))}`
+                  : t("entrega.promoFreeDelivery")}
+              </span>
+            </div>
+          )}
+          {isDelivery && (
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>
+                {t("entrega.deliveryFeeLine")}
+                {surchargeKm > 0 && (
+                  <span className="ml-1 text-[11px]">
+                    {t("entrega.deliverySurchargeNote", {
+                      radius: deliveryPolicy.freeRadiusKm,
+                      extraKm: surchargeKm,
+                    })}
+                  </span>
+                )}
+              </span>
+              <span>{deliveryFee > 0 ? formatKz(deliveryFee) : t("entrega.deliveryFree")}</span>
+            </div>
+          )}
         </div>
       )}
 
       <div
         className={`mt-4 flex items-center justify-between border-t border-border pt-4 text-base ${
-          order.promoCode ? "border-t-0 pt-1" : ""
+          order.promoCode || isDelivery ? "border-t-0 pt-1" : ""
         }`}
       >
         <span className="font-bold">{t("entrega.amount")}</span>

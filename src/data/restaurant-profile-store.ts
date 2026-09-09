@@ -18,7 +18,6 @@ export type RestaurantProfileEdit = Partial<
     Restaurant,
     | "description"
     | "cuisine"
-    | "priceLevel"
     | "address"
     | "neighborhood"
     | "city"
@@ -32,6 +31,7 @@ export type RestaurantProfileEdit = Partial<
     | "isDeliveryAvailable"
     | "fulfillmentModes"
     | "acceptedPaymentMethods"
+    | "paymentDetails"
     | "cautionModesForOrders"
     | "deliveryZones"
     | "deliveryFee"

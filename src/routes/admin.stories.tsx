@@ -419,6 +419,7 @@ function AdminStories() {
               maxVideoSec={STORY_VIDEO_MAX_SEC}
               label={t("adminStories.imageLabel")}
               helpText={t("adminStories.imageHelp")}
+              crop="story"
             />
             <p className="text-xs text-muted-foreground">
               {t("adminStories.mediaNote", { sec: STORY_VIDEO_MAX_SEC })}

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BarChart3,
   Bike,
@@ -55,11 +55,13 @@ import {
   assessDelivery,
   DELIVERY_RADIUS_KM,
   minutesSince,
+  orderDistanceKm,
   PENDING_SLA_MIN,
   type DeliveryLevel,
 } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/pedidos")({
@@ -155,6 +157,7 @@ function weekStart(d: Date) {
 
 function AdminPedidos() {
   const { restaurant } = useRestaurantAdmin();
+  const deliveryPolicy = useDeliveryPolicy();
   const { orders, orderTotal, orderSubtotal, orderDiscount, updateOrderStatus, acceptOrder } =
     useCart();
   const {
@@ -959,6 +962,54 @@ function AdminPedidos() {
                             ) : null}
                           </dl>
 
+                          {/* Comprovativo de pagamento carregado pelo cliente */}
+                          {(() => {
+                            const method = getPaymentMethod(active.paymentMethod);
+                            const paymentDue =
+                              !!method?.digital &&
+                              (active.status === "accepted" ||
+                                active.status === "onTheWay" ||
+                                active.status === "ready" ||
+                                active.status === "delivered" ||
+                                active.status === "completed");
+                            if (!active.paymentProof && !paymentDue) return null;
+                            return (
+                              <div className="mt-4 border-t border-border pt-4">
+                                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                  {t("adminPedidos.proofTitle")}
+                                </p>
+                                {active.paymentProof ? (
+                                  <>
+                                    <a
+                                      href={active.paymentProof}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="mt-2 block"
+                                    >
+                                      <img
+                                        src={active.paymentProof}
+                                        alt=""
+                                        className="max-h-56 w-full rounded-lg border border-border object-contain"
+                                      />
+                                    </a>
+                                    <p className="mt-1.5 text-xs text-success">
+                                      {active.paymentProofAt
+                                        ? t("adminPedidos.proofReceivedAt", {
+                                            when: fmtDateTime(active.paymentProofAt),
+                                          })
+                                        : t("adminPedidos.proofReceived")}
+                                    </p>
+                                  </>
+                                ) : (
+                                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Clock className="h-3.5 w-3.5 shrink-0" />
+                                    {t("adminPedidos.proofPending")}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })()}
+
                           {/* Avaliação da entrega — distância vs. raio habitual (só delivery) */}
                           {active.fulfillmentType === "delivery" &&
                             (() => {
@@ -1089,7 +1140,27 @@ function AdminPedidos() {
                                 </div>
                               )}
                               <div className="flex justify-between text-muted-foreground">
-                                <span>{t("adminPedidos.deliveryFee")}</span>
+                                <span>
+                                  {t("adminPedidos.deliveryFee")}
+                                  {active.fulfillmentType === "delivery" &&
+                                    (() => {
+                                      const extra = Math.max(
+                                        0,
+                                        Math.ceil(
+                                          orderDistanceKm(active) - deliveryPolicy.freeRadiusKm,
+                                        ),
+                                      );
+                                      return extra > 0 ? (
+                                        <span className="ml-1 text-[11px]">
+                                          {t("adminPedidos.deliverySurchargeNote", {
+                                            radius: deliveryPolicy.freeRadiusKm,
+                                            extraKm: extra,
+                                            surcharge: formatKz(deliveryPolicy.perKmSurchargeKz),
+                                          })}
+                                        </span>
+                                      ) : null;
+                                    })()}
+                                </span>
                                 <span>
                                   {formatKz(
                                     orderTotal(active) -
@@ -1233,9 +1304,30 @@ function AdminPedidos() {
             </div>
           )}
 
+          {(() => {
+            const chosen = getPaymentMethod(payChoice);
+            const missing = !!chosen?.digital && !restaurant.paymentDetails?.[payChoice]?.trim();
+            if (!missing) return null;
+            return (
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs">
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                <p className="text-muted-foreground">
+                  {t("adminPedidos.payDetailsMissing", { method: chosen?.label ?? "" })}{" "}
+                  <Link to="/admin/perfil" className="font-semibold text-primary hover:underline">
+                    {t("adminPedidos.payDetailsMissingCta")}
+                  </Link>
+                </p>
+              </div>
+            );
+          })()}
+
           <button
             type="button"
-            disabled={!payChoice}
+            disabled={
+              !payChoice ||
+              (!!getPaymentMethod(payChoice)?.digital &&
+                !restaurant.paymentDetails?.[payChoice]?.trim())
+            }
             onClick={confirmAccept}
             className="mt-5 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >

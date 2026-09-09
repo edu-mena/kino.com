@@ -35,14 +35,14 @@ import { useRestaurantAccess, useSubscriptions } from "@/lib/subscriptions";
 // mas manter o atributo em todos evita ficar a decidir caso a caso.
 const navItems = [
   { to: "/admin", labelKey: "dashboard", icon: LayoutGrid },
+  { to: "/admin/cardapio", labelKey: "menu", icon: Soup },
   { to: "/admin/pedidos", labelKey: "orders", icon: Bike },
   { to: "/admin/reservas", labelKey: "reservations", icon: CalendarCheck },
   { to: "/admin/mesas", labelKey: "tables", icon: Armchair },
-  { to: "/admin/cardapio", labelKey: "menu", icon: Soup },
-  { to: "/admin/estatisticas", labelKey: "stats", icon: TrendingUp },
-  { to: "/admin/clientes", labelKey: "customers", icon: Users },
   { to: "/admin/stories", labelKey: "stories", icon: Sparkles },
   { to: "/admin/promocoes", labelKey: "promotions", icon: Megaphone },
+  { to: "/admin/clientes", labelKey: "customers", icon: Users },
+  { to: "/admin/estatisticas", labelKey: "stats", icon: TrendingUp },
   { to: "/admin/avaliacoes", labelKey: "reviews", icon: Star },
   { to: "/admin/subscricao", labelKey: "subscription", icon: CreditCard },
   { to: "/admin/perfil", labelKey: "restaurant", icon: Store },

@@ -18,7 +18,10 @@ export interface Restaurant {
   name: string;
   description: string;
   cuisine: string;
-  priceLevel: string; // ex: "Kz", "Kz Kz", "Kz Kz Kz"
+  /** "Kz" | "Kz Kz" | "Kz Kz Kz" — CALCULADO em `withOverrides` a partir da
+   * média de preços do cardápio (`@/lib/price-level`), nunca definido à mão.
+   * O valor no seed é só um valor inicial, ignorado assim que há cardápio. */
+  priceLevel: string;
   rating: number;
   reviewCount: number;
   distanceKm: number;
@@ -48,6 +51,12 @@ export interface Restaurant {
    * `@/lib/mock-data`). Ausente/vazio = aceita todos. O restaurante escolhe
    * de entre estes o método exigido ao aceitar cada pedido. */
   acceptedPaymentMethods?: string[];
+  /** Dados de destino do pagamento, por id de método — texto livre (IBAN +
+   * titular para "transferencia", nº de telefone / carteira para os
+   * digitais). Definidos pelo restaurante em `/admin/perfil`; o cliente
+   * vê-os em `/entrega` depois de o restaurante fixar o método exigido.
+   * "cash" (numerário) não precisa. */
+  paymentDetails?: Record<string, string>;
   /** Modos de pedido para os quais a caução (`cautionAmount`) é exigida como
    * garantia — a par do uso em reservas. Ausente = nenhum (caução fica só
    * nas reservas). */
@@ -256,9 +265,17 @@ export interface Offer {
    * (ou em `type: "delivery"`, que dá entrega grátis) = o código é apenas
    * informativo. */
   percentOff?: number;
-  /** Imagem da promoção — URL colada ou data URL (upload). Ausente = usa
-   * uma imagem decorativa genérica no carrossel da home. */
+  /** Media da promoção — URL colada, data URL de imagem, ou data URL de
+   * vídeo (upload com corte, máx. 10 s). Ausente = usa uma imagem
+   * decorativa genérica no carrossel da home. */
   image?: string;
+  /** `"video"` quando `image` é um data URL de vídeo. Nesse caso
+   * `thumbnail` traz o frame de pré-visualização. Ausente = imagem. */
+  mediaType?: "image" | "video";
+  /** Frame de pré-visualização (JPEG data URL) — só em
+   * `mediaType === "video"`. Usado onde não dá para reproduzir o vídeo
+   * (listas do painel, página de Ofertas). */
+  thumbnail?: string;
   /** Formato de exibição no carrossel da home. Ausente = alterna
    * automaticamente (`split`/`cover`) pela posição. */
   layout?: "split" | "cover";

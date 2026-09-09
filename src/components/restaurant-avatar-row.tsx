@@ -101,7 +101,7 @@ export function RestaurantAvatarRow() {
                 else if (viewed) setChoosing(r);
                 else openStory(r);
               }}
-              className="flex w-20 shrink-0 flex-col items-center gap-2"
+              className="mt-[5px] flex w-20 shrink-0 flex-col items-center gap-2"
             >
               <span
                 className={`h-16 w-16 shrink-0 overflow-hidden rounded-full bg-surface ${

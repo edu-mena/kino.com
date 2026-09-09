@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
+import { DIETARY_ONBOARDING_DONE_EVENT } from "@/lib/onboarding";
+
 const STORAGE_KEY = "kino_tutorial_status";
+const DIETARY_ONBOARDING_KEY = "kino_dietary_onboarding_seen";
 
 type TutorialValue = {
   /** Se o tour deve estar visível agora (controlado por quem o monta, ex: HomeLoggedIn). */
@@ -29,17 +32,43 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   // flash do tour em quem já o viu antes (SSR/primeira pintura sem storage).
   useEffect(() => {
     let seen = true;
+    let dietarySeen = true;
     try {
       seen = localStorage.getItem(STORAGE_KEY) === "done";
+      dietarySeen = localStorage.getItem(DIETARY_ONBOARDING_KEY) === "done";
     } catch {
-      // localStorage indisponível (privado/bloqueado) — trata como já visto,
-      // não insiste em mostrar o tour a cada visita.
+      // localStorage indisponível (privado/bloqueado) — trata ambos como já
+      // vistos, não insiste em mostrar o tour a cada visita.
     }
-    if (!seen) {
-      const timer = setTimeout(() => setIsTourOpen(true), 600);
-      return () => clearTimeout(timer);
+    if (seen) return undefined;
+
+    const open = () => setIsTourOpen(true);
+
+    // Na primeira visita o card de restrições alimentares também aparece —
+    // o tour só arranca DEPOIS de ele ser respondido/dispensado, para os
+    // dois nunca surgirem ao mesmo tempo.
+    if (!dietarySeen) {
+      let handled = false;
+      let startTimer: ReturnType<typeof setTimeout> | undefined;
+      const onDietaryDone = () => {
+        if (handled) return;
+        handled = true;
+        window.removeEventListener(DIETARY_ONBOARDING_DONE_EVENT, onDietaryDone);
+        startTimer = setTimeout(open, 500);
+      };
+      window.addEventListener(DIETARY_ONBOARDING_DONE_EVENT, onDietaryDone);
+      // Rede de segurança: se o card nunca se resolver (ex: primeira rota
+      // sem ele), arranca o tour à mesma passado algum tempo.
+      const fallback = setTimeout(onDietaryDone, 8000);
+      return () => {
+        window.removeEventListener(DIETARY_ONBOARDING_DONE_EVENT, onDietaryDone);
+        clearTimeout(fallback);
+        if (startTimer) clearTimeout(startTimer);
+      };
     }
-    return undefined;
+
+    const timer = setTimeout(open, 600);
+    return () => clearTimeout(timer);
   }, []);
 
   const markDone = () => {

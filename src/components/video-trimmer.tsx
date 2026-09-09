@@ -25,7 +25,7 @@ export function VideoTrimmer({
   file: File | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (result: { src: string; durationSec: number }) => void;
+  onConfirm: (result: { src: string; durationSec: number; poster: string }) => void;
   minSec?: number;
   maxSec?: number;
 }) {

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Bike, Megaphone, Pencil, Percent, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Bike, Megaphone, Pencil, Percent, Play, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -44,6 +44,8 @@ type Draft = {
   description: string;
   code: string;
   image: string;
+  mediaType: "image" | "video";
+  thumbnail: string;
   layout: NonNullable<Offer["layout"]>;
   percentOff: string;
 };
@@ -53,6 +55,8 @@ const emptyDraft: Draft = {
   description: "",
   code: "",
   image: "",
+  mediaType: "image",
+  thumbnail: "",
   layout: "split",
   percentOff: "",
 };
@@ -89,6 +93,8 @@ function SistemaPromocoes() {
       description: offer.description,
       code: offer.code ?? "",
       image: offer.image ?? "",
+      mediaType: offer.mediaType ?? "image",
+      thumbnail: offer.thumbnail ?? "",
       layout: offer.layout ?? "split",
       percentOff: offer.percentOff ? String(offer.percentOff) : "",
     });
@@ -99,12 +105,17 @@ function SistemaPromocoes() {
     e.preventDefault();
     if (!draft.title.trim() || !draft.description.trim()) return;
     const pct = Math.round(Number(draft.percentOff));
+    const media = draft.image.trim();
     const input = {
       type: draft.type,
       title: draft.title.trim(),
       description: draft.description.trim(),
       layout: draft.layout,
-      image: draft.image.trim(),
+      image: media,
+      ...(media ? { mediaType: draft.mediaType } : {}),
+      ...(media && draft.mediaType === "video" && draft.thumbnail
+        ? { thumbnail: draft.thumbnail }
+        : {}),
       ...(draft.code.trim() ? { code: draft.code.trim().toUpperCase() } : {}),
       ...(draft.type !== "delivery" && pct > 0 ? { percentOff: Math.min(100, pct) } : {}),
     };
@@ -144,7 +155,12 @@ function SistemaPromocoes() {
               const display = translateOffer(offer, t);
               return (
                 <div key={offer.id} className="card-soft flex items-start gap-4 p-4">
-                  {offer.image ? (
+                  {offer.mediaType === "video" && offer.thumbnail ? (
+                    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-black">
+                      <img src={offer.thumbnail} alt="" className="h-full w-full object-cover" />
+                      <Play className="absolute inset-0 m-auto h-4 w-4 fill-white/90 text-white/90" />
+                    </span>
+                  ) : offer.image && offer.mediaType !== "video" ? (
                     <img
                       src={offer.image}
                       alt=""
@@ -276,8 +292,19 @@ function SistemaPromocoes() {
                 value={draft.image}
                 onChange={(v) => setDraft((d) => ({ ...d, image: v }))}
                 onUploadingChange={setUploading}
+                onMediaChange={(m) =>
+                  setDraft((d) => ({
+                    ...d,
+                    mediaType: m.mediaType,
+                    thumbnail: m.mediaType === "video" ? (m.poster ?? "") : "",
+                  }))
+                }
+                mediaType={draft.mediaType}
+                accept="media"
+                maxVideoSec={10}
                 label={t("sistema.promocoes.imageLabel")}
                 helpText={t("sistema.promocoes.imageHelp")}
+                crop="promo"
               />
             </div>
             <div className="col-span-2 space-y-1.5">

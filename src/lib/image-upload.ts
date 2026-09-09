@@ -52,6 +52,45 @@ export function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+/** Dimensões finais de um corte: o lado maior fica em `maxDimension` e o
+ * outro deriva do rácio (largura ÷ altura). */
+export function cropOutputSize(
+  aspect: number,
+  maxDimension: number,
+): { width: number; height: number } {
+  return aspect >= 1
+    ? { width: maxDimension, height: Math.max(1, Math.round(maxDimension / aspect)) }
+    : { width: Math.max(1, Math.round(maxDimension * aspect)), height: maxDimension };
+}
+
+/**
+ * Recorta `img` pela janela `src` (em píxeis naturais da imagem) e devolve
+ * um data URL JPEG do tamanho `out`. A janela é ajustada aos limites da
+ * imagem antes de desenhar, para nunca pintar fora dos bordos.
+ */
+export function croppedImageToDataUrl(
+  img: HTMLImageElement,
+  src: { x: number; y: number; w: number; h: number },
+  out: { width: number; height: number },
+  quality = 0.82,
+): string {
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  const w = Math.min(src.w, iw);
+  const h = Math.min(src.h, ih);
+  const x = Math.min(Math.max(0, src.x), iw - w);
+  const y = Math.min(Math.max(0, src.y), ih - h);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = out.width;
+  canvas.height = out.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("O navegador não suporta o processamento de imagens.");
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, x, y, w, h, 0, 0, out.width, out.height);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
 /** Duração (segundos) de um ficheiro de vídeo, lida dos metadados. */
 export function getVideoDurationSec(file: File): Promise<number> {
   return new Promise((resolve, reject) => {

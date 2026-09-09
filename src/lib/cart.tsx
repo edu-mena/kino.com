@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
 import type { PromoEffect } from "@/data/offers-store";
+import { computeDeliveryFee } from "@/data/platform-settings-store";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
+import { orderDistanceKm } from "@/lib/delivery-eval";
 import type { FulfillmentType, SavedAddress, SelectedIngredient } from "@/data/types";
 
 // Sufixo de versão: subir quando `seedOrders()` mudar de forma relevante —
@@ -93,6 +95,11 @@ export type CartOrder = {
   /** 0–100, desconto sobre o subtotal de produtos. */
   promoPercentOff?: number;
   promoFreeDelivery?: boolean;
+  /** Comprovativo de pagamento carregado pelo cliente (data URL de imagem),
+   * depois de o restaurante aceitar e fixar o método exigido. */
+  paymentProof?: string;
+  /** ISO — quando o comprovativo foi carregado. */
+  paymentProofAt?: string;
 };
 
 type NewCartLine = {
@@ -134,6 +141,9 @@ type CartValue = {
    * pagamento exigido e, se aplicável, a caução — e passa a "accepted". É o
    * que o cliente vê depois como exigência na confirmação. */
   acceptOrder: (orderId: string, paymentMethod: string, cautionRequired?: number) => void;
+  /** Cliente anexa (ou substitui) o comprovativo de pagamento — data URL de
+   * imagem. `null` remove. Visível de imediato no painel do restaurante. */
+  setPaymentProof: (orderId: string, dataUrl: string | null) => void;
   /** @deprecated Passo antigo do checkout do cliente — substituído por
    * `acceptOrder` (o restaurante é que fixa o pagamento). Mantido até o
    * fluxo do cliente ser migrado. */
@@ -203,10 +213,14 @@ function orderDiscount(order: CartOrder): number {
   return Math.round(orderSubtotal(order) * (order.promoPercentOff / 100));
 }
 
+/** Taxa de entrega: taxa única do restaurante (cobre até ao raio da
+ * política da plataforma) + acréscimo por km acima disso. `promoFreeDelivery`
+ * zera tudo. Ver `computeDeliveryFee` / `getDeliveryPolicy`. */
 function orderDeliveryFee(order: CartOrder): number {
   if (order.fulfillmentType !== "delivery") return 0;
   if (order.promoFreeDelivery) return 0;
-  return getRestaurant(order.restaurantId)?.deliveryFee ?? 0;
+  const base = getRestaurant(order.restaurantId)?.deliveryFee ?? 0;
+  return computeDeliveryFee(base, orderDistanceKm(order));
 }
 
 function orderTotal(order: CartOrder): number {
@@ -352,6 +366,22 @@ function seedOrders(): CartOrder[] {
   ].filter((o): o is CartOrder => o !== null);
 }
 
+/** Pedidos guardados antes de existir `fulfillmentType` chegam sem modo —
+ * atribui um a partir dos campos presentes, para nada renderizar
+ * "fulfillment.undefined". O efeito de persistência volta a gravá-los já
+ * corrigidos. */
+function normalizeOrder(o: CartOrder): CartOrder {
+  if (o.fulfillmentType) return o;
+  const fulfillmentType: FulfillmentType = o.deliveryAddress
+    ? "delivery"
+    : o.pickupAsap || o.pickupAt
+      ? "takeaway"
+      : o.partySize
+        ? "dinein"
+        : "delivery";
+  return { ...o, fulfillmentType };
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [orders, setOrders] = useState<CartOrder[]>(seedOrders);
@@ -364,7 +394,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        setOrders(JSON.parse(stored));
+        setOrders((JSON.parse(stored) as CartOrder[]).map(normalizeOrder));
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -479,6 +509,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
               ? { ...o, paymentMethod, ...(note !== undefined ? { note: note.trim() } : {}) }
               : o,
           ),
+        ),
+      setPaymentProof: (orderId, dataUrl) =>
+        setOrders((prev) =>
+          prev.map((o) => {
+            if (o.id !== orderId) return o;
+            if (!dataUrl) {
+              const { paymentProof: _p, paymentProofAt: _a, ...rest } = o;
+              return rest;
+            }
+            return { ...o, paymentProof: dataUrl, paymentProofAt: new Date().toISOString() };
+          }),
         ),
       updateOrderStatus: (orderId, status) =>
         setOrders((prev) =>
