@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
 import type { PromoEffect } from "@/data/offers-store";
+import { computeDeliveryFee } from "@/data/platform-settings-store";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
+import { orderDistanceKm } from "@/lib/delivery-eval";
 import type { FulfillmentType, SavedAddress, SelectedIngredient } from "@/data/types";
 
 // Sufixo de versão: subir quando `seedOrders()` mudar de forma relevante —
@@ -203,10 +205,14 @@ function orderDiscount(order: CartOrder): number {
   return Math.round(orderSubtotal(order) * (order.promoPercentOff / 100));
 }
 
+/** Taxa de entrega: taxa única do restaurante (cobre até ao raio da
+ * política da plataforma) + acréscimo por km acima disso. `promoFreeDelivery`
+ * zera tudo. Ver `computeDeliveryFee` / `getDeliveryPolicy`. */
 function orderDeliveryFee(order: CartOrder): number {
   if (order.fulfillmentType !== "delivery") return 0;
   if (order.promoFreeDelivery) return 0;
-  return getRestaurant(order.restaurantId)?.deliveryFee ?? 0;
+  const base = getRestaurant(order.restaurantId)?.deliveryFee ?? 0;
+  return computeDeliveryFee(base, orderDistanceKm(order));
 }
 
 function orderTotal(order: CartOrder): number {

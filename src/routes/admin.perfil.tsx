@@ -44,6 +44,7 @@ import { getVideoDurationSec } from "@/lib/image-upload";
 import { isVideoSrc } from "@/lib/video-trim";
 import { defaultWeeklyHours, formatWeeklyHours, isOpenNow, nextOpenAt } from "@/lib/opening-hours";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 
 export const Route = createFileRoute("/admin/perfil")({
   head: () => ({ meta: [{ title: "Restaurante — Painel Kino.com" }] }),
@@ -238,6 +239,7 @@ function GalleryEditor({
 
 function AdminPerfil() {
   const { restaurant, logout } = useRestaurantAdmin();
+  const deliveryPolicy = useDeliveryPolicy();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -628,6 +630,12 @@ function AdminPerfil() {
                           value={deliveryFee}
                           onChange={(e) => setDeliveryFee(e.target.value)}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          {t("adminPerfil.deliveryFeeHint", {
+                            km: deliveryPolicy.freeRadiusKm,
+                            surcharge: formatKz(deliveryPolicy.perKmSurchargeKz),
+                          })}
+                        </p>
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="rest-delivery-time">
@@ -980,6 +988,12 @@ function AdminPerfil() {
                   <dl className="grid gap-4 sm:grid-cols-2">
                     <ReadRow label={t("adminPerfil.deliveryFeeLabel")}>
                       {formatKz(restaurant.deliveryFee)}
+                      <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                        {t("adminPerfil.deliveryFeeHint", {
+                          km: deliveryPolicy.freeRadiusKm,
+                          surcharge: formatKz(deliveryPolicy.perKmSurchargeKz),
+                        })}
+                      </span>
                     </ReadRow>
                     <ReadRow label={t("adminPerfil.deliveryTimeLabel")}>
                       {t("adminPerfil.minutesValue", { min: restaurant.estimatedDeliveryMinutes })}

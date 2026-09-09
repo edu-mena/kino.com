@@ -55,11 +55,13 @@ import {
   assessDelivery,
   DELIVERY_RADIUS_KM,
   minutesSince,
+  orderDistanceKm,
   PENDING_SLA_MIN,
   type DeliveryLevel,
 } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/pedidos")({
@@ -155,6 +157,7 @@ function weekStart(d: Date) {
 
 function AdminPedidos() {
   const { restaurant } = useRestaurantAdmin();
+  const deliveryPolicy = useDeliveryPolicy();
   const { orders, orderTotal, orderSubtotal, orderDiscount, updateOrderStatus, acceptOrder } =
     useCart();
   const {
@@ -1089,7 +1092,27 @@ function AdminPedidos() {
                                 </div>
                               )}
                               <div className="flex justify-between text-muted-foreground">
-                                <span>{t("adminPedidos.deliveryFee")}</span>
+                                <span>
+                                  {t("adminPedidos.deliveryFee")}
+                                  {active.fulfillmentType === "delivery" &&
+                                    (() => {
+                                      const extra = Math.max(
+                                        0,
+                                        Math.ceil(
+                                          orderDistanceKm(active) - deliveryPolicy.freeRadiusKm,
+                                        ),
+                                      );
+                                      return extra > 0 ? (
+                                        <span className="ml-1 text-[11px]">
+                                          {t("adminPedidos.deliverySurchargeNote", {
+                                            radius: deliveryPolicy.freeRadiusKm,
+                                            extraKm: extra,
+                                            surcharge: formatKz(deliveryPolicy.perKmSurchargeKz),
+                                          })}
+                                        </span>
+                                      ) : null;
+                                    })()}
+                                </span>
                                 <span>
                                   {formatKz(
                                     orderTotal(active) -

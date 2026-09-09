@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarCheck, Package, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Bike, CalendarCheck, Package, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   ADMIN_FILTER_SELECT,
   KpiTile,
@@ -12,10 +13,12 @@ import {
 } from "@/components/admin-stats";
 import { SystemPageHeading } from "@/components/system-shell";
 import { getAllRestaurants, getMenuItem } from "@/data/helpers";
+import { setDeliveryPolicy } from "@/data/platform-settings-store";
 import { useTranslation } from "@/i18n";
 import { useCart, type CartOrderStatus } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
 import { useReservations } from "@/lib/reservations";
+import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { BCP47, last8Weeks } from "@/lib/week";
 
 export const Route = createFileRoute("/sistema/operacao")({
@@ -58,6 +61,27 @@ function SistemaOperacao() {
   const [tab, setTab] = useState<Tab>("pedidos");
   const [restFilter, setRestFilter] = useState("todos");
   const [query, setQuery] = useState("");
+
+  // Política de entrega global — o restaurante define a taxa única (perfil);
+  // aqui define-se o raio que ela cobre e o acréscimo por km acima disso.
+  const deliveryPolicy = useDeliveryPolicy();
+  const [radiusDraft, setRadiusDraft] = useState("");
+  const [surchargeDraft, setSurchargeDraft] = useState("");
+  useEffect(() => {
+    setRadiusDraft(String(deliveryPolicy.freeRadiusKm));
+    setSurchargeDraft(String(deliveryPolicy.perKmSurchargeKz));
+  }, [deliveryPolicy.freeRadiusKm, deliveryPolicy.perKmSurchargeKz]);
+  const policyDirty =
+    Number(radiusDraft) !== deliveryPolicy.freeRadiusKm ||
+    Number(surchargeDraft) !== deliveryPolicy.perKmSurchargeKz;
+  const saveDeliveryPolicy = () => {
+    const ok = setDeliveryPolicy({
+      freeRadiusKm: Number(radiusDraft),
+      perKmSurchargeKz: Number(surchargeDraft),
+    });
+    if (ok) toast.success(t("sistema.operacao.policySavedToast"));
+    else toast.error(t("sistema.operacao.policySaveFailedToast"));
+  };
 
   const weekBuckets = useMemo(() => last8Weeks(), []);
 
@@ -225,6 +249,59 @@ function SistemaOperacao() {
       />
 
       <div className="mx-auto max-w-6xl px-4 md:px-6">
+        <section className="card-soft mt-6 p-5 sm:p-6">
+          <div className="flex items-start gap-3 border-b border-border pb-4">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <Bike className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="font-display text-base font-bold text-foreground">
+                {t("sistema.operacao.policyTitle")}
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t("sistema.operacao.policyHint")}
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <label className="text-xs font-semibold text-foreground">
+              {t("sistema.operacao.policyRadiusLabel")}
+              <input
+                type="number"
+                min={1}
+                value={radiusDraft}
+                onChange={(e) => setRadiusDraft(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm font-normal outline-none transition-colors focus:border-brand"
+              />
+            </label>
+            <label className="text-xs font-semibold text-foreground">
+              {t("sistema.operacao.policySurchargeLabel")}
+              <input
+                type="number"
+                min={0}
+                step={50}
+                value={surchargeDraft}
+                onChange={(e) => setSurchargeDraft(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm font-normal outline-none transition-colors focus:border-brand"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={!policyDirty}
+              onClick={saveDeliveryPolicy}
+              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {t("sistema.operacao.policySave")}
+            </button>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {t("sistema.operacao.policyExample", {
+              radius: deliveryPolicy.freeRadiusKm,
+              surcharge: formatKz(deliveryPolicy.perKmSurchargeKz),
+            })}
+          </p>
+        </section>
+
         {tab === "pedidos" ? (
           <StatSection
             title={t("sistema.operacao.ordersTitle")}

@@ -28,8 +28,10 @@ import { useAuth } from "@/lib/auth";
 import { lineCustomizations, lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
 import { readCourierForOrder } from "@/lib/couriers";
 import { viewerKey } from "@/lib/customer";
+import { orderDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
 import { getPaymentMethod } from "@/lib/mock-data";
+import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { useTranslation } from "@/i18n";
 
 const MODE_ICON: Record<FulfillmentType, typeof Bike> = {
@@ -175,9 +177,16 @@ function Entrega() {
 
 function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }) {
   const { cancelOrder, orderTotal, orderDiscount } = useCart();
+  const deliveryPolicy = useDeliveryPolicy();
   const restaurant = getRestaurant(order.restaurantId);
   const { t } = useTranslation();
   const canCancel = order.status === "pending";
+  const isDelivery = order.fulfillmentType === "delivery";
+  const subtotal = order.lines.reduce((s, l) => s + lineUnitPrice(l) * l.qty, 0);
+  const deliveryFee = isDelivery ? orderTotal(order) - subtotal + orderDiscount(order) : 0;
+  const surchargeKm = isDelivery
+    ? Math.max(0, Math.ceil(orderDistanceKm(order) - deliveryPolicy.freeRadiusKm))
+    : 0;
   const [reviewOpen, setReviewOpen] = useState(false);
   const reviewRef = `order:${order.id}`;
   const canReview =
@@ -407,29 +416,47 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         </ul>
       </div>
 
-      {order.promoCode && (
+      {(order.promoCode || isDelivery) && (
         <div className="mt-4 space-y-1 border-t border-border pt-4 text-sm">
           <div className="flex items-center justify-between text-muted-foreground">
             <span>{t("entrega.subtotal")}</span>
-            <span>{formatKz(order.lines.reduce((s, l) => s + lineUnitPrice(l) * l.qty, 0))}</span>
+            <span>{formatKz(subtotal)}</span>
           </div>
-          <div className="flex items-center justify-between text-success">
-            <span>
-              {t("entrega.promoLine", { code: order.promoCode })}
-              {order.promoLabel ? ` · ${order.promoLabel}` : ""}
-            </span>
-            <span>
-              {orderDiscount(order) > 0
-                ? `− ${formatKz(orderDiscount(order))}`
-                : t("entrega.promoFreeDelivery")}
-            </span>
-          </div>
+          {order.promoCode && (
+            <div className="flex items-center justify-between text-success">
+              <span>
+                {t("entrega.promoLine", { code: order.promoCode })}
+                {order.promoLabel ? ` · ${order.promoLabel}` : ""}
+              </span>
+              <span>
+                {orderDiscount(order) > 0
+                  ? `− ${formatKz(orderDiscount(order))}`
+                  : t("entrega.promoFreeDelivery")}
+              </span>
+            </div>
+          )}
+          {isDelivery && (
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>
+                {t("entrega.deliveryFeeLine")}
+                {surchargeKm > 0 && (
+                  <span className="ml-1 text-[11px]">
+                    {t("entrega.deliverySurchargeNote", {
+                      radius: deliveryPolicy.freeRadiusKm,
+                      extraKm: surchargeKm,
+                    })}
+                  </span>
+                )}
+              </span>
+              <span>{deliveryFee > 0 ? formatKz(deliveryFee) : t("entrega.deliveryFree")}</span>
+            </div>
+          )}
         </div>
       )}
 
       <div
         className={`mt-4 flex items-center justify-between border-t border-border pt-4 text-base ${
-          order.promoCode ? "border-t-0 pt-1" : ""
+          order.promoCode || isDelivery ? "border-t-0 pt-1" : ""
         }`}
       >
         <span className="font-bold">{t("entrega.amount")}</span>

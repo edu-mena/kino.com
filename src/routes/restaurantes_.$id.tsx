@@ -212,7 +212,7 @@ function RestaurantDetail() {
             >
               <Bike className="h-4 w-4" />
               {t("restaurantDetail.etaMinutes", { min: deliveryEst.minutes })} ·{" "}
-              {formatKz(restaurant.deliveryFee)}
+              {t("restaurantDetail.deliveryFeeFrom", { fee: formatKz(restaurant.deliveryFee) })}
             </span>
           )}
           <span className="flex items-center gap-1">

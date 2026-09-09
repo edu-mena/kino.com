@@ -300,7 +300,9 @@ function AdminClientes() {
                     <span className="pl-3 text-right">{t("adminClientes.colLast")}</span>
                   </div>
 
-                  <div>
+                  {/* ~5 registos visíveis, resto com scroll vertical — o card
+                      de detalhe ao lado pode ficar bem mais alto. */}
+                  <div className="max-h-[21rem] overflow-y-auto">
                     {list.map((c, i) => (
                       <button
                         key={c.key}

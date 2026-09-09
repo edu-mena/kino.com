@@ -29,13 +29,16 @@ import {
   orderModeRequiresCaution,
 } from "@/data/helpers";
 import { resolvePromoCode, type PromoEffect } from "@/data/offers-store";
+import { computeDeliveryFee } from "@/data/platform-settings-store";
 import type { FulfillmentType } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { billLineUnitPrice, useBill } from "@/lib/bill";
 import { useCart, type OrderFulfillment } from "@/lib/cart";
+import { addressDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
 import { useLocation } from "@/lib/location";
 import { useRestaurantStatus } from "@/lib/restaurant-status";
+import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 
 /**
  * Card fixo no canto inferior direito — lista temporária de tudo o que foi
@@ -79,6 +82,7 @@ export function OrderBuilderCard() {
   const { addOrder } = useCart();
   const status = useRestaurantStatus(restaurantId ?? "");
   const { allAddresses, selected: headerLocation } = useLocation();
+  const deliveryPolicy = useDeliveryPolicy();
   const navigate = useNavigate();
 
   const [expanded, setExpanded] = useState(false);
@@ -110,6 +114,20 @@ export function OrderBuilderCard() {
   const total = lines.reduce((sum, l) => sum + billLineUnitPrice(l) * l.qty, 0);
   const cautionForMode = orderModeRequiresCaution(restaurant, mode);
   const promoDiscount = promo?.percentOff ? Math.round(total * (promo.percentOff / 100)) : 0;
+
+  // Estimativa da taxa de entrega para a morada escolhida — taxa única do
+  // restaurante + acréscimo por km acima do raio da política da plataforma.
+  const chosenAddress = allAddresses.find((a) => a.id === chosenAddressId);
+  const deliveryKm =
+    mode === "delivery" && chosenAddress ? addressDistanceKm(restaurantId, chosenAddress) : null;
+  const deliveryFeeEstimate =
+    deliveryKm == null
+      ? null
+      : promo?.freeDelivery
+        ? 0
+        : computeDeliveryFee(restaurant.deliveryFee, deliveryKm, deliveryPolicy);
+  const deliverySurchargeKm =
+    deliveryKm == null ? 0 : Math.max(0, Math.ceil(deliveryKm - deliveryPolicy.freeRadiusKm));
 
   const resetPromo = () => {
     setPromoInput("");
@@ -363,6 +381,31 @@ export function OrderBuilderCard() {
                 <Plus className="h-3.5 w-3.5" />
                 Adicionar novo endereço
               </Link>
+
+              {deliveryKm != null && deliveryFeeEstimate != null && (
+                <div className="mt-3 rounded-lg bg-surface px-3 py-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      {t("orderBuilderCard.deliveryFeeEstimate", { km: deliveryKm })}
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {deliveryFeeEstimate === 0
+                        ? t("orderBuilderCard.deliveryFree")
+                        : formatKz(deliveryFeeEstimate)}
+                    </span>
+                  </div>
+                  {deliverySurchargeKm > 0 && !promo?.freeDelivery && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {t("orderBuilderCard.deliverySurchargeNote", {
+                        base: formatKz(restaurant.deliveryFee),
+                        radius: deliveryPolicy.freeRadiusKm,
+                        extraKm: deliverySurchargeKm,
+                        surcharge: formatKz(deliveryPolicy.perKmSurchargeKz),
+                      })}
+                    </p>
+                  )}
+                </div>
+              )}
             </>
           )}
 
