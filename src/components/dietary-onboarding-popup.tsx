@@ -4,6 +4,7 @@ import { Salad } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { RESTRICTION_PACKAGES } from "@/lib/dietary-packages";
+import { DIETARY_ONBOARDING_DONE_EVENT } from "@/lib/onboarding";
 import { usePreferences } from "@/lib/preferences";
 import { useTranslation } from "@/i18n";
 
@@ -20,6 +21,17 @@ export function DietaryOnboardingPopup() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
 
+  /** Marca como visto e avisa o tour de onboarding que pode arrancar — é o
+   * que garante que os dois não aparecem ao mesmo tempo. */
+  const resolve = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, "done");
+    } catch {
+      // ignora — sem storage, a pergunta volta a aparecer na próxima visita.
+    }
+    window.dispatchEvent(new Event(DIETARY_ONBOARDING_DONE_EVENT));
+  };
+
   useEffect(() => {
     let seen = true;
     try {
@@ -27,23 +39,17 @@ export function DietaryOnboardingPopup() {
     } catch {
       // localStorage indisponível — trata como já visto, não insiste.
     }
-    // Também não insiste se a pessoa já tem alguma restrição guardada
-    // (ex: definida antes desta pergunta existir).
-    if (!seen && dietaryRestrictions.length === 0) {
-      const timer = setTimeout(() => setOpen(true), 800);
-      return () => clearTimeout(timer);
+    if (seen) return undefined; // nada a mostrar; o tour já não espera por nós
+    // Já tem restrições guardadas (definidas antes desta pergunta existir):
+    // não mostra o card, mas resolve já para o tour poder arrancar.
+    if (dietaryRestrictions.length > 0) {
+      resolve();
+      return undefined;
     }
-    return undefined;
+    const timer = setTimeout(() => setOpen(true), 800);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const markSeen = () => {
-    try {
-      localStorage.setItem(STORAGE_KEY, "done");
-    } catch {
-      // ignora — sem storage, a pergunta volta a aparecer na próxima visita.
-    }
-  };
 
   const toggle = (label: string) => {
     setSelected((prev) =>
@@ -52,13 +58,13 @@ export function DietaryOnboardingPopup() {
   };
 
   const skip = () => {
-    markSeen();
+    resolve();
     setOpen(false);
   };
 
   const save = () => {
     setDietaryRestrictions(selected);
-    markSeen();
+    resolve();
     setOpen(false);
     if (selected.length > 0) toast.success(t("dietaryOnboarding.savedToast"));
   };
