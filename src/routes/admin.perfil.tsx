@@ -28,13 +28,6 @@ import { ImageUploadField } from "@/components/image-upload-field";
 import { LocationMap, LocationPicker } from "@/components/location-map";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { VideoTrimmer } from "@/components/video-trimmer";
@@ -253,7 +246,6 @@ function AdminPerfil() {
   const [coverImage, setCoverImage] = useState("");
   const [description, setDescription] = useState("");
   const [cuisine, setCuisine] = useState("");
-  const [priceLevel, setPriceLevel] = useState("Kz Kz");
   const [address, setAddress] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
   const [city, setCity] = useState("");
@@ -283,7 +275,6 @@ function AdminPerfil() {
     setCoverImage(restaurant.coverImage);
     setDescription(restaurant.description);
     setCuisine(restaurant.cuisine);
-    setPriceLevel(restaurant.priceLevel);
     setAddress(restaurant.address);
     setNeighborhood(restaurant.neighborhood);
     setCity(restaurant.city);
@@ -347,7 +338,6 @@ function AdminPerfil() {
       coverImage: coverImage.trim() || restaurant.coverImage,
       description: description.trim(),
       cuisine: cuisine.trim(),
-      priceLevel,
       address: address.trim(),
       neighborhood: neighborhood.trim(),
       city: city.trim(),
@@ -378,7 +368,7 @@ function AdminPerfil() {
   };
 
   const heroCuisine = editing ? cuisine : restaurant.cuisine;
-  const heroPrice = editing ? priceLevel : restaurant.priceLevel;
+  const heroPrice = restaurant.priceLevel;
   const heroDelivery = editing ? isDeliveryAvailable : restaurant.isDeliveryAvailable;
   const heroCover = editing ? coverImage || restaurant.coverImage : restaurant.coverImage;
   const na = t("adminPerfil.notProvided");
@@ -479,17 +469,13 @@ function AdminPerfil() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="rest-price-level">{t("adminPerfil.priceLevelLabel")}</Label>
-                    <Select value={priceLevel} onValueChange={setPriceLevel}>
-                      <SelectTrigger id="rest-price-level" className="rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Kz">{t("adminPerfil.priceLevelLow")}</SelectItem>
-                        <SelectItem value="Kz Kz">{t("adminPerfil.priceLevelMid")}</SelectItem>
-                        <SelectItem value="Kz Kz Kz">{t("adminPerfil.priceLevelHigh")}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>{t("adminPerfil.priceLevelLabel")}</Label>
+                    <div className="flex h-9 items-center rounded-xl border border-border bg-surface px-3 text-sm font-semibold text-foreground">
+                      {restaurant.priceLevel}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {t("adminPerfil.priceLevelAuto")}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -863,6 +849,9 @@ function AdminPerfil() {
                   </ReadRow>
                   <ReadRow label={t("adminPerfil.priceLevelLabel")}>
                     {restaurant.priceLevel}
+                    <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                      {t("adminPerfil.priceLevelAuto")}
+                    </span>
                   </ReadRow>
                 </dl>
               </div>

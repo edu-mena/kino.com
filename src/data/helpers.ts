@@ -10,11 +10,17 @@ import { applySystemFlags } from "./system-flags-store";
 import type { FulfillmentType, MenuItem, Restaurant, RestaurantStory, Review } from "./types";
 import { paymentMethods } from "@/lib/mock-data";
 import { formatWeeklyHours, seedHoursFor } from "@/lib/opening-hours";
+import { averageMenuPrice, priceLevelFromAverage } from "@/lib/price-level";
 
 /** Edições de `/admin/perfil` + sinalizadores da área de sistema (destaque) +
  * avaliações de clientes + horário estruturado, aplicados sobre o seed.
- * É o que faz uma mudança aparecer em todo o lado que lê um restaurante. */
-function withOverrides(seed: Restaurant): Restaurant {
+ * É o que faz uma mudança aparecer em todo o lado que lê um restaurante.
+ *
+ * `menuItems` é a lista completa de itens de cardápio já resolvida — passada
+ * por `getAllRestaurants` para não a recalcular por restaurante; `getRestaurant`
+ * (um só) deixa cair para `getEffectiveMenuItems()`. O `priceLevel` é sempre
+ * calculado daqui (média de preços do cardápio), nunca do valor guardado. */
+function withOverrides(seed: Restaurant, menuItems?: MenuItem[]): Restaurant {
   const r = applySystemFlags(applyProfileEdits(seed));
   const { rating, reviewCount } = blendedRating(r.id, seed.rating, seed.reviewCount);
   const hours = r.hours ?? seedHoursFor(r.id);
@@ -22,6 +28,7 @@ function withOverrides(seed: Restaurant): Restaurant {
     r.lat != null && r.lng != null
       ? { lat: r.lat, lng: r.lng }
       : deriveRestaurantCoords(r.id, r.neighborhood);
+  const items = (menuItems ?? getEffectiveMenuItems()).filter((m) => m.restaurantId === r.id);
   return {
     ...r,
     rating,
@@ -29,6 +36,7 @@ function withOverrides(seed: Restaurant): Restaurant {
     hours,
     lat: coords.lat,
     lng: coords.lng,
+    priceLevel: priceLevelFromAverage(averageMenuPrice(items)),
     openingHours: r.openingHours || formatWeeklyHours(hours, "pt"),
   };
 }
@@ -58,7 +66,10 @@ export function getRestaurant(id: string): Restaurant | undefined {
 /** Todos os restaurantes (seed + criados em runtime), já com edições,
  * destaque, avaliações e horário aplicados. Base da busca global. */
 export function getAllRestaurants(): Restaurant[] {
-  return [...INITIAL_RESTAURANTS, ...getCustomRestaurants()].map(withOverrides);
+  const menuItems = getEffectiveMenuItems();
+  return [...INITIAL_RESTAURANTS, ...getCustomRestaurants()].map((r) =>
+    withOverrides(r, menuItems),
+  );
 }
 
 // Todas as funções de prato abaixo leem de `getEffectiveMenuItems()`, não do

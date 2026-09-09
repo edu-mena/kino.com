@@ -29,9 +29,9 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Restaurant } from "@/data/types";
 import { getAllRestaurants } from "@/data/helpers";
-import { INITIAL_RESTAURANTS } from "@/data/mockData";
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
 import { formatKz } from "@/lib/format";
+import { PRICE_TIER_LABELS } from "@/lib/price-level";
 import { usePreferences } from "@/lib/preferences";
 import { computeRestaurantStatus } from "@/lib/restaurant-status";
 import { useSubscriptions } from "@/lib/subscriptions";
@@ -55,9 +55,7 @@ export const Route = createFileRoute("/restaurantes")({
   component: Restaurantes,
 });
 
-const priceLevels = [...new Set(INITIAL_RESTAURANTS.map((r) => r.priceLevel))].sort(
-  (a, b) => a.length - b.length,
-);
+const priceLevels = [...PRICE_TIER_LABELS];
 
 const sortOptions = [
   { value: "proximidade", labelKey: "restaurantes.sortProximity" },

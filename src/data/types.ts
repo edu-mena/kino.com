@@ -18,7 +18,10 @@ export interface Restaurant {
   name: string;
   description: string;
   cuisine: string;
-  priceLevel: string; // ex: "Kz", "Kz Kz", "Kz Kz Kz"
+  /** "Kz" | "Kz Kz" | "Kz Kz Kz" — CALCULADO em `withOverrides` a partir da
+   * média de preços do cardápio (`@/lib/price-level`), nunca definido à mão.
+   * O valor no seed é só um valor inicial, ignorado assim que há cardápio. */
+  priceLevel: string;
   rating: number;
   reviewCount: number;
   distanceKm: number;

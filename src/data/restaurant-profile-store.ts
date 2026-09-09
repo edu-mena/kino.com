@@ -18,7 +18,6 @@ export type RestaurantProfileEdit = Partial<
     Restaurant,
     | "description"
     | "cuisine"
-    | "priceLevel"
     | "address"
     | "neighborhood"
     | "city"
