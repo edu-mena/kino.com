@@ -352,6 +352,22 @@ function seedOrders(): CartOrder[] {
   ].filter((o): o is CartOrder => o !== null);
 }
 
+/** Pedidos guardados antes de existir `fulfillmentType` chegam sem modo —
+ * atribui um a partir dos campos presentes, para nada renderizar
+ * "fulfillment.undefined". O efeito de persistência volta a gravá-los já
+ * corrigidos. */
+function normalizeOrder(o: CartOrder): CartOrder {
+  if (o.fulfillmentType) return o;
+  const fulfillmentType: FulfillmentType = o.deliveryAddress
+    ? "delivery"
+    : o.pickupAsap || o.pickupAt
+      ? "takeaway"
+      : o.partySize
+        ? "dinein"
+        : "delivery";
+  return { ...o, fulfillmentType };
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [orders, setOrders] = useState<CartOrder[]>(seedOrders);
@@ -364,7 +380,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        setOrders(JSON.parse(stored));
+        setOrders((JSON.parse(stored) as CartOrder[]).map(normalizeOrder));
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
