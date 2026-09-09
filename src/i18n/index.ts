@@ -84,6 +84,11 @@ export function useTranslation() {
 
   useEffect(() => {
     if (locale !== "pt") loadLocale(locale);
+    // Mantém `<html lang>` alinhado com o idioma ativo. O shell SSR fixa
+    // `pt` (mercado maioritário); sem isto, um `lang` errado leva alguns
+    // browsers Android a autotraduzir a página e a injetar fragmentos
+    // traduzidos ("Não se trata de uma questão de…") sem motivo.
+    if (typeof document !== "undefined") document.documentElement.lang = locale;
   }, [locale]);
 
   const dict = getDictionary(locale);

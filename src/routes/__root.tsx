@@ -73,7 +73,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    // `pt` é o idioma por omissão (mercado de Luanda). `useTranslation`
+    // atualiza `<html lang>` no cliente se o utilizador trocar para en/fr.
+    // Um `lang` errado faz alguns browsers autotraduzir a página.
+    <html lang="pt">
       <head>
         <HeadContent />
       </head>
