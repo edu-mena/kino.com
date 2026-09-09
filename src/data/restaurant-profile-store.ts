@@ -31,6 +31,7 @@ export type RestaurantProfileEdit = Partial<
     | "isDeliveryAvailable"
     | "fulfillmentModes"
     | "acceptedPaymentMethods"
+    | "paymentDetails"
     | "cautionModesForOrders"
     | "deliveryZones"
     | "deliveryFee"

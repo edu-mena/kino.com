@@ -51,6 +51,12 @@ export interface Restaurant {
    * `@/lib/mock-data`). Ausente/vazio = aceita todos. O restaurante escolhe
    * de entre estes o método exigido ao aceitar cada pedido. */
   acceptedPaymentMethods?: string[];
+  /** Dados de destino do pagamento, por id de método — texto livre (IBAN +
+   * titular para "transferencia", nº de telefone / carteira para os
+   * digitais). Definidos pelo restaurante em `/admin/perfil`; o cliente
+   * vê-os em `/entrega` depois de o restaurante fixar o método exigido.
+   * "cash" (numerário) não precisa. */
+  paymentDetails?: Record<string, string>;
   /** Modos de pedido para os quais a caução (`cautionAmount`) é exigida como
    * garantia — a par do uso em reservas. Ausente = nenhum (caução fica só
    * nas reservas). */

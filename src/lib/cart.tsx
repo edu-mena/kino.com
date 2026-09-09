@@ -95,6 +95,11 @@ export type CartOrder = {
   /** 0–100, desconto sobre o subtotal de produtos. */
   promoPercentOff?: number;
   promoFreeDelivery?: boolean;
+  /** Comprovativo de pagamento carregado pelo cliente (data URL de imagem),
+   * depois de o restaurante aceitar e fixar o método exigido. */
+  paymentProof?: string;
+  /** ISO — quando o comprovativo foi carregado. */
+  paymentProofAt?: string;
 };
 
 type NewCartLine = {
@@ -136,6 +141,9 @@ type CartValue = {
    * pagamento exigido e, se aplicável, a caução — e passa a "accepted". É o
    * que o cliente vê depois como exigência na confirmação. */
   acceptOrder: (orderId: string, paymentMethod: string, cautionRequired?: number) => void;
+  /** Cliente anexa (ou substitui) o comprovativo de pagamento — data URL de
+   * imagem. `null` remove. Visível de imediato no painel do restaurante. */
+  setPaymentProof: (orderId: string, dataUrl: string | null) => void;
   /** @deprecated Passo antigo do checkout do cliente — substituído por
    * `acceptOrder` (o restaurante é que fixa o pagamento). Mantido até o
    * fluxo do cliente ser migrado. */
@@ -501,6 +509,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
               ? { ...o, paymentMethod, ...(note !== undefined ? { note: note.trim() } : {}) }
               : o,
           ),
+        ),
+      setPaymentProof: (orderId, dataUrl) =>
+        setOrders((prev) =>
+          prev.map((o) => {
+            if (o.id !== orderId) return o;
+            if (!dataUrl) {
+              const { paymentProof: _p, paymentProofAt: _a, ...rest } = o;
+              return rest;
+            }
+            return { ...o, paymentProof: dataUrl, paymentProofAt: new Date().toISOString() };
+          }),
         ),
       updateOrderStatus: (orderId, status) =>
         setOrders((prev) =>
