@@ -936,9 +936,9 @@ export const en: Dictionary = {
       codePlaceholder: "e.g. KINO10",
       percentOffLabel: "Discount percentage",
       percentOffHint: "Applied to the subtotal when the customer uses the code on an order.",
-      imageLabel: "Promo image",
+      imageLabel: "Promo image or video",
       imageHelp:
-        "Paste a link or upload an image from your device. Leave blank for a generic image.",
+        "Paste a link, or upload an image or a video (up to 10s) from your device. Leave blank for a generic image.",
       layoutLabel: "Display format",
       layoutSplit: "Image beside the text",
       layoutCover: "Background image (text overlay)",
@@ -1218,8 +1218,9 @@ export const en: Dictionary = {
     percentOffLabel: "Discount percentage",
     percentOffHint: "Applied to the subtotal when the customer uses the code on an order.",
     percentOffNone: "No discount (code is informational only)",
-    imageLabel: "Promo image",
-    imageHelp: "Paste a link or upload an image from your device. Leave blank for a generic image.",
+    imageLabel: "Promo image or video",
+    imageHelp:
+      "Paste a link, or upload an image or a video (up to 10s) from your device. Leave blank for a generic image.",
     layoutLabel: "Display format",
     layoutSplit: "Image beside the text",
     layoutCover: "Background image (text overlay)",

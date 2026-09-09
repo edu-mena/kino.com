@@ -940,9 +940,9 @@ export const pt = {
       codePlaceholder: "Ex: KINO10",
       percentOffLabel: "Percentagem de desconto",
       percentOffHint: "Aplicada ao subtotal quando o cliente usa o código no pedido.",
-      imageLabel: "Imagem da promoção",
+      imageLabel: "Imagem ou vídeo da promoção",
       imageHelp:
-        "Cole um link ou carregue uma imagem do dispositivo. Em branco, usa uma imagem genérica.",
+        "Cole um link, ou carregue uma imagem ou um vídeo (até 10 s) do dispositivo. Em branco, usa uma imagem genérica.",
       layoutLabel: "Formato de exibição",
       layoutSplit: "Imagem ao lado do texto",
       layoutCover: "Imagem de fundo (texto sobreposto)",
@@ -1222,9 +1222,9 @@ export const pt = {
     percentOffLabel: "Percentagem de desconto",
     percentOffHint: "Aplicada ao subtotal quando o cliente usa o código no pedido.",
     percentOffNone: "Sem desconto (código só informativo)",
-    imageLabel: "Imagem da promoção",
+    imageLabel: "Imagem ou vídeo da promoção",
     imageHelp:
-      "Cole um link ou carregue uma imagem do dispositivo. Em branco, usa uma imagem genérica.",
+      "Cole um link, ou carregue uma imagem ou um vídeo (até 10 s) do dispositivo. Em branco, usa uma imagem genérica.",
     layoutLabel: "Formato de exibição",
     layoutSplit: "Imagem ao lado do texto",
     layoutCover: "Imagem de fundo (texto sobreposto)",

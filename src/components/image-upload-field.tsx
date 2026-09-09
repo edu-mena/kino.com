@@ -12,7 +12,12 @@ import { fileToResizedDataUrl, getVideoDurationSec } from "@/lib/image-upload";
 /** Janela mínima aceite pelo controlador de corte. */
 const MIN_VIDEO_SEC = 3;
 
-export type UploadMediaMeta = { mediaType: "image" | "video"; durationSec?: number };
+export type UploadMediaMeta = {
+  mediaType: "image" | "video";
+  durationSec?: number;
+  /** Frame de pré-visualização — só quando `mediaType === "video"`. */
+  poster?: string;
+};
 
 /**
  * Campo de media reutilizável — link OU upload do dispositivo (extraído
@@ -174,7 +179,7 @@ export function ImageUploadField({
         maxSec={maxVideoSec}
         onConfirm={(r) => {
           onChange(r.src);
-          onMediaChange?.({ mediaType: "video", durationSec: r.durationSec });
+          onMediaChange?.({ mediaType: "video", durationSec: r.durationSec, poster: r.poster });
           setTrimFile(null);
         }}
       />

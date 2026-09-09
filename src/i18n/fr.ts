@@ -944,9 +944,9 @@ export const fr: Dictionary = {
       codePlaceholder: "ex. KINO10",
       percentOffLabel: "Pourcentage de réduction",
       percentOffHint: "Appliqué au sous-total quand le client utilise le code sur une commande.",
-      imageLabel: "Image de la promo",
+      imageLabel: "Image ou vidéo de la promo",
       imageHelp:
-        "Collez un lien ou importez une image depuis votre appareil. Vide : image générique.",
+        "Collez un lien, ou importez une image ou une vidéo (jusqu'à 10 s) depuis votre appareil. Vide : image générique.",
       layoutLabel: "Format d'affichage",
       layoutSplit: "Image à côté du texte",
       layoutCover: "Image en fond (texte superposé)",
@@ -1228,9 +1228,9 @@ export const fr: Dictionary = {
     percentOffLabel: "Pourcentage de réduction",
     percentOffHint: "Appliqué au sous-total quand le client utilise le code sur une commande.",
     percentOffNone: "Sans réduction (code purement informatif)",
-    imageLabel: "Image de la promo",
+    imageLabel: "Image ou vidéo de la promo",
     imageHelp:
-      "Collez un lien ou importez une image depuis votre appareil. Vide : image générique.",
+      "Collez un lien, ou importez une image ou une vidéo (jusqu'à 10 s) depuis votre appareil. Vide : image générique.",
     layoutLabel: "Format d'affichage",
     layoutSplit: "Image à côté du texte",
     layoutCover: "Image en fond (texte superposé)",

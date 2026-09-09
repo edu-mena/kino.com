@@ -24,6 +24,50 @@ export function isVideoSrc(src: string): boolean {
   return src.startsWith("data:video") || VIDEO_EXT.test(src);
 }
 
+/**
+ * Frame de pré-visualização (JPEG data URL) de um src de vídeo, tirado
+ * perto do início (respeita `#t=` se existir). Best-effort: resolve com
+ * `""` se o browser não conseguir descodificar/desenhar.
+ */
+export function posterFromVideoSrc(src: string, maxDim = 720): Promise<string> {
+  return new Promise((resolve) => {
+    if (typeof document === "undefined") return resolve("");
+    const frag = parseTimeFragment(src);
+    const video = document.createElement("video");
+    video.src = src;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    const finish = (out: string) => {
+      video.removeAttribute("src");
+      video.load();
+      resolve(out);
+    };
+    video.onerror = () => finish("");
+    video.onloadeddata = () => {
+      const wantAt = (frag ? frag.start : 0) + 0.1;
+      const at = Math.min(wantAt, Math.max(0, (video.duration || 1) - 0.05));
+      video.onseeked = () => {
+        try {
+          const w = video.videoWidth || maxDim;
+          const h = video.videoHeight || maxDim;
+          const scale = Math.min(1, maxDim / Math.max(w, h));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(2, Math.round(w * scale));
+          canvas.height = Math.max(2, Math.round(h * scale));
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return finish("");
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          finish(canvas.toDataURL("image/jpeg", 0.7));
+        } catch {
+          finish("");
+        }
+      };
+      video.currentTime = at;
+    };
+  });
+}
+
 /** Lê o marcador `#t=a,b` (segundos) de um src, se existir. */
 export function parseTimeFragment(src: string): { start: number; end: number } | null {
   const m = src.match(/#t=([\d.]+),([\d.]+)/);
@@ -169,29 +213,35 @@ function reencode(file: File, startSec: number, endSec: number): Promise<string>
 }
 
 /**
- * Devolve `{ src, durationSec }` com a janela `[startSec, endSec]` do `file`.
- * Tenta recodificar; se não der, guarda o original com `#t=`.
+ * Devolve `{ src, durationSec, poster }` com a janela `[startSec, endSec]`
+ * do `file`. Tenta recodificar; se não der, guarda o original com `#t=`.
+ * `poster` é um frame de pré-visualização (pode vir `""` se falhar).
  */
 export async function trimVideo(
   file: File,
   startSec: number,
   endSec: number,
-): Promise<{ src: string; durationSec: number }> {
+): Promise<{ src: string; durationSec: number; poster: string }> {
   const durationSec = Math.max(1, Math.round(endSec - startSec));
 
+  let src: string | undefined;
   if (canReencode()) {
     try {
-      const src = await reencode(file, startSec, endSec);
-      return { src, durationSec };
+      src = await reencode(file, startSec, endSec);
     } catch (err) {
       if (err instanceof TrimError && err.code === "tooLarge") throw err;
       // qualquer outra falha → recuo
     }
   }
 
-  if (file.size > MAX_FALLBACK_BYTES) {
-    throw new TrimError("tooLarge", "fallback file too large");
+  if (src === undefined) {
+    if (file.size > MAX_FALLBACK_BYTES) {
+      throw new TrimError("tooLarge", "fallback file too large");
+    }
+    const raw = await fileToDataUrl(file);
+    src = `${raw}#t=${startSec.toFixed(2)},${endSec.toFixed(2)}`;
   }
-  const raw = await fileToDataUrl(file);
-  return { src: `${raw}#t=${startSec.toFixed(2)},${endSec.toFixed(2)}`, durationSec };
+
+  const poster = await posterFromVideoSrc(src).catch(() => "");
+  return { src, durationSec, poster };
 }

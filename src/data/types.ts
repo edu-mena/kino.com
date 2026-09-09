@@ -259,9 +259,17 @@ export interface Offer {
    * (ou em `type: "delivery"`, que dá entrega grátis) = o código é apenas
    * informativo. */
   percentOff?: number;
-  /** Imagem da promoção — URL colada ou data URL (upload). Ausente = usa
-   * uma imagem decorativa genérica no carrossel da home. */
+  /** Media da promoção — URL colada, data URL de imagem, ou data URL de
+   * vídeo (upload com corte, máx. 10 s). Ausente = usa uma imagem
+   * decorativa genérica no carrossel da home. */
   image?: string;
+  /** `"video"` quando `image` é um data URL de vídeo. Nesse caso
+   * `thumbnail` traz o frame de pré-visualização. Ausente = imagem. */
+  mediaType?: "image" | "video";
+  /** Frame de pré-visualização (JPEG data URL) — só em
+   * `mediaType === "video"`. Usado onde não dá para reproduzir o vídeo
+   * (listas do painel, página de Ofertas). */
+  thumbnail?: string;
   /** Formato de exibição no carrossel da home. Ausente = alterna
    * automaticamente (`split`/`cover`) pela posição. */
   layout?: "split" | "cover";

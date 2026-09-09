@@ -78,7 +78,17 @@ function Ofertas() {
                   </Link>
                 </div>
               </div>
-              {offer.image ? (
+              {offer.mediaType === "video" && offer.image ? (
+                <video
+                  src={offer.image}
+                  poster={offer.thumbnail}
+                  muted
+                  loop
+                  playsInline
+                  autoPlay
+                  className="h-20 w-20 shrink-0 rounded-2xl bg-black object-cover sm:h-28 sm:w-28"
+                />
+              ) : offer.image ? (
                 <img
                   src={offer.image}
                   alt=""

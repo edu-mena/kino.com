@@ -51,6 +51,7 @@ type Slide =
       description: string;
       cta: string;
       video: string;
+      poster?: string;
       orientation: "horizontal" | "vertical";
       target: LinkTarget;
     };
@@ -71,17 +72,30 @@ function buildSlides(
     if (slides.length >= MAX_SLIDES) return;
     const { title, description } = translateOffer(offer, t);
     const restaurant = offer.restaurantId ? getRestaurant(offer.restaurantId) : undefined;
-    slides.push({
+    const common = {
       id: offer.id,
-      kind: offer.layout ?? (i % 2 === 0 ? "split" : "cover"),
       title,
       description: restaurant ? `${restaurant.name} — ${description}` : description,
       cta: offer.code ? t("home.promoUseCode", { code: offer.code }) : t("home.promoSeeOffer"),
-      image: offer.image || offerSlideImages[i % offerSlideImages.length]!,
       target: restaurant
-        ? { to: "/cardapio", search: { restaurante: restaurant.id } }
-        : { to: "/ofertas" },
-    });
+        ? ({ to: "/cardapio", search: { restaurante: restaurant.id } } as const)
+        : ({ to: "/ofertas" } as const),
+    };
+    if (offer.mediaType === "video" && offer.image) {
+      slides.push({
+        ...common,
+        kind: "video",
+        video: offer.image,
+        ...(offer.thumbnail ? { poster: offer.thumbnail } : {}),
+        orientation: "horizontal",
+      });
+    } else {
+      slides.push({
+        ...common,
+        kind: offer.layout ?? (i % 2 === 0 ? "split" : "cover"),
+        image: offer.image || offerSlideImages[i % offerSlideImages.length]!,
+      });
+    }
   });
 
   slides.push({
@@ -261,6 +275,7 @@ function SlideCard({ slide }: { slide: Slide }) {
       >
         <video
           src={slide.video}
+          poster={slide.poster}
           autoPlay
           loop
           muted

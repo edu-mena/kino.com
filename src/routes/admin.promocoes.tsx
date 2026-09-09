@@ -88,6 +88,8 @@ function AdminPromocoes() {
   const [type, setType] = useState<Offer["type"]>("discount");
   const [code, setCode] = useState("");
   const [image, setImage] = useState("");
+  const [mediaType, setMediaType] = useState<"image" | "video">("image");
+  const [thumbnail, setThumbnail] = useState("");
   const [layout, setLayout] = useState<NonNullable<Offer["layout"]>>("split");
   const [percentOff, setPercentOff] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -108,6 +110,8 @@ function AdminPromocoes() {
     setType(editing?.type ?? "discount");
     setCode(editing?.code ?? "");
     setImage(editing?.image ?? "");
+    setMediaType(editing?.mediaType ?? "image");
+    setThumbnail(editing?.thumbnail ?? "");
     setLayout(editing?.layout ?? "split");
     setPercentOff(editing?.percentOff ? String(editing.percentOff) : "");
   }, [formOpen, editing]);
@@ -173,12 +177,15 @@ function AdminPromocoes() {
       return;
     }
     const pct = Math.round(Number(percentOff));
+    const media = image.trim();
     const input = {
       type,
       title: title.trim(),
       description: description.trim(),
       layout,
-      image: image.trim(),
+      image: media,
+      ...(media ? { mediaType } : {}),
+      ...(media && mediaType === "video" && thumbnail ? { thumbnail } : {}),
       ...(code.trim() ? { code: code.trim() } : {}),
       ...(type !== "delivery" && pct > 0 ? { percentOff: Math.min(100, pct) } : {}),
     };
@@ -348,13 +355,23 @@ function AdminPromocoes() {
                         </div>
                       </div>
 
-                      {active.image && (
-                        <img
-                          src={active.image}
-                          alt=""
-                          className="mt-4 h-32 w-full rounded-lg object-cover"
-                        />
-                      )}
+                      {active.image &&
+                        (active.mediaType === "video" ? (
+                          <video
+                            src={active.image}
+                            poster={active.thumbnail}
+                            muted
+                            playsInline
+                            controls
+                            className="mt-4 h-32 w-full rounded-lg bg-black object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={active.image}
+                            alt=""
+                            className="mt-4 h-32 w-full rounded-lg object-cover"
+                          />
+                        ))}
 
                       <p className="mt-4 rounded-lg bg-surface p-3 text-sm text-foreground">
                         {active.description}
@@ -559,6 +576,13 @@ function AdminPromocoes() {
                 value={image}
                 onChange={setImage}
                 onUploadingChange={setUploading}
+                onMediaChange={(m) => {
+                  setMediaType(m.mediaType);
+                  setThumbnail(m.mediaType === "video" ? (m.poster ?? "") : "");
+                }}
+                mediaType={mediaType}
+                accept="media"
+                maxVideoSec={10}
                 label={t("adminPromocoes.imageLabel")}
                 helpText={t("adminPromocoes.imageHelp")}
                 crop="promo"
