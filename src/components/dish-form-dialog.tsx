@@ -360,6 +360,7 @@ export function DishFormDialog({
             value={image}
             onChange={setImage}
             onUploadingChange={setImageUploading}
+            crop="dish"
           />
 
           <div className="space-y-2 rounded-xl border border-border p-3">

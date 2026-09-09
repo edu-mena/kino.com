@@ -1910,6 +1910,23 @@ export const fr: Dictionary = {
     tooLarge: "Le clip est trop volumineux — choisissez une fenêtre plus courte.",
     failed: "Impossible de traiter la vidéo.",
   },
+  imageCropper: {
+    title: "Cadrer l'image",
+    description: "Faites glisser pour positionner et utilisez le curseur pour zoomer.",
+    zoom: "Zoom",
+    use: "Utiliser l'image",
+    processing: "Traitement…",
+    failed: "Impossible de traiter l'image.",
+    hintDish:
+      "Centrez le plat dans le carré avec une petite marge autour. Ne coupez pas des parties du plat et ne le collez pas aux bords.",
+    hintCover:
+      "Choisissez la partie la plus attrayante du lieu. Le nom du restaurant s'affiche sur le bas — gardez cette bande plus dégagée.",
+    hintGallery: "Gardez le sujet centré, sans coupes importantes sur les bords.",
+    hintPromo:
+      "Laissez le centre dégagé et sans détail — le titre et le bouton de la promo s'affichent par-dessus l'image.",
+    hintStory:
+      "Format vertical de téléphone. Laissez de l'air en haut et en bas, où se trouvent les contrôles du story.",
+  },
   locationMap: {
     aria: "Carte",
     locate: "Ma position",

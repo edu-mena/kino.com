@@ -23,6 +23,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { RestaurantGate } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
+import { ImageCropper } from "@/components/image-cropper";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { LocationMap, LocationPicker } from "@/components/location-map";
 import { Input } from "@/components/ui/input";
@@ -45,7 +46,8 @@ import type { FulfillmentType, WeeklyHours } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { paymentMethods } from "@/lib/mock-data";
-import { fileToResizedDataUrl, getVideoDurationSec } from "@/lib/image-upload";
+import { CROP_PRESETS } from "@/lib/image-crop-presets";
+import { getVideoDurationSec } from "@/lib/image-upload";
 import { isVideoSrc } from "@/lib/video-trim";
 import { defaultWeeklyHours, formatWeeklyHours, isOpenNow, nextOpenAt } from "@/lib/opening-hours";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -109,12 +111,14 @@ function GalleryEditor({
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [trimFile, setTrimFile] = useState<File | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   const addFromDevice = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     if (file.type.startsWith("video/")) {
+      setBusy(true);
       try {
         if ((await getVideoDurationSec(file)) < 2.9) {
           toast.error(t("videoTrimmer.tooShort", { min: 3 }));
@@ -123,18 +127,14 @@ function GalleryEditor({
       } catch {
         toast.error(t("adminPerfil.uploadError"));
         return;
+      } finally {
+        setBusy(false);
       }
       setTrimFile(file);
       return;
     }
-    setBusy(true);
-    try {
-      onChange([...items, await fileToResizedDataUrl(file)]);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("adminPerfil.uploadError"));
-    } finally {
-      setBusy(false);
-    }
+    // Imagem → editor de corte (rácio de galeria).
+    setCropFile(file);
   };
 
   return (
@@ -180,6 +180,19 @@ function GalleryEditor({
         onConfirm={(r) => {
           onChange([...items, r.src]);
           setTrimFile(null);
+        }}
+      />
+
+      <ImageCropper
+        file={cropFile}
+        open={cropFile !== null}
+        onOpenChange={(o) => !o && setCropFile(null)}
+        aspect={CROP_PRESETS.gallery.aspect}
+        maxDimension={CROP_PRESETS.gallery.maxDimension}
+        hint={t(CROP_PRESETS.gallery.hintKey)}
+        onConfirm={(dataUrl) => {
+          onChange([...items, dataUrl]);
+          setCropFile(null);
         }}
       />
 
@@ -445,6 +458,7 @@ function AdminPerfil() {
                   onChange={setCoverImage}
                   onUploadingChange={setImageUploading}
                   label={t("adminPerfil.coverImageLabel")}
+                  crop="cover"
                 />
                 <div className="space-y-1.5">
                   <Label htmlFor="rest-description">{t("adminPerfil.descriptionLabel")}</Label>

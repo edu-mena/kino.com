@@ -561,6 +561,7 @@ function AdminPromocoes() {
                 onUploadingChange={setUploading}
                 label={t("adminPromocoes.imageLabel")}
                 helpText={t("adminPromocoes.imageHelp")}
+                crop="promo"
               />
             </div>
 

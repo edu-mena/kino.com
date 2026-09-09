@@ -1892,6 +1892,23 @@ export const en: Dictionary = {
     tooLarge: "The clip came out too large — pick a shorter window.",
     failed: "Couldn't process the video.",
   },
+  imageCropper: {
+    title: "Frame the image",
+    description: "Drag to position and use the slider to zoom in.",
+    zoom: "Zoom",
+    use: "Use image",
+    processing: "Processing…",
+    failed: "Couldn't process the image.",
+    hintDish:
+      "Centre the dish in the square with a little margin around it. Don't crop parts of the dish or push it against the edges.",
+    hintCover:
+      "Pick the most appealing part of the space. The restaurant name sits over the lower area — keep that band cleaner.",
+    hintGallery: "Keep the subject centred, with no important crops at the edges.",
+    hintPromo:
+      "Leave the centre open and free of detail — the promo title and button sit over the image.",
+    hintStory:
+      "Vertical phone format. Leave breathing room top and bottom, where the story controls sit.",
+  },
   locationMap: {
     aria: "Map",
     locate: "My location",

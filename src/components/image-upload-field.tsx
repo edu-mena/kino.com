@@ -1,10 +1,12 @@
 import { ImagePlus, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { ImageCropper } from "@/components/image-cropper";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VideoTrimmer } from "@/components/video-trimmer";
 import { useTranslation } from "@/i18n";
+import { CROP_PRESETS, type CropPresetName } from "@/lib/image-crop-presets";
 import { fileToResizedDataUrl, getVideoDurationSec } from "@/lib/image-upload";
 
 /** Janela mínima aceite pelo controlador de corte. */
@@ -32,6 +34,7 @@ export function ImageUploadField({
   label = "Imagem",
   helpText = "Cole um link de imagem ou carregue uma foto do dispositivo. Em branco, usa uma imagem genérica.",
   mediaType = "image",
+  crop,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -46,20 +49,25 @@ export function ImageUploadField({
   helpText?: string;
   /** Tipo da media atual (para o preview escolher `<img>` vs `<video>`). */
   mediaType?: "image" | "video";
+  /** Quando definido, um ficheiro de imagem passa primeiro pelo editor de
+   * corte com as regras deste preset (rácio, tamanho, orientação). */
+  crop?: CropPresetName;
 }) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [trimFile, setTrimFile] = useState<File | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    setUploading(true);
-    onUploadingChange?.(true);
-    try {
-      if (accept === "media" && file.type.startsWith("video/")) {
+
+    if (accept === "media" && file.type.startsWith("video/")) {
+      setUploading(true);
+      onUploadingChange?.(true);
+      try {
         const durationSec = await getVideoDurationSec(file);
         if (durationSec < MIN_VIDEO_SEC - 0.1) {
           toast.error(t("videoTrimmer.tooShort", { min: MIN_VIDEO_SEC }));
@@ -67,10 +75,25 @@ export function ImageUploadField({
         }
         // Vídeo → abre o controlador de corte (a confirmação recodifica).
         setTrimFile(file);
-      } else {
-        onChange(await fileToResizedDataUrl(file));
-        onMediaChange?.({ mediaType: "image" });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Não foi possível carregar o ficheiro.");
+      } finally {
+        setUploading(false);
+        onUploadingChange?.(false);
       }
+      return;
+    }
+
+    // Imagem: com preset de corte, abre o editor; senão redimensiona logo.
+    if (crop && file.type.startsWith("image/")) {
+      setCropFile(file);
+      return;
+    }
+    setUploading(true);
+    onUploadingChange?.(true);
+    try {
+      onChange(await fileToResizedDataUrl(file));
+      onMediaChange?.({ mediaType: "image" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível carregar o ficheiro.");
     } finally {
@@ -78,6 +101,8 @@ export function ImageUploadField({
       onUploadingChange?.(false);
     }
   };
+
+  const preset = crop ? CROP_PRESETS[crop] : null;
 
   const isUploaded = value.startsWith("data:");
   const showVideo = mediaType === "video";
@@ -153,6 +178,22 @@ export function ImageUploadField({
           setTrimFile(null);
         }}
       />
+
+      {preset && (
+        <ImageCropper
+          file={cropFile}
+          open={cropFile !== null}
+          onOpenChange={(o) => !o && setCropFile(null)}
+          aspect={preset.aspect}
+          maxDimension={preset.maxDimension}
+          hint={t(preset.hintKey)}
+          onConfirm={(dataUrl) => {
+            onChange(dataUrl);
+            onMediaChange?.({ mediaType: "image" });
+            setCropFile(null);
+          }}
+        />
+      )}
     </div>
   );
 }

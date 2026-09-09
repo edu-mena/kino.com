@@ -1897,6 +1897,23 @@ export const pt = {
     tooLarge: "O clip ficou grande demais — escolha uma janela mais curta.",
     failed: "Não foi possível processar o vídeo.",
   },
+  imageCropper: {
+    title: "Enquadrar a imagem",
+    description: "Arraste para posicionar e use o deslizador para aproximar.",
+    zoom: "Aproximar",
+    use: "Usar imagem",
+    processing: "A processar…",
+    failed: "Não foi possível processar a imagem.",
+    hintDish:
+      "Centre o prato no quadrado, com uma pequena margem à volta. Não corte partes do prato nem deixe o prato encostado às bordas.",
+    hintCover:
+      "Escolha a zona mais apelativa do espaço. O nome do restaurante aparece por cima, na parte de baixo — deixe essa faixa mais limpa.",
+    hintGallery: "Mantenha o assunto centrado, sem cortes importantes nas margens.",
+    hintPromo:
+      "Deixe espaço livre e sem detalhes no centro — o título e o botão da promoção aparecem por cima da imagem.",
+    hintStory:
+      "Formato vertical de telemóvel. Deixe respiro em cima e em baixo, onde ficam os controlos do story.",
+  },
   locationMap: {
     aria: "Mapa",
     locate: "A minha localização",

@@ -278,6 +278,7 @@ function SistemaPromocoes() {
                 onUploadingChange={setUploading}
                 label={t("sistema.promocoes.imageLabel")}
                 helpText={t("sistema.promocoes.imageHelp")}
+                crop="promo"
               />
             </div>
             <div className="col-span-2 space-y-1.5">
