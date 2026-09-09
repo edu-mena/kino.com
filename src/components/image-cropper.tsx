@@ -6,16 +6,18 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { useTranslation } from "@/i18n";
 import { cropOutputSize, croppedImageToDataUrl } from "@/lib/image-upload";
 
-const MAX_VIEWPORT_H = 420;
 const MAX_ZOOM = 4;
+/** Teto de altura do enquadramento — nunca acima disto nem de ~52% do ecrã,
+ * para o diálogo caber sem ser cortado em ecrãs baixos. */
+const VIEWPORT_H_CAP = 420;
 
 type Offset = { x: number; y: number };
 
-function viewportFor(containerW: number, aspect: number) {
+function viewportFor(containerW: number, aspect: number, maxH: number) {
   let w = Math.max(1, containerW);
   let h = w / aspect;
-  if (h > MAX_VIEWPORT_H) {
-    h = MAX_VIEWPORT_H;
+  if (h > maxH) {
+    h = maxH;
     w = h * aspect;
   }
   return { w: Math.round(w), h: Math.round(h) };
@@ -54,6 +56,7 @@ export function ImageCropper({
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [containerW, setContainerW] = useState(0);
+  const [maxViewportH, setMaxViewportH] = useState(VIEWPORT_H_CAP);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState<Offset>({ x: 0, y: 0 });
   const [processing, setProcessing] = useState(false);
@@ -83,10 +86,13 @@ export function ImageCropper({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, file]);
 
-  // Largura disponível para o enquadramento.
+  // Espaço disponível para o enquadramento (largura do diálogo + altura do ecrã).
   useEffect(() => {
     if (!open) return;
-    const measure = () => setContainerW(containerRef.current?.clientWidth ?? 0);
+    const measure = () => {
+      setContainerW(containerRef.current?.clientWidth ?? 0);
+      setMaxViewportH(Math.min(VIEWPORT_H_CAP, Math.round(window.innerHeight * 0.52)));
+    };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
@@ -94,7 +100,7 @@ export function ImageCropper({
 
   const iw = img?.naturalWidth ?? 0;
   const ih = img?.naturalHeight ?? 0;
-  const vp = viewportFor(containerW, aspect);
+  const vp = viewportFor(containerW, aspect, maxViewportH);
   const baseScale = iw && ih ? Math.max(vp.w / iw, vp.h / ih) : 1;
   const scale = baseScale * zoom;
   const dw = iw * scale;
@@ -168,13 +174,15 @@ export function ImageCropper({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !processing && onOpenChange(o)}>
-      <DialogContent className="max-w-lg rounded-[1.5rem] border-none bg-card p-6">
-        <DialogTitle className="font-display text-lg font-bold">
-          {t("imageCropper.title")}
-        </DialogTitle>
-        <DialogDescription>{t("imageCropper.description")}</DialogDescription>
+      <DialogContent className="flex max-h-[92dvh] max-w-lg flex-col gap-0 overflow-hidden rounded-[1.5rem] border-none bg-card p-0">
+        <div className="px-6 pt-6">
+          <DialogTitle className="font-display text-lg font-bold">
+            {t("imageCropper.title")}
+          </DialogTitle>
+          <DialogDescription>{t("imageCropper.description")}</DialogDescription>
+        </div>
 
-        <div className="mt-3 space-y-4">
+        <div className="mt-3 min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-1">
           <div ref={containerRef} className="flex justify-center">
             <div
               className="relative touch-none select-none overflow-hidden rounded-xl bg-black [cursor:grab] active:[cursor:grabbing]"
@@ -230,32 +238,32 @@ export function ImageCropper({
             <Move className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
             <span>{hint}</span>
           </p>
+        </div>
 
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={processing}
-              onClick={() => onOpenChange(false)}
-              className="flex-1 rounded-xl"
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              disabled={processing || !img}
-              onClick={confirm}
-              className="flex-1 rounded-xl"
-            >
-              {processing ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> {t("imageCropper.processing")}
-                </>
-              ) : (
-                t("imageCropper.use")
-              )}
-            </Button>
-          </div>
+        <div className="mt-3 flex gap-2 border-t border-border px-6 py-4">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={processing}
+            onClick={() => onOpenChange(false)}
+            className="flex-1 rounded-xl"
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            type="button"
+            disabled={processing || !img}
+            onClick={confirm}
+            className="flex-1 rounded-xl"
+          >
+            {processing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> {t("imageCropper.processing")}
+              </>
+            ) : (
+              t("imageCropper.use")
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
