@@ -55,7 +55,7 @@ import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/promocoes")({
-  head: () => ({ meta: [{ title: "Promoções — Painel Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Promoções — Painel Luku.com" }] }),
   component: () => (
     <RestaurantGate>
       <AdminPromocoes />

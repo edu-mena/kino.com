@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import {
-  createKinoOffer,
+  createLukuOffer,
   createOffer,
   deleteOffer,
   getEffectiveOffers,
@@ -14,10 +14,10 @@ type OfferInput = Omit<Offer, "id" | "restaurantId">;
 type OffersAdminValue = {
   offers: Offer[];
   offersByRestaurant: (restaurantId: string) => Offer[];
-  /** Ofertas globais da Kino — sem `restaurantId` (geridas em `/sistema/promocoes`). */
-  kinoOffers: Offer[];
+  /** Ofertas globais da Luku — sem `restaurantId` (geridas em `/sistema/promocoes`). */
+  lukuOffers: Offer[];
   createOffer: (restaurantId: string, input: OfferInput) => Offer;
-  createKinoOffer: (input: OfferInput) => Offer;
+  createLukuOffer: (input: OfferInput) => Offer;
   updateOffer: (id: string, input: OfferInput) => void;
   deleteOffer: (id: string) => void;
 };
@@ -32,10 +32,10 @@ export function OffersAdminProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const sync = () => setOffers(getEffectiveOffers());
     sync();
-    window.addEventListener("kino:menu-changed", sync);
+    window.addEventListener("luku:menu-changed", sync);
     window.addEventListener("storage", sync);
     return () => {
-      window.removeEventListener("kino:menu-changed", sync);
+      window.removeEventListener("luku:menu-changed", sync);
       window.removeEventListener("storage", sync);
     };
   }, []);
@@ -43,9 +43,9 @@ export function OffersAdminProvider({ children }: { children: ReactNode }) {
   const value: OffersAdminValue = {
     offers,
     offersByRestaurant: (restaurantId) => offers.filter((o) => o.restaurantId === restaurantId),
-    kinoOffers: offers.filter((o) => !o.restaurantId),
+    lukuOffers: offers.filter((o) => !o.restaurantId),
     createOffer: (restaurantId, input) => createOffer(restaurantId, input),
-    createKinoOffer: (input) => createKinoOffer(input),
+    createLukuOffer: (input) => createLukuOffer(input),
     updateOffer: (id, input) => updateOffer(id, input),
     deleteOffer: (id) => deleteOffer(id),
   };

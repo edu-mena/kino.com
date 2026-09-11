@@ -37,7 +37,7 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { BCP47, last8Weeks, weekStart } from "@/lib/week";
 
 export const Route = createFileRoute("/admin/clientes")({
-  head: () => ({ meta: [{ title: "Clientes — Painel Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Clientes — Painel Luku.com" }] }),
   component: AdminClientes,
 });
 

@@ -35,11 +35,11 @@ export function StoriesAdminProvider({ children }: { children: ReactNode }) {
     // Volta a limpar stories expirados a cada minuto enquanto o painel
     // estiver aberto — as 24h passam sem navegação nenhuma.
     const timer = window.setInterval(sync, 60_000);
-    window.addEventListener("kino:menu-changed", sync);
+    window.addEventListener("luku:menu-changed", sync);
     window.addEventListener("storage", sync);
     return () => {
       window.clearInterval(timer);
-      window.removeEventListener("kino:menu-changed", sync);
+      window.removeEventListener("luku:menu-changed", sync);
       window.removeEventListener("storage", sync);
     };
   }, []);

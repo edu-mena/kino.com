@@ -40,7 +40,7 @@ export function MenuQrDialog({
     if (!canvas) return;
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
-    a.download = `kino-cardapio-qr-${restaurantId}.png`;
+    a.download = `luku-cardapio-qr-${restaurantId}.png`;
     a.click();
   };
 
@@ -63,7 +63,7 @@ export function MenuQrDialog({
           ref={wrap}
           className="mx-auto mt-4 flex w-fit flex-col items-center gap-3 rounded-2xl border border-border bg-white p-5"
         >
-          <img src={logo} alt="Kino.com" className="h-6 w-auto" />
+          <img src={logo} alt="Luku.com" className="h-6 w-auto" />
           <QRCodeCanvas value={url} size={196} level="H" marginSize={2} />
           <p className="max-w-[196px] text-sm font-bold text-neutral-800">{restaurantName}</p>
         </div>

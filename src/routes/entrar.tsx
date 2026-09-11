@@ -11,12 +11,12 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/entrar")({
   head: () => ({
     meta: [
-      { title: "Entrar na sua conta — Kino.com" },
+      { title: "Entrar na sua conta — Luku.com" },
       {
         name: "description",
-        content: "Inicie sessão no Kino.com com a sua conta Google para continuar a pedir comida.",
+        content: "Inicie sessão no Luku.com com a sua conta Google para continuar a pedir comida.",
       },
-      { property: "og:title", content: "Entrar na sua conta — Kino.com" },
+      { property: "og:title", content: "Entrar na sua conta — Luku.com" },
       { property: "og:description", content: "Sessão simples e segura com a sua conta Google." },
       { property: "og:image", content: icon },
     ],
@@ -57,7 +57,7 @@ function Entrar() {
     setLoading(true);
     // Simulação: numa integração real isto abriria o fluxo OAuth do Google.
     setTimeout(() => {
-      login("Utilizador Kino", "utilizador@gmail.com");
+      login("Utilizador Luku", "utilizador@gmail.com");
       toast.success(t("entrar.loggedInToast"));
       navigate({ to: "/" });
     }, 900);

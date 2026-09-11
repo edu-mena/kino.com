@@ -35,7 +35,7 @@ import { useStoriesAdmin } from "@/lib/stories-admin";
 import { BCP47, last8Weeks } from "@/lib/week";
 
 export const Route = createFileRoute("/admin/")({
-  head: () => ({ meta: [{ title: "Painel — Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Painel — Luku.com" }] }),
   component: AdminDashboard,
 });
 

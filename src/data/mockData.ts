@@ -5400,7 +5400,7 @@ export const INITIAL_OFFERS: Offer[] = [
     type: "discount",
     title: "20% OFF no seu primeiro pedido",
     description: "Válido para novos clientes em qualquer restaurante parceiro.",
-    code: "KINO20",
+    code: "LUKU20",
     percentOff: 20,
   },
   {
@@ -5408,7 +5408,7 @@ export const INITIAL_OFFERS: Offer[] = [
     type: "delivery",
     title: "Entrega Grátis",
     description: "Em pedidos acima de 15.000 Kz, em qualquer restaurante.",
-    code: "KINOFRETE",
+    code: "LUKUFRETE",
   },
   {
     id: "offer-3",

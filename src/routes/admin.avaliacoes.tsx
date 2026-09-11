@@ -6,7 +6,7 @@ import { useTranslation } from "@/i18n";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 export const Route = createFileRoute("/admin/avaliacoes")({
-  head: () => ({ meta: [{ title: "Avaliações — Painel Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Avaliações — Painel Luku.com" }] }),
   component: AdminAvaliacoes,
 });
 

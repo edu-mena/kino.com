@@ -22,7 +22,7 @@ import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useSubscriptions } from "@/lib/subscriptions";
 
 export const Route = createFileRoute("/sistema/restaurantes")({
-  head: () => ({ meta: [{ title: "Restaurantes — Sistema Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Restaurantes — Sistema Luku.com" }] }),
   component: SistemaRestaurantes,
 });
 
@@ -43,8 +43,8 @@ function SistemaRestaurantes() {
 
   const [flagsTick, bumpFlags] = useReducer((n: number) => n + 1, 0);
   useEffect(() => {
-    window.addEventListener("kino:menu-changed", bumpFlags);
-    return () => window.removeEventListener("kino:menu-changed", bumpFlags);
+    window.addEventListener("luku:menu-changed", bumpFlags);
+    return () => window.removeEventListener("luku:menu-changed", bumpFlags);
   }, []);
   // `flagsTick` força reler os restaurantes quando o destaque muda.
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -12,12 +12,12 @@ import { useTranslation } from "@/i18n";
 export const Route = createFileRoute("/favoritos")({
   head: () => ({
     meta: [
-      { title: "Favoritos — Kino.com" },
+      { title: "Favoritos — Luku.com" },
       {
         name: "description",
         content: "Os pratos e restaurantes que você mais gosta, num só lugar.",
       },
-      { property: "og:title", content: "Favoritos — Kino.com" },
+      { property: "og:title", content: "Favoritos — Luku.com" },
       { property: "og:image", content: icon },
     ],
   }),

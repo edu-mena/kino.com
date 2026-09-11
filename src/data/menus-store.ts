@@ -12,8 +12,8 @@ import type { RestaurantMenu } from "./types";
  * dataset inicial, que nunca tiveram `menuId` explícito.
  */
 
-const MENUS_KEY = "kino_restaurant_menus";
-const CHANGE_EVENT = "kino:menu-changed";
+const MENUS_KEY = "luku_restaurant_menus";
+const CHANGE_EVENT = "luku:menu-changed";
 
 export function defaultMenuId(restaurantId: string): string {
   return `menu-default-${restaurantId}`;

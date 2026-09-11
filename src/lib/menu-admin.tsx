@@ -15,7 +15,7 @@ import type { MenuItem } from "@/data/types";
  * (`/admin/cardapio`). A leitura/escrita de verdade vive em
  * `@/data/menu-store` (síncrona, sem React, segura em SSR) — este ficheiro
  * é só a camada reativa: guarda `items` em estado e ressincroniza sempre
- * que algo muda (`kino:menu-changed`, disparado pelo próprio store) ou
+ * que algo muda (`luku:menu-changed`, disparado pelo próprio store) ou
  * quando outra aba altera o localStorage (`storage`).
  */
 type MenuAdminValue = {
@@ -46,10 +46,10 @@ export function MenuAdminProvider({ children }: { children: ReactNode }) {
     // visíveis ao cliente.
     const sync = () => setItems(getEffectiveMenuItems({ activeMenusOnly: false }));
     sync();
-    window.addEventListener("kino:menu-changed", sync);
+    window.addEventListener("luku:menu-changed", sync);
     window.addEventListener("storage", sync);
     return () => {
-      window.removeEventListener("kino:menu-changed", sync);
+      window.removeEventListener("luku:menu-changed", sync);
       window.removeEventListener("storage", sync);
     };
   }, []);

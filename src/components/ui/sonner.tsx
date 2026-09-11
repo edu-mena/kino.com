@@ -6,6 +6,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       className="toaster group"
+      // Topo, não fundo — no fundo ficavam por cima do card que soma o
+      // pedido (ex.: ao adicionar pratos no cardápio de um restaurante).
+      // Um pouco abaixo do header (que tem 64px) e com duração mais curta,
+      // já que são só avisos de atividade (pedido/reserva), não precisam
+      // de ficar tanto tempo no ecrã.
+      position="top-right"
+      offset={{ top: "76px" }}
+      duration={3000}
       toastOptions={{
         classNames: {
           toast:

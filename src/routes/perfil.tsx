@@ -41,12 +41,12 @@ import { useTranslation } from "@/i18n";
 export const Route = createFileRoute("/perfil")({
   head: () => ({
     meta: [
-      { title: "Meu perfil — Kino.com" },
+      { title: "Meu perfil — Luku.com" },
       {
         name: "description",
-        content: "Gerencie os seus dados, endereços guardados e histórico de pedidos no Kino.com.",
+        content: "Gerencie os seus dados, endereços guardados e histórico de pedidos no Luku.com.",
       },
-      { property: "og:title", content: "Meu perfil — Kino.com" },
+      { property: "og:title", content: "Meu perfil — Luku.com" },
       { property: "og:description", content: "Endereços e histórico de pedidos." },
     ],
   }),

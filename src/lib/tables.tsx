@@ -24,10 +24,10 @@ export function TablesProvider({ children }: { children: ReactNode }) {
   const [tick, bump] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
-    window.addEventListener("kino:menu-changed", bump);
+    window.addEventListener("luku:menu-changed", bump);
     window.addEventListener("storage", bump);
     return () => {
-      window.removeEventListener("kino:menu-changed", bump);
+      window.removeEventListener("luku:menu-changed", bump);
       window.removeEventListener("storage", bump);
     };
   }, []);

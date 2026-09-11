@@ -6,6 +6,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import { cn } from "@/lib/utils";
 
 const AUTOPLAY_INTERVAL = 5000;
 
@@ -21,10 +22,24 @@ export function HorizontalCarousel<T>({
   items,
   itemKey,
   renderItem,
+  itemClassName,
+  contentClassName,
+  showArrows = true,
 }: {
   items: T[];
   itemKey: (item: T) => string;
   renderItem: (item: T) => ReactNode;
+  /** Espaço entre itens — por omissão o padrão (`pl-4`, ~16px) usado nas
+   * outras linhas da home; passe algo como `"pl-2"` para linhas de itens
+   * mais estreitos (ex.: categorias) ficarem mais compactas. Sempre a par
+   * com `contentClassName` na margem correspondente (ex.: `"-ml-2"`),
+   * senão o primeiro item fica desalinhado. */
+  itemClassName?: string;
+  contentClassName?: string;
+  /** `false` esconde as setas "<"/">" (o arraste e o avanço automático
+   * continuam) — para linhas onde as setas não cabem bem visualmente
+   * (ex.: categorias). Por omissão `true`. */
+  showArrows?: boolean;
 }) {
   const [api, setApi] = useState<CarouselApi>();
   const [canPrev, setCanPrev] = useState(false);
@@ -75,16 +90,16 @@ export function HorizontalCarousel<T>({
         setApi={setApi}
         opts={{ align: "start", dragFree: true, containScroll: "trimSnaps" }}
       >
-        <CarouselContent>
+        <CarouselContent className={contentClassName}>
           {items.map((item) => (
-            <CarouselItem key={itemKey(item)} className="basis-auto">
+            <CarouselItem key={itemKey(item)} className={cn("basis-auto", itemClassName)}>
               {renderItem(item)}
             </CarouselItem>
           ))}
         </CarouselContent>
       </Carousel>
 
-      {canPrev && (
+      {showArrows && canPrev && (
         <button
           type="button"
           aria-label="Anterior"
@@ -94,7 +109,7 @@ export function HorizontalCarousel<T>({
           <ChevronLeft className="h-4 w-4" />
         </button>
       )}
-      {canNext && (
+      {showArrows && canNext && (
         <button
           type="button"
           aria-label="Próximo"

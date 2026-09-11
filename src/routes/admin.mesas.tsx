@@ -16,7 +16,7 @@ import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useTables } from "@/lib/tables";
 
 export const Route = createFileRoute("/admin/mesas")({
-  head: () => ({ meta: [{ title: "Sala e mesas — Painel Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Sala e mesas — Painel Luku.com" }] }),
   component: () => (
     <RestaurantGate>
       <AdminMesas />

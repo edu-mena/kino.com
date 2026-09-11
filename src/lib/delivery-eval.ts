@@ -45,6 +45,19 @@ export function orderDistanceKm(order: CartOrder): number {
   return Math.round((1.5 + (h % 1650) / 100) * 10) / 10;
 }
 
+/** Distância "real" de um restaurante pro usuário: a partir da morada
+ * selecionada no chip do header (`useLocation`), quando houver — senão cai
+ * no `distanceKm` estático da seed (melhor do que nada). Usada para ordenar
+ * listagens de restaurantes/pratos "perto de si" pela localização de quem
+ * está a ver, não por um número fixo igual pra toda a gente. */
+export function personalizedRestaurantDistanceKm(
+  restaurantId: string,
+  address: { id?: string | undefined } | undefined,
+  fallbackKm: number,
+): number {
+  return address ? addressDistanceKm(restaurantId, address) : fallbackKm;
+}
+
 export type DeliveryLevel = "ok" | "far" | "outOfRange";
 
 export type DeliveryAssessment = {

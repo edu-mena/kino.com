@@ -23,7 +23,7 @@ import { useSubscriptions } from "@/lib/subscriptions";
 import { BCP47, last8Weeks } from "@/lib/week";
 
 export const Route = createFileRoute("/sistema/")({
-  head: () => ({ meta: [{ title: "Visão geral — Sistema Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Visão geral — Sistema Luku.com" }] }),
   component: SistemaIndex,
 });
 
@@ -86,7 +86,7 @@ function SistemaIndex() {
       .sort((a, b) => b.rev - a.rev)
       .slice(0, 5);
 
-    const planBars: StatBarRow[] = (["kino"] as const).map((plan) => {
+    const planBars: StatBarRow[] = (["luku"] as const).map((plan) => {
       const count = subscriptions.filter((s) => s.plan === plan).length;
       return {
         key: plan,

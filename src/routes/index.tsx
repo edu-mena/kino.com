@@ -3,8 +3,8 @@ import { Armchair, ArrowRight, Tag } from "lucide-react";
 import { useMemo } from "react";
 import heroBg from "@/assets/hero.webp";
 import icon from "@/assets/icon.png";
+import { CategoryShortcutRow } from "@/components/category-shortcut-row";
 import { DietaryOnboardingPopup } from "@/components/dietary-onboarding-popup";
-import { DietaryPreferencesCard } from "@/components/dietary-preferences-card";
 import { DishRecommendationRow } from "@/components/dish-recommendation-row";
 import { HeaderSearch } from "@/components/header-search";
 import { HomeSkeleton } from "@/components/home-skeleton";
@@ -12,20 +12,25 @@ import { OnboardingTour, TutorialHint } from "@/components/onboarding-tour";
 import { PromoCarousel } from "@/components/promo-carousel";
 import { RestaurantAvatarRow } from "@/components/restaurant-avatar-row";
 import { PageShell, SiteHeader } from "@/components/site-shell";
+import { getRestaurant } from "@/data/helpers";
 import { useMenuItems } from "@/data/use-menu-items";
 import { useAuth } from "@/lib/auth";
+import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
+import { useLocation } from "@/lib/location";
+import { usePreferences } from "@/lib/preferences";
+import { buildRecommendedDishes } from "@/lib/recommend-dishes";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Kino.com — Restaurantes de Angola: menu e reservas" },
+      { title: "Luku.com — Restaurantes de Angola: menu e reservas" },
       {
         name: "description",
         content:
           "Descubra os melhores restaurantes de Angola, veja o menu completo e reserve a sua mesa — tudo num só lugar.",
       },
-      { property: "og:title", content: "Kino.com — Restaurantes de Angola: menu e reservas" },
+      { property: "og:title", content: "Luku.com — Restaurantes de Angola: menu e reservas" },
       {
         property: "og:description",
         content: "Descubra onde jantar em Angola e reserve a sua mesa em segundos.",
@@ -76,8 +81,8 @@ function HomeNotLoggedIn() {
             {t("homeGuest.subtitle")}
             <br />
             {t("homeGuest.subtitleBrandPrefix")}{" "}
-            <Link to="/kino" viewTransition className="font-semibold text-brand hover:underline">
-              Kino.com
+            <Link to="/luku" viewTransition className="font-semibold text-brand hover:underline">
+              Luku.com
             </Link>
             .
           </p>
@@ -90,11 +95,11 @@ function HomeNotLoggedIn() {
               {t("homeGuest.login")}
             </Link>
             <Link
-              to="/kino"
+              to="/luku"
               viewTransition
               className="rounded-full border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-primary"
             >
-              {t("homeGuest.whatIsKino")}
+              {t("homeGuest.whatIsLuku")}
             </Link>
           </div>
         </div>
@@ -138,15 +143,15 @@ function SectionHeading({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-end justify-between gap-4">
-      <h2 className="text-2xl font-extrabold text-primary">{title}</h2>
+    <div className="flex items-center justify-between gap-4">
+      <h2 className="min-w-0 truncate text-2xl font-extrabold text-primary">{title}</h2>
       {to && (
         <Link
           to={to}
           {...(search ? { search } : {})}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-brand"
+          className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-sm font-semibold text-brand"
         >
-          {t("home.seeMore")} <ArrowRight className="h-4 w-4" />
+          {t("home.seeMore")} <ArrowRight className="h-4 w-4 shrink-0" />
         </Link>
       )}
     </div>
@@ -156,10 +161,12 @@ function SectionHeading({
 function HomeLoggedIn() {
   const { t } = useTranslation();
   const items = useMenuItems();
+  const { cuisinePreferences, excludedIngredients, dietaryRestrictions } = usePreferences();
+  const { selected: selectedAddress } = useLocation();
 
   // Derivados da lista efetiva de pratos (reativa a criações/edições no
   // painel do restaurante) — não do seed estático diretamente.
-  const fastFoodItems = useMemo(() => items.filter((m) => m.category === "Fast-food"), [items]);
+  const fastFoodItems = useMemo(() => items.filter((m) => m.category === "Fast-Food"), [items]);
   const grelhadosItems = useMemo(() => items.filter((m) => m.category === "Grelhados"), [items]);
   const trendingItems = useMemo(
     () =>
@@ -168,7 +175,31 @@ function HomeLoggedIn() {
         .sort((a, b) => (b.orderCount ?? 0) - (a.orderCount ?? 0)),
     [items],
   );
-  const recommendedItems = useMemo(() => items.slice(0, 10), [items]);
+  // "Recomendações": perto do usuário + cozinhas que ele prefere, evitando
+  // empilhar vários pratos seguidos do mesmo restaurante (ver
+  // `buildRecommendedDishes`) — nada disto entra quando há filtro manual
+  // (é só o "sem filtro nenhum" da home).
+  const recommendedItems = useMemo(
+    () =>
+      buildRecommendedDishes({
+        items,
+        getCuisine: (restaurantId) => getRestaurant(restaurantId)?.cuisine,
+        distanceKmOf: (restaurantId) => {
+          const restaurant = getRestaurant(restaurantId);
+          return personalizedRestaurantDistanceKm(
+            restaurantId,
+            selectedAddress,
+            restaurant?.distanceKm ?? 0,
+          );
+        },
+        cuisinePreferences,
+        excludedIngredients,
+        dietaryRestrictions,
+        ownListReason: t("home.dishConflictOwnListReason"),
+        limit: 10,
+      }),
+    [items, selectedAddress, cuisinePreferences, excludedIngredients, dietaryRestrictions, t],
+  );
 
   return (
     <PageShell>
@@ -202,9 +233,12 @@ function HomeLoggedIn() {
         </div>
       </section>
 
-      {/* Restrições alimentares */}
+      {/* Categorias */}
       <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
-        <DietaryPreferencesCard />
+        <SectionHeading title={t("home.categories")} />
+        <div className="mt-5">
+          <CategoryShortcutRow items={items} />
+        </div>
       </section>
 
       {/* Fast-food */}
@@ -213,7 +247,7 @@ function HomeLoggedIn() {
           <SectionHeading
             title={t("home.fastFood")}
             to="/cardapio"
-            search={{ categoria: "Fast-food" }}
+            search={{ categoria: "Fast-Food" }}
           />
           <div className="mt-5">
             <DishRecommendationRow items={fastFoodItems} />

@@ -21,7 +21,7 @@ import { useReservations } from "@/lib/reservations";
  * toast. Consumido por dois sinos: cliente (todas) e painel do restaurante
  * (só as do restaurante gerido).
  */
-export type KinoNotification = {
+export type LukuNotification = {
   id: string;
   kind: "order" | "reservation";
   refId: string;
@@ -38,30 +38,45 @@ export type KinoNotification = {
 };
 
 type NotificationsValue = {
-  all: KinoNotification[];
-  markAllRead: () => void;
+  all: LukuNotification[];
   markRead: (id: string) => void;
+  markManyRead: (ids: string[]) => void;
 };
+
+/** Notificações de um âmbito: `"restaurant"` filtra por `restaurantId`
+ * (painel); `"client"` filtra pelo `ownerKey` de quem está a ver (conta ou
+ * convidado) — as da seed não têm `ownerKey`, por isso nunca aparecem aqui.
+ * Partilhado pelo sino e pelas páginas de histórico, para os dois
+ * concordarem sempre no que é "meu". */
+export function scopeNotifications(
+  all: LukuNotification[],
+  scope: "client" | "restaurant",
+  opts: { restaurantId?: string; ownerKey?: string },
+): LukuNotification[] {
+  return scope === "restaurant" && opts.restaurantId
+    ? all.filter((n) => n.restaurantId === opts.restaurantId)
+    : all.filter((n) => n.ownerKey === opts.ownerKey);
+}
 
 const NotificationsContext = createContext<NotificationsValue | null>(null);
 const CAP = 50;
 
-function load(): KinoNotification[] {
+function load(): LukuNotification[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEYS.notifications);
-    return raw ? (JSON.parse(raw) as KinoNotification[]) : [];
+    return raw ? (JSON.parse(raw) as LukuNotification[]) : [];
   } catch {
     return [];
   }
 }
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const { orders } = useCart();
-  const { reservations } = useReservations();
+  const { orders, hydrated: ordersHydrated } = useCart();
+  const { reservations, hydrated: reservationsHydrated } = useReservations();
   const { t } = useTranslation();
 
-  const [all, setAll] = useState<KinoNotification[]>(load);
+  const [all, setAll] = useState<LukuNotification[]>(load);
   const orderSnap = useRef<Map<string, string> | null>(null);
   const resvSnap = useRef<Map<string, string> | null>(null);
 
@@ -72,10 +87,15 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }, [all]);
 
   useEffect(() => {
+    // Antes da hidratação, `orders` ainda é só a seed em memória — comparar
+    // contra isso faria os pedidos persistidos "reaparecerem" como novos
+    // assim que a hidratação os carregasse a seguir. Só passamos a comparar
+    // depois de hidratado; essa primeira passagem hidratada vira a baseline.
+    if (!ordersHydrated) return;
     const prev = orderSnap.current;
     const next = new Map(orders.map((o) => [o.id, o.status]));
     if (prev) {
-      const fresh: KinoNotification[] = [];
+      const fresh: LukuNotification[] = [];
       for (const o of orders) {
         const was = prev.get(o.id);
         if (was === undefined) {
@@ -88,13 +108,17 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
     orderSnap.current = next;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orders]);
+  }, [orders, ordersHydrated]);
 
   useEffect(() => {
+    // Mesmo raciocínio que em cima: sem isto, cada refresh logo após criar
+    // uma reserva fazia-a "reaparecer" como nova quando a hidratação
+    // substituía a seed pelos dados persistidos.
+    if (!reservationsHydrated) return;
     const prev = resvSnap.current;
     const next = new Map(reservations.map((r) => [r.id, r.status]));
     if (prev) {
-      const fresh: KinoNotification[] = [];
+      const fresh: LukuNotification[] = [];
       for (const r of reservations) {
         const was = prev.get(r.id);
         if (was === undefined) {
@@ -118,16 +142,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
     resvSnap.current = next;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reservations]);
+  }, [reservations, reservationsHydrated]);
 
   function makeNote(
-    kind: KinoNotification["kind"],
+    kind: LukuNotification["kind"],
     refId: string,
     restaurantId: string,
     event: string,
     status: string,
     ownerKey?: string,
-  ): KinoNotification {
+  ): LukuNotification {
     return {
       id: `ntf-${kind}-${refId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       kind,
@@ -141,12 +165,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     };
   }
 
-  function noteText(n: KinoNotification) {
+  function noteText(n: LukuNotification) {
     const name = getRestaurant(n.restaurantId)?.name ?? "";
     return t(`notifications.${n.event}`, { name, status: n.status });
   }
 
-  function pushNotes(fresh: KinoNotification[]) {
+  function pushNotes(fresh: LukuNotification[]) {
     setAll((cur) => [...fresh, ...cur].slice(0, CAP));
     for (const n of fresh) toast(noteText(n));
   }
@@ -154,8 +178,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const value = useMemo<NotificationsValue>(
     () => ({
       all,
-      markAllRead: () => setAll((cur) => cur.map((n) => ({ ...n, read: true }))),
       markRead: (id) => setAll((cur) => cur.map((n) => (n.id === id ? { ...n, read: true } : n))),
+      markManyRead: (ids) => {
+        if (ids.length === 0) return;
+        const set = new Set(ids);
+        setAll((cur) => cur.map((n) => (set.has(n.id) ? { ...n, read: true } : n)));
+      },
     }),
     [all],
   );

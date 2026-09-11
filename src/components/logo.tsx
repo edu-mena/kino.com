@@ -4,7 +4,7 @@ export function Logo({ compact = false, className }: { compact?: boolean; classN
   return (
     <img
       src={logo}
-      alt="Kino.com"
+      alt="Luku.com"
       className={className ?? (compact ? "h-6 w-auto" : "h-10 w-auto")}
     />
   );

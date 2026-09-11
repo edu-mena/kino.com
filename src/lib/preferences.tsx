@@ -49,7 +49,7 @@ type PreferencesValue = Preferences & {
 
 const PreferencesContext = createContext<PreferencesValue | null>(null);
 
-const STORAGE_KEY = "kino_preferences";
+const STORAGE_KEY = "luku_preferences";
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);

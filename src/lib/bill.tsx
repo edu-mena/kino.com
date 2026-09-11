@@ -4,7 +4,7 @@ import { getMenuItem, getRestaurant } from "@/data/helpers";
 import type { SelectedIngredient } from "@/data/types";
 import { useTranslation } from "@/i18n";
 
-const STORAGE_KEY = "kino_active_bill";
+const STORAGE_KEY = "luku_active_bill";
 
 export type BillLine = {
   key: string;

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-const STORAGE_KEY = "kino_admin_tutorial_status";
+const STORAGE_KEY = "luku_admin_tutorial_status";
 
 type AdminTutorialValue = {
   /** Se o tour deve estar visível agora. */

@@ -7,13 +7,13 @@ import { useTranslation } from "@/i18n";
 export const Route = createFileRoute("/sobre")({
   head: () => ({
     meta: [
-      { title: "Sobre a Kino — quem somos" },
+      { title: "Sobre a Luku — quem somos" },
       {
         name: "description",
         content:
-          "A Kino é o cardápio digital de Angola: quem está por trás, os números da plataforma e quem já confia na gente.",
+          "A Luku é o cardápio digital de Angola: quem está por trás, os números da plataforma e quem já confia na gente.",
       },
-      { property: "og:title", content: "Sobre a Kino — quem somos" },
+      { property: "og:title", content: "Sobre a Luku — quem somos" },
       {
         property: "og:description",
         content: "O cardápio digital que liga restaurantes e clientes em Angola.",
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/sobre")({
 });
 
 const partners = [
-  "Kino Grill",
+  "Luku Grill",
   "Forno da Ilha",
   "Sabores de Luanda",
   "Doce Baía",
@@ -158,16 +158,16 @@ function Sobre() {
         </div>
       </section>
 
-      {/* Call to action — a página descreve a Kino mas, até aqui, não dava
+      {/* Call to action — a página descreve a Luku mas, até aqui, não dava
           nenhum próximo passo; fecha com os mesmos dois caminhos usados
-          em /kino (virar parceiro ou entrar como cliente). */}
+          em /luku (virar parceiro ou entrar como cliente). */}
       <section className="mx-auto mb-20 mt-14 max-w-6xl px-4 md:px-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-surface p-8 sm:p-10">
             <h2 className="font-display text-2xl font-extrabold text-primary sm:text-3xl">
-              {t("kino.ctaRestaurantTitle")}
+              {t("luku.ctaRestaurantTitle")}
             </h2>
-            <p className="max-w-sm text-muted-foreground">{t("kino.ctaRestaurantDescription")}</p>
+            <p className="max-w-sm text-muted-foreground">{t("luku.ctaRestaurantDescription")}</p>
             <Link
               to="/parceiros"
               className="mt-2 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
@@ -178,16 +178,16 @@ function Sobre() {
 
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
             <h2 className="font-display text-2xl font-extrabold sm:text-3xl">
-              {t("kino.ctaCustomerTitle")}
+              {t("luku.ctaCustomerTitle")}
             </h2>
             <p className="max-w-sm text-primary-foreground/85">
-              {t("kino.ctaCustomerDescription")}
+              {t("luku.ctaCustomerDescription")}
             </p>
             <Link
               to="/entrar"
               className="mt-2 rounded-full bg-background px-6 py-3 text-sm font-semibold text-primary transition-opacity hover:opacity-90"
             >
-              {t("kino.login")}
+              {t("luku.login")}
             </Link>
           </div>
         </div>

@@ -29,7 +29,7 @@ import { useTables } from "@/lib/tables";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/reservas")({
-  head: () => ({ meta: [{ title: "Reservas — Painel Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Reservas — Painel Luku.com" }] }),
   component: () => (
     <RestaurantGate>
       <AdminReservas />

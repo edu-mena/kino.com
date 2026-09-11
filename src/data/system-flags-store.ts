@@ -10,8 +10,8 @@ import type { Restaurant } from "./types";
  */
 type SystemFlags = { featured?: boolean };
 
-const KEY = "kino_system_restaurant_flags_v1";
-const CHANGE_EVENT = "kino:menu-changed";
+const KEY = "luku_system_restaurant_flags_v1";
+const CHANGE_EVENT = "luku:menu-changed";
 
 function read(): Record<string, SystemFlags> {
   if (typeof window === "undefined") return {};

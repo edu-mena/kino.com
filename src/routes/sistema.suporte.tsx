@@ -9,7 +9,7 @@ import { useTranslation } from "@/i18n";
 import { BCP47 } from "@/lib/week";
 
 export const Route = createFileRoute("/sistema/suporte")({
-  head: () => ({ meta: [{ title: "Suporte — Sistema Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Suporte — Sistema Luku.com" }] }),
   component: SistemaSuporte,
 });
 

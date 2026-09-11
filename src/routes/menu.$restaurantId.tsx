@@ -13,8 +13,8 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/menu/$restaurantId")({
   head: () => ({
     meta: [
-      { title: "Cardápio — Kino.com" },
-      { name: "description", content: "Veja o cardápio do restaurante no Kino.com." },
+      { title: "Cardápio — Luku.com" },
+      { name: "description", content: "Veja o cardápio do restaurante no Luku.com." },
       { property: "og:image", content: icon },
     ],
   }),
@@ -72,7 +72,7 @@ function PublicMenu() {
     setSigningIn(true);
     // Simulação: numa integração real abriria o fluxo OAuth do Google.
     setTimeout(() => {
-      login("Utilizador Kino", "utilizador@gmail.com");
+      login("Utilizador Luku", "utilizador@gmail.com");
       toast.success(t("publicMenu.signedInToast"));
     }, 700);
   };
@@ -80,7 +80,7 @@ function PublicMenu() {
   if (!restaurant) {
     return (
       <div className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-4 px-6 text-center">
-        <img src={logo} alt="Kino.com" className="h-9 w-auto" />
+        <img src={logo} alt="Luku.com" className="h-9 w-auto" />
         <p className="text-sm text-muted-foreground">{t("publicMenu.notFound")}</p>
         <Link to="/restaurantes" className="font-bold text-primary underline">
           {t("nav.restaurants")}
@@ -91,11 +91,11 @@ function PublicMenu() {
 
   if (isLoading) return null;
 
-  // Porta de entrada — para ver o cardápio é preciso conta Kino (simulada).
+  // Porta de entrada — para ver o cardápio é preciso conta Luku (simulada).
   if (!isLoggedIn) {
     return (
       <div className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-6 px-6 text-center">
-        <img src={logo} alt="Kino.com" className="h-10 w-auto" />
+        <img src={logo} alt="Luku.com" className="h-10 w-auto" />
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-brand">
             {t("publicMenu.eyebrow")}

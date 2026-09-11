@@ -7,7 +7,7 @@ import { viewerKey } from "@/lib/customer";
 // Sufixo de versão: subir quando a seed (`INITIAL_RESERVATIONS`) muda de forma
 // relevante — invalida o snapshot antigo no browser, que de outro modo continua
 // a "esconder" as reservas novas da seed.
-const STORAGE_KEY = "kino_reservations_v2";
+const STORAGE_KEY = "luku_reservations_v2";
 
 type NewReservationInput = {
   restaurant: Restaurant;
@@ -19,6 +19,10 @@ type NewReservationInput = {
 
 type ReservationsValue = {
   reservations: Reservation[];
+  /** `false` até o efeito de hidratação (localStorage) correr — usado por
+   * quem faz diffs sobre `reservations` (ex.: notificações) para não
+   * confundir a troca seed → dados persistidos com reservas "novas". */
+  hydrated: boolean;
   addReservation: (input: NewReservationInput) => void;
   /** Usado pelo painel do restaurante (`/admin/reservas`) — Pendente →
    * Confirmada/Recusada/Cancelada. Não há backend real: como no resto da
@@ -68,7 +72,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
       ownerKey: viewerKey(user),
       restaurantName: restaurant.name,
       restaurantImage: restaurant.coverImage,
-      customerName: user?.name ?? "Cliente Kino",
+      customerName: user?.name ?? "Cliente Luku",
       customerPhone: user?.phone ?? "",
       customerEmail: user?.email ?? "",
       date,
@@ -86,7 +90,11 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
   };
 
   const updateReservationStatus = (id: string, status: string) =>
-    setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    setReservations((prev) =>
+      prev.map((r) =>
+        r.id === id ? { ...r, status, statusUpdatedAt: new Date().toISOString() } : r,
+      ),
+    );
 
   const assignTable = (id: string, tableId?: string) =>
     setReservations((prev) =>
@@ -102,7 +110,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
 
   return (
     <ReservationsContext.Provider
-      value={{ reservations, addReservation, updateReservationStatus, assignTable }}
+      value={{ reservations, hydrated, addReservation, updateReservationStatus, assignTable }}
     >
       {children}
     </ReservationsContext.Provider>

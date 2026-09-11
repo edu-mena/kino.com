@@ -1,6 +1,6 @@
-# Kino.com
+# Luku.com
 
-Kino.com é uma webapp de food delivery para o mercado de Luanda — descoberta de restaurantes, cardápios, favoritos, reservas e um painel administrativo para gestão de menus, ofertas e stories, tudo servido como uma aplicação full-stack renderizada no edge.
+Luku.com é uma webapp de food delivery para o mercado de Luanda — descoberta de restaurantes, cardápios, favoritos, reservas e um painel administrativo para gestão de menus, ofertas e stories, tudo servido como uma aplicação full-stack renderizada no edge.
 
 O projeto nasceu como protótipo frontend-first (mockdata, sem servidor) e foi evoluindo para uma base com SSR real, camada de dados própria e um pipeline de entrega automatizado — a estrutura que se segue reflete esse percurso, não um scaffold genérico.
 

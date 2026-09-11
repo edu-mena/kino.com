@@ -25,14 +25,14 @@ export const Route = createFileRoute("/prato/$dishId")({
   head: ({ loaderData }) => {
     if (!loaderData) {
       return {
-        meta: [{ title: "Prato indisponível — Kino.com" }, { name: "robots", content: "noindex" }],
+        meta: [{ title: "Prato indisponível — Luku.com" }, { name: "robots", content: "noindex" }],
       };
     }
     const { item } = loaderData;
-    const restaurantName = getRestaurant(item.restaurantId)?.name ?? "Kino.com";
+    const restaurantName = getRestaurant(item.restaurantId)?.name ?? "Luku.com";
     return {
       meta: [
-        { title: `${item.name} — ${restaurantName} | Kino.com` },
+        { title: `${item.name} — ${restaurantName} | Luku.com` },
         { name: "description", content: item.description },
         { property: "og:title", content: `${item.name} — ${restaurantName}` },
         { property: "og:description", content: item.description },

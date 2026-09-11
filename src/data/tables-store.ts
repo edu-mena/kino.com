@@ -16,8 +16,8 @@ export type RestaurantTable = {
   area?: string;
 };
 
-const KEY = "kino_restaurant_tables_v1";
-const CHANGE_EVENT = "kino:menu-changed";
+const KEY = "luku_restaurant_tables_v1";
+const CHANGE_EVENT = "luku:menu-changed";
 
 const SEAT_MIX = [2, 2, 4, 4, 4, 6];
 

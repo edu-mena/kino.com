@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useReducer, useState, type ReactN
 import { getRestaurant } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
 
-const STORAGE_KEY = "kino_admin_restaurant";
+const STORAGE_KEY = "luku_admin_restaurant";
 
 /**
  * Sessão do painel do restaurante — completamente à parte da conta de
@@ -37,10 +37,10 @@ export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
     if (stored) setManagedRestaurantId(stored);
     setHydrated(true);
 
-    window.addEventListener("kino:menu-changed", forceUpdate);
+    window.addEventListener("luku:menu-changed", forceUpdate);
     window.addEventListener("storage", forceUpdate);
     return () => {
-      window.removeEventListener("kino:menu-changed", forceUpdate);
+      window.removeEventListener("luku:menu-changed", forceUpdate);
       window.removeEventListener("storage", forceUpdate);
     };
   }, []);

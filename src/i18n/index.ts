@@ -84,6 +84,11 @@ export function useTranslation() {
 
   useEffect(() => {
     if (locale !== "pt") loadLocale(locale);
+    // Mantém `<html lang>` alinhado com o idioma ativo. O shell SSR fixa
+    // `pt` (mercado maioritário); sem isto, um `lang` errado leva alguns
+    // browsers Android a autotraduzir a página e a injetar fragmentos
+    // traduzidos ("Não se trata de uma questão de…") sem motivo.
+    if (typeof document !== "undefined") document.documentElement.lang = locale;
   }, [locale]);
 
   const dict = getDictionary(locale);
@@ -111,13 +116,13 @@ export function translateMenuCategory(category: string, locale: Locale): string 
   return dict[category] ?? ptDict[category] ?? category;
 }
 
-/** ids das 3 ofertas-semente da Kino (ver `INITIAL_OFFERS` em mockData.ts) —
+/** ids das 3 ofertas-semente da Luku (ver `INITIAL_OFFERS` em mockData.ts) —
  * únicas ofertas com tradução própria. Ofertas criadas por um restaurante em
  * `/admin/promocoes` são conteúdo próprio dele, ficam como escreveu, em
  * qualquer idioma (mesmo critério do resto do dataset — ver README.md). */
-const KINO_OFFER_KEYS: Record<
+const LUKU_OFFER_KEYS: Record<
   number,
-  { titleKey: keyof Dictionary["kinoOffers"]; descriptionKey: keyof Dictionary["kinoOffers"] }
+  { titleKey: keyof Dictionary["lukuOffers"]; descriptionKey: keyof Dictionary["lukuOffers"] }
 > = {
   1: { titleKey: "offer1Title", descriptionKey: "offer1Description" },
   2: { titleKey: "offer2Title", descriptionKey: "offer2Description" },
@@ -130,10 +135,10 @@ export function translateOffer(
   t: ReturnType<typeof useTranslation>["t"],
 ): { title: string; description: string } {
   const match = /^offer-([123])$/.exec(offer.id);
-  const keys = match ? KINO_OFFER_KEYS[Number(match[1])] : undefined;
+  const keys = match ? LUKU_OFFER_KEYS[Number(match[1])] : undefined;
   if (!keys) return { title: offer.title, description: offer.description };
   return {
-    title: t(`kinoOffers.${keys.titleKey}`),
-    description: t(`kinoOffers.${keys.descriptionKey}`),
+    title: t(`lukuOffers.${keys.titleKey}`),
+    description: t(`lukuOffers.${keys.descriptionKey}`),
   };
 }

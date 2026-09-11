@@ -19,11 +19,11 @@ import { useTranslation } from "@/i18n";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 export const Route = createFileRoute("/admin/suporte")({
-  head: () => ({ meta: [{ title: "Suporte — Painel Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Suporte — Painel Luku.com" }] }),
   component: AdminSuporte,
 });
 
-const SUPPORT_EMAIL = "parceiros@kino.com";
+const SUPPORT_EMAIL = "parceiros@luku.com";
 const SUPPORT_WHATSAPP = "https://wa.me/244930814277";
 
 const subjectValues = ["nome", "destaque", "avaliacao", "pagamentos", "tecnico", "outro"] as const;
@@ -71,7 +71,7 @@ function AdminSuporte() {
     setRefreshTick((n) => n + 1);
     const body = `${message}\n\n— ${restaurant.name}`;
     const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-      `[Painel Kino] ${subjectLabel}`,
+      `[Painel Luku] ${subjectLabel}`,
     )}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
     toast.success(t("adminSuporte.ticketSentToast"));

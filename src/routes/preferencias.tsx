@@ -22,12 +22,12 @@ import { useTranslation } from "@/i18n";
 export const Route = createFileRoute("/preferencias")({
   head: () => ({
     meta: [
-      { title: "Preferências — Kino.com" },
+      { title: "Preferências — Luku.com" },
       {
         name: "description",
         content: "Ingredientes favoritos e ingredientes que não podem constar no prato.",
       },
-      { property: "og:title", content: "Preferências — Kino.com" },
+      { property: "og:title", content: "Preferências — Luku.com" },
       { property: "og:image", content: icon },
     ],
   }),

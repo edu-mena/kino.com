@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dishDrink from "@/assets/dish-drink.webp";
 import heroFood from "@/assets/hero-food.webp";
-import kinoVideo from "@/assets/kino/video.mp4";
+import lukuVideo from "@/assets/luku/video.mp4";
 import restaurantAngolana from "@/assets/restaurant-angolana.webp";
 import { LazyImage } from "@/components/lazy-image";
 import {
@@ -23,7 +23,7 @@ import { translateOffer, useTranslation } from "@/i18n";
 const MAX_SLIDES = 8;
 
 type LinkTarget =
-  { to: "/ofertas" } | { to: "/cardapio"; search: { restaurante: string } } | { to: "/kino" };
+  { to: "/ofertas" } | { to: "/cardapio"; search: { restaurante: string } } | { to: "/luku" };
 
 type Slide =
   | {
@@ -99,14 +99,14 @@ function buildSlides(
   });
 
   slides.push({
-    id: "video-kino",
+    id: "video-luku",
     kind: "video",
     title: t("home.promoVideoTitle"),
     description: t("home.promoVideoDescription"),
     cta: t("home.promoVideoCta"),
-    video: kinoVideo,
+    video: lukuVideo,
     orientation: "vertical",
-    target: { to: "/kino" },
+    target: { to: "/luku" },
   });
 
   promotedDishes.forEach((item, i) => {

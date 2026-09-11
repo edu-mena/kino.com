@@ -30,7 +30,10 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Restaurant } from "@/data/types";
 import { getAllRestaurants } from "@/data/helpers";
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
+import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
+import { haversineKm } from "@/lib/geo";
+import { useLocation } from "@/lib/location";
 import { PRICE_TIER_LABELS } from "@/lib/price-level";
 import { usePreferences } from "@/lib/preferences";
 import { computeRestaurantStatus } from "@/lib/restaurant-status";
@@ -41,13 +44,13 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 export const Route = createFileRoute("/restaurantes")({
   head: () => ({
     meta: [
-      { title: "Restaurantes em Luanda — Kino.com" },
+      { title: "Restaurantes em Luanda — Luku.com" },
       {
         name: "description",
         content:
-          "Os restaurantes parceiros do Kino.com em Luanda: grelhados, pizza, cozinha angolana e sobremesas.",
+          "Os restaurantes parceiros do Luku.com em Luanda: grelhados, pizza, cozinha angolana e sobremesas.",
       },
-      { property: "og:title", content: "Restaurantes em Luanda — Kino.com" },
+      { property: "og:title", content: "Restaurantes em Luanda — Luku.com" },
       { property: "og:description", content: "Descubra os nossos restaurantes parceiros." },
       { property: "og:image", content: icon },
     ],
@@ -64,13 +67,30 @@ const sortOptions = [
 ] as const;
 
 const PAGE_SIZE = 9;
-const VIEW_KEY = "kino_restaurantes_view";
+const VIEW_KEY = "luku_restaurantes_view";
 
 function Restaurantes() {
   const { t, locale } = useTranslation();
   const navigate = useNavigate();
   const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
   const { byRestaurant: subByRestaurant } = useSubscriptions();
+  // Morada selecionada no chip do header — dá uma distância "real" (por
+  // usuário) em vez do `distanceKm` fixo da seed, igual pra toda a gente.
+  // Com a localização exata do dispositivo (`deviceCoords`, autorizada no
+  // botão abaixo), a distância passa a ser a real (haversine), não a
+  // aproximação por morada.
+  const {
+    selected: selectedAddress,
+    deviceCoords,
+    deviceLocationStatus,
+    requestDeviceLocation,
+  } = useLocation();
+  const distanceKm = (r: Restaurant) => {
+    if (deviceCoords && r.lat != null && r.lng != null) {
+      return Math.round(haversineKm(deviceCoords, [r.lat, r.lng]) * 10) / 10;
+    }
+    return personalizedRestaurantDistanceKm(r.id, selectedAddress, r.distanceKm);
+  };
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -111,11 +131,28 @@ function Restaurantes() {
       return byQuery && byNeighborhood && byPriceLevel && byDelivery;
     });
     const sorted = [...list];
-    if (sort === "proximidade") sorted.sort((a, b) => a.distanceKm - b.distanceKm);
+    if (sort === "proximidade") sorted.sort((a, b) => distanceKm(a) - distanceKm(b));
     else if (sort === "avaliacao") sorted.sort((a, b) => b.rating - a.rating);
     else sorted.sort((a, b) => a.name.localeCompare(b.name, "pt"));
+    // Fechados não interessam agora — ficam sempre depois dos abertos,
+    // qualquer que seja o critério de ordenação escolhido acima (a ordem
+    // dentro de cada grupo é preservada, `sort` é estável).
+    const isPaused = (r: Restaurant) =>
+      !computeRestaurantStatus(r, subByRestaurant(r.id)?.status, locale).available;
+    sorted.sort((a, b) => Number(isPaused(a)) - Number(isPaused(b)));
     return sorted;
-  }, [debouncedQuery, neighborhood, priceLevel, deliveryOnly, sort]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `distanceKm`/`isPaused` são recriadas a cada render, mas só mudam de resultado quando `selectedAddress`/`deviceCoords`/`subByRestaurant`/`locale` mudam.
+  }, [
+    debouncedQuery,
+    neighborhood,
+    priceLevel,
+    deliveryOnly,
+    sort,
+    selectedAddress,
+    deviceCoords,
+    subByRestaurant,
+    locale,
+  ]);
 
   const activeExtraFilters =
     (neighborhood !== "todos" ? 1 : 0) + (priceLevel ? 1 : 0) + (deliveryOnly ? 1 : 0);
@@ -154,6 +191,27 @@ function Restaurantes() {
             )}
           </button>
         </div>
+
+        {/* Sem localização exata do dispositivo ainda — pede de forma
+            apelativa em vez de nunca oferecer: sem isto, "perto de si" só
+            usa a morada guardada (aproximada) ou o valor fixo da seed. */}
+        {deviceLocationStatus !== "granted" && deviceLocationStatus !== "unsupported" && (
+          <button
+            type="button"
+            onClick={requestDeviceLocation}
+            disabled={deviceLocationStatus === "loading"}
+            className="mt-3 flex w-full items-center gap-2.5 rounded-xl border border-dashed border-brand/40 bg-brand/5 px-4 py-3 text-left transition-colors hover:border-brand disabled:opacity-70"
+          >
+            <MapPin className="h-4 w-4 shrink-0 text-brand" />
+            <span className="min-w-0 flex-1 text-xs font-semibold text-brand">
+              {deviceLocationStatus === "loading"
+                ? t("restaurantes.locateLoading")
+                : deviceLocationStatus === "denied"
+                  ? t("restaurantes.locateDenied")
+                  : t("restaurantes.locateCta")}
+            </span>
+          </button>
+        )}
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
@@ -255,12 +313,10 @@ function Restaurantes() {
                       height={768}
                       widths={[400, 640, 800]}
                       sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                      className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
-                        paused ? "grayscale" : ""
-                      }`}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                     {paused && (
-                      <span className="absolute inset-x-2 bottom-2 rounded-full bg-foreground/80 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-background">
+                      <span className="absolute bottom-2 right-2 rounded-md bg-destructive px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-destructive-foreground">
                         {rStatus.reason === "closed"
                           ? t("restaurantes.closedNow")
                           : t("restaurantes.temporarilyUnavailable")}
@@ -281,7 +337,7 @@ function Restaurantes() {
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3.5 w-3.5" />
-                        {r.distanceKm} km
+                        {distanceKm(r)} km
                       </span>
                       {r.isDeliveryAvailable ? (
                         <span className="flex items-center gap-1">

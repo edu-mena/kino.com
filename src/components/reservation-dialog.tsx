@@ -41,7 +41,12 @@ export function ReservationDialog({
   const status = useRestaurantStatus(restaurant.id);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [peopleCount, setPeopleCount] = useState(2);
+  // String em vez de número: guardar já como número forçava um "1" a cada
+  // apagão do campo (valor vazio → `Number("") || 1` → 1), que nunca saía
+  // de lá — digitar a seguir só acrescentava dígitos ao "1" preso (12, 13…).
+  // Só convertemos pra número (`peopleCount`, abaixo) pra fazer as contas.
+  const [peopleCountInput, setPeopleCountInput] = useState("2");
+  const peopleCount = Math.max(1, Math.min(30, Number(peopleCountInput) || 1));
   const [specialRequests, setSpecialRequests] = useState("");
 
   const paused = !status.available;
@@ -77,7 +82,7 @@ export function ReservationDialog({
     onOpenChange(false);
     setDate("");
     setTime("");
-    setPeopleCount(2);
+    setPeopleCountInput("2");
     setSpecialRequests("");
     navigate({ to: "/reservas" });
   };
@@ -135,8 +140,9 @@ export function ReservationDialog({
                 type="number"
                 min={1}
                 max={30}
-                value={peopleCount}
-                onChange={(e) => setPeopleCount(Math.max(1, Number(e.target.value) || 1))}
+                value={peopleCountInput}
+                onChange={(e) => setPeopleCountInput(e.target.value)}
+                onBlur={() => setPeopleCountInput(String(peopleCount))}
                 required
               />
             </div>

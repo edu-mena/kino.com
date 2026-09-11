@@ -14,13 +14,13 @@ export const Route = createFileRoute("/cardapio")({
   }),
   head: () => ({
     meta: [
-      { title: "Cardápio completo — Kino.com" },
+      { title: "Cardápio completo — Luku.com" },
       {
         name: "description",
         content:
-          "Explore o cardápio do Kino.com: burgers, pizza, pratos angolanos, bebidas e sobremesas com entrega em Luanda.",
+          "Explore o cardápio do Luku.com: burgers, pizza, pratos angolanos, bebidas e sobremesas com entrega em Luanda.",
       },
-      { property: "og:title", content: "Cardápio completo — Kino.com" },
+      { property: "og:title", content: "Cardápio completo — Luku.com" },
       { property: "og:description", content: "Burgers, pizza, pratos, bebidas e sobremesas." },
       { property: "og:image", content: icon },
     ],
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/cardapio")({
 });
 
 function Cardapio() {
-  const { restaurante } = Route.useSearch();
+  const { restaurante, categoria } = Route.useSearch();
   const restaurantFilter = restaurante ? getRestaurant(restaurante) : undefined;
   const { t } = useTranslation();
 
@@ -50,6 +50,7 @@ function Cardapio() {
           restaurantFilter={
             restaurantFilter ? { id: restaurantFilter.id, name: restaurantFilter.name } : undefined
           }
+          initialCategory={categoria}
         />
       </div>
     </PageShell>

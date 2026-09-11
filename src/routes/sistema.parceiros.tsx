@@ -24,7 +24,7 @@ import { useSubscriptions } from "@/lib/subscriptions";
 import { BCP47 } from "@/lib/week";
 
 export const Route = createFileRoute("/sistema/parceiros")({
-  head: () => ({ meta: [{ title: "Candidaturas — Sistema Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Candidaturas — Sistema Luku.com" }] }),
   component: SistemaParceiros,
 });
 

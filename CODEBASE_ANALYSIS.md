@@ -1,8 +1,8 @@
-# Análise da Codebase - Kino.com
+# Análise da Codebase - Luku.com
 
 ## 📋 Visão Geral do Projeto
 
-**Nome**: Kino.com - Plataforma de entrega de comida (Food Delivery)  
+**Nome**: Luku.com - Plataforma de entrega de comida (Food Delivery)  
 **Descrição**: Webapp responsivo para pedido de comida dos melhores restaurantes de Luanda  
 **Tipo**: Frontend-first, mockdata, sem servidor/banco de dados  
 **Status**: Frontend completo, sem backend/base de dados real  

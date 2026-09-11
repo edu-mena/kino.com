@@ -15,7 +15,7 @@ import type { MenuItem, MenuItemIngredient } from "./types";
  * Guarda só a "diferença" em relação ao seed (`INITIAL_MENU_ITEMS`): pratos
  * criados de raiz, edições a pratos existentes, e eliminações — a
  * disponibilidade (ligar/desligar um prato) continua na sua própria chave
- * (`kino_menu_unavailable`), já existente antes deste ficheiro.
+ * (`luku_menu_unavailable`), já existente antes deste ficheiro.
  *
  * `getEffectiveMenuItems()` é a lista "de verdade" — o resto da app lê
  * pratos através dela (direta ou indiretamente via `@/data/helpers`),
@@ -24,12 +24,12 @@ import type { MenuItem, MenuItemIngredient } from "./types";
  * home, página do prato).
  */
 
-const ITEMS_KEY = "kino_menu_admin_items";
-const UNAVAILABLE_KEY = "kino_menu_unavailable";
+const ITEMS_KEY = "luku_menu_admin_items";
+const UNAVAILABLE_KEY = "luku_menu_unavailable";
 
 /** Disparado sempre que o estado muda — componentes que precisam de
  * reatividade (fora deste módulo puro) ouvem isto para se atualizarem. */
-const CHANGE_EVENT = "kino:menu-changed";
+const CHANGE_EVENT = "luku:menu-changed";
 
 type MenuItemEdit = Partial<Omit<MenuItem, "id" | "restaurantId">>;
 

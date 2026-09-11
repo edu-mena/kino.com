@@ -5,12 +5,12 @@ import type { Offer } from "./types";
  * CRUD de promoções do painel do restaurante (`/admin/promocoes`) — mesmo
  * desenho de `@/data/menu-store`: funções puras e síncronas, seguras em
  * SSR. As 3 promoções seed (`INITIAL_OFFERS`, sem `restaurantId`) são da
- * Kino e nunca editáveis/apagáveis por aqui — só as criadas por um
+ * Luku e nunca editáveis/apagáveis por aqui — só as criadas por um
  * restaurante (sempre com `restaurantId`) passam por edição/eliminação.
  */
 
-const OFFERS_KEY = "kino_offers_admin";
-const CHANGE_EVENT = "kino:menu-changed";
+const OFFERS_KEY = "luku_offers_admin";
+const CHANGE_EVENT = "luku:menu-changed";
 
 type OfferInput = Omit<Offer, "id" | "restaurantId">;
 
@@ -38,7 +38,7 @@ function writeState(state: OffersState) {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
-/** Todas as ofertas: seed (Kino) + criadas pelos restaurantes − eliminadas,
+/** Todas as ofertas: seed (Luku) + criadas pelos restaurantes − eliminadas,
  * com edições aplicadas. As edições/eliminações das seed só chegam pela
  * área de sistema (`/sistema/promocoes`); o painel do restaurante nunca
  * lhes mexe. */
@@ -61,11 +61,11 @@ export function createOffer(restaurantId: string, input: OfferInput): Offer {
   return offer;
 }
 
-/** Oferta global da Kino — sem `restaurantId`. Criada na área de sistema
+/** Oferta global da Luku — sem `restaurantId`. Criada na área de sistema
  * (`/sistema/promocoes`). */
-export function createKinoOffer(input: OfferInput): Offer {
+export function createLukuOffer(input: OfferInput): Offer {
   const state = readState();
-  const offer = { id: `offer-kino-${Date.now()}`, ...input } as Offer;
+  const offer = { id: `offer-luku-${Date.now()}`, ...input } as Offer;
   writeState({ ...state, customOffers: [...state.customOffers, offer] });
   return offer;
 }
@@ -94,7 +94,7 @@ export type PromoEffect = {
 
 /**
  * Resolve um código para o efeito a aplicar num pedido deste restaurante — a
- * própria promoção do restaurante ou uma promoção global da Kino (sem
+ * própria promoção do restaurante ou uma promoção global da Luku (sem
  * `restaurantId`). `null` = código inexistente ou sem nada a descontar.
  * Case-insensitive.
  */

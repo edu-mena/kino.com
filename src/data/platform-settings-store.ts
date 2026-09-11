@@ -1,7 +1,7 @@
 import { safeLocalStorageSet } from "./safe-storage";
 
 /**
- * Definições globais da plataforma, geridas pela Kino na área de sistema
+ * Definições globais da plataforma, geridas pela Luku na área de sistema
  * (`/sistema/operação`). Ao contrário de `system-flags-store.ts` (que é por
  * restaurante), isto é um único registo para toda a app. Store pura e
  * síncrona, segura em SSR — pode ser lida de qualquer lado (inclusive do
@@ -25,8 +25,8 @@ type PlatformSettings = {
   delivery: DeliveryPolicy;
 };
 
-const KEY = "kino_platform_settings_v1";
-const CHANGE_EVENT = "kino:menu-changed";
+const KEY = "luku_platform_settings_v1";
+const CHANGE_EVENT = "luku:menu-changed";
 
 function read(): PlatformSettings {
   if (typeof window === "undefined") return { delivery: DEFAULT_DELIVERY_POLICY };

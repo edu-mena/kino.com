@@ -5,7 +5,7 @@
  */
 
 /**
- * A Kino não processa pagamentos — o pagamento é combinado e feito
+ * A Luku não processa pagamentos — o pagamento é combinado e feito
  * diretamente com o restaurante. O restaurante escolhe, ao aceitar um
  * pedido, qual destes métodos EXIGE; o cliente recebe essa exigência na
  * confirmação e paga por esse meio. Nenhum guarda dados de cartão/conta,

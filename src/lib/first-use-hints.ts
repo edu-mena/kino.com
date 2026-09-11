@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const STORAGE_PREFIX = "kino_admin_hint_seen_";
+const STORAGE_PREFIX = "luku_admin_hint_seen_";
 
 /**
  * Dica pontual mostrada só na primeira vez que o restaurante abre um

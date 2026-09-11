@@ -2,8 +2,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 
 import { DIETARY_ONBOARDING_DONE_EVENT } from "@/lib/onboarding";
 
-const STORAGE_KEY = "kino_tutorial_status";
-const DIETARY_ONBOARDING_KEY = "kino_dietary_onboarding_seen";
+const STORAGE_KEY = "luku_tutorial_status";
+const DIETARY_ONBOARDING_KEY = "luku_dietary_onboarding_seen";
 
 type TutorialValue = {
   /** Se o tour deve estar visível agora (controlado por quem o monta, ex: HomeLoggedIn). */

@@ -50,7 +50,7 @@ export function ReviewDialog({
         rating,
         comment,
         tags,
-        customerName: user?.name ?? "Cliente Kino",
+        customerName: user?.name ?? "Cliente Luku",
       },
       sourceRef,
     );

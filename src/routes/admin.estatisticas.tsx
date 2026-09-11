@@ -33,7 +33,7 @@ import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { BCP47, last8Weeks } from "@/lib/week";
 
 export const Route = createFileRoute("/admin/estatisticas")({
-  head: () => ({ meta: [{ title: "Estatísticas — Painel Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Estatísticas — Painel Luku.com" }] }),
   component: AdminEstatisticas,
 });
 
