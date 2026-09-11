@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Bike,
   Clock,
+  Eye,
   ExternalLink,
   Images,
   ImagePlus,
@@ -19,6 +20,8 @@ import {
   Utensils,
   Wallet,
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { enUS, fr as frLocale, ptBR } from "date-fns/locale";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { RestaurantGate } from "@/components/admin-shell";
@@ -36,6 +39,7 @@ import { getRestaurantFulfillmentModes, getRestaurantPaymentMethodIds } from "@/
 import { deriveRestaurantCoords } from "@/data/restaurant-coordinates";
 import { saveProfileEdits } from "@/data/restaurant-profile-store";
 import type { FulfillmentType, WeeklyHours } from "@/data/types";
+import { useProfileViewers } from "@/data/use-profile-viewers";
 import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { paymentMethods } from "@/lib/mock-data";
@@ -54,6 +58,8 @@ export const Route = createFileRoute("/admin/perfil")({
     </RestaurantGate>
   ),
 });
+
+const dateLocales = { pt: ptBR, en: enUS, fr: frLocale };
 
 /** Bloco com cabeçalho (ícone + título + descrição) e conteúdo num cartão. */
 function Section({
@@ -241,7 +247,8 @@ function AdminPerfil() {
   const { restaurant, logout } = useRestaurantAdmin();
   const deliveryPolicy = useDeliveryPolicy();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const viewers = useProfileViewers(restaurant?.id ?? "");
 
   const [editing, setEditing] = useState(false);
 
@@ -381,6 +388,13 @@ function AdminPerfil() {
   const heroDelivery = editing ? isDeliveryAvailable : restaurant.isDeliveryAvailable;
   const heroCover = editing ? coverImage || restaurant.coverImage : restaurant.coverImage;
   const na = t("adminPerfil.notProvided");
+
+  const relTime = (iso: string) =>
+    formatDistanceToNow(new Date(iso), { addSuffix: true, locale: dateLocales[locale] });
+  const now = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const viewersToday = viewers.filter((v) => now - new Date(v.lastAt).getTime() < DAY_MS).length;
+  const viewersWeek = viewers.filter((v) => now - new Date(v.lastAt).getTime() < 7 * DAY_MS).length;
 
   return (
     <div className="pb-16">
@@ -1184,6 +1198,44 @@ function AdminPerfil() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">{t("adminPerfil.galleryEmpty")}</p>
+              )}
+            </Section>
+
+            <Section
+              icon={Eye}
+              title={t("adminPerfil.secViewersTitle")}
+              hint={t("adminPerfil.secViewersHint")}
+            >
+              {viewers.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("adminPerfil.viewersEmpty")}</p>
+              ) : (
+                <div className="space-y-4">
+                  <dl className="grid grid-cols-3 gap-4">
+                    <ReadRow label={t("adminPerfil.viewersTotalLabel")}>{viewers.length}</ReadRow>
+                    <ReadRow label={t("adminPerfil.viewersWeekLabel")}>{viewersWeek}</ReadRow>
+                    <ReadRow label={t("adminPerfil.viewersTodayLabel")}>{viewersToday}</ReadRow>
+                  </dl>
+                  <ul className="divide-y divide-border border-t border-border">
+                    {viewers.slice(0, 8).map((v) => (
+                      <li key={v.viewerKey} className="flex items-center gap-3 py-2.5">
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                          {(v.viewerName?.[0] ?? "?").toUpperCase()}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {v.viewerName ?? t("adminPerfil.viewerGuest")}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{relTime(v.lastAt)}</p>
+                        </div>
+                        {v.visits > 1 && (
+                          <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                            {t("adminPerfil.viewerVisits", { count: v.visits })}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </Section>
           </div>

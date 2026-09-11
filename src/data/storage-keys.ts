@@ -23,6 +23,7 @@ export const STORAGE_KEYS = {
   reviews: "kino_reviews_v1",
   notifications: "kino_notifications_v1",
   customerNotes: "kino_customer_notes",
+  profileViews: "kino_profile_views_v1",
 } as const;
 
 /** Evento disparado por todas as stores puras quando escrevem — os

@@ -19,6 +19,7 @@ import { ReservationDialog } from "@/components/reservation-dialog";
 import { PageShell } from "@/components/site-shell";
 import { StoryViewer } from "@/components/story-viewer";
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
+import { recordProfileView } from "@/data/profile-views-store";
 import { useEffectiveStories } from "@/data/use-stories";
 import {
   addressProvince,
@@ -27,7 +28,9 @@ import {
   getReviewsForRestaurant,
 } from "@/data/helpers";
 import { useTranslation, type Locale } from "@/i18n";
+import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
+import { viewerKey } from "@/lib/customer";
 import { estimateDeliveryMinutes } from "@/lib/delivery-history";
 import { formatKz } from "@/lib/format";
 import { formatKm } from "@/lib/geo";
@@ -62,10 +65,22 @@ function RestaurantDetail() {
   const { selected: userLocation } = useLocation();
   const status = useRestaurantStatus(restaurant.id);
   const { orders } = useCart();
+  const { user } = useAuth();
   const allStories = useEffectiveStories();
   const [reservingOpen, setReservingOpen] = useState(false);
   const [storyOpen, setStoryOpen] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
+
+  // "Quem viu o seu perfil" — visitante único, não pageview (ver
+  // `recordProfileView`). `user?.name` só entra quando muda para não
+  // reabrir a janela de sessão a cada render.
+  useEffect(() => {
+    recordProfileView(restaurant.id, {
+      key: viewerKey(user),
+      ...(user?.name ? { name: user.name } : {}),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurant.id, user?.name, user?.email, user?.phone]);
 
   // Avaliações — reativas às deixadas nesta página (evento `kino:menu-changed`).
   const [reviewsTick, bumpReviews] = useReducer((n: number) => n + 1, 0);
