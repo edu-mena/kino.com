@@ -20,6 +20,7 @@ import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as EntregaRouteImport } from './routes/entrega'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as KinoRouteImport } from './routes/kino'
+import { Route as NotificacoesRouteImport } from './routes/notificacoes'
 import { Route as OfertasRouteImport } from './routes/ofertas'
 import { Route as ParceirosRouteImport } from './routes/parceiros'
 import { Route as PerfilRouteImport } from './routes/perfil'
@@ -34,6 +35,7 @@ import { Route as AdminCardapioRouteImport } from './routes/admin.cardapio'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AdminEstatisticasRouteImport } from './routes/admin.estatisticas'
 import { Route as AdminMesasRouteImport } from './routes/admin.mesas'
+import { Route as AdminNotificacoesRouteImport } from './routes/admin.notificacoes'
 import { Route as AdminPedidosRouteImport } from './routes/admin.pedidos'
 import { Route as AdminPerfilRouteImport } from './routes/admin.perfil'
 import { Route as AdminPromocoesRouteImport } from './routes/admin.promocoes'
@@ -111,6 +113,11 @@ const KinoRoute = KinoRouteImport.update({
   path: '/kino',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotificacoesRoute = NotificacoesRouteImport.update({
+  id: '/notificacoes',
+  path: '/notificacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OfertasRoute = OfertasRouteImport.update({
   id: '/ofertas',
   path: '/ofertas',
@@ -179,6 +186,11 @@ const AdminEstatisticasRoute = AdminEstatisticasRouteImport.update({
 const AdminMesasRoute = AdminMesasRouteImport.update({
   id: '/mesas',
   path: '/mesas',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNotificacoesRoute = AdminNotificacoesRouteImport.update({
+  id: '/notificacoes',
+  path: '/notificacoes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPedidosRoute = AdminPedidosRouteImport.update({
@@ -299,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
   '/kino': typeof KinoRoute
+  '/notificacoes': typeof NotificacoesRoute
   '/ofertas': typeof OfertasRoute
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
@@ -312,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/estatisticas': typeof AdminEstatisticasRoute
   '/admin/mesas': typeof AdminMesasRoute
+  '/admin/notificacoes': typeof AdminNotificacoesRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
@@ -346,6 +360,7 @@ export interface FileRoutesByTo {
   '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
   '/kino': typeof KinoRoute
+  '/notificacoes': typeof NotificacoesRoute
   '/ofertas': typeof OfertasRoute
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
@@ -358,6 +373,7 @@ export interface FileRoutesByTo {
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/estatisticas': typeof AdminEstatisticasRoute
   '/admin/mesas': typeof AdminMesasRoute
+  '/admin/notificacoes': typeof AdminNotificacoesRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
@@ -394,6 +410,7 @@ export interface FileRoutesById {
   '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
   '/kino': typeof KinoRoute
+  '/notificacoes': typeof NotificacoesRoute
   '/ofertas': typeof OfertasRoute
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
@@ -407,6 +424,7 @@ export interface FileRoutesById {
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/estatisticas': typeof AdminEstatisticasRoute
   '/admin/mesas': typeof AdminMesasRoute
+  '/admin/notificacoes': typeof AdminNotificacoesRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
@@ -444,6 +462,7 @@ export interface FileRouteTypes {
     | '/entrega'
     | '/favoritos'
     | '/kino'
+    | '/notificacoes'
     | '/ofertas'
     | '/parceiros'
     | '/perfil'
@@ -457,6 +476,7 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/estatisticas'
     | '/admin/mesas'
+    | '/admin/notificacoes'
     | '/admin/pedidos'
     | '/admin/perfil'
     | '/admin/promocoes'
@@ -491,6 +511,7 @@ export interface FileRouteTypes {
     | '/entrega'
     | '/favoritos'
     | '/kino'
+    | '/notificacoes'
     | '/ofertas'
     | '/parceiros'
     | '/perfil'
@@ -503,6 +524,7 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/estatisticas'
     | '/admin/mesas'
+    | '/admin/notificacoes'
     | '/admin/pedidos'
     | '/admin/perfil'
     | '/admin/promocoes'
@@ -538,6 +560,7 @@ export interface FileRouteTypes {
     | '/entrega'
     | '/favoritos'
     | '/kino'
+    | '/notificacoes'
     | '/ofertas'
     | '/parceiros'
     | '/perfil'
@@ -551,6 +574,7 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/estatisticas'
     | '/admin/mesas'
+    | '/admin/notificacoes'
     | '/admin/pedidos'
     | '/admin/perfil'
     | '/admin/promocoes'
@@ -587,6 +611,7 @@ export interface RootRouteChildren {
   EntregaRoute: typeof EntregaRoute
   FavoritosRoute: typeof FavoritosRoute
   KinoRoute: typeof KinoRoute
+  NotificacoesRoute: typeof NotificacoesRoute
   OfertasRoute: typeof OfertasRoute
   ParceirosRoute: typeof ParceirosRoute
   PerfilRoute: typeof PerfilRoute
@@ -681,6 +706,13 @@ declare module '@tanstack/react-router' {
       path: '/kino'
       fullPath: '/kino'
       preLoaderRoute: typeof KinoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notificacoes': {
+      id: '/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/notificacoes'
+      preLoaderRoute: typeof NotificacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ofertas': {
@@ -779,6 +811,13 @@ declare module '@tanstack/react-router' {
       path: '/mesas'
       fullPath: '/admin/mesas'
       preLoaderRoute: typeof AdminMesasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/notificacoes': {
+      id: '/admin/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/admin/notificacoes'
+      preLoaderRoute: typeof AdminNotificacoesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/pedidos': {
@@ -937,6 +976,7 @@ interface AdminRouteChildren {
   AdminClientesRoute: typeof AdminClientesRoute
   AdminEstatisticasRoute: typeof AdminEstatisticasRoute
   AdminMesasRoute: typeof AdminMesasRoute
+  AdminNotificacoesRoute: typeof AdminNotificacoesRoute
   AdminPedidosRoute: typeof AdminPedidosRoute
   AdminPerfilRoute: typeof AdminPerfilRoute
   AdminPromocoesRoute: typeof AdminPromocoesRoute
@@ -953,6 +993,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminClientesRoute: AdminClientesRoute,
   AdminEstatisticasRoute: AdminEstatisticasRoute,
   AdminMesasRoute: AdminMesasRoute,
+  AdminNotificacoesRoute: AdminNotificacoesRoute,
   AdminPedidosRoute: AdminPedidosRoute,
   AdminPerfilRoute: AdminPerfilRoute,
   AdminPromocoesRoute: AdminPromocoesRoute,
@@ -1000,6 +1041,7 @@ const rootRouteChildren: RootRouteChildren = {
   EntregaRoute: EntregaRoute,
   FavoritosRoute: FavoritosRoute,
   KinoRoute: KinoRoute,
+  NotificacoesRoute: NotificacoesRoute,
   OfertasRoute: OfertasRoute,
   ParceirosRoute: ParceirosRoute,
   PerfilRoute: PerfilRoute,

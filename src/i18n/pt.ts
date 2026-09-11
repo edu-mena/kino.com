@@ -1840,6 +1840,8 @@ export const pt = {
     title: "Notificações",
     markAllRead: "Marcar todas como lidas",
     empty: "Sem notificações.",
+    seeAll: "Ver todas as notificações",
+    historyDescription: "Todo o histórico — lidas e não lidas.",
     orderNew: "Novo pedido em {name}",
     orderStatus: "O seu pedido em {name} foi atualizado",
     reservationNew: "Nova reserva em {name}",

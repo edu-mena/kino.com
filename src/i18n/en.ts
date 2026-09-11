@@ -1835,6 +1835,8 @@ export const en: Dictionary = {
     title: "Notifications",
     markAllRead: "Mark all as read",
     empty: "No notifications.",
+    seeAll: "See all notifications",
+    historyDescription: "The full history — read and unread.",
     orderNew: "New order at {name}",
     orderStatus: "Your order at {name} was updated",
     reservationNew: "New reservation at {name}",

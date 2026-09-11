@@ -39,9 +39,24 @@ export type KinoNotification = {
 
 type NotificationsValue = {
   all: KinoNotification[];
-  markAllRead: () => void;
   markRead: (id: string) => void;
+  markManyRead: (ids: string[]) => void;
 };
+
+/** Notificações de um âmbito: `"restaurant"` filtra por `restaurantId`
+ * (painel); `"client"` filtra pelo `ownerKey` de quem está a ver (conta ou
+ * convidado) — as da seed não têm `ownerKey`, por isso nunca aparecem aqui.
+ * Partilhado pelo sino e pelas páginas de histórico, para os dois
+ * concordarem sempre no que é "meu". */
+export function scopeNotifications(
+  all: KinoNotification[],
+  scope: "client" | "restaurant",
+  opts: { restaurantId?: string; ownerKey?: string },
+): KinoNotification[] {
+  return scope === "restaurant" && opts.restaurantId
+    ? all.filter((n) => n.restaurantId === opts.restaurantId)
+    : all.filter((n) => n.ownerKey === opts.ownerKey);
+}
 
 const NotificationsContext = createContext<NotificationsValue | null>(null);
 const CAP = 50;
@@ -154,8 +169,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const value = useMemo<NotificationsValue>(
     () => ({
       all,
-      markAllRead: () => setAll((cur) => cur.map((n) => ({ ...n, read: true }))),
       markRead: (id) => setAll((cur) => cur.map((n) => (n.id === id ? { ...n, read: true } : n))),
+      markManyRead: (ids) => {
+        if (ids.length === 0) return;
+        const set = new Set(ids);
+        setAll((cur) => cur.map((n) => (set.has(n.id) ? { ...n, read: true } : n)));
+      },
     }),
     [all],
   );

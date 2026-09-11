@@ -1853,6 +1853,8 @@ export const fr: Dictionary = {
     title: "Notifications",
     markAllRead: "Tout marquer comme lu",
     empty: "Aucune notification.",
+    seeAll: "Voir toutes les notifications",
+    historyDescription: "Tout l'historique — lues et non lues.",
     orderNew: "Nouvelle commande chez {name}",
     orderStatus: "Votre commande chez {name} a été mise à jour",
     reservationNew: "Nouvelle réservation chez {name}",
