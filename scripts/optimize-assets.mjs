@@ -29,17 +29,17 @@ const plan = [
   // Heróis grandes de fundo — únicos usos, convertidos para webp.
   { file: "hero.png", width: 2000, convertTo: "webp", quality: 72 },
   { file: "auth-food.png", width: 1800, convertTo: "webp", quality: 72 },
-  { file: "kino/hero.png", width: 1600, convertTo: "webp", quality: 74 },
+  { file: "luku/hero.png", width: 1600, convertTo: "webp", quality: 74 },
   // Fotos menores.
   { file: "hero-food.jpg", width: 1400, quality: 76 },
   { file: "restaurant-angolana.jpg", width: 900, quality: 76 },
   { file: "cocacap.webp", width: 800, quality: 78 },
   { file: "dish-drink.png", width: 800 },
   { file: "dish-fries.png", width: 800 },
-  { file: "kino/chief.png", width: 800 },
-  { file: "kino/date.png", width: 800 },
-  { file: "kino/menu.png", width: 800 },
-  { file: "kino/prato.png", width: 800 },
+  { file: "luku/chief.png", width: 800 },
+  { file: "luku/date.png", width: 800 },
+  { file: "luku/menu.png", width: 800 },
+  { file: "luku/prato.png", width: 800 },
 ];
 
 const kb = (n) => `${(n / 1024).toFixed(0)} KB`;

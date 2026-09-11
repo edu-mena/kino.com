@@ -8,7 +8,7 @@ import { DIETARY_ONBOARDING_DONE_EVENT } from "@/lib/onboarding";
 import { usePreferences } from "@/lib/preferences";
 import { useTranslation } from "@/i18n";
 
-const STORAGE_KEY = "kino_dietary_onboarding_seen";
+const STORAGE_KEY = "luku_dietary_onboarding_seen";
 
 /** Pergunta sobre restrições alimentares na primeira vez que o usuário
  * acede ao sistema (logado) — uma vez respondido (ou dispensado), nunca

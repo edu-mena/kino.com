@@ -67,7 +67,7 @@ const appNavLinks = [
 
 const guestNavLinks = [
   { to: "/", labelKey: "guestNav.home" },
-  { to: "/kino", labelKey: "guestNav.kino" },
+  { to: "/luku", labelKey: "guestNav.luku" },
   { to: "/sobre", labelKey: "guestNav.about" },
   { to: "/contacto", labelKey: "guestNav.contact" },
 ] as const;
@@ -92,7 +92,7 @@ function formatTodayPt(date: Date) {
 }
 
 // Slides "forward" (left) when moving right along the guest nav order
-// (e.g. Início -> Kino), "back" (right) when moving left (e.g. Kino -> Início).
+// (e.g. Início -> Luku), "back" (right) when moving left (e.g. Luku -> Início).
 // Matched by the html:active-view-transition-type(back) rule in styles.css.
 function guestViewTransitionTypes({
   fromLocation,
@@ -379,7 +379,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
 
         {/* O idioma funciona igual para convidados (usePreferences não
             depende de sessão) — só a home de convidado escondia o seletor;
-            as outras páginas de visitante (Kino, Sobre, Contacto) já o
+            as outras páginas de visitante (Luku, Sobre, Contacto) já o
             mostravam por não usarem este variant. */}
         <div data-tour="language" className="shrink-0 border-t border-border px-4 py-3">
           <div className="flex items-center justify-between gap-2">

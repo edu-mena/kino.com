@@ -18,9 +18,9 @@ import { OPERATORS, useSystemAdmin } from "@/lib/system-admin";
 export const Route = createFileRoute("/sistema_/entrar")({
   head: () => ({
     meta: [
-      { title: "Administração de sistema — Kino.com" },
+      { title: "Administração de sistema — Luku.com" },
       { name: "robots", content: "noindex" },
-      { property: "og:title", content: "Administração de sistema — Kino.com" },
+      { property: "og:title", content: "Administração de sistema — Luku.com" },
       { property: "og:image", content: icon },
     ],
   }),

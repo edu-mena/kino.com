@@ -56,7 +56,7 @@ describe("recordProfileView / getProfileViewers", () => {
   });
 
   it("não regista o próprio gestor a ver o seu restaurante", () => {
-    localStorage.setItem("kino_admin_restaurant", "rest-1");
+    localStorage.setItem("luku_admin_restaurant", "rest-1");
     recordProfileView("rest-1", { key: "guest-a" });
     expect(getProfileViewers("rest-1")).toHaveLength(0);
   });

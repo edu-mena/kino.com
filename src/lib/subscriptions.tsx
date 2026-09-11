@@ -57,14 +57,14 @@ const SubscriptionsContext = createContext<SubscriptionsValue | null>(null);
 
 export function SubscriptionsProvider({ children }: { children: ReactNode }) {
   // SSR-safe: primeira renderização usa o seed puro; o efeito sincroniza
-  // com o localStorage e volta a correr a cada `kino:menu-changed`/`storage`.
+  // com o localStorage e volta a correr a cada `luku:menu-changed`/`storage`.
   const [tick, bump] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
-    window.addEventListener("kino:menu-changed", bump);
+    window.addEventListener("luku:menu-changed", bump);
     window.addEventListener("storage", bump);
     return () => {
-      window.removeEventListener("kino:menu-changed", bump);
+      window.removeEventListener("luku:menu-changed", bump);
       window.removeEventListener("storage", bump);
     };
   }, []);

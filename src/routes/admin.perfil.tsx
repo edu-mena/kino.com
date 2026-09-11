@@ -51,7 +51,7 @@ import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 
 export const Route = createFileRoute("/admin/perfil")({
-  head: () => ({ meta: [{ title: "Restaurante — Painel Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Restaurante — Painel Luku.com" }] }),
   component: () => (
     <RestaurantGate>
       <AdminPerfil />

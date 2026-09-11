@@ -9,7 +9,7 @@ import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/admin/notificacoes")({
-  head: () => ({ meta: [{ title: "Notificações — Painel Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Notificações — Painel Luku.com" }] }),
   component: AdminNotificacoes,
 });
 

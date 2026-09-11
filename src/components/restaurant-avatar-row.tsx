@@ -9,10 +9,10 @@ import { getRestaurantsWithStories, suspendedRestaurantIds } from "@/data/helper
 import type { Restaurant } from "@/data/types";
 import { INITIAL_RESTAURANTS } from "@/data/mockData";
 import { useEffectiveStories } from "@/data/use-stories";
+import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
+import { useLocation } from "@/lib/location";
 import { useStories } from "@/lib/stories";
 import { useTranslation } from "@/i18n";
-
-const sorted = [...INITIAL_RESTAURANTS].sort((a, b) => a.distanceKm - b.distanceKm);
 
 function abbreviate(name: string) {
   return name.length > 14 ? `${name.slice(0, 13)}…` : name;
@@ -21,6 +21,18 @@ function abbreviate(name: string) {
 export function RestaurantAvatarRow() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // Morada selecionada no header — "perto de si" reflete a localização de
+  // quem está a ver, não um `distanceKm` fixo igual pra toda a gente.
+  const { selected: selectedAddress } = useLocation();
+  const sorted = useMemo(
+    () =>
+      [...INITIAL_RESTAURANTS].sort(
+        (a, b) =>
+          personalizedRestaurantDistanceKm(a.id, selectedAddress, a.distanceKm) -
+          personalizedRestaurantDistanceKm(b.id, selectedAddress, b.distanceKm),
+      ),
+    [selectedAddress],
+  );
   // Restaurante com story já totalmente visto — pergunta ao usuário o que
   // quer fazer (ver o story de novo ou ir para a página do restaurante) em
   // vez de decidir por ele. Sem story: vai direto para o restaurante (não

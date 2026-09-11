@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { getRestaurant } from "@/data/helpers";
 import { useTranslation } from "@/i18n";
-import type { KinoNotification } from "@/lib/notifications";
+import type { LukuNotification } from "@/lib/notifications";
 
-const targetFor = (scope: "client" | "restaurant", kind: KinoNotification["kind"]) =>
+const targetFor = (scope: "client" | "restaurant", kind: LukuNotification["kind"]) =>
   scope === "client" ? (kind === "order" ? "/entrega" : "/reservas") : null;
 
 /** Uma notificação, lida ou não — usado tanto no sino (só não lidas) como
@@ -14,7 +14,7 @@ export function NotificationList({
   emptyText,
   onNavigate,
 }: {
-  items: KinoNotification[];
+  items: LukuNotification[];
   scope: "client" | "restaurant";
   emptyText: string;
   /** Chamado ao navegar a partir de uma notificação — o sino usa isto para se fechar. */

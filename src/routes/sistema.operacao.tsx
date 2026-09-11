@@ -22,7 +22,7 @@ import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { BCP47, last8Weeks } from "@/lib/week";
 
 export const Route = createFileRoute("/sistema/operacao")({
-  head: () => ({ meta: [{ title: "Operação — Sistema Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Operação — Sistema Luku.com" }] }),
   component: SistemaOperacao,
 });
 

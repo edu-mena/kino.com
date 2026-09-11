@@ -19,8 +19,8 @@ export type PartnerApplication = {
   status: PartnerAppStatus;
 };
 
-const KEY = "kino_system_partner_apps_v1";
-const CHANGE_EVENT = "kino:menu-changed";
+const KEY = "luku_system_partner_apps_v1";
+const CHANGE_EVENT = "luku:menu-changed";
 const DAY = 86_400_000;
 
 const daysAgo = (n: number) => new Date(Date.now() - n * DAY).toISOString();
@@ -34,7 +34,7 @@ export function seedPartnerApps(): PartnerApplication[] {
       phone: "+244 923 771 004",
       email: "aurelio@cantinhodailha.ao",
       province: "Luanda",
-      message: "Restaurante de peixe fresco na Ilha do Cabo, 40 lugares. Queremos entrega no Kino.",
+      message: "Restaurante de peixe fresco na Ilha do Cabo, 40 lugares. Queremos entrega no Luku.",
       createdAt: daysAgo(1),
       status: "pending",
     },

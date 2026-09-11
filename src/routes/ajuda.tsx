@@ -10,13 +10,13 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 export const Route = createFileRoute("/ajuda")({
   head: () => ({
     meta: [
-      { title: "Centro de ajuda — Kino.com" },
+      { title: "Centro de ajuda — Luku.com" },
       {
         name: "description",
         content:
-          "Respostas sobre pedidos, pagamentos, entregas e reembolsos, além de contacto direto com o suporte Kino.com.",
+          "Respostas sobre pedidos, pagamentos, entregas e reembolsos, além de contacto direto com o suporte Luku.com.",
       },
-      { property: "og:title", content: "Centro de ajuda — Kino.com" },
+      { property: "og:title", content: "Centro de ajuda — Luku.com" },
       { property: "og:description", content: "Respostas rápidas e suporte humano." },
       { property: "og:image", content: icon },
     ],

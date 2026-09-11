@@ -31,7 +31,7 @@ import { translateOffer, useTranslation } from "@/i18n";
 import { useOffersAdmin } from "@/lib/offers-admin";
 
 export const Route = createFileRoute("/sistema/promocoes")({
-  head: () => ({ meta: [{ title: "Promoções Kino — Sistema Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Promoções Luku — Sistema Luku.com" }] }),
   component: SistemaPromocoes,
 });
 
@@ -62,7 +62,7 @@ const emptyDraft: Draft = {
 };
 
 function SistemaPromocoes() {
-  const { kinoOffers, createKinoOffer, updateOffer, deleteOffer } = useOffersAdmin();
+  const { lukuOffers, createLukuOffer, updateOffer, deleteOffer } = useOffersAdmin();
   const { t } = useTranslation();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -123,7 +123,7 @@ function SistemaPromocoes() {
       updateOffer(editing.id, input);
       toast.success(t("sistema.promocoes.updatedToast"));
     } else {
-      createKinoOffer(input);
+      createLukuOffer(input);
       toast.success(t("sistema.promocoes.createdToast"));
     }
     setDialogOpen(false);
@@ -143,14 +143,14 @@ function SistemaPromocoes() {
       />
 
       <div className="mx-auto mt-8 max-w-4xl px-4 md:px-6">
-        {kinoOffers.length === 0 ? (
+        {lukuOffers.length === 0 ? (
           <div className="card-soft grid place-items-center gap-3 p-12 text-center">
             <Megaphone className="h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">{t("sistema.promocoes.empty")}</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {kinoOffers.map((offer) => {
+            {lukuOffers.map((offer) => {
               const Icon = iconByType[offer.type];
               const display = translateOffer(offer, t);
               return (
@@ -221,7 +221,7 @@ function SistemaPromocoes() {
             <DialogDescription>{t("sistema.promocoes.dialogHint")}</DialogDescription>
           </div>
           <form
-            id="kino-promo-form"
+            id="luku-promo-form"
             onSubmit={submit}
             className="mt-3 grid grid-cols-2 gap-3 overflow-y-auto px-6 pb-2"
           >
@@ -360,7 +360,7 @@ function SistemaPromocoes() {
           <div className="border-t border-border px-6 py-4">
             <Button
               type="submit"
-              form="kino-promo-form"
+              form="luku-promo-form"
               className="w-full rounded-xl"
               disabled={uploading}
             >

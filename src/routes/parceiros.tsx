@@ -16,13 +16,13 @@ import { useTranslation } from "@/i18n";
 export const Route = createFileRoute("/parceiros")({
   head: () => ({
     meta: [
-      { title: "Torne-se parceiro — Kino.com" },
+      { title: "Torne-se parceiro — Luku.com" },
       {
         name: "description",
         content:
-          "Leve o seu restaurante para a Kino: cardápio digital, QR Code, mesas e clientes num só lugar.",
+          "Leve o seu restaurante para a Luku: cardápio digital, QR Code, mesas e clientes num só lugar.",
       },
-      { property: "og:title", content: "Torne-se parceiro — Kino.com" },
+      { property: "og:title", content: "Torne-se parceiro — Luku.com" },
       { property: "og:image", content: icon },
     ],
   }),
@@ -34,7 +34,7 @@ const inputClass =
 
 const inputWithIconClass = `${inputClass} pl-11`;
 
-const PARTNERS_EMAIL = "parceiros@kino.com";
+const PARTNERS_EMAIL = "parceiros@luku.com";
 
 function Parceiros() {
   const { t } = useTranslation();

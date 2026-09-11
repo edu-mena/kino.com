@@ -13,12 +13,12 @@ import { useTranslation } from "@/i18n";
 export const Route = createFileRoute("/notificacoes")({
   head: () => ({
     meta: [
-      { title: "Notificações — Kino.com" },
+      { title: "Notificações — Luku.com" },
       {
         name: "description",
         content: "Todo o histórico de notificações dos seus pedidos e reservas.",
       },
-      { property: "og:title", content: "Notificações — Kino.com" },
+      { property: "og:title", content: "Notificações — Luku.com" },
       { property: "og:image", content: icon },
     ],
   }),

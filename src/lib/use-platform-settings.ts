@@ -17,10 +17,10 @@ export function useDeliveryPolicy(): DeliveryPolicy {
   useEffect(() => {
     const sync = () => setPolicy(getDeliveryPolicy());
     sync();
-    window.addEventListener("kino:menu-changed", sync);
+    window.addEventListener("luku:menu-changed", sync);
     window.addEventListener("storage", sync);
     return () => {
-      window.removeEventListener("kino:menu-changed", sync);
+      window.removeEventListener("luku:menu-changed", sync);
       window.removeEventListener("storage", sync);
     };
   }, []);

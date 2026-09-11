@@ -13,7 +13,7 @@ export const OPERATORS: SystemOperator[] = [
   { id: "op-mena", name: "Eduardo Mena", role: "CTO" },
 ];
 
-const STORAGE_KEY = "kino_system_operator";
+const STORAGE_KEY = "luku_system_operator";
 
 type SystemAdminValue = {
   operatorId: string | null;

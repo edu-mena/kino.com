@@ -10,7 +10,7 @@ import { OperatorProviders } from "@/lib/operator-providers";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 export const Route = createFileRoute("/admin_/cardapio-pdf")({
-  head: () => ({ meta: [{ title: "Cardápio — Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Cardápio — Luku.com" }] }),
   validateSearch: (s: Record<string, unknown>): { menu: string } => {
     const raw = s["menu"];
     return { menu: typeof raw === "string" && raw ? raw : "all" };

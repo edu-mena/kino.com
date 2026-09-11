@@ -13,13 +13,13 @@ import type { RestaurantStory } from "./types";
  * no próximo `pruneExpiredStories()` — os criados no painel saem de
  * `customStories`, os do seed vão para `deletedIds` (não voltam). Os stories
  * do seed (`INITIAL_STORIES`) são re-ancorados à 1ª abertura da app
- * (`kino_stories_seed_epoch`), por isso o carrossel de demonstração aparece
+ * (`luku_stories_seed_epoch`), por isso o carrossel de demonstração aparece
  * durante 24h e depois esvazia, tal como os reais.
  */
 
-const STORIES_KEY = "kino_stories_admin";
-const SEED_EPOCH_KEY = "kino_stories_seed_epoch";
-const CHANGE_EVENT = "kino:menu-changed";
+const STORIES_KEY = "luku_stories_admin";
+const SEED_EPOCH_KEY = "luku_stories_seed_epoch";
+const CHANGE_EVENT = "luku:menu-changed";
 const HOUR_MS = 60 * 60 * 1000;
 
 /** Tempo de vida de qualquer story. */

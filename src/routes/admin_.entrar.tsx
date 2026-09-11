@@ -19,9 +19,9 @@ import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 export const Route = createFileRoute("/admin_/entrar")({
   head: () => ({
     meta: [
-      { title: "Painel do restaurante — Kino.com" },
+      { title: "Painel do restaurante — Luku.com" },
       { name: "description", content: "Aceda ao painel para gerir pedidos, reservas e cardápio." },
-      { property: "og:title", content: "Painel do restaurante — Kino.com" },
+      { property: "og:title", content: "Painel do restaurante — Luku.com" },
       { property: "og:image", content: icon },
     ],
   }),

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { SavedAddress } from "@/data/types";
 
-const STORAGE_KEY = "kino_custom_addresses";
+const STORAGE_KEY = "luku_custom_addresses";
 
 type AddressesValue = {
   customAddresses: SavedAddress[];

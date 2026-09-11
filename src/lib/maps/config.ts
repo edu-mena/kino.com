@@ -13,7 +13,7 @@
  *     Chave *de browser* da Google Maps Platform, restrita por referrer.
  *     Usada só para RENDERIZAR o mapa (Maps JavaScript API / tiles).
  *
- *   VITE_MAPS_API_BASE=https://api.kino.com/maps
+ *   VITE_MAPS_API_BASE=https://api.luku.com/maps
  *     Base do nosso backend-proxy que fala com Geocoding / Routes /
  *     Distance Matrix. A chave *de servidor* vive lá, nunca no cliente.
  *     Enquanto não existir, o cliente Google lança erro claro e o app

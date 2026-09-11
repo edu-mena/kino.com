@@ -6,14 +6,14 @@ import { safeLocalStorageSet } from "./safe-storage";
  * (`/sistema/subscricoes`). Sem backend: store pura e síncrona, segura em
  * SSR, mesmo desenho de `restaurant-profile-store.ts`.
  *
- * Cada restaurante paga mensalidade — plano único Kino, 9 999 Kz — com os 2
+ * Cada restaurante paga mensalidade — plano único Luku, 9 999 Kz — com os 2
  * primeiros meses grátis (trial). O estado é a fonte da verdade sobre MRR,
  * trials a terminar e pagamentos em atraso.
  */
-export type SubscriptionPlan = "kino";
+export type SubscriptionPlan = "luku";
 export type SubStatus = "trial" | "active" | "overdue" | "suspended";
 
-export const PLAN_PRICE: Record<SubscriptionPlan, number> = { kino: 9999 };
+export const PLAN_PRICE: Record<SubscriptionPlan, number> = { luku: 9999 };
 export const TRIAL_DAYS = 60;
 
 export type RestaurantSubscription = {
@@ -28,8 +28,8 @@ export type RestaurantSubscription = {
   lastPaymentAt?: string;
 };
 
-const KEY = "kino_system_subscriptions_v1";
-const CHANGE_EVENT = "kino:menu-changed";
+const KEY = "luku_system_subscriptions_v1";
+const CHANGE_EVENT = "luku:menu-changed";
 const DAY = 86_400_000;
 
 function hash(s: string): number {
@@ -51,7 +51,7 @@ export function seedSubscriptions(): RestaurantSubscription[] {
     const monthsAgo = h % 10; // entrou há 0..9 meses
     const startedMs = now - monthsAgo * 30 * DAY;
     const trialEndsMs = startedMs + TRIAL_DAYS * DAY;
-    const plan: SubscriptionPlan = "kino";
+    const plan: SubscriptionPlan = "luku";
 
     let status: SubStatus = now < trialEndsMs ? "trial" : "active";
     if (status === "active") {
@@ -81,7 +81,7 @@ function read(): RestaurantSubscription[] {
     // o plano único atual
     const parsed = (JSON.parse(stored) as RestaurantSubscription[]).map((s) => ({
       ...s,
-      plan: "kino" as SubscriptionPlan,
+      plan: "luku" as SubscriptionPlan,
     }));
     // garante uma linha por restaurante mesmo que o seed cresça
     const known = new Set(parsed.map((s) => s.restaurantId));
@@ -107,7 +107,7 @@ export function getSubscriptions(): RestaurantSubscription[] {
  * começa em período grátis de 2 meses. */
 export function createSubscription(
   restaurantId: string,
-  plan: SubscriptionPlan = "kino",
+  plan: SubscriptionPlan = "luku",
 ): RestaurantSubscription {
   const now = Date.now();
   const sub: RestaurantSubscription = {

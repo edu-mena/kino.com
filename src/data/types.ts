@@ -191,6 +191,11 @@ export interface Reservation {
    * cancelou uma reserva que já tinha confirmado. String livre por
    * compatibilidade. */
   status: string;
+  /** Quando `status` mudou pela última vez (`updateReservationStatus`) —
+   * usado em `/reservas` para saber há quanto tempo uma reserva está
+   * "Cancelada" (some da tela do cliente 1 minuto depois; o painel do
+   * restaurante continua a mostrar tudo). Ausente nas reservas da seed. */
+  statusUpdatedAt?: string;
   /** Mesa atribuída pelo restaurante ao confirmar (ver `@/data/tables-store`). */
   tableId?: string;
   specialRequests?: string;
@@ -252,7 +257,7 @@ export interface UserProfile {
 
 export interface Offer {
   id: string;
-  /** Ausente = promoção da própria Kino (geridas centralmente, nunca
+  /** Ausente = promoção da própria Luku (geridas centralmente, nunca
    * editáveis no painel do restaurante). Presente = promoção criada por um
    * restaurante em `/admin/promocoes`. */
   restaurantId?: string;

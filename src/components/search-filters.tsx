@@ -12,7 +12,7 @@ import { useTranslation } from "@/i18n";
 const provinces = getProvinces();
 export const MY_AREA = "minha-area";
 
-/** Select de localização reutilizado nos filtros de busca — "A tua
+/** Select de localização reutilizado nos filtros de busca — "A minha
  * localização" (província do usuário, `INITIAL_USER_PROFILE.userNeighborhood`)
  * vem sempre primeiro, seguido de "Todas as províncias" e da lista completa. */
 export function LocationFilterSelect({
@@ -29,7 +29,7 @@ export function LocationFilterSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={MY_AREA}>A tua localização</SelectItem>
+        <SelectItem value={MY_AREA}>A minha localização</SelectItem>
         <SelectItem value="todos">Todas as províncias</SelectItem>
         {provinces.map((n) => (
           <SelectItem key={n} value={n}>

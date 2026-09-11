@@ -11,7 +11,7 @@ import type { FulfillmentType, SavedAddress, SelectedIngredient } from "@/data/t
 // Sufixo de versão: subir quando `seedOrders()` mudar de forma relevante —
 // invalida o snapshot antigo do localStorage, que de outro modo continua a
 // esconder os pedidos novos da seed.
-const STORAGE_KEY = "kino_cart_orders_v3";
+const STORAGE_KEY = "luku_cart_orders_v3";
 
 export type CartLine = {
   key: string;
@@ -77,7 +77,7 @@ export type CartOrder = {
   deliveredAt?: string;
   /** Método de pagamento EXIGIDO pelo restaurante — definido por ele ao
    * aceitar o pedido (`acceptOrder`). É o que o cliente vê na confirmação.
-   * Id de `paymentMethods` (`@/lib/mock-data`). A Kino não processa o
+   * Id de `paymentMethods` (`@/lib/mock-data`). A Luku não processa o
    * pagamento; o cliente combina-o diretamente com o restaurante. */
   paymentMethod?: string;
   /** Caução (Kz) exigida como garantia para este pedido — anexada pelo
@@ -116,6 +116,10 @@ export type OrderFulfillment =
 
 type CartValue = {
   orders: CartOrder[];
+  /** `false` até o efeito de hidratação (localStorage) correr — usado por
+   * quem faz diffs sobre `orders` (ex.: notificações) para não confundir a
+   * troca seed → dados persistidos com pedidos "novos". */
+  hydrated: boolean;
   count: number;
   subtotal: number;
   deliveryFee: number;
@@ -412,11 +416,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const deliveryFee = orders.reduce((sum, o) => sum + orderDeliveryFee(o), 0);
     const discount = orders.reduce((sum, o) => sum + orderDiscount(o), 0);
 
+    // Contagem por PEDIDO de entrega, não por produto — vários pratos no
+    // mesmo "Solicitar delivery" continuam a contar como 1 no emblema. Só
+    // os pedidos DESTE usuário (ou convidado) — sem isto, o emblema (Bike
+    // no header/tab bar) mostrava também os pedidos da seed (sem
+    // `ownerKey`), aparecendo logo de início mesmo num browser novo.
+    const mineKey = viewerKey(user);
+    const count = orders.filter((o) => o.ownerKey === mineKey).length;
+
     return {
       orders,
-      // Contagem por PEDIDO de entrega, não por produto — vários pratos no
-      // mesmo "Solicitar delivery" continuam a contar como 1 no emblema.
-      count: orders.length,
+      hydrated,
+      count,
       subtotal,
       deliveryFee,
       total: subtotal - discount + deliveryFee,
@@ -440,7 +451,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             })),
             createdAt: new Date().toISOString(),
             fulfillmentType: fulfillment.type,
-            customerName: user?.name ?? "Cliente Kino",
+            customerName: user?.name ?? "Cliente Luku",
             customerPhone: user?.phone ?? "",
             ...(user?.email ? { customerEmail: user.email } : {}),
             ...(fulfillment.type === "delivery"
@@ -537,7 +548,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ),
       clear: () => setOrders([]),
     };
-  }, [orders, user]);
+  }, [orders, hydrated, user]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { STORAGE_KEYS } from "@/data/storage-keys";
 
 /**
- * Estafetas de cada restaurante — a Kino já não opera uma frota partilhada;
+ * Estafetas de cada restaurante — a Luku já não opera uma frota partilhada;
  * cada restaurante é inteiramente responsável pelos seus estafetas, geridos
  * no painel de Pedidos (`/admin/pedidos`). Não há backend — o estado vive no
  * localStorage e é a fonte da verdade sobre quem está livre. Um estafeta em

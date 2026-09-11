@@ -21,10 +21,10 @@ export function useMenuItems(): MenuItem[] {
   useEffect(() => {
     const sync = () => setItems(getEffectiveMenuItems());
     sync();
-    window.addEventListener("kino:menu-changed", sync);
+    window.addEventListener("luku:menu-changed", sync);
     window.addEventListener("storage", sync);
     return () => {
-      window.removeEventListener("kino:menu-changed", sync);
+      window.removeEventListener("luku:menu-changed", sync);
       window.removeEventListener("storage", sync);
     };
   }, []);

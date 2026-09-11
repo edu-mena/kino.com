@@ -2,13 +2,14 @@ import { Link } from "@tanstack/react-router";
 import {
   ChevronDown,
   ChevronRight,
+  MapPin,
   Search,
   SlidersHorizontal,
   Star,
   Store,
   UtensilsCrossed,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { DietaryShortcutPicker } from "@/components/dietary-shortcut-picker";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
@@ -24,6 +25,16 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 const categories = getMenuCategories();
 const restaurants = getAllRestaurants();
+
+/** Insere `extra` como 3º elemento de `rows` (ou no fim, se `rows` tiver
+ * menos de 2) — usado para o atalho de restrição alimentar aparecer como
+ * 3º item dentro da lista de pratos, sem depender de quantos resultados
+ * existem. */
+function insertAsThird(rows: ReactNode[], extra: ReactNode): ReactNode[] {
+  const result = [...rows];
+  result.splice(Math.min(2, result.length), 0, extra);
+  return result;
+}
 
 export function HeaderSearch() {
   const { t } = useTranslation();
@@ -178,7 +189,8 @@ export function HeaderSearch() {
               </div>
 
               <div className="min-w-0">
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5" />
                   {t("search.location")}
                 </p>
                 <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
@@ -208,12 +220,7 @@ export function HeaderSearch() {
             </div>
           )}
 
-          <DietaryShortcutPicker
-            ctaLabel={t("search.dietaryCta")}
-            onNavigate={() => setOpen(false)}
-          />
-
-          <div className="mt-5 min-w-0 border-t border-border pt-4">
+          <div className="mt-2 min-w-0 border-t border-border pt-2">
             <p className="text-xs font-semibold text-muted-foreground">
               {t("search.resultsCount", { count: totalResults })}
             </p>
@@ -244,24 +251,41 @@ export function HeaderSearch() {
                           {t("search.dishesLabel")}
                         </p>
                       )}
-                      {dishGroups.map((group) => (
-                        <DishGroupResultRow
-                          key={group.name}
-                          group={group}
-                          onSelect={() => setOpen(false)}
-                        />
-                      ))}
+                      {/* 3º elemento da lista de pratos: atalho de restrição
+                          alimentar — some sozinho assim que o usuário já
+                          tiver escolhido uma (ver DietaryShortcutPicker). */}
+                      {insertAsThird(
+                        dishGroups.map((group) => (
+                          <DishGroupResultRow
+                            key={group.name}
+                            group={group}
+                            onSelect={() => setOpen(false)}
+                          />
+                        )),
+                        <DietaryShortcutPicker
+                          key="dietary-shortcut"
+                          ctaLabel={t("search.dietaryCta")}
+                          onNavigate={() => setOpen(false)}
+                        />,
+                      )}
                     </div>
                   )
                 : filtered.length > 0 && (
                     <div className="space-y-2">
-                      {filtered.map((item) => (
-                        <SearchResultRow
-                          key={item.id}
-                          item={item}
-                          onSelect={() => setOpen(false)}
-                        />
-                      ))}
+                      {insertAsThird(
+                        filtered.map((item) => (
+                          <SearchResultRow
+                            key={item.id}
+                            item={item}
+                            onSelect={() => setOpen(false)}
+                          />
+                        )),
+                        <DietaryShortcutPicker
+                          key="dietary-shortcut"
+                          ctaLabel={t("search.dietaryCta")}
+                          onNavigate={() => setOpen(false)}
+                        />,
+                      )}
                     </div>
                   )}
 

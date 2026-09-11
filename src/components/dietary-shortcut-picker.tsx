@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, Salad } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { RESTRICTION_PACKAGES } from "@/lib/dietary-packages";
 import { usePreferences } from "@/lib/preferences";
 import { useTranslation } from "@/i18n";
@@ -11,6 +12,12 @@ import { useTranslation } from "@/i18n";
  * mesmo (toggle direto em `dietaryRestrictions`, sem precisar sair do
  * diálogo). "Mais opções" leva pra `/preferencias`, onde também dá pra
  * definir uma restrição por texto livre.
+ *
+ * Assim que o usuário escolhe a primeira restrição por aqui, o atalho some
+ * (`dietaryRestrictions.length > 0`) e um toast avisa que já está guardado
+ * — outros ajustes passam a ser feitos só em Preferências, não aqui de
+ * novo. Não se aplica à própria página `/preferencias`, que tem a sua UI
+ * própria e não usa este componente.
  */
 export function DietaryShortcutPicker({
   ctaLabel,
@@ -23,12 +30,14 @@ export function DietaryShortcutPicker({
   const { dietaryRestrictions, setDietaryRestrictions } = usePreferences();
   const [expanded, setExpanded] = useState(false);
 
+  if (dietaryRestrictions.length > 0) return null;
+
   const toggle = (label: string) => {
-    setDietaryRestrictions(
-      dietaryRestrictions.includes(label)
-        ? dietaryRestrictions.filter((r) => r !== label)
-        : [...dietaryRestrictions, label],
-    );
+    const next = dietaryRestrictions.includes(label)
+      ? dietaryRestrictions.filter((r) => r !== label)
+      : [...dietaryRestrictions, label];
+    setDietaryRestrictions(next);
+    if (next.length > 0) toast.success(t("search.dietaryUpdatedToast"));
   };
 
   return (

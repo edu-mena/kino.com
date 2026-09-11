@@ -1,12 +1,12 @@
-# Kino — app Android (Capacitor)
+# Luku — app Android (Capacitor)
 
-O Kino é uma app **SSR** (TanStack Start). Não há um bundle estático offline,
+O Luku é uma app **SSR** (TanStack Start). Não há um bundle estático offline,
 por isso a app Android é um **invólucro nativo que carrega um servidor a
 correr** — o servidor de `npm run dev` na rede local, ou um ambiente
 publicado. Chega para testar o produto como aplicativo (splash, ícone,
 botão «voltar» do Android, base para push/GPS mais tarde).
 
-- `appId`: `com.kino.app` · `appName`: `Kino`
+- `appId`: `com.luku.app` · `appName`: `Luku`
 - Projeto nativo em `android/` — **não versionado** (regenera-se com
   `npx cap add android`). Config em `capacitor.config.ts` (raiz).
 
@@ -56,7 +56,7 @@ Sem `CAP_SERVER_URL`, a app mostra um aviso de configuração (`capacitor/www`).
 ## Testar contra um ambiente publicado
 
 ```sh
-CAP_SERVER_URL=https://staging.kino.com npm run cap:sync
+CAP_SERVER_URL=https://staging.luku.com npm run cap:sync
 npm run android:run
 ```
 

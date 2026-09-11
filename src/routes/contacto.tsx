@@ -22,12 +22,12 @@ import { useTranslation } from "@/i18n";
 export const Route = createFileRoute("/contacto")({
   head: () => ({
     meta: [
-      { title: "Contacto — Kino.com" },
+      { title: "Contacto — Luku.com" },
       {
         name: "description",
-        content: "Fale com a equipa da Kino: dúvidas, parcerias e suporte, tudo num só lugar.",
+        content: "Fale com a equipa da Luku: dúvidas, parcerias e suporte, tudo num só lugar.",
       },
-      { property: "og:title", content: "Contacto — Kino.com" },
+      { property: "og:title", content: "Contacto — Luku.com" },
       { property: "og:image", content: icon },
     ],
   }),
@@ -46,7 +46,7 @@ function WhatsAppIcon(props: SVGProps<SVGSVGElement>) {
 const inputClass =
   "w-full min-w-0 rounded-xl border border-border bg-card px-4 py-3 text-sm outline-none transition-colors focus:border-primary";
 
-const CONTACT_EMAIL = "ola@kino.com";
+const CONTACT_EMAIL = "ola@luku.com";
 
 function Contacto() {
   const { t } = useTranslation();
@@ -99,7 +99,7 @@ function Contacto() {
 
     const body = `${message}\n\n— ${name} (${email})`;
     const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-      `[Kino.com] ${subjectLabel}`,
+      `[Luku.com] ${subjectLabel}`,
     )}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
     toast.success(t("contacto.openingEmailToast"));

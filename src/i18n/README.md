@@ -82,6 +82,6 @@ duplicar restaurantes/pratos) ou as 3 ofertas de `INITIAL_OFFERS`. Nomes e
 descrições de restaurantes/pratos ficam de fora por agora — exigiriam
 duplicar o dataset inteiro.
 
-Por cobrir (não traduzido ainda): páginas de visitante (Kino, Sobre,
+Por cobrir (não traduzido ainda): páginas de visitante (Luku, Sobre,
 Contacto, Parceiros, Cadastro/Entrar — incluindo a home de visitante em
 `index.tsx`), conteúdo do FAQ de Ajuda.

@@ -12,7 +12,7 @@ export const helpArticlesFr: HelpArticle[] = [
     id: "how-to-pay",
     question: "Comment fonctionnent les paiements ?",
     answer:
-      "Kino.com ne reçoit pas les paiements directement des clients — elle facilite seulement la mise en relation entre clients et restaurants. Le paiement est convenu directement avec le restaurant choisi.",
+      "Luku.com ne reçoit pas les paiements directement des clients — elle facilite seulement la mise en relation entre clients et restaurants. Le paiement est convenu directement avec le restaurant choisi.",
   },
   {
     id: "delivery-time",
@@ -38,10 +38,10 @@ export const helpArticlesFr: HelpArticle[] = [
       "Les remboursements et retours sont traités directement avec le restaurant, comme les annulations.",
   },
   {
-    id: "how-kino-works",
-    question: "Comment fonctionne Kino.com ?",
+    id: "how-luku-works",
+    question: "Comment fonctionne Luku.com ?",
     answer:
-      "Kino.com est une plateforme qui met en relation clients et restaurants de Luanda — elle ne traite pas les paiements ni ne fait de livraisons. Le rôle de Kino est d'aider à découvrir des restaurants, consulter les menus et lancer le contact ; tout le reste (paiement, préparation, livraison, réservation) est convenu directement avec le restaurant.",
+      "Luku.com est une plateforme qui met en relation clients et restaurants de Luanda — elle ne traite pas les paiements ni ne fait de livraisons. Le rôle de Luku est d'aider à découvrir des restaurants, consulter les menus et lancer le contact ; tout le reste (paiement, préparation, livraison, réservation) est convenu directement avec le restaurant.",
   },
   {
     id: "reserve-table",

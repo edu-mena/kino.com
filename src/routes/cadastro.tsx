@@ -7,12 +7,12 @@ import { useTranslation } from "@/i18n";
 export const Route = createFileRoute("/cadastro")({
   head: () => ({
     meta: [
-      { title: "Criar conta — Kino.com" },
+      { title: "Criar conta — Luku.com" },
       {
         name: "description",
-        content: "Escolha como quer usar a Kino: como cliente ou como restaurante parceiro.",
+        content: "Escolha como quer usar a Luku: como cliente ou como restaurante parceiro.",
       },
-      { property: "og:title", content: "Criar conta — Kino.com" },
+      { property: "og:title", content: "Criar conta — Luku.com" },
       { property: "og:image", content: icon },
     ],
   }),

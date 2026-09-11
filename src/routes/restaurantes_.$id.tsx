@@ -18,6 +18,7 @@ import { MenuBrowser } from "@/components/menu-browser";
 import { ReservationDialog } from "@/components/reservation-dialog";
 import { PageShell } from "@/components/site-shell";
 import { StoryViewer } from "@/components/story-viewer";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
 import { recordProfileView } from "@/data/profile-views-store";
 import { useEffectiveStories } from "@/data/use-stories";
@@ -48,9 +49,9 @@ export const Route = createFileRoute("/restaurantes_/$id")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: `${loaderData?.name ?? "Restaurante"} — Kino.com` },
+      { title: `${loaderData?.name ?? "Restaurante"} — Luku.com` },
       { name: "description", content: loaderData?.description ?? "" },
-      { property: "og:title", content: `${loaderData?.name ?? "Restaurante"} — Kino.com` },
+      { property: "og:title", content: `${loaderData?.name ?? "Restaurante"} — Luku.com` },
       { property: "og:image", content: icon },
     ],
   }),
@@ -82,13 +83,13 @@ function RestaurantDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant.id, user?.name, user?.email, user?.phone]);
 
-  // Avaliações — reativas às deixadas nesta página (evento `kino:menu-changed`).
+  // Avaliações — reativas às deixadas nesta página (evento `luku:menu-changed`).
   const [reviewsTick, bumpReviews] = useReducer((n: number) => n + 1, 0);
   useEffect(() => {
-    window.addEventListener("kino:menu-changed", bumpReviews);
+    window.addEventListener("luku:menu-changed", bumpReviews);
     window.addEventListener("storage", bumpReviews);
     return () => {
-      window.removeEventListener("kino:menu-changed", bumpReviews);
+      window.removeEventListener("luku:menu-changed", bumpReviews);
       window.removeEventListener("storage", bumpReviews);
     };
   }, []);
@@ -166,11 +167,24 @@ function RestaurantDetail() {
 
   return (
     <PageShell>
-      <div className="relative h-56 overflow-hidden sm:h-72">
+      <div className="relative h-[244px] overflow-hidden sm:h-[308px]">
         <img src={restaurant.coverImage} alt="" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 mx-auto flex max-w-6xl items-end justify-between gap-3 px-4 pb-5 md:px-6">
-          <div className="min-w-0">
+        {/* Ancorados nos cantos do hero (não no fluxo com o nome) — um nome
+            comprido não fica mais espremido por causa destes selos. */}
+        <span className="absolute left-4 top-4 z-10 flex items-center gap-1 whitespace-nowrap rounded-full bg-background/90 px-3 py-1.5 text-xs font-semibold text-foreground backdrop-blur">
+          <Star className="h-3.5 w-3.5 fill-star text-star" />
+          {restaurant.rating} ({restaurant.reviewCount})
+        </span>
+        {paused && (
+          <span className="absolute right-4 top-4 z-10 whitespace-nowrap rounded-full bg-background/90 px-3 py-1.5 text-xs font-semibold text-destructive backdrop-blur">
+            {status.reason === "closed"
+              ? t("restaurantDetail.closedNow", { opensAt: status.opensAt ?? "" })
+              : t("restaurantDetail.paused")}
+          </span>
+        )}
+        <div className="absolute inset-x-0 bottom-0 mx-auto max-w-6xl px-4 pb-5 md:px-6">
+          <div className="w-full min-w-0">
             <h1 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
               {restaurant.name}
             </h1>
@@ -188,72 +202,59 @@ function RestaurantDetail() {
               </button>
             )}
           </div>
-          {paused && (
-            <span className="max-w-[55%] shrink-0 rounded-full bg-background/90 px-3 py-1.5 text-right text-xs font-semibold text-destructive backdrop-blur">
-              {status.reason === "closed"
-                ? t("restaurantDetail.closedNow", { opensAt: status.opensAt ?? "" })
-                : t("restaurantDetail.paused")}
-            </span>
-          )}
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl px-4 pt-6 md:px-6">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1 font-semibold text-foreground">
-            <Star className="h-4 w-4 fill-star text-star" />
-            {restaurant.rating} ({restaurant.reviewCount})
-          </span>
-          <span className="flex items-center gap-1">
-            <MapPin className="h-4 w-4" />
-            {restaurant.neighborhood}
-            {distanceKm != null && ` · ${formatKm(distanceKm)} km`}
-          </span>
-          <a
-            href="#localizacao"
-            className="flex items-center gap-1 font-semibold text-primary hover:underline"
-          >
-            <MapPin className="h-4 w-4" />
-            {t("restaurantDetail.viewOnMap")}
-          </a>
-          {restaurant.isDeliveryAvailable && deliveryEst && (
-            <span
-              className="flex items-center gap-1"
-              title={
-                deliveryEst.basedOnHistory
-                  ? t("restaurantDetail.etaFromHistory", { count: deliveryEst.sampleCount })
-                  : undefined
-              }
-            >
-              <Bike className="h-4 w-4" />
-              {t("restaurantDetail.etaMinutes", { min: deliveryEst.minutes })} ·{" "}
-              {t("restaurantDetail.deliveryFeeFrom", { fee: formatKz(restaurant.deliveryFee) })}
-            </span>
+      <div className="mx-auto max-w-6xl px-4 pt-3 md:px-6">
+        <div className="flex flex-wrap items-center gap-3">
+          {!paused && outOfZone && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t("restaurantDetail.warningsAria")}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-brand/40 text-brand transition-colors hover:bg-brand/5"
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 rounded-xl border border-border bg-card p-3 text-sm text-foreground">
+                {t("restaurantDetail.outOfZone", { province: userProvince ?? "" })}
+              </PopoverContent>
+            </Popover>
           )}
-          <span className="flex items-center gap-1">
-            <Phone className="h-4 w-4" />
-            {restaurant.phone}
-          </span>
-          {acceptsReservations && !paused && (
-            <button
-              type="button"
-              onClick={() => setReservingOpen(true)}
-              className="ml-auto flex items-center gap-1.5 rounded-xl border border-primary px-5 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
-            >
-              <CalendarCheck className="h-4 w-4" />
-              {t("restaurantDetail.reserveTable")}
-            </button>
-          )}
+
+          <div className="ml-auto flex items-center gap-4">
+            {hasMedia && !suspended && (
+              <button
+                type="button"
+                onClick={() => setContentTab(activeTab === "gallery" ? "menu" : "gallery")}
+                className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+              >
+                {activeTab === "gallery" ? (
+                  <Soup className="h-4 w-4" />
+                ) : (
+                  <Images className="h-4 w-4" />
+                )}
+                {activeTab === "gallery"
+                  ? t("restaurantDetail.viewMenuCta")
+                  : t("restaurantDetail.viewGalleryCta")}
+              </button>
+            )}
+            {acceptsReservations && !paused && (
+              <button
+                type="button"
+                onClick={() => setReservingOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-primary px-5 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
+              >
+                <CalendarCheck className="h-4 w-4" />
+                {t("restaurantDetail.reserveTable")}
+              </button>
+            )}
+          </div>
         </div>
 
-        {!paused && outOfZone && (
-          <p className="mt-4 flex items-start gap-2 rounded-xl border border-brand/30 bg-brand/5 p-3 text-sm text-foreground">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-            {t("restaurantDetail.outOfZone", { province: userProvince ?? "" })}
-          </p>
-        )}
-
-        <div className="mt-8">
+        <div className="mt-4">
           {suspended ? (
             <div className="card-soft grid place-items-center gap-2 p-10 text-center">
               <Info className="h-8 w-8 text-muted-foreground" />
@@ -266,32 +267,6 @@ function RestaurantDetail() {
             </div>
           ) : (
             <>
-              {hasMedia && (
-                <div className="mb-5 inline-flex rounded-xl border border-border bg-card p-0.5 text-sm font-semibold">
-                  {(["menu", "gallery"] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => setContentTab(tab)}
-                      className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 transition-colors ${
-                        activeTab === tab
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {tab === "menu" ? (
-                        <Soup className="h-4 w-4" />
-                      ) : (
-                        <Images className="h-4 w-4" />
-                      )}
-                      {t(
-                        tab === "menu" ? "restaurantDetail.tabMenu" : "restaurantDetail.tabGallery",
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-
               {activeTab === "menu" ? (
                 <MenuBrowser lockedRestaurantId={restaurant.id} />
               ) : (
@@ -327,6 +302,43 @@ function RestaurantDetail() {
               )}
             </>
           )}
+        </div>
+
+        {/* Bairro/distância, "ver no mapa", ETA de entrega e telefone —
+            desceram pra depois do cardápio; o hero e a linha logo abaixo
+            dele ficam só com avaliação, selo de fechado, galeria/cardápio
+            e "Reservar mesa". */}
+        <div className="card-soft mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 p-4 text-sm text-muted-foreground sm:p-5">
+          <span className="flex items-center gap-1">
+            <MapPin className="h-4 w-4" />
+            {restaurant.neighborhood}
+            {distanceKm != null && ` · ${formatKm(distanceKm)} km`}
+          </span>
+          <a
+            href="#localizacao"
+            className="flex items-center gap-1 font-semibold text-primary hover:underline"
+          >
+            <MapPin className="h-4 w-4" />
+            {t("restaurantDetail.viewOnMap")}
+          </a>
+          {restaurant.isDeliveryAvailable && deliveryEst && (
+            <span
+              className="flex items-center gap-1"
+              title={
+                deliveryEst.basedOnHistory
+                  ? t("restaurantDetail.etaFromHistory", { count: deliveryEst.sampleCount })
+                  : undefined
+              }
+            >
+              <Bike className="h-4 w-4" />
+              {t("restaurantDetail.etaMinutes", { min: deliveryEst.minutes })} ·{" "}
+              {t("restaurantDetail.deliveryFeeFrom", { fee: formatKz(restaurant.deliveryFee) })}
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <Phone className="h-4 w-4" />
+            {restaurant.phone}
+          </span>
         </div>
 
         <section className="mt-10">

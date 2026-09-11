@@ -9,13 +9,13 @@ import { translateOffer, useTranslation } from "@/i18n";
 export const Route = createFileRoute("/ofertas")({
   head: () => ({
     meta: [
-      { title: "Ofertas e promoções — Kino.com" },
+      { title: "Ofertas e promoções — Luku.com" },
       {
         name: "description",
         content:
-          "Cupões, entrega grátis e happy hour: aproveite as promoções do Kino.com em pedidos de comida em Luanda.",
+          "Cupões, entrega grátis e happy hour: aproveite as promoções do Luku.com em pedidos de comida em Luanda.",
       },
-      { property: "og:title", content: "Ofertas e promoções — Kino.com" },
+      { property: "og:title", content: "Ofertas e promoções — Luku.com" },
       { property: "og:description", content: "Cupões, entrega grátis e happy hour todos os dias." },
       { property: "og:image", content: icon },
     ],

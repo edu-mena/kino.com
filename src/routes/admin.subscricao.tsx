@@ -11,7 +11,7 @@ import { useSubscriptions } from "@/lib/subscriptions";
 import { BCP47 } from "@/lib/week";
 
 export const Route = createFileRoute("/admin/subscricao")({
-  head: () => ({ meta: [{ title: "Subscrição — Painel Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Subscrição — Painel Luku.com" }] }),
   component: AdminSubscricao,
 });
 
@@ -122,10 +122,10 @@ function AdminSubscricao() {
 
           <div className="mt-4 rounded-xl border border-primary bg-primary/5 p-4">
             <p className="font-display text-sm font-bold text-foreground">
-              {t("sistema.plan.kino")}
+              {t("sistema.plan.luku")}
             </p>
             <p className="mt-0.5 text-lg font-extrabold text-primary">
-              {formatKz(PLAN_PRICE.kino)}
+              {formatKz(PLAN_PRICE.luku)}
               <span className="text-xs font-medium text-muted-foreground">
                 {t("adminSubscricao.perMonth")}
               </span>

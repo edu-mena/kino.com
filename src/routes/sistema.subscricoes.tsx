@@ -12,7 +12,7 @@ import { useSubscriptions } from "@/lib/subscriptions";
 import { BCP47 } from "@/lib/week";
 
 export const Route = createFileRoute("/sistema/subscricoes")({
-  head: () => ({ meta: [{ title: "Subscrições — Sistema Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Subscrições — Sistema Luku.com" }] }),
   validateSearch: (s: Record<string, unknown>) => {
     const r = s["r"];
     return { r: typeof r === "string" && r ? r : undefined };

@@ -9,7 +9,7 @@ import type { Restaurant } from "./types";
  *
  * Nem todos os campos de `Restaurant` são editáveis aqui — `id`, `name`,
  * `rating`, `reviewCount`, `distanceKm` e `isFeatured` são geridos pela
- * Kino (identidade, reputação agregada de avaliações reais, curadoria de
+ * Luku (identidade, reputação agregada de avaliações reais, curadoria de
  * destaque) e ficam de fora do formulário; para mudar esses, o painel
  * encaminha para `/admin/suporte`.
  */
@@ -45,8 +45,8 @@ export type RestaurantProfileEdit = Partial<
   >
 >;
 
-const PROFILE_KEY = "kino_restaurant_profile_edits";
-const CHANGE_EVENT = "kino:menu-changed";
+const PROFILE_KEY = "luku_restaurant_profile_edits";
+const CHANGE_EVENT = "luku:menu-changed";
 
 function readState(): Record<string, RestaurantProfileEdit> {
   if (typeof window === "undefined") return {};

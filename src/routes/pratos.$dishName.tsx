@@ -18,17 +18,17 @@ export const Route = createFileRoute("/pratos/$dishName")({
   head: ({ loaderData, params }) => {
     if (!loaderData) {
       return {
-        meta: [{ title: "Prato indisponível — Kino.com" }, { name: "robots", content: "noindex" }],
+        meta: [{ title: "Prato indisponível — Luku.com" }, { name: "robots", content: "noindex" }],
       };
     }
     return {
       meta: [
-        { title: `${params.dishName} — Kino.com` },
+        { title: `${params.dishName} — Luku.com` },
         {
           name: "description",
           content: `Veja onde pedir ${params.dishName} — preços e restaurantes que o oferecem.`,
         },
-        { property: "og:title", content: `${params.dishName} — Kino.com` },
+        { property: "og:title", content: `${params.dishName} — Luku.com` },
         { property: "og:image", content: icon },
       ],
     };

@@ -65,7 +65,7 @@ import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/pedidos")({
-  head: () => ({ meta: [{ title: "Pedidos — Painel Kino.com" }] }),
+  head: () => ({ meta: [{ title: "Pedidos — Painel Luku.com" }] }),
   component: () => (
     <RestaurantGate>
       <AdminPedidos />
@@ -197,7 +197,7 @@ function AdminPedidos() {
   }, [activeId]);
 
   // Troca de aba com deslize horizontal — reaproveita a transição de página
-  // do site convidado (keyframes `kino-page-*` em styles.css), aqui limitada
+  // do site convidado (keyframes `luku-page-*` em styles.css), aqui limitada
   // ao painel via `view-transition-name: admin-panel` e ao tipo `admin-tab`.
   const switchTab = (next: "pedidos" | "stats") => {
     if (next === navTab) return;

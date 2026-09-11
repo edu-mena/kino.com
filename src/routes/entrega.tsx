@@ -45,12 +45,12 @@ const MODE_ICON: Record<FulfillmentType, typeof Bike> = {
 export const Route = createFileRoute("/entrega")({
   head: () => ({
     meta: [
-      { title: "Entrega — Kino.com" },
+      { title: "Entrega — Luku.com" },
       {
         name: "description",
         content: "Acompanhe os seus pedidos de entrega — estado, contacto e detalhe de cada um.",
       },
-      { property: "og:title", content: "Entrega — Kino.com" },
+      { property: "og:title", content: "Entrega — Luku.com" },
       { property: "og:description", content: "Acompanhe os seus pedidos de entrega." },
       { property: "og:image", content: icon },
     ],

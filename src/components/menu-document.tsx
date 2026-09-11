@@ -6,7 +6,7 @@ import { formatKz } from "@/lib/format";
 /**
  * Folha imprimível do cardápio — reaproveitada pela exportação PDF do painel
  * (`/admin/cardapio-pdf`) e pelo cardápio público que abre ao ler o QR code
- * (`/menu/$restaurantId`). Só o "miolo": logo Kino, dados do restaurante,
+ * (`/menu/$restaurantId`). Só o "miolo": logo Luku, dados do restaurante,
  * cardápios por secção. Cada rota traz a sua própria barra de ações e o
  * `<style>` de impressão (que aponta para as classes `md-*` daqui).
  */
@@ -29,9 +29,9 @@ export function MenuDocument({
 
   return (
     <div className="mx-auto max-w-[210mm] bg-white px-[16mm] py-[14mm] text-black shadow-sm print:max-w-none print:p-0 print:shadow-none">
-      {/* Cabeçalho Kino */}
+      {/* Cabeçalho Luku */}
       <div className="flex items-end justify-between gap-4 border-b-2 border-primary pb-4">
-        <img src={logo} alt="Kino.com" className="h-9 w-auto" />
+        <img src={logo} alt="Luku.com" className="h-9 w-auto" />
         <p className="text-right text-[11px] leading-tight text-neutral-500">
           {title}
           <br />
@@ -144,7 +144,7 @@ export function MenuDocument({
 
       {/* Rodapé */}
       <div className="mt-10 border-t border-neutral-300 pt-3 text-center text-[10px] text-neutral-400">
-        {t("cardapioPdf.poweredBy")} · kino.com
+        {t("cardapioPdf.poweredBy")} · luku.com
       </div>
     </div>
   );

@@ -30,14 +30,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // forçado do Android/browser) tentam "escurecer" a página sozinhos e
       // acabam por quebrar contraste em pontos com cor fixa.
       { name: "color-scheme", content: "light" },
-      { title: "Kino.com — Os melhores restaurantes de Angola" },
+      { title: "Luku.com — Os melhores restaurantes de Angola" },
       {
         name: "description",
         content:
-          "Descubra os melhores restaurantes de Angola, veja o menu completo e reserve a sua mesa. Tudo no Kino.com.",
+          "Descubra os melhores restaurantes de Angola, veja o menu completo e reserve a sua mesa. Tudo no Luku.com.",
       },
-      { name: "author", content: "Kino.com" },
-      { property: "og:title", content: "Kino.com — Os melhores restaurantes de Angola" },
+      { name: "author", content: "Luku.com" },
+      { property: "og:title", content: "Luku.com — Os melhores restaurantes de Angola" },
       {
         property: "og:description",
         content: "Descubra onde jantar em Angola, veja o menu e reserve a sua mesa.",

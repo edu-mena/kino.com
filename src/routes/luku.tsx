@@ -18,11 +18,11 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import icon from "@/assets/icon.png";
-import chiefIllustration from "@/assets/kino/chief.png";
-import dateIllustration from "@/assets/kino/date.png";
-import kinoHero from "@/assets/kino/hero.webp";
-import menuIllustration from "@/assets/kino/menu.png";
-import kinoVideo from "@/assets/kino/video.mp4";
+import chiefIllustration from "@/assets/luku/chief.png";
+import dateIllustration from "@/assets/luku/date.png";
+import lukuHero from "@/assets/luku/hero.webp";
+import menuIllustration from "@/assets/luku/menu.png";
+import lukuVideo from "@/assets/luku/video.mp4";
 import { PageShell, SiteHeader } from "@/components/site-shell";
 import {
   Dialog,
@@ -34,20 +34,20 @@ import {
 import { useTranslation } from "@/i18n";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/kino")({
+export const Route = createFileRoute("/luku")({
   head: () => ({
     meta: [
-      { title: "Kino.com — o cardápio digital de Angola" },
+      { title: "Luku.com — o cardápio digital de Angola" },
       {
         name: "description",
         content:
-          "A Kino é o cardápio digital que liga restaurantes e clientes: pratos, preços, mesas e pedidos, tudo num só lugar.",
+          "A Luku é o cardápio digital que liga restaurantes e clientes: pratos, preços, mesas e pedidos, tudo num só lugar.",
       },
-      { property: "og:title", content: "Kino.com — o cardápio digital de Angola" },
+      { property: "og:title", content: "Luku.com — o cardápio digital de Angola" },
       { property: "og:image", content: icon },
     ],
   }),
-  component: Kino,
+  component: Luku,
 });
 
 function ExpandableIllustration({
@@ -96,7 +96,7 @@ function ExpandableIllustration({
   );
 }
 
-function Kino() {
+function Luku() {
   const videoSectionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -104,20 +104,20 @@ function Kino() {
   const { t } = useTranslation();
 
   const forCustomers = [
-    { icon: MapPin, text: t("kino.forCustomer1") },
-    { icon: BookOpen, text: t("kino.forCustomer2") },
-    { icon: CalendarCheck, text: t("kino.forCustomer3") },
-    { icon: Bike, text: t("kino.forCustomer4") },
-    { icon: SlidersHorizontal, text: t("kino.forCustomer5") },
-    { icon: Bell, text: t("kino.forCustomer6") },
+    { icon: MapPin, text: t("luku.forCustomer1") },
+    { icon: BookOpen, text: t("luku.forCustomer2") },
+    { icon: CalendarCheck, text: t("luku.forCustomer3") },
+    { icon: Bike, text: t("luku.forCustomer4") },
+    { icon: SlidersHorizontal, text: t("luku.forCustomer5") },
+    { icon: Bell, text: t("luku.forCustomer6") },
   ];
 
   const forRestaurants = [
-    { icon: QrCode, text: t("kino.forRestaurant1") },
-    { icon: UtensilsCrossed, text: t("kino.forRestaurant2") },
-    { icon: CalendarCheck, text: t("kino.forRestaurant3") },
-    { icon: Megaphone, text: t("kino.forRestaurant4") },
-    { icon: Users, text: t("kino.forRestaurant5") },
+    { icon: QrCode, text: t("luku.forRestaurant1") },
+    { icon: UtensilsCrossed, text: t("luku.forRestaurant2") },
+    { icon: CalendarCheck, text: t("luku.forRestaurant3") },
+    { icon: Megaphone, text: t("luku.forRestaurant4") },
+    { icon: Users, text: t("luku.forRestaurant5") },
   ];
 
   useEffect(() => {
@@ -182,12 +182,12 @@ function Kino() {
             <button
               type="button"
               onClick={scrollToVideo}
-              aria-label={t("kino.playVideoAria")}
+              aria-label={t("luku.playVideoAria")}
               className="group min-h-0 flex-1"
             >
               <img
-                src={kinoHero}
-                alt="Ilustração Kino.com"
+                src={lukuHero}
+                alt="Ilustração Luku.com"
                 className="h-full w-full object-cover"
               />
             </button>
@@ -200,38 +200,38 @@ function Kino() {
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15">
                 <MapPin className="h-5 w-5" />
               </span>
-              <h3 className="mt-4 font-display text-xl font-bold">{t("kino.nearYouTitle")}</h3>
+              <h3 className="mt-4 font-display text-xl font-bold">{t("luku.nearYouTitle")}</h3>
               <p className="mt-2 text-sm text-primary-foreground/80">
-                {t("kino.nearYouDescription")}
+                {t("luku.nearYouDescription")}
               </p>
             </button>
           </div>
 
           <div className="col-span-2 flex flex-col justify-center rounded-[2rem] border border-border bg-card p-6">
-            <h3 className="font-display text-xl font-bold text-primary">{t("kino.bentoTitle")}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">{t("kino.bentoDescription")}</p>
+            <h3 className="font-display text-xl font-bold text-primary">{t("luku.bentoTitle")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">{t("luku.bentoDescription")}</p>
           </div>
 
           <ExpandableIllustration
             src={dateIllustration}
-            alt={t("kino.illustration1Alt")}
-            title={t("kino.illustration1Title")}
-            description={t("kino.illustration1Description")}
+            alt={t("luku.illustration1Alt")}
+            title={t("luku.illustration1Title")}
+            description={t("luku.illustration1Description")}
             className="col-span-1 row-span-1"
           />
           <ExpandableIllustration
             src={menuIllustration}
-            alt={t("kino.illustration2Alt")}
-            title={t("kino.illustration2Title")}
-            description={t("kino.illustration2Description")}
+            alt={t("luku.illustration2Alt")}
+            title={t("luku.illustration2Title")}
+            description={t("luku.illustration2Description")}
             className="col-span-1 row-span-1"
           />
 
           <ExpandableIllustration
             src={chiefIllustration}
-            alt={t("kino.illustration3Alt")}
-            title={t("kino.illustration3Title")}
-            description={t("kino.illustration3Description")}
+            alt={t("luku.illustration3Alt")}
+            title={t("luku.illustration3Title")}
+            description={t("luku.illustration3Description")}
             className="col-span-2 row-span-1"
           />
         </div>
@@ -242,38 +242,38 @@ function Kino() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-surface p-8 sm:p-10">
             <h2 className="font-display text-2xl font-extrabold text-primary sm:text-3xl">
-              {t("kino.ctaRestaurantTitle")}
+              {t("luku.ctaRestaurantTitle")}
             </h2>
-            <p className="max-w-sm text-muted-foreground">{t("kino.ctaRestaurantDescription")}</p>
+            <p className="max-w-sm text-muted-foreground">{t("luku.ctaRestaurantDescription")}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <Link
                 to="/parceiros"
                 className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
               >
-                {t("kino.restaurantLogin")}
+                {t("luku.restaurantLogin")}
               </Link>
             </div>
           </div>
 
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
             <h2 className="font-display text-2xl font-extrabold sm:text-3xl">
-              {t("kino.ctaCustomerTitle")}
+              {t("luku.ctaCustomerTitle")}
             </h2>
             <p className="max-w-sm text-primary-foreground/85">
-              {t("kino.ctaCustomerDescription")}
+              {t("luku.ctaCustomerDescription")}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <Link
                 to="/entrar"
                 className="rounded-full bg-background px-6 py-3 text-sm font-semibold text-primary transition-opacity hover:opacity-90"
               >
-                {t("kino.login")}
+                {t("luku.login")}
               </Link>
               <Link
                 to="/cardapio"
                 className="rounded-full border border-primary-foreground/30 px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:border-primary-foreground"
               >
-                {t("kino.seeMenu")}
+                {t("luku.seeMenu")}
               </Link>
             </div>
           </div>
@@ -282,12 +282,12 @@ function Kino() {
 
       {/* Features */}
       <section className="mx-auto mt-16 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">{t("kino.featuresTitle")}</h2>
+        <h2 className="text-2xl font-extrabold text-primary">{t("luku.featuresTitle")}</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <div className="grid gap-4">
             <div className="flex flex-col rounded-[2rem] border border-border bg-card p-6 sm:p-8">
               <h3 className="font-display text-lg font-bold text-primary">
-                {t("kino.forCustomersTitle")}
+                {t("luku.forCustomersTitle")}
               </h3>
               <ul className="mt-4 space-y-3">
                 {forCustomers.map((item) => (
@@ -303,13 +303,13 @@ function Kino() {
                 to="/entrar"
                 className="mt-6 inline-flex items-center gap-1 self-start rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
-                {t("kino.login")} <ArrowRight className="h-4 w-4" />
+                {t("luku.login")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
             <div className="flex flex-col rounded-[2rem] border border-border bg-card p-6 sm:p-8">
               <h3 className="font-display text-lg font-bold text-primary">
-                {t("kino.forRestaurantsTitle")}
+                {t("luku.forRestaurantsTitle")}
               </h3>
               <ul className="mt-4 space-y-3">
                 {forRestaurants.map((item) => (
@@ -325,7 +325,7 @@ function Kino() {
                 to="/parceiros"
                 className="mt-6 inline-flex items-center gap-1 self-start rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
               >
-                {t("kino.restaurantLogin")} <ArrowRight className="h-4 w-4" />
+                {t("luku.restaurantLogin")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -337,17 +337,17 @@ function Kino() {
             <button
               type="button"
               onClick={togglePlay}
-              aria-label={playing ? t("kino.pauseVideoAria") : t("kino.playVideoAria2")}
+              aria-label={playing ? t("luku.pauseVideoAria") : t("luku.playVideoAria2")}
               className="absolute inset-0 z-10 grid place-items-center"
             >
               <video
                 ref={videoRef}
-                src={kinoVideo}
+                src={lukuVideo}
                 loop
                 muted={muted}
                 playsInline
                 preload="none"
-                poster={kinoHero}
+                poster={lukuHero}
                 className="h-full w-full object-cover"
               />
               {!playing && (
@@ -363,7 +363,7 @@ function Kino() {
                 e.stopPropagation();
                 toggleMuted();
               }}
-              aria-label={muted ? t("kino.unmuteAria") : t("kino.muteAria")}
+              aria-label={muted ? t("luku.unmuteAria") : t("luku.muteAria")}
               className="absolute bottom-3 right-3 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-transform hover:scale-110"
             >
               {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}

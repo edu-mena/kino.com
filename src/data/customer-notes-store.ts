@@ -8,7 +8,7 @@
  * motivo do resto da app: `localStorage` pode falhar (modo privado, quota).
  */
 
-const NOTES_KEY = "kino_customer_notes";
+const NOTES_KEY = "luku_customer_notes";
 
 function readNotes(): Record<string, string> {
   if (typeof window === "undefined") return {};

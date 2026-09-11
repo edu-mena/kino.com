@@ -6,26 +6,26 @@
  * muda de forma incompatível.
  */
 export const STORAGE_KEYS = {
-  authUser: "kino_auth_user",
-  systemOperator: "kino_system_operator",
-  activeBill: "kino_active_bill",
-  cartOrders: "kino_cart_orders_v3",
-  reservations: "kino_reservations_v2",
-  couriers: "kino_couriers_v1",
-  restaurantAdmin: "kino_admin_restaurant",
-  restaurantProfileEdits: "kino_restaurant_profile_edits",
-  restaurantTables: "kino_restaurant_tables_v1",
-  customRestaurants: "kino_custom_restaurants_v1",
-  subscriptions: "kino_system_subscriptions_v1",
-  partnerApps: "kino_system_partner_apps_v1",
-  systemRestaurantFlags: "kino_system_restaurant_flags_v1",
-  supportTickets: "kino_support_tickets_v1",
-  reviews: "kino_reviews_v1",
-  notifications: "kino_notifications_v1",
-  customerNotes: "kino_customer_notes",
-  profileViews: "kino_profile_views_v1",
+  authUser: "luku_auth_user",
+  systemOperator: "luku_system_operator",
+  activeBill: "luku_active_bill",
+  cartOrders: "luku_cart_orders_v3",
+  reservations: "luku_reservations_v2",
+  couriers: "luku_couriers_v1",
+  restaurantAdmin: "luku_admin_restaurant",
+  restaurantProfileEdits: "luku_restaurant_profile_edits",
+  restaurantTables: "luku_restaurant_tables_v1",
+  customRestaurants: "luku_custom_restaurants_v1",
+  subscriptions: "luku_system_subscriptions_v1",
+  partnerApps: "luku_system_partner_apps_v1",
+  systemRestaurantFlags: "luku_system_restaurant_flags_v1",
+  supportTickets: "luku_support_tickets_v1",
+  reviews: "luku_reviews_v1",
+  notifications: "luku_notifications_v1",
+  customerNotes: "luku_customer_notes",
+  profileViews: "luku_profile_views_v1",
 } as const;
 
 /** Evento disparado por todas as stores puras quando escrevem — os
  * providers ouvem-no para recarregar. */
-export const CHANGE_EVENT = "kino:menu-changed";
+export const CHANGE_EVENT = "luku:menu-changed";
