@@ -1,55 +1,24 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Salad } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { RESTRICTION_PACKAGES } from "@/lib/dietary-packages";
-import { DIETARY_ONBOARDING_DONE_EVENT } from "@/lib/onboarding";
 import { usePreferences } from "@/lib/preferences";
+import { useTutorial } from "@/lib/tutorial";
 import { useTranslation } from "@/i18n";
-
-const STORAGE_KEY = "luku_dietary_onboarding_seen";
 
 /** Pergunta sobre restrições alimentares na primeira vez que o usuário
  * acede ao sistema (logado) — uma vez respondido (ou dispensado), nunca
- * mais volta a aparecer. Mesmo padrão de "visto uma vez" do tour de
- * onboarding (ver `@/lib/tutorial`), mas sem precisar de um Provider
- * próprio: é só um diálogo local, sem estado partilhado com o resto da app. */
+ * mais volta a aparecer. Quando o card abre/fecha é decidido pelo
+ * `TutorialProvider` (ver `@/lib/tutorial`), não por este componente — é o
+ * que garante, por construção, que ele e o tour de onboarding nunca
+ * aparecem ao mesmo tempo. */
 export function DietaryOnboardingPopup() {
   const { t } = useTranslation();
-  const { dietaryRestrictions, setDietaryRestrictions } = usePreferences();
-  const [open, setOpen] = useState(false);
+  const { setDietaryRestrictions } = usePreferences();
+  const { dietaryPopupOpen, resolveDietaryOnboarding } = useTutorial();
   const [selected, setSelected] = useState<string[]>([]);
-
-  /** Marca como visto e avisa o tour de onboarding que pode arrancar — é o
-   * que garante que os dois não aparecem ao mesmo tempo. */
-  const resolve = () => {
-    try {
-      localStorage.setItem(STORAGE_KEY, "done");
-    } catch {
-      // ignora — sem storage, a pergunta volta a aparecer na próxima visita.
-    }
-    window.dispatchEvent(new Event(DIETARY_ONBOARDING_DONE_EVENT));
-  };
-
-  useEffect(() => {
-    let seen = true;
-    try {
-      seen = localStorage.getItem(STORAGE_KEY) === "done";
-    } catch {
-      // localStorage indisponível — trata como já visto, não insiste.
-    }
-    if (seen) return undefined; // nada a mostrar; o tour já não espera por nós
-    // Já tem restrições guardadas (definidas antes desta pergunta existir):
-    // não mostra o card, mas resolve já para o tour poder arrancar.
-    if (dietaryRestrictions.length > 0) {
-      resolve();
-      return undefined;
-    }
-    const timer = setTimeout(() => setOpen(true), 800);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const toggle = (label: string) => {
     setSelected((prev) =>
@@ -58,19 +27,17 @@ export function DietaryOnboardingPopup() {
   };
 
   const skip = () => {
-    resolve();
-    setOpen(false);
+    resolveDietaryOnboarding();
   };
 
   const save = () => {
     setDietaryRestrictions(selected);
-    resolve();
-    setOpen(false);
+    resolveDietaryOnboarding();
     if (selected.length > 0) toast.success(t("dietaryOnboarding.savedToast"));
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && skip()}>
+    <Dialog open={dietaryPopupOpen} onOpenChange={(next) => !next && skip()}>
       <DialogContent className="max-w-md rounded-[2rem] border-none bg-card p-8">
         <span className="grid h-12 w-12 place-items-center rounded-full bg-success/15 text-success">
           <Salad className="h-6 w-6" />

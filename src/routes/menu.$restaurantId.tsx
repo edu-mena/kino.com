@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import logo from "@/assets/logo.png";
 import { MenuDocument } from "@/components/menu-document";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getMenuItemsByRestaurant, getRestaurant } from "@/data/helpers";
 import { defaultMenuId, getMenusByRestaurant } from "@/data/menus-store";
 import { useTranslation } from "@/i18n";
@@ -89,7 +90,25 @@ function PublicMenu() {
     );
   }
 
-  if (isLoading) return null;
+  // Enquanto o AuthProvider ainda não sabe se há sessão guardada, mostra o
+  // esqueleto do próprio cartão de entrada (é o que quase sempre vem a
+  // seguir — este link é público, a maioria de quem abre não está logada)
+  // em vez de uma tela em branco.
+  if (isLoading) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-6 px-6 text-center">
+        <Skeleton className="h-10 w-32" />
+        <div className="w-full">
+          <Skeleton className="mx-auto h-3 w-24" />
+          <Skeleton className="mx-auto mt-2 h-7 w-48" />
+          <Skeleton className="mx-auto mt-3 h-4 w-full" />
+          <Skeleton className="mx-auto mt-1 h-4 w-2/3" />
+        </div>
+        <Skeleton className="h-12 w-full rounded-xl" />
+        <Skeleton className="h-3 w-40" />
+      </div>
+    );
+  }
 
   // Porta de entrada — para ver o cardápio é preciso conta Luku (simulada).
   if (!isLoggedIn) {

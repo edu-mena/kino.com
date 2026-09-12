@@ -279,6 +279,7 @@ function RestaurantDetail() {
                         src={m.src}
                         controls
                         playsInline
+                        preload="metadata"
                         onLoadedMetadata={
                           frag
                             ? (e) => {
