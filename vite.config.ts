@@ -15,5 +15,11 @@ export default defineConfig({
   // .jfif é JPEG mas não está na lista de assets do Vite por omissão.
   vite: {
     assetsInclude: ["**/*.jfif"],
+    // Força o build a fazer down-level de sintaxe ES2022 (ex: class static blocks
+    // usados internamente pelo radix-ui) que Safari <16.4 não consegue fazer parse —
+    // causava "SyntaxError: Unexpected token '{'" e crash total no Safari.
+    build: {
+      target: "safari14",
+    },
   },
 });
