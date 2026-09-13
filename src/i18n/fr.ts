@@ -1559,7 +1559,8 @@ export const fr: Dictionary = {
     trackOrder: "Suivre la commande",
     helpCenter: "Centre d'aide",
     copyright: "Luku.com · Démonstration avec des données fictives",
-    systemAdmin: "Administration",
+    terms: "Conditions",
+    privacy: "Confidentialité",
   },
   guestNav: {
     home: "Accueil",
@@ -1749,8 +1750,10 @@ export const fr: Dictionary = {
     description: "Connectez-vous ou créez votre compte en un clic — sans mot de passe à retenir.",
     continueWithGoogle: "Continuer avec Google",
     loggingIn: "Connexion...",
-    termsNotice:
-      "En continuant, vous acceptez nos Conditions et notre Politique de confidentialité.",
+    termsNoticeLead: "En continuant, vous acceptez nos",
+    termsLabel: "Conditions",
+    termsNoticeAnd: "et notre",
+    privacyLabel: "Politique de confidentialité",
     noAccountYet: "Pas encore de compte ?",
     signUp: "Inscrivez-vous",
     loggedInToast: "Connecté avec Google !",

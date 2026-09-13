@@ -517,9 +517,18 @@ export function SiteFooter() {
         <span>
           © {new Date().getFullYear()} {t("siteFooter.copyright")}
         </span>
-        <Link to="/sistema/entrar" className="hover:text-primary">
-          {t("siteFooter.systemAdmin")}
-        </Link>
+        {/* Sem propósito, o login de sistema (/sistema/entrar) nunca é
+            linkado na UI — só chega lá quem souber do gesto de 7 toques na
+            home de convidado (ver use-tap-sequence.ts). Um link "Admin" aqui
+            era exatamente o que isso tentava evitar. */}
+        <span className="flex gap-4">
+          <Link to="/termos" className="hover:text-primary">
+            {t("siteFooter.terms")}
+          </Link>
+          <Link to="/privacidade" className="hover:text-primary">
+            {t("siteFooter.privacy")}
+          </Link>
+        </span>
       </div>
     </footer>
   );

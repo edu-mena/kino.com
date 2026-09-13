@@ -117,7 +117,17 @@ function Entrar() {
           {loading ? t("entrar.loggingIn") : t("entrar.continueWithGoogle")}
         </button>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">{t("entrar.termsNotice")}</p>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          {t("entrar.termsNoticeLead")}{" "}
+          <Link to="/termos" className="font-semibold text-primary hover:underline">
+            {t("entrar.termsLabel")}
+          </Link>{" "}
+          {t("entrar.termsNoticeAnd")}{" "}
+          <Link to="/privacidade" className="font-semibold text-primary hover:underline">
+            {t("entrar.privacyLabel")}
+          </Link>
+          .
+        </p>
 
         <p className="mt-8 text-center text-sm text-muted-foreground">
           {t("entrar.noAccountYet")}{" "}
