@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Armchair, ArrowRight, Tag } from "lucide-react";
 import { useMemo } from "react";
+import { useTapSequence } from "@/lib/use-tap-sequence";
 import heroBg from "@/assets/hero.webp";
 import icon from "@/assets/icon.png";
 import { CategoryShortcutRow } from "@/components/category-shortcut-row";
@@ -59,6 +60,12 @@ function Home() {
 
 function HomeNotLoggedIn() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  // Gesto escondido: 7 toques seguidos no card "Menus e novidades" abrem o
+  // login de sistema (/sistema/entrar) — de propósito nunca linkado na UI
+  // (ver sistema_.entrar.tsx). Ver use-tap-sequence.ts para o porquê do
+  // desenho.
+  const handleSystemLoginTap = useTapSequence(7, 800, () => navigate({ to: "/sistema/entrar" }));
   return (
     <PageShell header={<SiteHeader variant="guestHome" />} footer={null} showMobileTabBar={false}>
       <img
@@ -109,14 +116,21 @@ function HomeNotLoggedIn() {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
             {
+              id: "reserve",
               icon: Armchair,
               title: t("homeGuest.reserveTitle"),
               text: t("homeGuest.reserveText"),
             },
-            { icon: Tag, title: t("homeGuest.offersTitle"), text: t("homeGuest.offersText") },
+            {
+              id: "offers",
+              icon: Tag,
+              title: t("homeGuest.offersTitle"),
+              text: t("homeGuest.offersText"),
+            },
           ].map((item) => (
             <div
-              key={item.title}
+              key={item.id}
+              onClick={item.id === "offers" ? handleSystemLoginTap : undefined}
               className="rounded-2xl border border-border bg-card p-5 text-left"
             >
               <span className="grid h-11 w-11 place-items-center rounded-full border border-border bg-background text-brand">

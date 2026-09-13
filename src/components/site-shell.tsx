@@ -311,7 +311,15 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           ) : (
             <Link
               to="/entrar"
-              className="hidden rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 sm:block"
+              className={cn(
+                "rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 sm:px-5 sm:py-2.5",
+                // Fora da home de convidado, o botão continua só a aparecer
+                // a partir de `sm:` (mantém o layout já validado das outras
+                // páginas). Na home de convidado (mobile incluído) fica
+                // sempre visível, à esquerda do hamburger — sem ele, entrar
+                // exigia abrir o menu primeiro.
+                !isGuestHome && "hidden sm:block",
+              )}
             >
               Entrar
             </Link>
