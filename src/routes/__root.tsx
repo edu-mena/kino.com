@@ -25,7 +25,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      // `viewport-fit=cover` é o que liga env(safe-area-inset-*) em CSS —
+      // sem isto, os valores ficam sempre 0 e conteúdo fixo (tabbar,
+      // sheets/drawers) pode ficar por baixo do entalhe/Dynamic Island ou
+      // da barra de gestos do iPhone (ver styles.css e site-shell.tsx).
+      // Inofensivo em Android/desktop, onde não há safe-area nenhuma.
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       // O site só tem tema light. Sem isto, alguns telemóveis (dark mode
       // forçado do Android/browser) tentam "escurecer" a página sozinhos e
       // acabam por quebrar contraste em pontos com cor fixa.

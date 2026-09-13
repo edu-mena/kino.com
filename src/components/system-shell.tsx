@@ -154,11 +154,15 @@ export function SystemShell({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        <main className="min-w-0 flex-1 pb-20 lg:pb-12">{children}</main>
+        {/* + safe-area — a barra fixa abaixo ganhou o mesmo extra (ver
+            MobileTabBar em site-shell.tsx para a explicação). */}
+        <main className="min-w-0 flex-1 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-12">
+          {children}
+        </main>
       </div>
 
       {/* Barra inferior — mobile */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         <div className="grid grid-cols-4">
           {mobileTabItems.map((item) => (
             <Link

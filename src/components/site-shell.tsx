@@ -447,7 +447,7 @@ export function MobileTabBar() {
   const { count } = useCart();
   const { t } = useTranslation();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
       <div className="grid grid-cols-5">
         {tabs.map((tab) => (
           <Link
@@ -549,8 +549,10 @@ export function PageShell({
             // Sempre alguma respiração no fundo — sem isto, páginas sem
             // footer (a maioria das logadas) terminam coladas à base do
             // ecrã. No mobile com tabbar, mais espaço, pra não ficar por
-            // baixo da barra fixa.
-            showMobileTabBar ? "pb-20 md:pb-12" : "pb-12",
+            // baixo da barra fixa — + a safe-area que a própria tabbar
+            // ganhou (ver MobileTabBar), senão o conteúdo ficava curto
+            // exatamente por essa margem em iPhones com barra de gestos.
+            showMobileTabBar ? "pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-12" : "pb-12",
           )}
         >
           {children}

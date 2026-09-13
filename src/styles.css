@@ -21,6 +21,44 @@ body {
 }
 
 /*
+ * Diferenças de WKWebView (app nativa Android/iOS, Capacitor) vs Safari
+ * desktop já tratado antes — o motor é o mesmo WebKit, mas sem chrome de
+ * browser à volta cada uma destas fica muito mais visível, principalmente
+ * em iOS. Fora de qualquer @layer de propósito (tal como a regra acima) —
+ * só assim ganham de qualquer utilitário Tailwind com a mesma propriedade
+ * (`@layer utilities`, que o Tailwind aplica depois de `@layer base`).
+ */
+
+/* Evita o "flash" cinzento/azul default do WebKit ao tocar em links/
+ * botões — a app já tem os seus próprios estados hover/active, o
+ * highlight nativo só desalinha com o design (mais visível em botões
+ * arredondados/transparentes). */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Trava o "bounce" de borracha do WebKit no topo/fundo da página — sem
+ * isto, arrastar além do limite em iOS revela o fundo por trás do
+ * conteúdo por instantes (mais notado em páginas com hero/vídeo
+ * full-bleed, ex. /entrar, home de convidado). */
+html {
+  overscroll-behavior-y: contain;
+}
+
+/* Sem isto, tocar em QUALQUER campo de texto com font-size < 16px (a
+ * maioria dos inputs da app usa text-sm, 14px) faz o WebKit dar zoom na
+ * página inteira ao focar — só em iOS; Android/desktop nunca fazem isto,
+ * independentemente do tamanho da fonte. Só < md (o tamanho onde isto
+ * acontece de facto) para não alterar nada no ecrã grande. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/*
  * WhatsApp-style horizontal push transition for guest-site navigation
  * (see Link viewTransition prop in site-shell.tsx). Both the outgoing and
  * incoming page travel the same distance at the same time, so the leaving

@@ -203,7 +203,7 @@ export function OrderBuilderCard() {
 
   return (
     <>
-      <div className="fixed bottom-4 right-4 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-[1.5rem] bg-neutral-900 text-primary-foreground shadow-xl">
+      <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-[1.5rem] bg-neutral-900 text-primary-foreground shadow-xl">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
