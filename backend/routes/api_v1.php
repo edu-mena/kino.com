@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\SavedAddressController;
 use App\Http\Controllers\Api\V1\StoryController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupportTicketController;
+use App\Http\Controllers\Api\V1\SystemAccessController;
 use App\Http\Controllers\Api\V1\UploadController;
 use App\Http\Controllers\Api\V1\UserPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -39,11 +40,35 @@ Route::prefix('auth')->group(function () {
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:auth');
 
+    // Login de operador de sistema — superfície mais sensível da API,
+    // isolada do resto do auth (ver AuthController::systemLogin): IP
+    // bloqueado nem chega ao controller, throttle dedicado bem mais
+    // apertado que o `auth` genérico, e cada tentativa gera auditoria +
+    // email (dentro do próprio método, não é middleware).
+    Route::post('system/login', [AuthController::class, 'systemLogin'])
+        ->middleware(['ip.not-blocked', 'throttle:system-auth']);
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('refresh', [AuthController::class, 'refresh']);
         Route::post('logout', [AuthController::class, 'logout']);
         Route::post('logout-all', [AuthController::class, 'logoutAll']);
         Route::get('me', [AuthController::class, 'me']);
+    });
+});
+
+// Segurança do login de sistema (ver SystemAccessController) — `notify` é
+// chamado pelo frontend ao abrir /sistema/entrar, `block-ip` é o link
+// assinado do email de alerta (funciona sem sessão nenhuma).
+Route::prefix('system-access')->group(function () {
+    Route::post('notify', [SystemAccessController::class, 'notify'])
+        ->middleware(['ip.not-blocked', 'throttle:system-auth']);
+    Route::get('block-ip/{ip}', [SystemAccessController::class, 'blockIp'])
+        ->middleware('signed')
+        ->name('system-access.block-ip');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('blocked-ips', [SystemAccessController::class, 'index']);
+        Route::delete('blocked-ips/{blockedIp}', [SystemAccessController::class, 'destroy']);
     });
 });
 

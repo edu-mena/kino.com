@@ -115,4 +115,23 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Security Alert Address
+    |--------------------------------------------------------------------------
+    |
+    | Para onde vai o alerta de acesso/tentativa de login do painel de
+    | sistema (ver SystemSecurityAlertMail, AuthController::systemLogin,
+    | SystemAccessController::notify). Sem isto configurado, os emails de
+    | segurança silenciosamente não têm destinatário — falha alto e cedo
+    | em produção via `config:cache`/verificação de deploy, não aqui.
+    |
+    */
+
+    // `?:`, não o 2º argumento de env() — SECURITY_ALERT_EMAIL="" (linha em
+    // branco no .env, o estado por default de .env.example) tem de cair no
+    // fallback também; env() só cai no default quando a variável não
+    // existe de todo, uma string vazia já conta como "existe" pra ele.
+    'security_alert_address' => env('SECURITY_ALERT_EMAIL') ?: env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+
 ];

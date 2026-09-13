@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Lock, Mail, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
 import { useTranslation } from "@/i18n";
-import { ApiError } from "@/lib/api-client";
+import { apiFetch, ApiError, hasRealBackend } from "@/lib/api-client";
 import { OperatorProviders } from "@/lib/operator-providers";
 import { useSystemAdmin } from "@/lib/system-admin";
 
@@ -32,6 +32,18 @@ function SistemaEntrar() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
+
+  // Avisa o backend (email de alerta + auditoria, ver
+  // SystemAccessController::notify) sempre que esta página é aberta — pedido
+  // explícito de segurança do utilizador. Fire-and-forget: nunca bloqueia a
+  // página nem mostra erro ao visitante, e não corre de todo na demo sem
+  // backend (VITE_API_BASE_URL vazia, ver hasRealBackend).
+  useEffect(() => {
+    if (!hasRealBackend) return;
+    apiFetch("/system-access/notify", { method: "POST" }).catch(() => {
+      // silencioso — ver comentário acima
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

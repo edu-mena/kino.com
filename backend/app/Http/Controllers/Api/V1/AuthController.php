@@ -8,12 +8,17 @@ use App\Http\Requests\Api\V1\Auth\GoogleCallbackRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
 use App\Http\Resources\Api\V1\UserResource;
+use App\Mail\SystemSecurityAlertMail;
+use App\Models\BlockedIp;
+use App\Models\SystemSecurityEvent;
 use App\Models\User;
 use App\Services\GoogleOAuthService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use RuntimeException;
 
@@ -60,19 +65,80 @@ class AuthController extends Controller
     }
 
     /**
-     * Login de restaurante/sistema — email+senha real, sem self-signup (a
-     * conta só nasce via aprovação de PartnerApplication ou seed de
-     * operador). Nunca aceita role=customer.
+     * Login de restaurante — email+senha real, sem self-signup (a conta só
+     * nasce via aprovação de PartnerApplication). Nunca aceita
+     * customer NEM system_operator — este último tem endpoint próprio
+     * (`systemLogin` abaixo), com auditoria/bloqueio de IP que este NÃO
+     * tem; um operador cujas credenciais vazassem não deve conseguir
+     * contorná-lo entrando por aqui.
      */
     public function login(LoginRequest $request): JsonResponse
     {
         $user = User::query()
-            ->whereIn('role', ['restaurant_staff', 'system_operator'])
+            ->where('role', 'restaurant_staff')
             ->where('email', $request->string('email'))
             ->first();
 
         // Mensagem genérica — não revela se o email existe (ver plano).
         if (! $user || ! Hash::check($request->string('password'), $user->password)) {
+            return response()->json(['message' => 'Credenciais inválidas.'], 401);
+        }
+
+        $user->update(['last_login_at' => now()]);
+
+        return $this->issueTokenResponse($request, $user);
+    }
+
+    /**
+     * Login de OPERADOR DE SISTEMA — superfície mais sensível da API
+     * (acesso total via RestaurantPolicy a qualquer restaurante). Pedido
+     * explícito do utilizador: "muito, muito segura" — por isso, ao
+     * contrário de `login()` acima:
+     * - toda tentativa (sucesso ou falha) fica em `system_security_events`
+     *   E dispara um email para `mail.security_alert_address`, sempre,
+     *   nunca throttled (ao contrário do `notify()` de page_view, que é
+     *   throttled — uma tentativa de LOGIN é sempre rara e sempre
+     *   relevante o suficiente para avisar);
+     * - 5 falhas do mesmo IP em 30 min bloqueia esse IP automaticamente
+     *   (além do bloqueio manual via link no email, ver
+     *   SystemAccessController::blockIp);
+     * - a rota já passa por `ip.not-blocked` antes de chegar aqui (ver
+     *   routes/api_v1.php) — um IP já bloqueado nem chega a esta função.
+     */
+    public function systemLogin(LoginRequest $request): JsonResponse
+    {
+        $ip = (string) $request->ip();
+        $email = $request->string('email')->toString();
+
+        $user = User::query()->where('role', 'system_operator')->where('email', $email)->first();
+        $success = (bool) ($user && Hash::check($request->string('password'), $user->password));
+
+        $event = SystemSecurityEvent::query()->create([
+            'ip' => $ip,
+            'user_agent' => (string) $request->userAgent(),
+            'event' => 'login_attempt',
+            'outcome' => $success ? 'success' : 'failed',
+            'email_attempted' => $email,
+        ]);
+
+        $recentFails = SystemSecurityEvent::recentFailedLoginAttempts($ip);
+        $autoBlocked = false;
+
+        if (! $success && $recentFails >= 5) {
+            BlockedIp::query()->firstOrCreate(
+                ['ip' => $ip],
+                ['reason' => 'auto:too_many_failed_attempts', 'blocked_at' => now()],
+            );
+            Cache::forget("blocked-ip:{$ip}");
+            $autoBlocked = true;
+        }
+
+        Mail::to(config('mail.security_alert_address'))
+            ->queue(new SystemSecurityAlertMail($event, $recentFails, $autoBlocked));
+
+        if (! $success) {
+            // Mesma mensagem genérica de sempre — o operador legítimo não
+            // vê nada de diferente por ter disparado um alerta.
             return response()->json(['message' => 'Credenciais inválidas.'], 401);
         }
 

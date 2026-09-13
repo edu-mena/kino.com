@@ -66,7 +66,7 @@
         "/v1/auth/login": {
             "post": {
                 "operationId": "auth.login",
-                "summary": "Login de restaurante/sistema \u2014 email+senha real, sem self-signup (a\nconta s\u00f3 nasce via aprova\u00e7\u00e3o de PartnerApplication ou seed de\noperador). Nunca aceita role=customer",
+                "summary": "Login de restaurante \u2014 email+senha real, sem self-signup (a conta s\u00f3\nnasce via aprova\u00e7\u00e3o de PartnerApplication). Nunca aceita\ncustomer NEM system_operator \u2014 este \u00faltimo tem endpoint pr\u00f3prio\n(`systemLogin` abaixo), com auditoria/bloqueio de IP que este N\u00c3O\ntem; um operador cujas credenciais vazassem n\u00e3o deve conseguir\ncontorn\u00e1-lo entrando por aqui",
                 "tags": [
                     "Auth"
                 ],
@@ -206,6 +206,79 @@
                                         "message": {
                                             "type": "string",
                                             "const": "Senha alterada com sucesso."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/auth/system/login": {
+            "post": {
+                "operationId": "auth.systemLogin",
+                "summary": "Login de OPERADOR DE SISTEMA \u2014 superf\u00edcie mais sens\u00edvel da API\n(acesso total via RestaurantPolicy a qualquer restaurante). Pedido\nexpl\u00edcito do utilizador: \"muito, muito segura\" \u2014 por isso, ao\ncontr\u00e1rio de `login()` acima:\n- toda tentativa (sucesso ou falha) fica em `system_security_events`\n  E dispara um email para `mail.security_alert_address`, sempre,\n  nunca throttled (ao contr\u00e1rio do `notify()` de page_view, que \u00e9\n  throttled \u2014 uma tentativa de LOGIN \u00e9 sempre rara e sempre\n  relevante o suficiente para avisar);\n- 5 falhas do mesmo IP em 30 min bloqueia esse IP automaticamente\n  (al\u00e9m do bloqueio manual via link no email, ver\n  SystemAccessController::blockIp);\n- a rota j\u00e1 passa por `ip.not-blocked` antes de chegar aqui (ver\n  routes/api_v1.php) \u2014 um IP j\u00e1 bloqueado nem chega a esta fun\u00e7\u00e3o",
+                "tags": [
+                    "Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "user": {
+                                                    "$ref": "#/components/schemas/UserResource"
+                                                }
+                                            },
+                                            "required": [
+                                                "token",
+                                                "user"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Credenciais inv\u00e1lidas."
                                         }
                                     },
                                     "required": [
@@ -5902,6 +5975,160 @@
                 }
             }
         },
+        "/v1/system-access/notify": {
+            "post": {
+                "operationId": "systemAccess.notify",
+                "summary": "Chamado pelo frontend ao montar /sistema/entrar \u2014 s\u00f3 regista a\nVISITA \u00e0 p\u00e1gina (ningu\u00e9m tentou entrar ainda). P\u00fablico de prop\u00f3sito\n(a pr\u00f3pria p\u00e1gina \u00e9 p\u00fablica, s\u00f3 o painel a seguir \u00e9 que n\u00e3o)",
+                "tags": [
+                    "SystemAccess"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    }
+                }
+            }
+        },
+        "/v1/system-access/block-ip/{ip}": {
+            "get": {
+                "operationId": "system-access.block-ip",
+                "summary": "Link assinado do email de alerta \u2014 um clique fecha o IP, sem sess\u00e3o\nnenhuma (`signed` middleware valida a assinatura, ver routes)",
+                "tags": [
+                    "SystemAccess"
+                ],
+                "parameters": [
+                    {
+                        "name": "ip",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/system-access/blocked-ips": {
+            "get": {
+                "operationId": "systemAccess.index",
+                "summary": "Lista de IPs bloqueados \u2014 s\u00f3 para operadores j\u00e1 autenticados, mesmo\npadr\u00e3o de `abort_unless` usado em SubscriptionController",
+                "tags": [
+                    "SystemAccess"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `BlockedIpResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BlockedIpResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                ""
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/system-access/blocked-ips/{blockedIp}": {
+            "delete": {
+                "operationId": "systemAccess.destroy",
+                "tags": [
+                    "SystemAccess"
+                ],
+                "parameters": [
+                    {
+                        "name": "blockedIp",
+                        "in": "path",
+                        "required": true,
+                        "description": "The blocked ip ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                ""
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/v1/uploads": {
             "post": {
                 "operationId": "upload.store",
@@ -6068,6 +6295,30 @@
                     }
                 },
                 "title": "AssignTableRequest"
+            },
+            "BlockedIpResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "ip": {
+                        "type": "string"
+                    },
+                    "reason": {
+                        "type": "string"
+                    },
+                    "blockedAt": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "ip",
+                    "reason",
+                    "blockedAt"
+                ],
+                "title": "BlockedIpResource"
             },
             "CourierResource": {
                 "type": "object",

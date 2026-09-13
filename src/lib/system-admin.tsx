@@ -54,10 +54,13 @@ export function SystemAdminProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { data } = await apiFetch<{ data: { token: string; user: ApiOperator } }>("/auth/login", {
-      method: "POST",
-      body: { email, password },
-    });
+    // Endpoint dedicado (não /auth/login) — auditoria + email de alerta +
+    // bloqueio de IP em cada tentativa, ver backend AuthController::
+    // systemLogin. Superfície mais sensível da API, isolada de propósito.
+    const { data } = await apiFetch<{ data: { token: string; user: ApiOperator } }>(
+      "/auth/system/login",
+      { method: "POST", body: { email, password } },
+    );
 
     localStorage.setItem(TOKEN_KEY, data.token);
     setToken(data.token);

@@ -43,6 +43,21 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($email.'|'.$request->ip());
         });
 
+        // Login de sistema + notify de visita à página — bem mais apertado
+        // que o `auth` genérico, e de propósito chaveado só por IP (nunca
+        // por email|IP): o `auth` normal deixa um atacante rodar por
+        // vários emails a partir do mesmo IP sem esbarrar no limite;
+        // aqui o próprio IP já é o recurso a proteger (ver
+        // EnsureIpNotBlocked/AuthController::systemLogin, que bloqueia o IP
+        // de vez depois de falhas repetidas — isto aqui é só a primeira
+        // linha de defesa, mais rápida que esperar 5 falhas).
+        RateLimiter::for('system-auth', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by($request->ip()),
+                Limit::perHour(20)->by($request->ip()),
+            ];
+        });
+
         // Escrita de pedidos/reservas — evita spam de bots. 'sanctum'
         // explícito: algumas destas rotas (checkout/reserva) aceitam
         // convidados sem token e não passam por auth:sanctum, então
