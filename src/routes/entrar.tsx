@@ -95,6 +95,23 @@ function Entrar() {
             <ArrowLeft className="h-4 w-4" /> {t("entrar.backHome")}
           </Link>
 
+          {/* Mesmo vídeo do painel `lg:` — abaixo disso ele ficava
+              completamente escondido (`hidden lg:block` acima), sem
+              nenhuma versão para mobile/tablet. Aqui entra compacto, dentro
+              do fluxo normal da coluna, sem tirar espaço ao formulário. */}
+          <div className="relative mt-6 h-40 overflow-hidden rounded-2xl sm:h-52 lg:hidden">
+            <video
+              src={authVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              aria-hidden
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-primary/55" />
+          </div>
+
           <div className="mt-6">
             <Logo />
           </div>
