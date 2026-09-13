@@ -1746,6 +1746,8 @@ export const pt = {
     signUp: "Cadastre-se",
     loggedInToast: "Sessão iniciada com a Google!",
     errorToast: "Não foi possível continuar com o Google. Tenta novamente.",
+    restaurantOwnerNotice: "É dono de um restaurante?",
+    restaurantOwnerCta: "Aceder ao painel",
   },
   menuCategories: {
     "Pratos Principais": "Pratos Principais",

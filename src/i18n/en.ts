@@ -1739,6 +1739,8 @@ export const en: Dictionary = {
     signUp: "Sign up",
     loggedInToast: "Signed in with Google!",
     errorToast: "Couldn't continue with Google. Please try again.",
+    restaurantOwnerNotice: "Own a restaurant?",
+    restaurantOwnerCta: "Access the panel",
   },
   menuCategories: {
     "Pratos Principais": "Main Dishes",

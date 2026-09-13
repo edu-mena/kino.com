@@ -1756,6 +1756,8 @@ export const fr: Dictionary = {
     signUp: "Inscrivez-vous",
     loggedInToast: "Connecté avec Google !",
     errorToast: "Impossible de continuer avec Google. Réessaie.",
+    restaurantOwnerNotice: "Vous avez un restaurant ?",
+    restaurantOwnerCta: "Accéder au panneau",
   },
   menuCategories: {
     "Pratos Principais": "Plats principaux",

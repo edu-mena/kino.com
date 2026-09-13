@@ -122,6 +122,13 @@ function Entrar() {
               {t("entrar.signUp")}
             </Link>
           </p>
+
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            {t("entrar.restaurantOwnerNotice")}{" "}
+            <Link to="/admin/entrar" className="font-bold text-primary">
+              {t("entrar.restaurantOwnerCta")}
+            </Link>
+          </p>
         </div>
       </div>
     </div>
