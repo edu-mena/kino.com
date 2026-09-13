@@ -12,6 +12,7 @@ import {
   User,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -22,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { apiFetch, ApiError, hasRealBackend } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 
@@ -45,8 +47,6 @@ const inputClass =
   "w-full min-w-0 rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary";
 
 const inputWithIconClass = `${inputClass} pl-11`;
-
-const PARTNERS_EMAIL = "parceiros@luku.com";
 
 // As 18 províncias de Angola — não traduzido de propósito (são nomes
 // próprios, iguais em pt/en/fr), ao contrário das categorias abaixo.
@@ -116,6 +116,7 @@ function Parceiros() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [showRequiredError, setShowRequiredError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -158,7 +159,7 @@ function Parceiros() {
     setStep((s) => Math.max(s - 1, 0));
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isStepValid(0) || !isStepValid(1) || !isStepValid(2)) {
       // Não deve acontecer (cada passo já bloqueou o avanço), mas se o
@@ -174,28 +175,42 @@ function Parceiros() {
       return;
     }
 
-    // Sem backend real por trás deste formulário ainda (ver DEPLOY.md) — em
-    // vez de fingir que o pedido foi recebido, abrimos o email real para a
-    // equipa de parceiros com os dados já preenchidos.
+    // `StorePartnerApplicationRequest` (backend) não tem campos próprios
+    // para categoria/morada/foto — dobrados dentro de `message`, único
+    // campo livre que ele aceita, em vez de os perder.
     const categoryLabel = categories.find((c) => c.value === form.category)?.label ?? "";
-    const body = [
-      `Restaurante: ${form.restaurantName}`,
+    const message = [
       `Categoria: ${categoryLabel}`,
-      `Responsável: ${form.ownerName}`,
-      `Email: ${form.email}`,
-      `Telefone: ${form.phone}`,
-      `Província: ${form.province}`,
       `Morada: ${form.address}`,
-      form.about ? `\nSobre o restaurante:\n${form.about}` : "",
+      form.about ? `\n${form.about}` : "",
     ]
       .filter(Boolean)
       .join("\n");
-    const mailto = `mailto:${PARTNERS_EMAIL}?subject=${encodeURIComponent(
-      `Novo pedido de parceria — ${form.restaurantName}`,
-    )}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
 
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      // Demo sem backend (ver DEPLOY.md) — não há API real para receber o
+      // pedido; simula sucesso em vez de rebentar com erro de rede. Nunca
+      // acontece em dev/produção real (ver hasRealBackend).
+      if (hasRealBackend) {
+        await apiFetch("/partner-applications", {
+          method: "POST",
+          body: {
+            restaurant_name: form.restaurantName,
+            owner_name: form.ownerName,
+            email: form.email,
+            phone: form.phone,
+            province: form.province,
+            message,
+          },
+        });
+      }
+      setSubmitted(true);
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : t("parceiros.submitError"));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -483,9 +498,10 @@ function Parceiros() {
               ) : (
                 <button
                   type="submit"
-                  className="flex-1 rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                  disabled={submitting}
+                  className="flex-1 rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
                 >
-                  {t("parceiros.submit")}
+                  {submitting ? t("parceiros.submitting") : t("parceiros.submit")}
                 </button>
               )}
             </div>
@@ -507,18 +523,7 @@ function Parceiros() {
               {t("parceiros.dialogTitle")}
             </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              {t("parceiros.dialogDescriptionPrefix")} {PARTNERS_EMAIL}{" "}
-              {t("parceiros.dialogDescriptionMiddle")}
-              {form.email ? (
-                <>
-                  {" "}
-                  {t("parceiros.dialogDescriptionOpenedFrom")}{" "}
-                  <strong className="text-foreground">{form.email}</strong>)
-                </>
-              ) : (
-                ""
-              )}
-              . {t("parceiros.dialogDescriptionSuffix")}
+              {t("parceiros.dialogDescription", { email: form.email })}
             </DialogDescription>
           </DialogContent>
         </Dialog>

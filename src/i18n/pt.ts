@@ -1714,14 +1714,13 @@ export const pt = {
     reviewNoPhoto: "Sem foto",
     reviewNoAbout: "Não preenchido",
     submit: "Enviar pedido de cadastro",
+    submitting: "A enviar...",
     submitHint:
-      "Ao enviar, abrimos a sua aplicação de email com os dados já preenchidos para a nossa equipa de parceiros.",
-    dialogTitle: "Quase lá!",
-    dialogDescriptionPrefix: "Preparámos um email com os seus dados para",
-    dialogDescriptionMiddle: "— confirme o envio na sua aplicação de email",
-    dialogDescriptionOpenedFrom: "(deve ter aberto a partir de",
-    dialogDescriptionSuffix:
-      "A nossa equipa analisa o pedido e avisa assim que o seu restaurante for aprovado na Luku.",
+      "Ao enviar, a nossa equipa recebe o seu pedido automaticamente — não precisa de fazer mais nada.",
+    submitError: "Não foi possível enviar o pedido. Tenta novamente.",
+    dialogTitle: "Recebemos o seu pedido!",
+    dialogDescription:
+      "Enviámos uma confirmação para {email}. A nossa equipa analisa o pedido e avisa assim que o seu restaurante for aprovado na Luku.",
   },
   cadastro: {
     backHome: "Voltar ao início",

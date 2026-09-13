@@ -134,4 +134,19 @@ return [
     // existe de todo, uma string vazia já conta como "existe" pra ele.
     'security_alert_address' => env('SECURITY_ALERT_EMAIL') ?: env('MAIL_FROM_ADDRESS', 'hello@example.com'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Partners Notification Address
+    |--------------------------------------------------------------------------
+    |
+    | Para onde vai o aviso de nova candidatura de parceiro (ver
+    | PartnerApplicationController::store, PartnerApplicationReceivedMail).
+    | O candidato recebe a SUA própria confirmação à parte (ver
+    | PartnerApplicationConfirmationMail) — este endereço aqui é só o da
+    | equipa Luku.
+    |
+    */
+
+    'partners_notification_address' => env('PARTNERS_NOTIFICATION_EMAIL') ?: env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+
 ];

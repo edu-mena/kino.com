@@ -1723,14 +1723,13 @@ export const fr: Dictionary = {
     reviewNoPhoto: "Sans photo",
     reviewNoAbout: "Non renseigné",
     submit: "Envoyer la demande d'inscription",
+    submitting: "Envoi...",
     submitHint:
-      "En envoyant, nous ouvrons votre application email avec les informations déjà remplies pour notre équipe partenaires.",
-    dialogTitle: "Presque terminé !",
-    dialogDescriptionPrefix: "Nous avons préparé un email avec vos informations pour",
-    dialogDescriptionMiddle: "— confirmez l'envoi dans votre application email",
-    dialogDescriptionOpenedFrom: "(il devrait s'être ouvert depuis",
-    dialogDescriptionSuffix:
-      "Notre équipe examine la demande et vous prévient dès que votre restaurant est approuvé sur Luku.",
+      "En envoyant, notre équipe reçoit votre demande automatiquement — rien d'autre à faire.",
+    submitError: "Impossible d'envoyer la demande. Réessaie.",
+    dialogTitle: "Nous avons reçu votre demande !",
+    dialogDescription:
+      "Nous avons envoyé une confirmation à {email}. Notre équipe examine la demande et vous prévient dès que votre restaurant est approuvé sur Luku.",
   },
   cadastro: {
     backHome: "Retour à l'accueil",

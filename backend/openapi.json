@@ -2716,7 +2716,7 @@
         "/v1/partner-applications": {
             "post": {
                 "operationId": "partnerApplication.store",
-                "summary": "P\u00fablico \u2014 /parceiros",
+                "summary": "P\u00fablico \u2014 /parceiros. Envia dois emails autom\u00e1ticos em fila, sem\ndepender do candidato abrir aplica\u00e7\u00e3o de email nenhuma (substitui o\n`mailto:` que o frontend usava antes): um para a equipa Luku\ndecidir, outro de confirma\u00e7\u00e3o para o pr\u00f3prio candidato",
                 "tags": [
                     "PartnerApplication"
                 ],

@@ -1707,14 +1707,12 @@ export const en: Dictionary = {
     reviewNoPhoto: "No photo",
     reviewNoAbout: "Not filled in",
     submit: "Send signup request",
-    submitHint:
-      "By sending, we open your email app with the details already filled in for our partners team.",
-    dialogTitle: "Almost there!",
-    dialogDescriptionPrefix: "We prepared an email with your details for",
-    dialogDescriptionMiddle: "— confirm the send in your email app",
-    dialogDescriptionOpenedFrom: "(it should have opened from",
-    dialogDescriptionSuffix:
-      "Our team reviews the request and lets you know as soon as your restaurant is approved on Luku.",
+    submitting: "Sending...",
+    submitHint: "By sending, our team receives your request automatically — nothing else to do.",
+    submitError: "Couldn't send the request. Please try again.",
+    dialogTitle: "We received your request!",
+    dialogDescription:
+      "We sent a confirmation to {email}. Our team reviews the request and lets you know as soon as your restaurant is approved on Luku.",
   },
   cadastro: {
     backHome: "Back home",

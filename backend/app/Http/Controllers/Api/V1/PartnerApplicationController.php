@@ -7,10 +7,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\PartnerApplications\StorePartnerApplicationRequest;
 use App\Http\Resources\Api\V1\PartnerApplicationResource;
 use App\Http\Resources\Api\V1\RestaurantResource;
+use App\Mail\PartnerApplicationConfirmationMail;
+use App\Mail\PartnerApplicationReceivedMail;
 use App\Models\PartnerApplication;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Mail;
 
 /** Todo o controller (exceto `store`) é system_operator-only — candidaturas
  * são um assunto interno Luku, nunca visível a restaurant_staff. */
@@ -28,10 +31,18 @@ class PartnerApplicationController extends Controller
         return PartnerApplicationResource::collection($applications);
     }
 
-    /** Público — /parceiros. */
+    /** Público — /parceiros. Envia dois emails automáticos em fila, sem
+     * depender do candidato abrir aplicação de email nenhuma (substitui o
+     * `mailto:` que o frontend usava antes): um para a equipa Luku
+     * decidir, outro de confirmação para o próprio candidato. */
     public function store(StorePartnerApplicationRequest $request): JsonResponse
     {
         $application = PartnerApplication::query()->create([...$request->validated(), 'status' => 'pending']);
+
+        Mail::to(config('mail.partners_notification_address'))
+            ->queue(new PartnerApplicationReceivedMail($application));
+        Mail::to($application->email)
+            ->queue(new PartnerApplicationConfirmationMail($application));
 
         return (new PartnerApplicationResource($application))->response()->setStatusCode(201);
     }
