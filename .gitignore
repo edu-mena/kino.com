@@ -34,3 +34,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Chave de assinatura Android — credencial privada, nunca no git
+*.keystore
+*.jks

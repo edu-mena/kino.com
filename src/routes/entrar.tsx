@@ -6,7 +6,7 @@ import authVideo from "@/assets/auth-food.mp4";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
 import { useTranslation } from "@/i18n";
-import { useAuth } from "@/lib/auth";
+import { ApiError, useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/entrar")({
   head: () => ({
@@ -49,18 +49,26 @@ function GoogleIcon(props: SVGProps<SVGSVGElement>) {
 
 function Entrar() {
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const handleGoogleAuth = () => {
+  const handleGoogleAuth = async () => {
     setLoading(true);
-    // Simulação: numa integração real isto abriria o fluxo OAuth do Google.
-    setTimeout(() => {
-      login("Utilizador Luku", "utilizador@gmail.com");
+    try {
+      await loginWithGoogle();
       toast.success(t("entrar.loggedInToast"));
       navigate({ to: "/" });
-    }, 900);
+    } catch (error) {
+      // Utilizador fechou o popup não é bem um "erro" a mostrar — o resto
+      // (rede em baixo, Google recusou, etc.) sim.
+      const dismissed = error instanceof Error && error.message === "google_auth_dismissed";
+      if (!dismissed) {
+        toast.error(error instanceof ApiError ? error.message : t("entrar.errorToast"));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

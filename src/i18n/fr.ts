@@ -726,11 +726,13 @@ export const fr: Dictionary = {
   adminEntrar: {
     title: "Panneau du restaurant",
     description:
-      "Choisissez le restaurant que vous gérez pour accéder aux commandes, réservations et à la carte.",
-    placeholder: "Sélectionnez votre restaurant",
+      "Connectez-vous avec l'email et le mot de passe de votre restaurant pour accéder aux commandes, réservations et à la carte.",
+    emailPlaceholder: "Email",
+    passwordPlaceholder: "Mot de passe",
     submit: "Accéder au panneau",
     submitting: "Connexion...",
-    successToast: "Session démarrée — {name}",
+    successToast: "Session démarrée.",
+    errorToast: "Connexion impossible. Vérifiez l'email et le mot de passe.",
     notPartnerYet: "Pas encore partenaire ?",
     becomePartner: "Devenir partenaire",
     backHome: "Retour à l'accueil",
@@ -758,12 +760,13 @@ export const fr: Dictionary = {
     },
     entrar: {
       title: "Administration système",
-      description:
-        "Choisissez un opérateur pour vous connecter. Sans mot de passe — c'est une démo.",
-      placeholder: "Choisir l'opérateur",
+      description: "Connectez-vous avec votre email et mot de passe d'opérateur Luku.",
+      emailPlaceholder: "Email",
+      passwordPlaceholder: "Mot de passe",
       submit: "Se connecter",
       submitting: "Connexion…",
-      successToast: "Bienvenue, {name}",
+      successToast: "Session démarrée.",
+      errorToast: "Connexion impossible. Vérifiez l'email et le mot de passe.",
       backHome: "Retour à l'accueil",
       notice: "Réservé aux opérateurs de la plateforme Luku.",
     },
@@ -1741,6 +1744,7 @@ export const fr: Dictionary = {
     noAccountYet: "Pas encore de compte ?",
     signUp: "Inscrivez-vous",
     loggedInToast: "Connecté avec Google !",
+    errorToast: "Impossible de continuer avec Google. Réessaie.",
   },
   menuCategories: {
     "Pratos Principais": "Plats principaux",

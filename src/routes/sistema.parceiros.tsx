@@ -21,6 +21,7 @@ import { useTranslation } from "@/i18n";
 import { usePartnerApps } from "@/lib/partner-apps";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useSubscriptions } from "@/lib/subscriptions";
+import { useSystemAdmin } from "@/lib/system-admin";
 import { BCP47 } from "@/lib/week";
 
 export const Route = createFileRoute("/sistema/parceiros")({
@@ -37,8 +38,14 @@ const statusTone: Record<PartnerAppStatus, string> = {
 function SistemaParceiros() {
   const { applications, counts, approve, reject, remove } = usePartnerApps();
   const { createSubscription } = useSubscriptions();
-  const { login: enterPanel } = useRestaurantAdmin();
+  const { enterAsOperator } = useRestaurantAdmin();
+  const { token: operatorToken } = useSystemAdmin();
   const navigate = useNavigate();
+
+  const enterPanel = (restaurantId: string) => {
+    if (!operatorToken) return; // não deveria acontecer aqui dentro de /sistema, mas defensivo
+    enterAsOperator(restaurantId, operatorToken);
+  };
 
   const onboard = (app: (typeof applications)[number]) => {
     const restaurant = createRestaurant({

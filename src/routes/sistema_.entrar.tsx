@@ -1,19 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Lock, Mail, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useTranslation } from "@/i18n";
+import { ApiError } from "@/lib/api-client";
 import { OperatorProviders } from "@/lib/operator-providers";
-import { OPERATORS, useSystemAdmin } from "@/lib/system-admin";
+import { useSystemAdmin } from "@/lib/system-admin";
 
 export const Route = createFileRoute("/sistema_/entrar")({
   head: () => ({
@@ -34,20 +28,23 @@ export const Route = createFileRoute("/sistema_/entrar")({
 function SistemaEntrar() {
   const { login } = useSystemAdmin();
   const navigate = useNavigate();
-  const [operatorId, setOperatorId] = useState<string | undefined>(undefined);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!operatorId) return;
     setLoading(true);
-    setTimeout(() => {
-      login(operatorId);
-      const operator = OPERATORS.find((o) => o.id === operatorId);
-      toast.success(t("sistema.entrar.successToast", { name: operator?.name ?? "" }));
+    try {
+      await login(email, password);
+      toast.success(t("sistema.entrar.successToast"));
       navigate({ to: "/sistema" });
-    }, 400);
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : t("sistema.entrar.errorToast"));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,26 +68,35 @@ function SistemaEntrar() {
         <h1 className="mt-3 text-3xl font-extrabold text-primary">{t("sistema.entrar.title")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("sistema.entrar.description")}</p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-          <Select value={operatorId ?? ""} onValueChange={setOperatorId}>
-            <SelectTrigger className="h-auto rounded-xl border-border bg-card px-4 py-3.5 text-sm">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <SelectValue placeholder={t("sistema.entrar.placeholder")} />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              {OPERATORS.map((o) => (
-                <SelectItem key={o.id} value={o.id}>
-                  {o.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <form onSubmit={handleSubmit} className="mt-8 space-y-3">
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t("sistema.entrar.emailPlaceholder")}
+              className="w-full rounded-xl border border-border bg-card py-3.5 pl-11 pr-4 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </div>
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t("sistema.entrar.passwordPlaceholder")}
+              className="w-full rounded-xl border border-border bg-card py-3.5 pl-11 pr-4 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </div>
 
           <button
             type="submit"
-            disabled={!operatorId || loading}
+            disabled={loading}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {loading ? t("sistema.entrar.submitting") : t("sistema.entrar.submit")}

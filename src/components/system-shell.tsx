@@ -42,16 +42,16 @@ const mobileOverflowItems = navItems.filter((i) => !mobileTabRoutes.has(i.to));
  * (`useSystemAdmin`) e navegação própria. Mesma linguagem visual.
  */
 export function SystemShell({ children }: { children: ReactNode }) {
-  const { operatorId, operator, hydrated, logout } = useSystemAdmin();
+  const { operator, hydrated, logout } = useSystemAdmin();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    if (hydrated && !operatorId) navigate({ to: "/sistema/entrar" });
-  }, [hydrated, operatorId, navigate]);
+    if (hydrated && !operator) navigate({ to: "/sistema/entrar" });
+  }, [hydrated, operator, navigate]);
 
-  if (!operatorId || !operator) return null;
+  if (!operator) return null;
 
   const handleLogout = () => {
     logout();

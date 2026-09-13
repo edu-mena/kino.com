@@ -169,7 +169,9 @@ function Perfil() {
             <div className="min-w-0">
               <h1 className="truncate text-2xl font-extrabold text-primary">{user.name}</h1>
               <p className="truncate text-sm text-muted-foreground">
-                {user.email} · {user.phone}
+                {/* Login real (Google) não garante telefone — mock sempre
+                    tinha um valor fixo, conta real pode não ter. */}
+                {user.phone ? `${user.email} · ${user.phone}` : user.email}
               </p>
             </div>
           </div>
