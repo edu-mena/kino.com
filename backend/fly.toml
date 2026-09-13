@@ -1,0 +1,53 @@
+# Config de deploy para Fly.io — região jnb (Joanesburgo) escolhida por ser
+# a mais próxima de Angola/Luanda entre as regiões disponíveis nos
+# provedores considerados (Railway/Render não têm região africana; Fly
+# tem), o que importa para latência real dos clientes finais em luku.ao.
+#
+# ANTES do primeiro deploy: `fly launch --no-deploy --copy-config` já usa
+# este ficheiro; preencher `app` com o nome real escolhido no Fly, ver
+# DEPLOY.md para o resto do procedimento.
+app = "luku-api" # ajustar ao nome reservado no `fly apps create`
+primary_region = "jnb"
+
+[build]
+  dockerfile = "Dockerfile.prod"
+
+[deploy]
+  # Corre exatamente 1x por deploy, numa machine temporária, antes de
+  # promover a nova versão — nunca dentro do entrypoint (evita correr N
+  # vezes, uma por process group).
+  release_command = "php artisan migrate --force"
+
+[processes]
+  app       = "supervisord -c /etc/supervisor/conf.d/supervisord.conf"
+  worker    = "php artisan horizon"
+  reverb    = "php artisan reverb:start --host=0.0.0.0 --port=8081"
+  scheduler = "sh -c \"while true; do php artisan schedule:run; sleep 60; done\""
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false   # API não deve dormir (frontend em produção depende dela)
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  processes = ["app"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  processes = ["worker"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  processes = ["reverb"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  processes = ["scheduler"]
