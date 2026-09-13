@@ -1736,7 +1736,7 @@ export const pt = {
   },
   entrar: {
     backHome: "Voltar ao início",
-    title: "Bem-vindo à Luku",
+    titlePrefix: "Bem-vindo à",
     description:
       "Entre ou crie a sua conta com um único toque — sem palavras-passe para memorizar.",
     continueWithGoogle: "Continuar com Google",

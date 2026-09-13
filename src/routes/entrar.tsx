@@ -72,81 +72,61 @@ function Entrar() {
   };
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="relative hidden lg:block">
-        <video
-          src={authVideo}
-          autoPlay
-          loop
-          muted
-          playsInline
-          aria-hidden
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-primary/55" />
-      </div>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-12 sm:px-12">
+      {/* Vídeo como fundo cheio em qualquer tamanho de ecrã — antes só
+          existia num painel lateral (`hidden lg:block`), invisível abaixo
+          de lg. */}
+      <video
+        src={authVideo}
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden
+        className="absolute inset-0 -z-20 h-full w-full object-cover"
+      />
+      <div className="absolute inset-0 -z-10 bg-primary/55" />
 
-      <div className="flex flex-col justify-center px-5 py-12 sm:px-12">
-        <div className="mx-auto w-full max-w-sm">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-primary"
-          >
-            <ArrowLeft className="h-4 w-4" /> {t("entrar.backHome")}
+      <Link
+        to="/"
+        className="absolute left-5 top-6 inline-flex items-center gap-1 text-sm font-semibold text-white transition-colors hover:text-white/80 sm:left-12 sm:top-8"
+      >
+        <ArrowLeft className="h-4 w-4" /> {t("entrar.backHome")}
+      </Link>
+
+      {/* Card translúcido sobre o vídeo — todo o conteúdo que antes vivia
+          direto na página agora fica aqui dentro. */}
+      <div className="w-full max-w-sm rounded-[2rem] border border-white/25 bg-card/80 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+        <h1 className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-3xl font-extrabold text-primary">
+          {t("entrar.titlePrefix")} <Logo className="h-7 w-auto sm:h-8" />
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("entrar.description")}</p>
+
+        <button
+          type="button"
+          onClick={handleGoogleAuth}
+          disabled={loading}
+          className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-background px-5 py-3.5 text-sm font-bold text-foreground transition-colors hover:border-primary disabled:opacity-60"
+        >
+          <GoogleIcon className="h-5 w-5" />
+          {loading ? t("entrar.loggingIn") : t("entrar.continueWithGoogle")}
+        </button>
+
+        <p className="mt-6 text-center text-xs text-muted-foreground">{t("entrar.termsNotice")}</p>
+
+        <p className="mt-8 text-center text-sm text-muted-foreground">
+          {t("entrar.noAccountYet")}{" "}
+          <Link to="/cadastro" className="font-bold text-primary">
+            {t("entrar.signUp")}
           </Link>
+        </p>
 
-          {/* Mesmo vídeo do painel `lg:` — abaixo disso ele ficava
-              completamente escondido (`hidden lg:block` acima), sem
-              nenhuma versão para mobile/tablet. Aqui entra compacto, dentro
-              do fluxo normal da coluna, sem tirar espaço ao formulário. */}
-          <div className="relative mt-6 h-40 overflow-hidden rounded-2xl sm:h-52 lg:hidden">
-            <video
-              src={authVideo}
-              autoPlay
-              loop
-              muted
-              playsInline
-              aria-hidden
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-primary/55" />
-          </div>
-
-          <div className="mt-6">
-            <Logo />
-          </div>
-
-          <h1 className="mt-6 text-3xl font-extrabold text-primary">{t("entrar.title")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t("entrar.description")}</p>
-
-          <button
-            type="button"
-            onClick={handleGoogleAuth}
-            disabled={loading}
-            className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card px-5 py-3.5 text-sm font-bold text-foreground transition-colors hover:border-primary disabled:opacity-60"
-          >
-            <GoogleIcon className="h-5 w-5" />
-            {loading ? t("entrar.loggingIn") : t("entrar.continueWithGoogle")}
-          </button>
-
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            {t("entrar.termsNotice")}
-          </p>
-
-          <p className="mt-8 text-center text-sm text-muted-foreground">
-            {t("entrar.noAccountYet")}{" "}
-            <Link to="/cadastro" className="font-bold text-primary">
-              {t("entrar.signUp")}
-            </Link>
-          </p>
-
-          <p className="mt-2 text-center text-sm text-muted-foreground">
-            {t("entrar.restaurantOwnerNotice")}{" "}
-            <Link to="/admin/entrar" className="font-bold text-primary">
-              {t("entrar.restaurantOwnerCta")}
-            </Link>
-          </p>
-        </div>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
+          {t("entrar.restaurantOwnerNotice")}{" "}
+          <Link to="/admin/entrar" className="font-bold text-primary">
+            {t("entrar.restaurantOwnerCta")}
+          </Link>
+        </p>
       </div>
     </div>
   );

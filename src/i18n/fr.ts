@@ -1746,7 +1746,7 @@ export const fr: Dictionary = {
   },
   entrar: {
     backHome: "Retour à l'accueil",
-    title: "Bienvenue sur Luku",
+    titlePrefix: "Bienvenue sur",
     description: "Connectez-vous ou créez votre compte en un clic — sans mot de passe à retenir.",
     continueWithGoogle: "Continuer avec Google",
     loggingIn: "Connexion...",

@@ -1730,7 +1730,7 @@ export const en: Dictionary = {
   },
   entrar: {
     backHome: "Back home",
-    title: "Welcome to Luku",
+    titlePrefix: "Welcome to",
     description: "Sign in or create your account with a single tap — no passwords to remember.",
     continueWithGoogle: "Continue with Google",
     loggingIn: "Signing in...",
