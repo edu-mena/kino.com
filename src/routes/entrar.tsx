@@ -96,7 +96,7 @@ function Entrar() {
 
       {/* Card translúcido sobre o vídeo — todo o conteúdo que antes vivia
           direto na página agora fica aqui dentro. */}
-      <div className="w-full max-w-sm rounded-[2rem] border border-white/25 bg-card/80 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+      <div className="w-full max-w-sm rounded-[2rem] border border-white/25 bg-card/80 px-6 py-12 shadow-2xl backdrop-blur-xl sm:px-8 sm:py-16">
         <h1 className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-3xl font-extrabold text-primary">
           {t("entrar.titlePrefix")} <Logo className="h-7 w-auto sm:h-8" />
         </h1>
