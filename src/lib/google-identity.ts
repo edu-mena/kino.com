@@ -1,9 +1,20 @@
 /**
- * Carrega o script do Google Identity Services (GIS) e expõe o
- * authorization-code flow usado pelo login de cliente real (ver plano —
- * `POST /api/v1/auth/google/callback {code}`). Só o caminho Web; mobile
- * nativo usaria o SDK Google Sign-In próprio (id_token direto), fora do
- * escopo desta app web.
+ * Dois caminhos de login de cliente, escolhidos por plataforma (ver
+ * `useAuth().loginWithGoogle` em `auth.tsx`, que decide qual chamar via
+ * `Capacitor.isNativePlatform()`):
+ *
+ * - **Web**: Google Identity Services (GIS), authorization-code flow em
+ *   popup — `requestGoogleAuthorizationCode()` abaixo.
+ * - **App nativa (Android/iOS, Capacitor)**: SDK nativo do Google Sign-In
+ *   via `@capawesome/capacitor-google-sign-in` — `requestGoogleIdToken()`
+ *   abaixo. O fluxo GIS de cima NÃO funciona dentro de uma WebView
+ *   embutida (Capacitor): o Google bloqueia ativamente OAuth nesse
+ *   contexto (`disallowed_useragent`) — daí precisar de um caminho
+ *   totalmente à parte, não de um ajuste no popup.
+ *
+ * Ambos acabam por chamar `POST /api/v1/auth/google/callback`, só que com
+ * shapes diferentes (`{code}` no caminho web, `{id_token}` no nativo — o
+ * backend já aceita os dois, ver `AuthController::googleCallback`).
  */
 
 declare global {
@@ -79,4 +90,41 @@ export async function requestGoogleAuthorizationCode(): Promise<string> {
 
     client.requestCode();
   });
+}
+
+let googleSignInInitialized = false;
+
+/** Chama `GoogleSignIn.initialize` só uma vez por sessão da app — chamar
+ * de novo não faz mal (`initialize` é idempotente do lado do plugin), mas
+ * evita reimportar/reconfigurar o SDK nativo a cada tentativa de login. */
+async function ensureGoogleSignInInitialized(): Promise<void> {
+  if (googleSignInInitialized) return;
+
+  const clientId = (import.meta.env["VITE_GOOGLE_WEB_CLIENT_ID"] as string | undefined)?.trim();
+  if (!clientId) {
+    throw new Error("google_client_id_missing");
+  }
+
+  const { GoogleSignIn } = await import("@capawesome/capacitor-google-sign-in");
+  // O clientId aqui é sempre o WEB client id — mesmo em Android/iOS (ver
+  // docs do plugin: usado como "server client id" pelo Credential
+  // Manager/SDK nativo). O client id específico da plataforma
+  // (Android/iOS) vive só na config nativa (google-services / Info.plist +
+  // URL scheme), nunca em JS — ver capacitor/README.md.
+  await GoogleSignIn.initialize({ clientId });
+  googleSignInInitialized = true;
+}
+
+/** App nativa — abre o ecrã/diálogo nativo do Google Sign-In e devolve o
+ * `id_token` (JWT) da conta escolhida. Rejeita com
+ * `ErrorCode.SignInCanceled` ("SIGN_IN_CANCELED") se o utilizador fechar o
+ * ecrã sem escolher conta — `entrar.tsx` trata isso como o mesmo
+ * "dismissed" silencioso do caminho web, não como erro a mostrar. */
+export async function requestGoogleIdToken(): Promise<string> {
+  await ensureGoogleSignInInitialized();
+
+  const { GoogleSignIn } = await import("@capawesome/capacitor-google-sign-in");
+  const result = await GoogleSignIn.signIn();
+
+  return result.idToken;
 }

@@ -1,6 +1,7 @@
+import { Capacitor } from "@capacitor/core";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ApiError, apiFetch, hasRealBackend } from "@/lib/api-client";
-import { requestGoogleAuthorizationCode } from "@/lib/google-identity";
+import { requestGoogleAuthorizationCode, requestGoogleIdToken } from "@/lib/google-identity";
 
 export type AuthUser = {
   id: string;
@@ -106,10 +107,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const code = await requestGoogleAuthorizationCode();
+    // App nativa (Android/iOS) vs browser — o fluxo popup do GIS não
+    // funciona dentro da WebView embutida do Capacitor (Google bloqueia
+    // OAuth aí), por isso a app nativa usa o SDK Google Sign-In próprio em
+    // vez disso. Ver google-identity.ts para o porquê dos dois caminhos.
+    const body = Capacitor.isNativePlatform()
+      ? { id_token: await requestGoogleIdToken() }
+      : { code: await requestGoogleAuthorizationCode() };
+
     const { data } = await apiFetch<{ data: { token: string; user: ApiUser } }>(
       "/auth/google/callback",
-      { method: "POST", body: { code } },
+      { method: "POST", body },
     );
     localStorage.setItem(TOKEN_KEY, data.token);
     setUser(mapUser(data.user));

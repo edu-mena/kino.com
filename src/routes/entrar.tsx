@@ -60,9 +60,14 @@ function Entrar() {
       toast.success(t("entrar.loggedInToast"));
       navigate({ to: "/" });
     } catch (error) {
-      // Utilizador fechou o popup não é bem um "erro" a mostrar — o resto
-      // (rede em baixo, Google recusou, etc.) sim.
-      const dismissed = error instanceof Error && error.message === "google_auth_dismissed";
+      // Utilizador fechou o popup (web) ou cancelou o ecrã nativo de
+      // sign-in (app) não é bem um "erro" a mostrar — o resto (rede em
+      // baixo, Google recusou, etc.) sim. O erro nativo chega como um
+      // objeto de erro do bridge Capacitor com `.code` (nem sempre tipado
+      // como Error "normal" — daí o `String(...)` em vez de instanceof).
+      const dismissed =
+        (error instanceof Error && error.message === "google_auth_dismissed") ||
+        (error as { code?: string } | null)?.code === "SIGN_IN_CANCELED";
       if (!dismissed) {
         toast.error(error instanceof ApiError ? error.message : t("entrar.errorToast"));
       }
