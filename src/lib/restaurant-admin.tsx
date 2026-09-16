@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useReducer, useState, type ReactNode } from "react";
 import { getRestaurant } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
+import { useRestaurantDetail } from "@/data/use-restaurants-query";
 import { ApiError, apiFetch, hasRealBackend } from "@/lib/api-client";
 
 const TOKEN_KEY = "luku_admin_token";
@@ -30,14 +31,14 @@ type ApiStaffUser = {
  * (`useSystemAdmin`) — tokens/storage próprios, os 3 podem coexistir no
  * mesmo browser.
  *
- * LIMITAÇÃO CONHECIDA (Fase 2 do plano de backend — só auth, ainda não a
- * migração de dados de Restaurant do mock): `restaurant` abaixo continua a
- * vir de `getRestaurant()` (mock), que só conhece os IDs do seed. Com um
- * restaurante criado a sério no backend (UUID real), isto fica
- * `undefined` até a Fase 1 do plano ("Restaurant+MenuItem") também trocar
- * a camada de leitura do frontend para a API real — o login em si já fica
- * correto e real, só a ficha do restaurante no painel é que não resolve
- * ainda.
+ * `restaurant` vem da API real quando `hasRealBackend` (ver
+ * useRestaurantDetail) — sem isto, um UUID real (não um id de seed tipo
+ * "rest-1") resolvia sempre para `undefined` em `getRestaurant()` (mock) e
+ * o painel rebentava com ecrã branco assim que qualquer página lesse
+ * `restaurant.algumCampo` (bug real, encontrado a testar o login a sério).
+ * Páginas do painel que ainda leem pedidos/cardápio/reservas via mock
+ * continuam a mostrar listas vazias para um restaurante real — só o objeto
+ * `restaurant` em si está ligado à API por agora, não essas sub-entidades.
  */
 type RestaurantAdminValue = {
   managedRestaurantId: string | null;
@@ -68,6 +69,11 @@ const RestaurantAdminContext = createContext<RestaurantAdminValue | null>(null);
 export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
   const [managedRestaurantId, setManagedRestaurantId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  // Só dispara o fetch real quando de facto há um id de restaurante gerido
+  // — `useRestaurantDetail` já trata `undefined` como "desligado" (`enabled`).
+  const { data: apiRestaurant } = useRestaurantDetail(
+    hasRealBackend && managedRestaurantId ? managedRestaurantId : undefined,
+  );
   // `restaurant` é derivado (chama `getRestaurant`, que aplica as edições
   // de `/admin/perfil`) — sem isto, guardar uma edição não fazia este
   // provider voltar a renderizar, e o painel ficava com dados velhos até a
@@ -184,7 +190,11 @@ export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
 
   const value: RestaurantAdminValue = {
     managedRestaurantId,
-    restaurant: managedRestaurantId ? getRestaurant(managedRestaurantId) : undefined,
+    restaurant: hasRealBackend
+      ? apiRestaurant
+      : managedRestaurantId
+        ? getRestaurant(managedRestaurantId)
+        : undefined,
     hydrated,
     login,
     enterAsOperator,
