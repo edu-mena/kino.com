@@ -177,12 +177,146 @@ npm run cap:sync
 
 ---
 
+## Partilhar um documento PARA a app (comprovativo/fatura)
+
+Permite que a Luku apareça na folha de partilha nativa do telemóvel — ex.
+partilhar o PDF/imagem dum comprovativo a partir doutra app (banco/carteira
+digital) direto para a Luku, que depois pergunta a que pedido anexar (ver
+`src/lib/pending-share.tsx` + `src/components/pending-share-dialog.tsx`).
+Plugin: `@capgo/capacitor-share-target`.
+
+### Android — já feito, nada a fazer aqui
+
+`AndroidManifest.xml` já tem o `intent-filter` para `image/*`/`application/pdf`
+dentro da `MainActivity`. `MainActivity.java` ficou tal e qual estava (uma
+classe vazia) — o `BridgeActivity` de que estende já chama `onNewIntent(getIntent())`
+sozinho no arranque (dentro do próprio `load()`), por isso o arranque a frio
+via "Partilhar" já funciona sem código nenhum a mais; cheguei a adicionar um
+reencaminhamento manual aqui, mas processava o intent a dobrar — removido.
+**Atenção**: `android/` está no `.gitignore` — se a pasta for alguma vez
+apagada/regenerada do zero (`npx cap add android` de novo), o `intent-filter`
+do manifest tem de ser reposto (ver o histórico do repo ou o commit que o
+introduziu).
+
+### iOS — só em Mac, e precisa de código próprio (não é só configuração)
+
+Ao contrário do login Google acima, este plugin **não vem pronto a usar no
+iOS** — a documentação oficial só cobre a criação do alvo, App Groups e
+`capacitor.config.ts`; o código Swift que efetivamente lê o ficheiro
+partilhado fica por conta de quem integra (a própria documentação do
+plugin admite isto, remetendo para "exemplos nas issues" do repositório
+que não estão publicados num sítio fixo). Passos:
+
+1. **Criar o alvo** — Xcode → `File → New → Target` → **Share Extension**
+   → nome sugerido `ShareExtension` → Finish.
+2. **App Groups** — no target `App` **e** no novo `ShareExtension`:
+   `Signing & Capabilities → + Capability → App Groups` → adicionar
+   `group.com.luku.app` aos dois.
+3. **`capacitor.config.ts`** (raiz do repo) — acrescentar:
+   ```ts
+   const config: CapacitorConfig = {
+     // ...o que já lá está
+     plugins: {
+       CapacitorShareTarget: {
+         appGroupId: "group.com.luku.app",
+       },
+     },
+   };
+   ```
+   Depois `npm run cap:sync`.
+4. **URL scheme** — `Info.plist` da app principal (`ios/App/App/Info.plist`)
+   precisa de um `CFBundleURLTypes`/`CFBundleURLSchemes` próprio (ex.
+   `com.luku.app`) — é o que o `ShareViewController` usa para reabrir a app
+   principal depois de guardar o ficheiro partilhado. Se já existir um
+   scheme aí (confirmar se o login Google não usa a mesma chave — os dois
+   podem coexistir em entradas separadas de `CFBundleURLTypes`), reutilizar;
+   senão criar um novo dict no array.
+5. **`ShareViewController.swift`** (dentro do alvo `ShareExtension`,
+   ficheiro gerado automaticamente pelo template) — substituir o conteúdo
+   gerado por código que:
+   - Lê o `NSExtensionItem`/`NSItemProvider` recebido (imagem ou PDF —
+     `public.image` / `com.adobe.pdf` nos `UTType` a aceitar).
+   - Guarda o ficheiro em `UserDefaults(suiteName: "group.com.luku.app")`
+     sob a chave `"share-target-data"` (nome/mime/dados — o `SharedFile`
+     que o lado JS espera, ver `definitions.d.ts` do pacote em
+     `node_modules/@capgo/capacitor-share-target`).
+   - Chama `.synchronize()` e reabre a app principal pelo URL scheme do
+     passo 4.
+   - **Não há um snippet oficial completo para colar** — ao chegar a este
+     passo no Mac, o mais rápido é abrir as *issues* do repositório
+     (`github.com/Cap-go/capacitor-share-target`) à procura de um exemplo
+     de `ShareViewController`, ou adaptar um tutorial genérico de "iOS
+     Share Extension + App Group" (o mecanismo é standard da Apple, só o
+     nome da chave/`suiteName` acima é específico deste plugin).
+6. **`NSExtension` no `Info.plist` do `ShareExtension`** — as regras de
+   ativação (`NSExtensionActivationRule`) que decidem quando a Luku aparece
+   na folha de partilha vêm com um valor genérico no template do Xcode
+   (aceita quase tudo); trocar por algo que aceite só imagem e PDF, ex.:
+   ```xml
+   <key>NSExtensionAttributes</key>
+   <dict>
+     <key>NSExtensionActivationRule</key>
+     <dict>
+       <key>NSExtensionActivationSupportsImageWithMaxCount</key>
+       <integer>1</integer>
+       <key>NSExtensionActivationSupportsFileWithMaxCount</key>
+       <integer>1</integer>
+     </dict>
+   </dict>
+   ```
+   (`NSExtensionActivationSupportsFileWithMaxCount` cobre o PDF — a Apple
+   não distingue por extensão nesta chave simples; se aparecer para tipos
+   de ficheiro indesejados, é preciso a variante `NSExtensionActivationRule`
+   como *predicate string*, mais granular.)
+7. Testar no simulador/dispositivo: partilhar uma foto (Fotos → Partilhar)
+   ou um PDF (Ficheiros → Partilhar) e confirmar que "Luku" aparece na
+   lista e que o `PendingShareDialog` abre com o ficheiro certo.
+
+---
+
 ## Ícone e nome
 
 - Nome apresentado: `appName` em `capacitor.config.ts` (re-sync depois).
-- Ícones/splash: gerar com `@capacitor/assets`
-  (`npx @capacitor/assets generate --android`, a partir de um PNG 1024×1024)
-  ou substituir à mão em `android/app/src/main/res/mipmap-*`.
+- Ícones/splash: fonte em `resources/icon.png` (quadrado, fundo opaco —
+  usado tal qual para o ícone) e `resources/splash.png` (mesma marca, mas
+  com fundo **transparente** — sem isto a splash em modo escuro fica com um
+  quadrado branco à volta do logo). Ambos gerados a partir de
+  `src/assets/iconapp.png` nesta sessão; para regenerar do zero (ex.: nova
+  versão da marca, ou depois de `npx cap add android` recriar `android/`):
+  ```sh
+  npx capacitor-assets generate --android \
+    --splashBackgroundColor "#FFFFFF" --splashBackgroundColorDark "#0F1B12" \
+    --iconBackgroundColor "#FFFFFF" --iconBackgroundColorDark "#0F1B12"
+  ```
+  (`resources/splash.png` precisa mesmo de transparência à volta do "u" —
+  um PNG com fundo branco opaco fica com essa mesma faixa branca colada por
+  cima do fundo escuro. Script usado para remover o fundo branco do
+  `iconapp.png` original via `sharp`, caso seja preciso repetir a partir de
+  outro logo: ver histórico do commit que introduziu `resources/`.)
+
+---
+
+## Assinatura de release (Android)
+
+O keystore de produção (`luku-release.keystore`, na raiz do repo, **nunca
+comitado** — ver `.gitignore`) assina todas as atualizações publicadas na
+Play Store: perdê-lo ou trocá-lo obriga a publicar a app como um produto
+novo, do zero, sem histórico/instalações antigas. A password vive em
+`android/keystore.properties` (também gitignorado — `android/` inteiro
+está fora do git, ver nota acima), lido por `android/app/build.gradle`
+— **nunca** hardcoded diretamente no `build.gradle` (era assim antes,
+corrigido nesta sessão; evitar repetir o hábito se `android/` for
+regenerado). Formato de `android/keystore.properties`:
+
+```properties
+storeFile=C:/Projects/_Kino.com/luku-release.keystore
+storePassword=...
+keyAlias=luku
+keyPassword=...
+```
+
+Sem este ficheiro, `./gradlew bundleRelease`/`assembleRelease` falha (ou
+gera um `.aab`/APK sem assinatura de release, que a Play Store rejeita).
 
 ---
 
