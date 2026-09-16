@@ -214,10 +214,24 @@ class AuthController extends Controller
         return response()->json(['message' => 'Senha alterada com sucesso.']);
     }
 
+    /**
+     * Central de emissão de token — chamada por todo login (Google, staff,
+     * operador) e por `refresh()`. Carrega sempre `restaurantUsers.restaurant`
+     * antes de construir o `UserResource`: sem isto, `UserResource` usa
+     * `whenLoaded('restaurantUsers')` e devolve `restaurants` completamente
+     * ausente (não vazio) — o frontend do painel de restaurante lê
+     * `data.user.restaurants[0]` logo a seguir ao login, então um staff a
+     * entrar via `login()` via aqui via ficava sem conseguir gerir NENHUM
+     * restaurante, mesmo tendo um — só `me()` carregava isto antes, este
+     * bug nunca apareceu nos testes porque nenhum verificava
+     * `data.user.restaurants` no login, só o `role`. Inofensivo/barato para
+     * customer/operador (a relação fica vazia).
+     */
     private function issueTokenResponse(Request $request, User $user, ?string $deviceName = null): JsonResponse
     {
         $deviceName ??= (string) $request->input('device_name', 'default');
         $token = $user->createToken($deviceName, [$user->role]);
+        $user->loadMissing('restaurantUsers.restaurant');
 
         return response()->json([
             'data' => [

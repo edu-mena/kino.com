@@ -123,6 +123,22 @@ test('staff autentica com email+senha corretos', function () {
     ])->assertOk()->assertJsonPath('data.user.role', 'restaurant_staff');
 });
 
+test('login de staff já vem com os restaurantes geridos, sem precisar de /auth/me', function () {
+    // Regressão: issueTokenResponse() não carregava restaurantUsers.restaurant
+    // antes do UserResource — "data.user.restaurants" saía ausente (não
+    // vazio) logo no login, e o painel de restaurante lê esse campo direto
+    // da resposta do login (não faz uma segunda chamada a /auth/me).
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+
+    $response = $this->postJson('/api/v1/auth/login', [
+        'email' => $owner->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertOk()->assertJsonPath('data.user.restaurants.0.restaurantId', $restaurant->uuid);
+});
+
 test('staff com senha errada recebe mensagem genérica (não revela se o email existe)', function () {
     User::factory()->restaurantStaff()->create(['email' => 'dono@restaurante.com']);
 
