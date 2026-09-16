@@ -15,7 +15,6 @@ use App\Models\RestaurantHour;
 use App\Services\MediaUploadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -27,7 +26,7 @@ class RestaurantController extends Controller
      * Listagem pública — cacheada 5min por combinação de filtros (ver
      * plano, secção Redis), invalidada no `update()` abaixo.
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         // Chave inclui uma "geração" em vez de usar Cache::tags() — o driver
         // Redis suportaria tags, mas assim a invalidação (forgetIndexCache)
@@ -36,8 +35,16 @@ class RestaurantController extends Controller
         $generation = Cache::get('restaurants:index:generation', 0);
         $cacheKey = "restaurants:index:{$generation}:".md5($request->getQueryString() ?? '');
 
-        $restaurants = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($request) {
-            return QueryBuilder::for(Restaurant::class)
+        // Guarda o ARRAY já resolvido pelo Resource (`getData(true)`), nunca
+        // o CursorPaginator/modelos Eloquent crus — descoberto em teste real
+        // fora dos Pest (que correm com cache `array`, nunca serializa a
+        // sério): serializar o paginator direto falha a desserializar num
+        // processo PHP novo ("incomplete object... class não carregada
+        // antes de unserialize()") com os drivers `file`/`redis`, que passam
+        // por serialize()/unserialize() de verdade — um array plano nunca
+        // tem esse problema, e continua válido em qualquer driver.
+        $payload = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($request) {
+            $restaurants = QueryBuilder::for(Restaurant::class)
                 ->allowedFilters(
                     AllowedFilter::exact('city'),
                     AllowedFilter::exact('cuisine'),
@@ -52,9 +59,11 @@ class RestaurantController extends Controller
                 ->allowedSorts('name', 'rating', 'created_at')
                 ->defaultSort('-is_featured', '-rating')
                 ->cursorPaginate($request->integer('per_page', 20));
+
+            return RestaurantResource::collection($restaurants)->response()->getData(true);
         });
 
-        return RestaurantResource::collection($restaurants);
+        return response()->json($payload);
     }
 
     public function show(Restaurant $restaurant): RestaurantResource
