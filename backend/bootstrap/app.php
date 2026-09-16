@@ -26,6 +26,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Fly.io termina o TLS na edge e reencaminha HTTP puro para o
+        // container (ver fly.toml `internal_port = 8080`) — sem confiar nos
+        // headers X-Forwarded-* dessa proxy, `$request->ip()` devolve o IP
+        // interno do Fly (não o do cliente real) e `$request->isSecure()`
+        // fica sempre falso. O primeiro quebra a segurança do login de
+        // sistema (bloqueio de IP/alertas em AuthController::systemLogin
+        // dependem do IP real); o segundo pode gerar URLs http:// em vez de
+        // https:// (mixed content). '*' é seguro aqui porque só a proxy
+        // interna do Fly consegue alcançar a porta 8080 do container.
+        $middleware->trustProxies(at: '*');
+
         $middleware->api(prepend: [
             ForceJsonResponse::class,
         ]);
