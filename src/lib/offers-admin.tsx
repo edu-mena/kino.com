@@ -8,6 +8,7 @@ import {
 } from "@/data/offers-store";
 import { INITIAL_OFFERS } from "@/data/mockData";
 import type { Offer } from "@/data/types";
+import { hasRealBackend } from "@/lib/api-client";
 
 type OfferInput = Omit<Offer, "id" | "restaurantId">;
 
@@ -27,7 +28,7 @@ const OffersAdminContext = createContext<OffersAdminValue | null>(null);
 export function OffersAdminProvider({ children }: { children: ReactNode }) {
   // SSR-safe: primeira renderização usa sempre o seed estático puro, sem
   // tocar em localStorage — evita mismatch de hidratação.
-  const [offers, setOffers] = useState<Offer[]>(INITIAL_OFFERS);
+  const [offers, setOffers] = useState<Offer[]>(hasRealBackend ? [] : INITIAL_OFFERS);
 
   useEffect(() => {
     const sync = () => setOffers(getEffectiveOffers());

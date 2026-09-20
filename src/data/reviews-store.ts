@@ -1,3 +1,4 @@
+import { hasRealBackend } from "@/lib/api-client";
 import { INITIAL_REVIEWS } from "./mockData";
 import { safeLocalStorageSet } from "./safe-storage";
 import { CHANGE_EVENT, STORAGE_KEYS } from "./storage-keys";
@@ -50,7 +51,10 @@ function write(state: ReviewsState) {
 
 export function getEffectiveReviews(): Review[] {
   const { custom, replies } = read();
-  return [...INITIAL_REVIEWS, ...custom].map((r) => {
+  // Com backend real, a página de um restaurante real não mistura
+  // avaliações fictícias da seed (distorceria a nota apresentada).
+  const seed = hasRealBackend ? [] : INITIAL_REVIEWS;
+  return [...seed, ...custom].map((r) => {
     const reply = replies[r.id];
     return reply ? { ...r, reply } : r;
   });

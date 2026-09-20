@@ -1,3 +1,4 @@
+import { hasRealBackend } from "@/lib/api-client";
 import { INITIAL_RESTAURANTS } from "./mockData";
 import { safeLocalStorageSet } from "./safe-storage";
 
@@ -45,6 +46,10 @@ const iso = (ms: number) => new Date(ms).toISOString();
 
 /** Uma subscrição por restaurante, determinística a partir do id. */
 export function seedSubscriptions(): RestaurantSubscription[] {
+  // Com backend real, o MRR/dashboard de sistema não deve misturar
+  // subscrições fictícias de restaurantes mock (ver auditoria de go-live —
+  // falta endpoint agregado no backend para listar subscrições reais).
+  if (hasRealBackend) return [];
   const now = Date.now();
   return INITIAL_RESTAURANTS.map((r, index) => {
     const h = hash(r.id);

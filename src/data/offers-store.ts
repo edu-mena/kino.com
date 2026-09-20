@@ -1,3 +1,4 @@
+import { hasRealBackend } from "@/lib/api-client";
 import { INITIAL_OFFERS } from "./mockData";
 import type { Offer } from "./types";
 
@@ -44,10 +45,15 @@ function writeState(state: OffersState) {
  * lhes mexe. */
 export function getEffectiveOffers(): Offer[] {
   const { customOffers, overrides, deletedIds } = readState();
-  const fromSeed = INITIAL_OFFERS.filter((o) => !deletedIds.includes(o.id)).map((o) => ({
-    ...o,
-    ...overrides[o.id],
-  }));
+  // Com backend real, um cliente novo não vê nem pode aplicar um código
+  // promocional fictício da seed (ligar promoções à API é trabalho
+  // futuro — ver auditoria de go-live).
+  const fromSeed = hasRealBackend
+    ? []
+    : INITIAL_OFFERS.filter((o) => !deletedIds.includes(o.id)).map((o) => ({
+        ...o,
+        ...overrides[o.id],
+      }));
   const fromCustom = customOffers
     .filter((o) => !deletedIds.includes(o.id))
     .map((o) => ({ ...o, ...overrides[o.id] }));

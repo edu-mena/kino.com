@@ -1,8 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { INITIAL_RESERVATIONS } from "@/data/mockData";
 import type { Reservation, Restaurant } from "@/data/types";
+import { hasRealBackend } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
+
+const SEED_RESERVATIONS: Reservation[] = hasRealBackend ? [] : INITIAL_RESERVATIONS;
 
 // Sufixo de versão: subir quando a seed (`INITIAL_RESERVATIONS`) muda de forma
 // relevante — invalida o snapshot antigo no browser, que de outro modo continua
@@ -39,7 +42,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
   // A seed (INITIAL_RESERVATIONS) entra logo no estado — assim vira um
   // registo normal, atualizável (o painel do restaurante precisa poder
   // confirmar/recusar reservas de exemplo, não só as criadas na hora).
-  const [reservations, setReservations] = useState<Reservation[]>(INITIAL_RESERVATIONS);
+  const [reservations, setReservations] = useState<Reservation[]>(SEED_RESERVATIONS);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -68,7 +71,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     const onStorage = (e: StorageEvent) => {
       if (e.key !== STORAGE_KEY) return;
       if (e.newValue == null) {
-        setReservations(INITIAL_RESERVATIONS);
+        setReservations(SEED_RESERVATIONS);
         return;
       }
       try {

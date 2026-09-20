@@ -1,3 +1,4 @@
+import { hasRealBackend } from "@/lib/api-client";
 import { INITIAL_MENU_ITEMS } from "./mockData";
 import { defaultMenuId, getEffectiveMenus } from "./menus-store";
 import { safeLocalStorageSet } from "./safe-storage";
@@ -131,13 +132,17 @@ export function getEffectiveMenuItems({ activeMenusOnly = true } = {}): MenuItem
   const unavailableIds = readUnavailableIds();
   const realCounts = realOrderCounts();
 
-  const fromSeed = INITIAL_MENU_ITEMS.filter((item) => !deletedIds.includes(item.id)).map(
-    (item) => ({
-      ...item,
-      menuId: item.menuId ?? defaultMenuId(item.restaurantId),
-      ...overrides[item.id],
-    }),
-  );
+  // Com backend real, um restaurante novo não herda pratos fictícios de
+  // "rest-1"/"rest-2" — o painel só deve mostrar/editar os pratos que ele
+  // próprio criar (ver nota no topo do ficheiro: gestão real do cardápio
+  // via API ainda não está ligada, isto evita a mistura entretanto).
+  const fromSeed = hasRealBackend
+    ? []
+    : INITIAL_MENU_ITEMS.filter((item) => !deletedIds.includes(item.id)).map((item) => ({
+        ...item,
+        menuId: item.menuId ?? defaultMenuId(item.restaurantId),
+        ...overrides[item.id],
+      }));
 
   const merged = [...fromSeed, ...customItems].map((item) => {
     const realCount = realCounts.get(item.id) ?? 0;

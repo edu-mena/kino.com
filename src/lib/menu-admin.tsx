@@ -9,6 +9,7 @@ import {
 } from "@/data/menu-store";
 import { INITIAL_MENU_ITEMS } from "@/data/mockData";
 import type { MenuItem } from "@/data/types";
+import { hasRealBackend } from "@/lib/api-client";
 
 /**
  * CRUD de pratos + disponibilidade, gerido pelo painel do restaurante
@@ -38,7 +39,7 @@ export function MenuAdminProvider({ children }: { children: ReactNode }) {
   // hidratação) usa sempre o seed estático puro, sem tocar em localStorage
   // — evita mismatch de hidratação. O `useEffect` abaixo, que só corre no
   // cliente, é que lê o estado real guardado e ressincroniza.
-  const [items, setItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS);
+  const [items, setItems] = useState<MenuItem[]>(hasRealBackend ? [] : INITIAL_MENU_ITEMS);
 
   useEffect(() => {
     // `activeMenusOnly: false` — o painel precisa de ver (e poder editar)

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchApiMenuItems } from "./api-restaurants";
+import { fetchApiAllMenuItems, fetchApiMenuItems } from "./api-restaurants";
 import { getEffectiveMenuItems } from "./menu-store";
 import { INITIAL_MENU_ITEMS } from "./mockData";
 import type { MenuItem } from "./types";
@@ -25,13 +25,12 @@ import { hasRealBackend } from "@/lib/api-client";
  * `/cardapio`) ou sem backend real (demo), comportamento inalterado.
  */
 export function useMenuItems(restaurantId?: string): MenuItem[] {
-  const [items, setItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS);
+  const [items, setItems] = useState<MenuItem[]>(hasRealBackend ? [] : INITIAL_MENU_ITEMS);
 
   useEffect(() => {
-    if (restaurantId && hasRealBackend) {
-      fetchApiMenuItems(restaurantId)
-        .then(setItems)
-        .catch(() => setItems([]));
+    if (hasRealBackend) {
+      const fetcher = restaurantId ? fetchApiMenuItems(restaurantId) : fetchApiAllMenuItems();
+      fetcher.then(setItems).catch(() => setItems([]));
       return;
     }
 
