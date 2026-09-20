@@ -989,6 +989,7 @@ export const pt = {
       approve: "Aprovar",
       approveToast: "Candidatura aprovada.",
       onboardedToast: "{name} criado com subscrição em período grátis.",
+      onboardErrorToast: "Não foi possível aprovar a candidatura. Tenta novamente.",
       enterPanel: "Entrar no painel",
       reject: "Recusar",
       rejectToast: "Candidatura recusada.",

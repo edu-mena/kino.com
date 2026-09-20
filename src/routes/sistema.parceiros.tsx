@@ -18,6 +18,7 @@ import { createRestaurant } from "@/data/custom-restaurants-store";
 import type { PartnerAppStatus } from "@/data/partner-apps-store";
 import { addTable } from "@/data/tables-store";
 import { useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
 import { usePartnerApps } from "@/lib/partner-apps";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useSubscriptions } from "@/lib/subscriptions";
@@ -47,20 +48,34 @@ function SistemaParceiros() {
     enterAsOperator(restaurantId, operatorToken);
   };
 
-  const onboard = (app: (typeof applications)[number]) => {
-    const restaurant = createRestaurant({
-      name: app.restaurantName,
-      cuisine: "",
-      neighborhood: app.province,
-      city: app.province,
-      phone: app.phone,
-      email: app.email,
-    });
-    createSubscription(restaurant.id);
-    addTable({ restaurantId: restaurant.id, name: "Mesa 1", seats: 4, area: "Interior" });
-    addTable({ restaurantId: restaurant.id, name: "Mesa 2", seats: 2, area: "Interior" });
-    addTable({ restaurantId: restaurant.id, name: "Mesa 3", seats: 6, area: "Interior" });
-    approve(app.id);
+  const onboard = async (app: (typeof applications)[number]) => {
+    // Com backend real, `approve()` já cria tudo no servidor (restaurante,
+    // subscrição trial, 3 mesas, conta do dono) — ver
+    // backend/app/Actions/ApprovePartnerApplication.php. Sem backend, é só
+    // o mock local de sempre.
+    let restaurant: { id: string; name: string };
+    if (hasRealBackend) {
+      const created = await approve(app.id);
+      if (!created) {
+        toast.error(t("sistema.parceiros.onboardErrorToast"));
+        return;
+      }
+      restaurant = created;
+    } else {
+      restaurant = createRestaurant({
+        name: app.restaurantName,
+        cuisine: "",
+        neighborhood: app.province,
+        city: app.province,
+        phone: app.phone,
+        email: app.email,
+      });
+      createSubscription(restaurant.id);
+      addTable({ restaurantId: restaurant.id, name: "Mesa 1", seats: 4, area: "Interior" });
+      addTable({ restaurantId: restaurant.id, name: "Mesa 2", seats: 2, area: "Interior" });
+      addTable({ restaurantId: restaurant.id, name: "Mesa 3", seats: 6, area: "Interior" });
+      void approve(app.id);
+    }
     toast.success(t("sistema.parceiros.onboardedToast", { name: restaurant.name }), {
       action: {
         label: t("sistema.parceiros.enterPanel"),

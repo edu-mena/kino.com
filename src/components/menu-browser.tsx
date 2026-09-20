@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { getRestaurant } from "@/data/helpers";
+import { addressProvince, getRestaurant } from "@/data/helpers";
 import type { MenuItem } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { useAddToBill } from "@/lib/bill";
@@ -92,6 +92,7 @@ export function MenuBrowser({
   const debouncedQuery = useDebouncedValue(query);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [neighborhood, setNeighborhood] = useState("todos");
+  const myProvince = selectedAddress ? addressProvince(selectedAddress.line2) : undefined;
   // Preso a UM restaurante (a própria página dele): "Relevância" (não há o
   // que diversificar entre restaurantes) e "Mais pedidos" somem do
   // <Select> — só sobra ordenar por preço; "menor primeiro" vira o padrão.
@@ -123,10 +124,18 @@ export function MenuBrowser({
         item.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
         restaurant?.name.toLowerCase().includes(debouncedQuery.toLowerCase());
       const byNeighborhood =
-        lockedRestaurantId || matchesLocation(restaurant?.neighborhood, neighborhood);
+        lockedRestaurantId || matchesLocation(restaurant?.neighborhood, neighborhood, myProvince);
       return byCat && byRestaurant && byQuery && byNeighborhood;
     });
-  }, [items, active, effectiveRestaurantId, lockedRestaurantId, debouncedQuery, neighborhood]);
+  }, [
+    items,
+    active,
+    effectiveRestaurantId,
+    lockedRestaurantId,
+    debouncedQuery,
+    neighborhood,
+    myProvince,
+  ]);
 
   const maxAvailablePrice = filteredExceptPrice.length
     ? Math.max(...filteredExceptPrice.map((m) => m.price))

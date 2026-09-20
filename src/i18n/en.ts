@@ -986,6 +986,7 @@ export const en: Dictionary = {
       approve: "Approve",
       approveToast: "Application approved.",
       onboardedToast: "{name} created with a free-trial subscription.",
+      onboardErrorToast: "Couldn't approve the application. Try again.",
       enterPanel: "Open panel",
       reject: "Reject",
       rejectToast: "Application rejected.",

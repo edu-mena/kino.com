@@ -7,7 +7,7 @@ import { LazyImage } from "@/components/lazy-image";
 import { StoryViewer } from "@/components/story-viewer";
 import { getRestaurantsWithStories, suspendedRestaurantIds } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
-import { INITIAL_RESTAURANTS } from "@/data/mockData";
+import { useRestaurants } from "@/data/use-restaurants-query";
 import { useEffectiveStories } from "@/data/use-stories";
 import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
 import { useLocation } from "@/lib/location";
@@ -24,14 +24,15 @@ export function RestaurantAvatarRow() {
   // Morada selecionada no header — "perto de si" reflete a localização de
   // quem está a ver, não um `distanceKm` fixo igual pra toda a gente.
   const { selected: selectedAddress } = useLocation();
+  const { data: restaurants } = useRestaurants();
   const sorted = useMemo(
     () =>
-      [...INITIAL_RESTAURANTS].sort(
+      [...(restaurants ?? [])].sort(
         (a, b) =>
           personalizedRestaurantDistanceKm(a.id, selectedAddress, a.distanceKm) -
           personalizedRestaurantDistanceKm(b.id, selectedAddress, b.distanceKm),
       ),
-    [selectedAddress],
+    [restaurants, selectedAddress],
   );
   // Restaurante com story já totalmente visto — pergunta ao usuário o que
   // quer fazer (ver o story de novo ou ir para a página do restaurante) em
