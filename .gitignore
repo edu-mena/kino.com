@@ -38,3 +38,8 @@ dist-ssr
 # Chave de assinatura Android — credencial privada, nunca no git
 *.keystore
 *.jks
+
+# Conta de serviço Firebase (FCM) — credencial privada, nunca no git; já
+# aplicada como secret FIREBASE_CREDENTIALS no Fly, ver capacitor/README.md.
+*firebase-adminsdk*.json
+google-services.json
