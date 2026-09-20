@@ -2,6 +2,7 @@
 
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 function createReservableRestaurant(array $attrs = []): Restaurant
@@ -25,6 +26,34 @@ test('convidado cria reserva sem autenticação e recebe guest_token uma única 
         ->assertJsonPath('data.status', 'pending')
         ->assertJsonPath('data.peopleCount', 4);
     expect($response->json('data.guestToken'))->not->toBeNull();
+});
+
+test('cliente vê as próprias reservas de vários restaurantes, com nome/imagem do restaurante', function () {
+    $restaurantA = createReservableRestaurant();
+    $restaurantB = createReservableRestaurant();
+    $customer = User::factory()->create();
+    $other = User::factory()->create();
+
+    $restaurantA->reservations()->create([
+        'user_id' => $customer->id, 'customer_name' => 'Ana', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00',
+        'people_count' => 2, 'status' => 'pending', 'status_updated_at' => now(),
+    ]);
+    $restaurantB->reservations()->create([
+        'user_id' => $customer->id, 'customer_name' => 'Ana', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '20:00',
+        'people_count' => 3, 'status' => 'pending', 'status_updated_at' => now(),
+    ]);
+    $restaurantA->reservations()->create([
+        'user_id' => $other->id, 'customer_name' => 'Outro', 'customer_phone' => '901',
+        'date' => now()->addDay()->toDateString(), 'time' => '18:00',
+        'people_count' => 1, 'status' => 'pending', 'status_updated_at' => now(),
+    ]);
+
+    $response = $this->actingAs($customer, 'sanctum')->getJson('/api/v1/reservations');
+
+    $response->assertOk()->assertJsonCount(2, 'data');
+    expect($response->json('data.0.restaurantName'))->not->toBeNull();
 });
 
 test('reserva nunca chega com table_id — atribuição é sempre ação separada do staff', function () {
@@ -145,12 +174,12 @@ test('atribuir mesa não bloqueia por sobreposição — staff decide livremente
     ]);
 
     $this->actingAs($owner, 'sanctum')
-        ->patchJson("/api/v1/reservations/{$a->uuid}/table", ['table_id' => $table->id])
+        ->patchJson("/api/v1/reservations/{$a->uuid}/table", ['table_id' => $table->uuid])
         ->assertOk();
 
     // Mesma mesa, janela sobreposta — o servidor deixa (staff resolve manualmente).
     $this->actingAs($owner, 'sanctum')
-        ->patchJson("/api/v1/reservations/{$b->uuid}/table", ['table_id' => $table->id])
+        ->patchJson("/api/v1/reservations/{$b->uuid}/table", ['table_id' => $table->uuid])
         ->assertOk();
 });
 
@@ -166,7 +195,7 @@ test('mesa de outro restaurante é rejeitada ao atribuir', function () {
     ]);
 
     $this->actingAs($owner, 'sanctum')
-        ->patchJson("/api/v1/reservations/{$reservation->uuid}/table", ['table_id' => $foreignTable->id])
+        ->patchJson("/api/v1/reservations/{$reservation->uuid}/table", ['table_id' => $foreignTable->uuid])
         ->assertStatus(422);
 });
 

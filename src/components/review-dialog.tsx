@@ -38,13 +38,16 @@ export function ReviewDialog({
     setTags([]);
   };
 
-  const submit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (rating < 1) {
       toast.error(t("reviewDialog.pickRating"));
       return;
     }
-    addReview(
+    setSubmitting(true);
+    const ok = await addReview(
       {
         restaurantId,
         rating,
@@ -54,6 +57,11 @@ export function ReviewDialog({
       },
       sourceRef,
     );
+    setSubmitting(false);
+    if (!ok) {
+      toast.error(t("reviewDialog.saveFailedError"));
+      return;
+    }
     toast.success(t("reviewDialog.sentToast"));
     onOpenChange(false);
     reset();
@@ -117,7 +125,7 @@ export function ReviewDialog({
             className="rounded-xl"
           />
 
-          <Button type="submit" className="w-full rounded-xl">
+          <Button type="submit" disabled={submitting} className="w-full rounded-xl">
             {t("reviewDialog.submit")}
           </Button>
         </form>

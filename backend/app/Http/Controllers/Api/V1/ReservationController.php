@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\Reservations\UpdateReservationStatusRequest;
 use App\Http\Resources\Api\V1\ReservationResource;
 use App\Models\Reservation;
 use App\Models\Restaurant;
+use App\Models\RestaurantTable;
 use App\Services\ReservationOccupancyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,20 @@ use Illuminate\Support\Collection;
 class ReservationController extends Controller
 {
     use AuthorizesGuestOrOwnerAccess;
+
+    /** Reservas do próprio cliente autenticado, em qualquer restaurante —
+     * ver mock, `reservations.tsx` (`useReservations().reservations`, lidas
+     * pelo cliente em `/reservas`). Convidados não têm sessão para isto;
+     * usam o `guestToken` devolvido em `store()` + `show()` por reserva. */
+    public function mine(Request $request): AnonymousResourceCollection
+    {
+        $reservations = $request->user()->reservations()
+            ->with('restaurant', 'table')
+            ->latest()
+            ->get();
+
+        return ReservationResource::collection($reservations);
+    }
 
     public function index(
         Request $request,
@@ -106,7 +121,9 @@ class ReservationController extends Controller
      * e ReservationOccupancyService). O staff decide. */
     public function assignTable(AssignTableRequest $request, Reservation $reservation): ReservationResource
     {
-        $reservation->update(['table_id' => $request->validated('table_id')]);
+        $uuid = $request->validated('table_id');
+        $tableId = $uuid ? RestaurantTable::where('uuid', $uuid)->value('id') : null;
+        $reservation->update(['table_id' => $tableId]);
 
         return new ReservationResource($reservation->load('table'));
     }

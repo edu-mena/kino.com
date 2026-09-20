@@ -11,7 +11,7 @@ import {
   Star,
   Soup,
 } from "lucide-react";
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import icon from "@/assets/icon.png";
 import { LocationMap } from "@/components/location-map";
 import { MenuBrowser } from "@/components/menu-browser";
@@ -23,12 +23,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
 import { recordProfileView } from "@/data/profile-views-store";
 import { useEffectiveStories } from "@/data/use-stories";
-import {
-  addressProvince,
-  canDeliverToNeighborhood,
-  getRestaurant,
-  getReviewsForRestaurant,
-} from "@/data/helpers";
+import { addressProvince, canDeliverToNeighborhood, getRestaurant } from "@/data/helpers";
+import { useReviews } from "@/data/use-reviews";
 import { fetchApiRestaurant } from "@/data/api-restaurants";
 import { hasRealBackend } from "@/lib/api-client";
 import { useTranslation, type Locale } from "@/i18n";
@@ -94,20 +90,7 @@ function RestaurantDetail() {
   }, [restaurant.id, user?.name, user?.email, user?.phone]);
 
   // Avaliações — reativas às deixadas nesta página (evento `luku:menu-changed`).
-  const [reviewsTick, bumpReviews] = useReducer((n: number) => n + 1, 0);
-  useEffect(() => {
-    window.addEventListener("luku:menu-changed", bumpReviews);
-    window.addEventListener("storage", bumpReviews);
-    return () => {
-      window.removeEventListener("luku:menu-changed", bumpReviews);
-      window.removeEventListener("storage", bumpReviews);
-    };
-  }, []);
-  const reviews = useMemo(
-    () => getReviewsForRestaurant(restaurant.id),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `reviewsTick` não é lido; força recalcular quando o store muda.
-    [restaurant.id, reviewsTick],
-  );
+  const reviews = useReviews(restaurant.id);
   const shownReviews = showAllReviews ? reviews : reviews.slice(0, 6);
   const [contentTab, setContentTab] = useState<"menu" | "gallery">("menu");
 

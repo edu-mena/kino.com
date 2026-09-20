@@ -1,4 +1,13 @@
-import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+  type ReactNode,
+} from "react";
+import { createApiTable, deleteApiTable, fetchApiTables, updateApiTable } from "@/data/api-tables";
 import {
   addTable,
   getTables,
@@ -7,6 +16,8 @@ import {
   updateTable,
   type RestaurantTable,
 } from "@/data/tables-store";
+import { hasRealBackend } from "@/lib/api-client";
+import { getAdminToken, useRestaurantAdminOptional } from "@/lib/restaurant-admin";
 
 type TablesValue = {
   tables: RestaurantTable[];
@@ -20,10 +31,43 @@ type TablesValue = {
 
 const TablesContext = createContext<TablesValue | null>(null);
 
+/**
+ * Mesas da sala de cada restaurante. Com backend real, fala com a API
+ * (ver @/data/api-tables), escopada ao restaurante do painel
+ * (`useRestaurantAdminOptional` — `null` em páginas de cliente, ver mesmo
+ * padrão em `@/lib/menu-admin`): `tablesByRestaurant` só devolve dados para
+ * o restaurante do próprio painel; para qualquer outro (ex: cliente a
+ * reservar noutro restaurante), devolve `[]` — `totalSeats` cai então a 0 e
+ * `reservation-dialog.tsx` já trata isso como "capacidade desconhecida"
+ * (não bloqueia a reserva), o mesmo que já acontecia sem mesas configuradas.
+ * Sem backend, mantém-se o mock local de sempre.
+ */
 export function TablesProvider({ children }: { children: ReactNode }) {
+  const managedRestaurantId = useRestaurantAdminOptional()?.managedRestaurantId ?? null;
   const [tick, bump] = useReducer((n: number) => n + 1, 0);
+  const [apiTables, setApiTables] = useState<RestaurantTable[]>([]);
+
+  const refetchApi = () => {
+    const token = getAdminToken();
+    if (!managedRestaurantId || !token) {
+      setApiTables([]);
+      return;
+    }
+    fetchApiTables(managedRestaurantId, token)
+      .then(setApiTables)
+      .catch(() => setApiTables([]));
+  };
 
   useEffect(() => {
+    if (hasRealBackend) {
+      refetchApi();
+      return;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [managedRestaurantId]);
+
+  useEffect(() => {
+    if (hasRealBackend) return;
     window.addEventListener("luku:menu-changed", bump);
     window.addEventListener("storage", bump);
     return () => {
@@ -32,27 +76,50 @@ export function TablesProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const tables = useMemo(
+  const mockTables = useMemo(
     () => (typeof window === "undefined" ? seedTables() : getTables()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tick],
   );
+
+  const tables = hasRealBackend ? apiTables : mockTables;
 
   const value = useMemo<TablesValue>(() => {
     const forRestaurant = (restaurantId: string) =>
       tables
         .filter((tbl) => tbl.restaurantId === restaurantId)
         .sort((a, b) => a.name.localeCompare(b.name, "pt", { numeric: true }));
-    return {
+    const base = {
       tables,
       tablesByRestaurant: forRestaurant,
-      totalSeats: (restaurantId) =>
+      totalSeats: (restaurantId: string) =>
         forRestaurant(restaurantId).reduce((sum, tbl) => sum + tbl.seats, 0),
-      tableCount: (restaurantId) => forRestaurant(restaurantId).length,
-      addTable,
-      updateTable,
-      removeTable,
+      tableCount: (restaurantId: string) => forRestaurant(restaurantId).length,
     };
+    if (!hasRealBackend) {
+      return { ...base, addTable, updateTable, removeTable };
+    }
+    return {
+      ...base,
+      addTable: (input) => {
+        const token = getAdminToken();
+        if (!token) return;
+        const { restaurantId, ...rest } = input;
+        void createApiTable(restaurantId, rest, token).then(refetchApi);
+      },
+      updateTable: (id, patch) => {
+        const token = getAdminToken();
+        const item = tables.find((t) => t.id === id);
+        if (!token || !item) return;
+        void updateApiTable(id, item.restaurantId, patch, token).then(refetchApi);
+      },
+      removeTable: (id) => {
+        const token = getAdminToken();
+        if (!token) return;
+        void deleteApiTable(id, token).then(refetchApi);
+      },
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tables]);
 
   return <TablesContext.Provider value={value}>{children}</TablesContext.Provider>;

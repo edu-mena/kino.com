@@ -1953,6 +1953,7 @@ export const fr: Dictionary = {
     commentPlaceholder: "Dites-nous comment c'était (facultatif)…",
     submit: "Envoyer l'avis",
     sentToast: "Avis envoyé. Merci !",
+    saveFailedError: "Impossible d'envoyer l'avis. Réessaie.",
   },
   notifications: {
     aria: "Notifications",
