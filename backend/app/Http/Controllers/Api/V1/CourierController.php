@@ -18,7 +18,9 @@ class CourierController extends Controller
     {
         $this->authorize('manageOperations', $restaurant);
 
-        return CourierResource::collection($restaurant->couriers()->orderBy('name')->get());
+        return CourierResource::collection(
+            $restaurant->couriers()->with('activeOrder')->orderBy('name')->get(),
+        );
     }
 
     public function store(StoreCourierRequest $request, Restaurant $restaurant): JsonResponse

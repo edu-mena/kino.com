@@ -1,12 +1,23 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  acceptApiOrder,
+  cancelApiOrder,
+  createApiOrder,
+  dispatchApiOrder,
+  fetchApiOrdersForRestaurant,
+  fetchMyApiOrders,
+  storeApiPaymentProof,
+  updateApiOrderStatus,
+} from "@/data/api-orders";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
 import type { PromoEffect } from "@/data/offers-store";
 import { computeDeliveryFee } from "@/data/platform-settings-store";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { hasRealBackend } from "@/lib/api-client";
-import { useAuth } from "@/lib/auth";
+import { getAuthToken, useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
 import { orderDistanceKm } from "@/lib/delivery-eval";
+import { getAdminToken, useRestaurantAdminOptional } from "@/lib/restaurant-admin";
 import type { FulfillmentType, SavedAddress, SelectedIngredient } from "@/data/types";
 
 // Sufixo de versão: subir quando `seedOrders()` mudar de forma relevante —
@@ -52,6 +63,19 @@ export type CartOrder = {
    * conta autenticada ou convidado). Ausente nos pedidos da seed — que por
    * isso nunca aparecem em `/entrega` como sendo de quem está a ver. */
   ownerKey?: string;
+  /** Só presentes com backend real (a lista "meus pedidos" atravessa vários
+   * restaurantes — ver api-orders.ts) — usados por `entrega.tsx` em vez de
+   * `getRestaurant(order.restaurantId)` (mock, não conhece restaurantes
+   * reais). */
+  restaurantName?: string;
+  restaurantImage?: string;
+  /** Só presentes com backend real — snapshot calculado no servidor no
+   * momento da criação (nunca recalculado, ao contrário do mock via
+   * `orderSubtotal`/`orderDeliveryFee`/`orderTotal` abaixo, que lê o preço
+   * ATUAL do prato — bug conhecido do mock, corrigido no backend). */
+  subtotal?: number;
+  deliveryFee?: number;
+  total?: number;
   lines: CartLine[];
   createdAt: string;
   /** Como o pedido é recebido/consumido. `delivery` usa `deliveryAddress`;
@@ -112,7 +136,7 @@ export type CartOrder = {
   invoiceAt?: string;
 };
 
-type NewCartLine = {
+export type NewCartLine = {
   menuItemId: string;
   qty: number;
   selectedIngredients?: SelectedIngredient[];
@@ -169,6 +193,11 @@ type CartValue = {
    * pedido. Delivery: accepted → onTheWay → delivered. Takeaway/dinein:
    * accepted → ready → completed. Ou pending → rejected. */
   updateOrderStatus: (orderId: string, status: CartOrderStatus) => void;
+  /** "Aceite" → "A caminho": atribui o estafeta e avança o estado numa só
+   * chamada com backend real (ver OrderController::dispatch — atómico no
+   * servidor). Sem backend, quem chama continua a usar `assign` (courier)
+   * + `updateOrderStatus("onTheWay")` em separado, como sempre. */
+  dispatchOrder: (orderId: string, courierId: string) => void;
   clear: () => void;
 };
 
@@ -219,6 +248,7 @@ function makeLineKey(menuItemId: string, selectedIngredients: SelectedIngredient
 }
 
 function orderSubtotal(order: CartOrder): number {
+  if (order.subtotal != null) return order.subtotal;
   return order.lines.reduce((sum, line) => sum + lineUnitPrice(line) * line.qty, 0);
 }
 
@@ -234,6 +264,7 @@ function orderDiscount(order: CartOrder): number {
  * política da plataforma) + acréscimo por km acima disso. `promoFreeDelivery`
  * zera tudo. Ver `computeDeliveryFee` / `getDeliveryPolicy`. */
 function orderDeliveryFee(order: CartOrder): number {
+  if (order.deliveryFee != null) return order.deliveryFee;
   if (order.fulfillmentType !== "delivery") return 0;
   if (order.promoFreeDelivery) return 0;
   const base = getRestaurant(order.restaurantId)?.deliveryFee ?? 0;
@@ -241,6 +272,7 @@ function orderDeliveryFee(order: CartOrder): number {
 }
 
 function orderTotal(order: CartOrder): number {
+  if (order.total != null) return order.total;
   return orderSubtotal(order) - orderDiscount(order) + orderDeliveryFee(order);
 }
 
@@ -404,17 +436,49 @@ function normalizeOrder(o: CartOrder): CartOrder {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [orders, setOrders] = useState<CartOrder[]>(seedOrders);
+  // `null` em páginas de cliente (fora de `OperatorProviders`) — mesmo
+  // padrão de `menu-admin.tsx`/`tables.tsx`.
+  const managedRestaurantId = useRestaurantAdminOptional()?.managedRestaurantId ?? null;
+  const [apiOrders, setApiOrders] = useState<CartOrder[]>([]);
+  const [mockOrders, setMockOrders] = useState<CartOrder[]>(seedOrders);
   const [hydrated, setHydrated] = useState(false);
+
+  /**
+   * Com backend real, a fonte dos dados depende de ONDE a app está a ser
+   * usada — mesmo raciocínio de `reservations.tsx`: dentro do painel do
+   * restaurante, os pedidos DESSE restaurante (staff); fora dele (cliente),
+   * "os meus pedidos" do utilizador autenticado, em qualquer restaurante.
+   */
+  const refetchApi = () => {
+    if (managedRestaurantId) {
+      const token = getAdminToken();
+      if (!token) return setApiOrders([]);
+      fetchApiOrdersForRestaurant(managedRestaurantId, token)
+        .then(setApiOrders)
+        .catch(() => setApiOrders([]));
+      return;
+    }
+    const token = getAuthToken();
+    if (!token) return setApiOrders([]);
+    fetchMyApiOrders(token, viewerKey(user))
+      .then(setApiOrders)
+      .catch(() => setApiOrders([]));
+  };
+
+  useEffect(() => {
+    if (hasRealBackend) refetchApi();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [managedRestaurantId, user?.email, user?.phone]);
 
   // Carrega pedidos persistidos (se houver) por cima da seed, uma vez, no
   // cliente — assim o painel do restaurante e a página do cliente
   // continuam a ver os mesmos pedidos depois de um reload da página.
   useEffect(() => {
+    if (hasRealBackend) return;
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        setOrders((JSON.parse(stored) as CartOrder[]).map(normalizeOrder));
+        setMockOrders((JSON.parse(stored) as CartOrder[]).map(normalizeOrder));
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -423,9 +487,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-  }, [orders, hydrated]);
+    if (hasRealBackend || !hydrated) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(mockOrders));
+  }, [mockOrders, hydrated]);
 
   // Sem backend real, o painel do restaurante e o cliente partilham o mesmo
   // localStorage — mas só a aba que escreve vê o novo estado de imediato; as
@@ -434,14 +498,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // faz um pedido novo, ou uma mudança de estado, aparecer ao vivo (e disparar
   // a notificação certa) do outro lado sem precisar recarregar a página.
   useEffect(() => {
+    if (hasRealBackend) return;
     const onStorage = (e: StorageEvent) => {
       if (e.key !== STORAGE_KEY) return;
       if (e.newValue == null) {
-        setOrders(seedOrders());
+        setMockOrders(seedOrders());
         return;
       }
       try {
-        setOrders((JSON.parse(e.newValue) as CartOrder[]).map(normalizeOrder));
+        setMockOrders((JSON.parse(e.newValue) as CartOrder[]).map(normalizeOrder));
       } catch {
         // payload corrompido vindo doutra aba — mantém o que já temos.
       }
@@ -449,6 +514,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+
+  const orders = hasRealBackend ? apiOrders : mockOrders;
 
   const value = useMemo<CartValue>(() => {
     const subtotal = orders.reduce((sum, o) => sum + orderSubtotal(o), 0);
@@ -461,11 +528,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // no header/tab bar) mostrava também os pedidos da seed (sem
     // `ownerKey`), aparecendo logo de início mesmo num browser novo.
     const mineKey = viewerKey(user);
-    const count = orders.filter((o) => o.ownerKey === mineKey).length;
+    const count = hasRealBackend
+      ? orders.length
+      : orders.filter((o) => o.ownerKey === mineKey).length;
 
-    return {
+    const base = {
       orders,
-      hydrated,
       count,
       subtotal,
       deliveryFee,
@@ -473,10 +541,74 @@ export function CartProvider({ children }: { children: ReactNode }) {
       orderSubtotal,
       orderDiscount,
       orderTotal,
-      // Sempre cria um pedido NOVO — cada "Solicitar delivery" é um delivery
-      // à parte, mesmo que já haja um pedido pendente do mesmo restaurante.
+    };
+
+    if (hasRealBackend) {
+      return {
+        ...base,
+        hydrated: true,
+        // Sempre cria um pedido NOVO — cada "Solicitar delivery" é um
+        // delivery à parte, mesmo que já haja um pedido pendente do mesmo
+        // restaurante.
+        addOrder: (restaurantId, items, fulfillment, note, promo) => {
+          const token = getAuthToken();
+          void createApiOrder(
+            restaurantId,
+            items,
+            fulfillment,
+            note,
+            promo,
+            {
+              ...(user?.name ? { customerName: user.name } : {}),
+              ...(user?.phone ? { customerPhone: user.phone } : {}),
+              ...(user?.email ? { customerEmail: user.email } : {}),
+            },
+            token,
+          ).then(refetchApi);
+        },
+        // Editar quantidades de um pedido já submetido não é suportado
+        // pela API real (sem consumidores ativos hoje — ver auditoria).
+        setQty: () => {},
+        removeOrder: () => {},
+        cancelOrder: (orderId) => {
+          const token = getAuthToken();
+          void cancelApiOrder(orderId, token).then(refetchApi);
+        },
+        acceptOrder: (orderId, paymentMethod) => {
+          const token = getAdminToken();
+          if (!token) return;
+          void acceptApiOrder(orderId, paymentMethod, token).then(refetchApi);
+        },
+        // @deprecated no mock também — nunca chamado, mantido só pela
+        // interface.
+        confirmOrder: () => {},
+        setPaymentProof: (orderId, dataUrl) => {
+          if (!dataUrl) return; // sem suporte a remover na API real
+          const token = getAuthToken();
+          void storeApiPaymentProof(orderId, dataUrl, token).then(refetchApi);
+        },
+        // Fatura do restaurante não existe na API real ainda (sem
+        // coluna/endpoint) — ver auditoria de go-live.
+        setInvoice: () => {},
+        updateOrderStatus: (orderId, status) => {
+          const token = getAdminToken();
+          if (!token) return;
+          void updateApiOrderStatus(orderId, status, token).then(refetchApi);
+        },
+        dispatchOrder: (orderId, courierId) => {
+          const token = getAdminToken();
+          if (!token) return;
+          void dispatchApiOrder(orderId, courierId, token).then(refetchApi);
+        },
+        clear: () => {},
+      };
+    }
+
+    return {
+      ...base,
+      hydrated,
       addOrder: (restaurantId, items, fulfillment, note, promo) =>
-        setOrders((prev) => [
+        setMockOrders((prev) => [
           ...prev,
           {
             id: `order-${Date.now()}`,
@@ -517,7 +649,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           },
         ]),
       setQty: (orderId, key, qty) =>
-        setOrders((prev) =>
+        setMockOrders((prev) =>
           prev
             .map((o) =>
               o.id !== orderId
@@ -532,15 +664,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
             )
             .filter((o) => o.lines.length > 0),
         ),
-      removeOrder: (orderId) => setOrders((prev) => prev.filter((o) => o.id !== orderId)),
+      removeOrder: (orderId) => setMockOrders((prev) => prev.filter((o) => o.id !== orderId)),
       cancelOrder: (orderId) =>
-        setOrders((prev) =>
+        setMockOrders((prev) =>
           prev.map((o) =>
             o.id === orderId && o.status === "pending" ? { ...o, status: "canceled" } : o,
           ),
         ),
       acceptOrder: (orderId, paymentMethod, cautionRequired) =>
-        setOrders((prev) =>
+        setMockOrders((prev) =>
           prev.map((o) =>
             o.id === orderId
               ? {
@@ -553,7 +685,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ),
         ),
       confirmOrder: (orderId, paymentMethod, note) =>
-        setOrders((prev) =>
+        setMockOrders((prev) =>
           prev.map((o) =>
             o.id === orderId
               ? { ...o, paymentMethod, ...(note !== undefined ? { note: note.trim() } : {}) }
@@ -561,7 +693,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ),
         ),
       setPaymentProof: (orderId, dataUrl) =>
-        setOrders((prev) =>
+        setMockOrders((prev) =>
           prev.map((o) => {
             if (o.id !== orderId) return o;
             if (!dataUrl) {
@@ -572,7 +704,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           }),
         ),
       setInvoice: (orderId, dataUrl, type) =>
-        setOrders((prev) =>
+        setMockOrders((prev) =>
           prev.map((o) => {
             if (o.id !== orderId) return o;
             if (!dataUrl) {
@@ -588,7 +720,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           }),
         ),
       updateOrderStatus: (orderId, status) =>
-        setOrders((prev) =>
+        setMockOrders((prev) =>
           prev.map((o) =>
             o.id === orderId
               ? {
@@ -601,8 +733,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
               : o,
           ),
         ),
-      clear: () => setOrders([]),
+      // Sem backend real, o mock não separa dispatch de update genérico —
+      // quem chama continua a fazer `assign` (courier) + `updateOrderStatus`
+      // em dois passos (ver admin.pedidos.tsx `dispatch()`).
+      dispatchOrder: () => {},
+      clear: () => setMockOrders([]),
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders, hydrated, user]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
