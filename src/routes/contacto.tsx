@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Mail, MapPin, Phone, Send } from "lucide-react";
-import type { SVGProps } from "react";
+import { useState, type SVGProps } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import {
@@ -17,7 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageHeading, PageShell, SiteHeader } from "@/components/site-shell";
+import { sendApiContactMessage } from "@/data/api-contact";
 import { useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
 
 export const Route = createFileRoute("/contacto")({
   head: () => ({
@@ -46,10 +48,11 @@ function WhatsAppIcon(props: SVGProps<SVGSVGElement>) {
 const inputClass =
   "w-full min-w-0 rounded-xl border border-border bg-card px-4 py-3 text-sm outline-none transition-colors focus:border-primary";
 
-const CONTACT_EMAIL = "ola@luku.com";
+const CONTACT_EMAIL = "ola@luku.ao";
 
 function Contacto() {
   const { t } = useTranslation();
+  const [sending, setSending] = useState(false);
 
   const contactInfo = [
     {
@@ -83,10 +86,7 @@ function Contacto() {
     { question: t("contacto.faq5Question"), answer: t("contacto.faq5Answer") },
   ];
 
-  // Sem backend, não há para onde a mensagem ir de verdade — em vez de
-  // fingir um envio, abrimos o cliente de email do utilizador já preenchido,
-  // que é a única ação real que o frontend consegue disparar sozinho.
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
@@ -96,6 +96,24 @@ function Contacto() {
     const subjectLabel =
       subjects.find((s) => s.value === subjectValue)?.label ?? t("contacto.eyebrow");
     const message = String(data.get("message") ?? "");
+
+    // Com backend real, a mensagem é enviada de facto por email (ver
+    // ContactMessageController) — sem isso (demo sem backend), cai de
+    // volta no mailto: de sempre, a única ação real que o frontend
+    // consegue disparar sozinho nesse caso.
+    if (hasRealBackend) {
+      setSending(true);
+      try {
+        await sendApiContactMessage({ name, email, subject: subjectLabel, message });
+        toast.success(t("contacto.sentToast"));
+        form.reset();
+      } catch {
+        toast.error(t("contacto.sendErrorToast"));
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
 
     const body = `${message}\n\n— ${name} (${email})`;
     const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
@@ -193,9 +211,11 @@ function Contacto() {
 
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 sm:col-span-2"
+              disabled={sending}
+              className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50 sm:col-span-2"
             >
-              {t("contacto.submit")} <Send className="h-4 w-4" />
+              {sending ? t("contacto.sendingToast") : t("contacto.submit")}{" "}
+              <Send className="h-4 w-4" />
             </button>
           </form>
         </div>

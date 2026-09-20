@@ -148,8 +148,8 @@ function Termos() {
         <LegalSection title="10. Contacto">
           <p>
             Dúvidas sobre estes termos:{" "}
-            <a href="mailto:ola@luku.com" className="font-semibold text-primary hover:underline">
-              ola@luku.com
+            <a href="mailto:ola@luku.ao" className="font-semibold text-primary hover:underline">
+              ola@luku.ao
             </a>{" "}
             ou pela página de{" "}
             <Link to="/contacto" className="font-semibold text-primary hover:underline">

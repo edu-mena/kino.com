@@ -100,8 +100,8 @@ function Privacidade() {
           <p>
             Pode pedir para ver que dados temos sobre si, corrigi-los, ou pedir a eliminação da sua
             conta e dos dados associados — escrevendo para{" "}
-            <a href="mailto:ola@luku.com" className="font-semibold text-primary hover:underline">
-              ola@luku.com
+            <a href="mailto:ola@luku.ao" className="font-semibold text-primary hover:underline">
+              ola@luku.ao
             </a>
             . Alguma informação (ex.: histórico de pedidos já concluídos) pode ter de ser mantida
             por mais tempo quando exigido por lei fiscal/comercial angolana, mesmo depois de pedir a
@@ -127,8 +127,8 @@ function Privacidade() {
         <LegalSection title="9. Contacto">
           <p>
             Sobre esta política ou os seus dados:{" "}
-            <a href="mailto:ola@luku.com" className="font-semibold text-primary hover:underline">
-              ola@luku.com
+            <a href="mailto:ola@luku.ao" className="font-semibold text-primary hover:underline">
+              ola@luku.ao
             </a>{" "}
             ou pela página de{" "}
             <Link to="/contacto" className="font-semibold text-primary hover:underline">

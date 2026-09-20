@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\ContactMessageController;
 use App\Http\Controllers\Api\V1\CourierController;
 use App\Http\Controllers\Api\V1\CustomerNoteController;
 use App\Http\Controllers\Api\V1\DeliveryPolicyController;
@@ -181,6 +182,9 @@ Route::middleware(['auth:sanctum', 'throttle:uploads'])->group(function () {
 */
 Route::post('partner-applications', [PartnerApplicationController::class, 'store'])
     ->middleware('throttle:auth'); // formulário público — mesmo limite anti-spam do auth
+
+Route::post('contact-messages', [ContactMessageController::class, 'store'])
+    ->middleware('throttle:auth'); // formulário público de /contacto — mesmo limite anti-spam
 
 Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::get('partner-applications', [PartnerApplicationController::class, 'index']);

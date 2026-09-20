@@ -149,4 +149,18 @@ return [
 
     'partners_notification_address' => env('PARTNERS_NOTIFICATION_EMAIL') ?: env('MAIL_FROM_ADDRESS', 'hello@example.com'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Contact Address
+    |--------------------------------------------------------------------------
+    |
+    | Para onde vai uma mensagem submetida em /contacto (ver
+    | ContactMessageController::store, ContactMessageMail) — endereço
+    | público mostrado no site (ola@luku.ao), separado do
+    | MAIL_FROM_ADDRESS (esse é "não-responder", nunca lido por ninguém).
+    |
+    */
+
+    'contact_address' => env('CONTACT_EMAIL') ?: env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+
 ];

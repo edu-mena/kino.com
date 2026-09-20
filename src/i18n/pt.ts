@@ -1717,6 +1717,9 @@ export const pt = {
     subjectPress: "Imprensa",
     subjectOther: "Outro assunto",
     openingEmailToast: "A abrir o seu email para enviar a mensagem à equipa Luku.",
+    sendingToast: "A enviar a sua mensagem...",
+    sentToast: "Mensagem enviada — a equipa Luku vai responder-lhe por email.",
+    sendErrorToast: "Não foi possível enviar. Tente novamente ou use o WhatsApp.",
     faqTitle: "Perguntas frequentes",
     faq1Question: "A Luku faz entregas?",
     faq1Answer:

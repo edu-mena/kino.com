@@ -1712,6 +1712,9 @@ export const en: Dictionary = {
     subjectPress: "Press",
     subjectOther: "Other subject",
     openingEmailToast: "Opening your email to send the message to the Luku team.",
+    sendingToast: "Sending your message...",
+    sentToast: "Message sent — the Luku team will reply by email.",
+    sendErrorToast: "Couldn't send it. Try again or use WhatsApp.",
     faqTitle: "Frequently asked questions",
     faq1Question: "Does Luku deliver?",
     faq1Answer:

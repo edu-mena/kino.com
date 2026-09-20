@@ -1730,6 +1730,9 @@ export const fr: Dictionary = {
     subjectPress: "Presse",
     subjectOther: "Autre sujet",
     openingEmailToast: "Ouverture de votre email pour envoyer le message à l'équipe Luku.",
+    sendingToast: "Envoi de votre message...",
+    sentToast: "Message envoyé — l'équipe Luku va répondre par email.",
+    sendErrorToast: "Impossible d'envoyer. Réessayez ou utilisez WhatsApp.",
     faqTitle: "Questions fréquentes",
     faq1Question: "Luku fait-elle des livraisons ?",
     faq1Answer:
