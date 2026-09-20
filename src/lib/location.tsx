@@ -1,7 +1,13 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
+import { hasRealBackend } from "@/lib/api-client";
 import type { SavedAddress } from "@/data/types";
 import { useAddresses } from "./addresses";
+
+// Com backend real, um utilizador novo começa sem moradas guardadas — as
+// 3 moradas de exemplo (Casa/Trabalho/Universidade) só fazem sentido sem
+// backend (demo/dev).
+const SEED_SAVED_ADDRESSES: SavedAddress[] = hasRealBackend ? [] : INITIAL_SAVED_ADDRESSES;
 
 /** Estado do pedido de geolocalização exata do dispositivo (GPS/Wi-Fi via
  * `navigator.geolocation`) — separado da morada guardada escolhida no chip
@@ -33,11 +39,11 @@ const LocationContext = createContext<LocationValue | null>(null);
 export function LocationProvider({ children }: { children: ReactNode }) {
   const { customAddresses } = useAddresses();
   const allAddresses = useMemo(
-    () => [...INITIAL_SAVED_ADDRESSES, ...customAddresses],
+    () => [...SEED_SAVED_ADDRESSES, ...customAddresses],
     [customAddresses],
   );
   const [selectedId, setSelectedId] = useState<string | null>(
-    INITIAL_SAVED_ADDRESSES.find((a) => a.isDefault)?.id ?? INITIAL_SAVED_ADDRESSES[0]?.id ?? null,
+    SEED_SAVED_ADDRESSES.find((a) => a.isDefault)?.id ?? SEED_SAVED_ADDRESSES[0]?.id ?? null,
   );
   const [deviceCoords, setDeviceCoords] = useState<[number, number] | null>(null);
   const [deviceLocationStatus, setDeviceLocationStatus] = useState<DeviceLocationStatus>("idle");

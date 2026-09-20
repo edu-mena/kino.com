@@ -3,6 +3,7 @@ import { getMenuItem, getRestaurant } from "@/data/helpers";
 import type { PromoEffect } from "@/data/offers-store";
 import { computeDeliveryFee } from "@/data/platform-settings-store";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
+import { hasRealBackend } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
 import { orderDistanceKm } from "@/lib/delivery-eval";
@@ -335,6 +336,9 @@ function buildSeedOrder(
 }
 
 function seedOrders(): CartOrder[] {
+  // Com backend real, um utilizador novo começa sem pedidos — este histórico
+  // de demonstração (restaurantes/menu mock) só faz sentido sem backend.
+  if (hasRealBackend) return [];
   return [
     buildSeedOrder("order-seed-1", ["menu-601", "menu-shared-agua-601"], "onTheWay", 0),
     buildSeedOrder("order-seed-2", ["menu-101"], "delivered", 2),
