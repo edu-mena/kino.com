@@ -1,9 +1,17 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  assignApiReservationTable,
+  createApiReservation,
+  fetchApiReservationsForRestaurant,
+  fetchMyApiReservations,
+  updateApiReservationStatus,
+} from "@/data/api-reservations";
 import { INITIAL_RESERVATIONS } from "@/data/mockData";
 import type { Reservation, Restaurant } from "@/data/types";
+import { getAuthToken, useAuth } from "@/lib/auth";
 import { hasRealBackend } from "@/lib/api-client";
-import { useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
+import { getAdminToken, useRestaurantAdminOptional } from "@/lib/restaurant-admin";
 
 const SEED_RESERVATIONS: Reservation[] = hasRealBackend ? [] : INITIAL_RESERVATIONS;
 
@@ -28,8 +36,7 @@ type ReservationsValue = {
   hydrated: boolean;
   addReservation: (input: NewReservationInput) => void;
   /** Usado pelo painel do restaurante (`/admin/reservas`) — Pendente →
-   * Confirmada/Recusada/Cancelada. Não há backend real: como no resto da
-   * app, o painel lê/escreve o mesmo estado partilhado que o cliente. */
+   * Confirmada/Recusada/Cancelada. */
   updateReservationStatus: (id: string, status: string) => void;
   /** Mesa atribuída pelo restaurante (opcional; `undefined` limpa). */
   assignTable: (id: string, tableId?: string) => void;
@@ -37,15 +44,49 @@ type ReservationsValue = {
 
 const ReservationsContext = createContext<ReservationsValue | null>(null);
 
+/**
+ * Com backend real (`hasRealBackend`), a fonte dos dados depende de ONDE a
+ * app está a ser usada — este provider é único (montado no `__root`), mas
+ * o painel do restaurante e as páginas de cliente nunca estão ativos ao
+ * mesmo tempo:
+ * - dentro do painel (`useRestaurantAdminOptional` não-nulo): busca as
+ *   reservas DESSE restaurante (staff, `GET /restaurants/{id}/reservations`).
+ * - fora dele (cliente): busca "as minhas reservas" do utilizador
+ *   autenticado (`GET /reservations`) — convidados sem sessão ficam sem
+ *   lista agregada (limitação conhecida: a API só permite ver uma reserva
+ *   de convidado individualmente, pelo `guestToken`).
+ * Sem backend, mantém-se o mock local partilhado de sempre.
+ */
 export function ReservationsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  // A seed (INITIAL_RESERVATIONS) entra logo no estado — assim vira um
-  // registo normal, atualizável (o painel do restaurante precisa poder
-  // confirmar/recusar reservas de exemplo, não só as criadas na hora).
+  const managedRestaurantId = useRestaurantAdminOptional()?.managedRestaurantId ?? null;
+  const [apiReservations, setApiReservations] = useState<Reservation[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>(SEED_RESERVATIONS);
   const [hydrated, setHydrated] = useState(false);
 
+  const refetchApi = () => {
+    if (managedRestaurantId) {
+      const token = getAdminToken();
+      if (!token) return setApiReservations([]);
+      fetchApiReservationsForRestaurant(managedRestaurantId, token)
+        .then(setApiReservations)
+        .catch(() => setApiReservations([]));
+      return;
+    }
+    const token = getAuthToken();
+    if (!token) return setApiReservations([]);
+    fetchMyApiReservations(token, viewerKey(user))
+      .then(setApiReservations)
+      .catch(() => setApiReservations([]));
+  };
+
   useEffect(() => {
+    if (hasRealBackend) refetchApi();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [managedRestaurantId, user?.email, user?.phone]);
+
+  useEffect(() => {
+    if (hasRealBackend) return;
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
@@ -58,7 +99,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (hasRealBackend || !hydrated) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
   }, [reservations, hydrated]);
 
@@ -68,6 +109,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
   // reserva nova, ou uma mudança de estado, aparecer ao vivo do outro lado
   // (e disparar a notificação certa) sem precisar recarregar a página.
   useEffect(() => {
+    if (hasRealBackend) return;
     const onStorage = (e: StorageEvent) => {
       if (e.key !== STORAGE_KEY) return;
       if (e.newValue == null) {
@@ -91,6 +133,23 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     peopleCount,
     specialRequests,
   }: NewReservationInput) => {
+    if (hasRealBackend) {
+      const token = getAuthToken();
+      void createApiReservation(
+        restaurant.id,
+        {
+          date,
+          time,
+          peopleCount,
+          ...(specialRequests ? { specialRequests } : {}),
+          ...(user?.name ? { customerName: user.name } : {}),
+          ...(user?.phone ? { customerPhone: user.phone } : {}),
+          ...(user?.email ? { customerEmail: user.email } : {}),
+        },
+        token,
+      ).then(refetchApi);
+      return;
+    }
     const reservation: Reservation = {
       id: `res-custom-${Date.now()}`,
       restaurantId: restaurant.id,
@@ -114,14 +173,27 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     setReservations((prev) => [reservation, ...prev]);
   };
 
-  const updateReservationStatus = (id: string, status: string) =>
+  const updateReservationStatus = (id: string, status: string) => {
+    if (hasRealBackend) {
+      const token = getAdminToken();
+      if (!token) return;
+      void updateApiReservationStatus(id, status, token).then(refetchApi);
+      return;
+    }
     setReservations((prev) =>
       prev.map((r) =>
         r.id === id ? { ...r, status, statusUpdatedAt: new Date().toISOString() } : r,
       ),
     );
+  };
 
-  const assignTable = (id: string, tableId?: string) =>
+  const assignTable = (id: string, tableId?: string) => {
+    if (hasRealBackend) {
+      const token = getAdminToken();
+      if (!token) return;
+      void assignApiReservationTable(id, tableId, token).then(refetchApi);
+      return;
+    }
     setReservations((prev) =>
       prev.map((r) => {
         if (r.id !== id) return r;
@@ -132,10 +204,17 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
         return { ...r, tableId };
       }),
     );
+  };
 
   return (
     <ReservationsContext.Provider
-      value={{ reservations, hydrated, addReservation, updateReservationStatus, assignTable }}
+      value={{
+        reservations: hasRealBackend ? apiReservations : reservations,
+        hydrated: hasRealBackend ? true : hydrated,
+        addReservation,
+        updateReservationStatus,
+        assignTable,
+      }}
     >
       {children}
     </ReservationsContext.Provider>

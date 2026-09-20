@@ -5,10 +5,11 @@ import { toast } from "sonner";
 import { AdminPageHeading } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { getReviewsForRestaurant } from "@/data/helpers";
 import { setReviewReply } from "@/data/reviews-store";
 import type { Review } from "@/data/types";
+import { useReviews } from "@/data/use-reviews";
 import { useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 export const Route = createFileRoute("/admin/avaliacoes")({
@@ -126,15 +127,13 @@ function ReviewReplyBlock({ review, onChanged }: { review: Review; onChanged: ()
 function AdminAvaliacoes() {
   const { restaurant } = useRestaurantAdmin();
   const { t } = useTranslation();
-  // Incrementado a cada resposta guardada/removida — `getReviewsForRestaurant`
-  // é síncrono sobre o localStorage, não reativo sozinho; isto força
-  // recalcular a lista (mesmo padrão usado nos outros stores "puros" desta
-  // app, ver `menu-admin.tsx`).
+  // Incrementado a cada resposta guardada/removida — mesmo padrão usado
+  // nos outros stores "puros" desta app, ver `menu-admin.tsx` (só relevante
+  // sem backend real; com API, `useReviews` já é reativo sozinho).
   const [, forceRefresh] = useState(0);
+  const reviews = useReviews(restaurant?.id);
 
   if (!restaurant) return null;
-
-  const reviews = getReviewsForRestaurant(restaurant.id);
 
   return (
     <div className="pb-16">
@@ -192,7 +191,11 @@ function AdminAvaliacoes() {
                 ))}
               </div>
             )}
-            <ReviewReplyBlock review={review} onChanged={() => forceRefresh((n) => n + 1)} />
+            {/* Resposta do restaurante ainda não existe no backend real
+                (sem coluna/endpoint para isso) — só disponível em mock. */}
+            {!hasRealBackend && (
+              <ReviewReplyBlock review={review} onChanged={() => forceRefresh((n) => n + 1)} />
+            )}
           </div>
         ))}
       </div>

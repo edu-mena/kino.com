@@ -1932,6 +1932,7 @@ export const en: Dictionary = {
     commentPlaceholder: "Tell us how it went (optional)…",
     submit: "Submit review",
     sentToast: "Review sent. Thank you!",
+    saveFailedError: "Couldn't send the review. Try again.",
   },
   notifications: {
     aria: "Notifications",

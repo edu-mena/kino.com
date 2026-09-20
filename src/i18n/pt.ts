@@ -1938,6 +1938,7 @@ export const pt = {
     commentPlaceholder: "Conte como foi (opcional)…",
     submit: "Enviar avaliação",
     sentToast: "Avaliação enviada. Obrigado!",
+    saveFailedError: "Não foi possível enviar a avaliação. Tenta novamente.",
   },
   notifications: {
     aria: "Notificações",

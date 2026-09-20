@@ -24,9 +24,12 @@ class AssignTableRequest extends FormRequest
         $reservation = $this->route('reservation');
 
         return [
+            // Valida pelo `uuid` — o único id que a API expõe
+            // (RestaurantTableResource), nunca o interno. O controller
+            // resolve para o id interno antes de gravar.
             'table_id' => [
-                'sometimes', 'nullable', 'integer',
-                Rule::exists('restaurant_tables', 'id')->where('restaurant_id', $reservation->restaurant_id),
+                'sometimes', 'nullable', 'string',
+                Rule::exists('restaurant_tables', 'uuid')->where('restaurant_id', $reservation->restaurant_id),
             ],
         ];
     }

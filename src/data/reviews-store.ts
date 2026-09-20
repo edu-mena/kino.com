@@ -1,4 +1,6 @@
+import { createApiReview } from "./api-reviews";
 import { hasRealBackend } from "@/lib/api-client";
+import { getAuthToken } from "@/lib/auth";
 import { INITIAL_REVIEWS } from "./mockData";
 import { safeLocalStorageSet } from "./safe-storage";
 import { CHANGE_EVENT, STORAGE_KEYS } from "./storage-keys";
@@ -68,7 +70,28 @@ export function isRefReviewed(ref: string): boolean {
   return read().reviewed.includes(ref);
 }
 
-export function addReview(input: NewReview, ref?: string): Review {
+/** `false` = a submissão falhou (rede, ou o backend real rejeitou — ex:
+ * pedido/reserva inválidos, já avaliados, ainda não concluídos). Com
+ * backend real, `ref` tem de ser "reservation:<uuid real>" — "order:" só
+ * funciona quando o checkout estiver ligado à API (ver auditoria de
+ * go-live, ainda mock). */
+export async function addReview(input: NewReview, ref?: string): Promise<boolean> {
+  if (hasRealBackend) {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      await createApiReview(
+        input.restaurantId,
+        { rating: input.rating, comment: input.comment, tags: input.tags ?? [] },
+        ref,
+        token,
+      );
+      window.dispatchEvent(new Event(CHANGE_EVENT));
+      return true;
+    } catch {
+      return false;
+    }
+  }
   const state = read();
   const review: Review = {
     id: `rev-custom-${Date.now()}`,
@@ -84,7 +107,7 @@ export function addReview(input: NewReview, ref?: string): Review {
     custom: [review, ...state.custom],
     reviewed: ref && !state.reviewed.includes(ref) ? [...state.reviewed, ref] : state.reviewed,
   });
-  return review;
+  return true;
 }
 
 /** Restaurante responde (ou edita/remove, se chamado de novo) a uma review

@@ -14,6 +14,12 @@ class ReservationResource extends JsonResource
         return [
             'id' => $this->uuid,
             'restaurantId' => $this->whenLoaded('restaurant', fn () => $this->restaurant->uuid),
+            // Só presentes quando `restaurant` foi carregado (ver
+            // ReservationController::mine) — a lista "minhas reservas" do
+            // cliente atravessa vários restaurantes, precisa de mostrar
+            // nome/imagem sem um pedido à parte por reserva.
+            'restaurantName' => $this->whenLoaded('restaurant', fn () => $this->restaurant->name),
+            'restaurantImage' => $this->whenLoaded('restaurant', fn () => $this->restaurant->cover_image_url),
             'customerName' => $this->customer_name,
             'customerPhone' => $this->customer_phone,
             'customerEmail' => $this->customer_email,
