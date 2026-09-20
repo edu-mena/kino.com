@@ -15,11 +15,12 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LocationFilterSelect, matchesLocation } from "@/components/search-filters";
-import { getAllRestaurants, getMenuCategories, getRestaurant } from "@/data/helpers";
+import { addressProvince, getAllRestaurants, getMenuCategories, getRestaurant } from "@/data/helpers";
 import type { MenuItem, Restaurant } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";
 import { groupMenuItemsByName, type DishGroup } from "@/lib/group-dishes-by-name";
+import { useLocation } from "@/lib/location";
 import { useTranslation } from "@/i18n";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
@@ -45,6 +46,8 @@ export function HeaderSearch() {
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [neighborhood, setNeighborhood] = useState<string>("todos");
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const { selected: userAddress } = useLocation();
+  const myProvince = userAddress ? addressProvince(userAddress.line2) : undefined;
 
   const overallMaxPrice = useMemo(
     () => (items.length ? Math.max(...items.map((m) => m.price)) : 0),
@@ -63,10 +66,10 @@ export function HeaderSearch() {
         item.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
         restaurant?.name.toLowerCase().includes(debouncedQuery.toLowerCase());
       const byCategory = !category || item.category === category;
-      const byNeighborhood = matchesLocation(restaurant?.neighborhood, neighborhood);
+      const byNeighborhood = matchesLocation(restaurant?.neighborhood, neighborhood, myProvince);
       return byQuery && byCategory && byNeighborhood;
     });
-  }, [items, debouncedQuery, category, neighborhood]);
+  }, [items, debouncedQuery, category, neighborhood, myProvince]);
 
   const maxAvailablePrice = filteredExceptPrice.length
     ? Math.max(...filteredExceptPrice.map((m) => m.price))
@@ -92,10 +95,10 @@ export function HeaderSearch() {
       const byQuery =
         r.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
         r.cuisine.toLowerCase().includes(debouncedQuery.toLowerCase());
-      const byNeighborhood = matchesLocation(r.neighborhood, neighborhood);
+      const byNeighborhood = matchesLocation(r.neighborhood, neighborhood, myProvince);
       return byQuery && byNeighborhood;
     });
-  }, [debouncedQuery, neighborhood]);
+  }, [debouncedQuery, neighborhood, myProvince]);
 
   // Agrupa por nome do prato só quando há texto pesquisado — clicar leva
   // pra `/pratos/$dishName` (visão geral, com faixa de preço e lista de

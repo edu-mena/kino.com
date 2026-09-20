@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Restaurant } from "@/data/types";
+import { addressProvince } from "@/data/helpers";
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
 import { useRestaurants } from "@/data/use-restaurants-query";
 import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
@@ -104,6 +105,7 @@ function Restaurantes() {
   // Sem backend real (demo), resolve-se já com o mock — nunca fica a
   // "carregar" nesse caso (ver useRestaurants, hasRealBackend).
   const { data: allRestaurants = [], isLoading: restaurantsLoading } = useRestaurants();
+  const myProvince = selectedAddress ? addressProvince(selectedAddress.line2) : undefined;
 
   useEffect(() => {
     try {
@@ -128,7 +130,7 @@ function Restaurantes() {
         !debouncedQuery ||
         r.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
         r.cuisine.toLowerCase().includes(debouncedQuery.toLowerCase());
-      const byNeighborhood = matchesLocation(r.neighborhood, neighborhood);
+      const byNeighborhood = matchesLocation(r.neighborhood, neighborhood, myProvince);
       const byPriceLevel = !priceLevel || r.priceLevel === priceLevel;
       const byDelivery = !deliveryOnly || r.isDeliveryAvailable;
       return byQuery && byNeighborhood && byPriceLevel && byDelivery;
@@ -153,6 +155,7 @@ function Restaurantes() {
     deliveryOnly,
     sort,
     selectedAddress,
+    myProvince,
     deviceCoords,
     subByRestaurant,
     locale,

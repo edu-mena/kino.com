@@ -994,6 +994,7 @@ export const fr: Dictionary = {
       approve: "Approuver",
       approveToast: "Candidature approuvée.",
       onboardedToast: "{name} créé avec un abonnement en essai gratuit.",
+      onboardErrorToast: "Impossible d'approuver la candidature. Réessaie.",
       enterPanel: "Ouvrir le panneau",
       reject: "Refuser",
       rejectToast: "Candidature refusée.",
