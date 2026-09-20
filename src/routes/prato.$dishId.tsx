@@ -140,9 +140,7 @@ function DishDetail() {
                 <h2 className="font-display text-lg font-bold text-primary">
                   {t("dishDetail.ingredientsTitle")}
                 </h2>
-                <p className="text-xs text-muted-foreground">
-                  {t("dishDetail.ingredientsHint")}
-                </p>
+                <p className="text-xs text-muted-foreground">{t("dishDetail.ingredientsHint")}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {removableFree.map((ing) => {
                     const on = selected.find((s) => s.id === ing.id)?.included ?? true;

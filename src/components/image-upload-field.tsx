@@ -197,9 +197,7 @@ export function ImageUploadField({
           </div>
         </div>
       </div>
-      {resolvedHelpText && (
-        <p className="text-xs text-muted-foreground">{resolvedHelpText}</p>
-      )}
+      {resolvedHelpText && <p className="text-xs text-muted-foreground">{resolvedHelpText}</p>}
 
       <VideoTrimmer
         file={trimFile}

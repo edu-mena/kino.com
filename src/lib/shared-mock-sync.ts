@@ -20,7 +20,9 @@
  */
 import { STORAGE_KEYS, CHANGE_EVENT } from "@/data/storage-keys";
 
-const SERVER_URL = (import.meta.env["VITE_SHARED_MOCK_URL"] as string | undefined)?.trim().replace(/\/$/, "");
+const SERVER_URL = (import.meta.env["VITE_SHARED_MOCK_URL"] as string | undefined)
+  ?.trim()
+  .replace(/\/$/, "");
 
 const UNSYNCED_KEYS: readonly string[] = [
   STORAGE_KEYS.authUser,
@@ -125,7 +127,9 @@ function startPolling(nativeSetItem: (key: string, value: string) => void) {
 }
 
 if (typeof window !== "undefined" && SERVER_URL) {
-  console.info(`[shared-mock-sync] ligado a ${SERVER_URL} — dados mock partilhados entre dispositivos.`);
+  console.info(
+    `[shared-mock-sync] ligado a ${SERVER_URL} — dados mock partilhados entre dispositivos.`,
+  );
   const { nativeSetItem } = interceptLocalStorage();
   void seedFromServer(nativeSetItem).then(() => startPolling(nativeSetItem));
 }

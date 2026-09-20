@@ -40,7 +40,10 @@ type MenuAdminValue = {
   /** `ok: false` = a escrita falhou (ex: quota do localStorage excedida em
    * mock, ou erro de rede/validação com backend real) — o prato pode não
    * ter sido guardado. */
-  createItem: (restaurantId: string, input: MenuItemInput) => Promise<{ item: MenuItem; ok: boolean }>;
+  createItem: (
+    restaurantId: string,
+    input: MenuItemInput,
+  ) => Promise<{ item: MenuItem; ok: boolean }>;
   updateItem: (id: string, input: MenuItemInput) => Promise<boolean>;
   deleteItem: (id: string) => Promise<void>;
 };
@@ -94,13 +97,17 @@ export function MenuAdminProvider({ children }: { children: ReactNode }) {
           const token = getAdminToken();
           const item = items.find((i) => i.id === menuItemId);
           if (!token || !item) return;
-          void setApiMenuItemAvailability(menuItemId, item.restaurantId, !item.isAvailable, token).then(
-            refetchApi,
-          );
+          void setApiMenuItemAvailability(
+            menuItemId,
+            item.restaurantId,
+            !item.isAvailable,
+            token,
+          ).then(refetchApi);
         },
         createItem: async (restaurantId, input) => {
           const token = getAdminToken();
-          if (!token) return { item: { ...input, id: "", restaurantId, isAvailable: true }, ok: false };
+          if (!token)
+            return { item: { ...input, id: "", restaurantId, isAvailable: true }, ok: false };
           try {
             const item = await createApiMenuItem(restaurantId, input, token);
             refetchApi();
