@@ -1,10 +1,22 @@
-import { createApiReview } from "./api-reviews";
+import { createApiReview, replyToApiReview } from "./api-reviews";
 import { hasRealBackend } from "@/lib/api-client";
 import { getAuthToken } from "@/lib/auth";
 import { INITIAL_REVIEWS } from "./mockData";
 import { safeLocalStorageSet } from "./safe-storage";
 import { CHANGE_EVENT, STORAGE_KEYS } from "./storage-keys";
 import type { Review } from "./types";
+
+/** Lido diretamente (não importa `@/lib/restaurant-admin`, que por sua vez
+ * importa `@/data/helpers` → este ficheiro — evita o ciclo) — mesma chave
+ * usada por `getAdminToken` lá. */
+function readAdminToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem("luku_admin_token");
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Avaliações — seed (`INITIAL_REVIEWS`) + as que os clientes deixam depois de
@@ -112,8 +124,23 @@ export async function addReview(input: NewReview, ref?: string): Promise<boolean
 
 /** Restaurante responde (ou edita/remove, se chamado de novo) a uma review
  * — `text` vazio ou `null` remove a resposta. Funciona tanto para reviews
- * do seed como para as deixadas por clientes (ver `replies` acima). */
-export function setReviewReply(reviewId: string, text: string | null) {
+ * do seed como para as deixadas por clientes (ver `replies` acima).
+ * Devolve `false` quando a submissão falhar (rede, ou sem sessão do
+ * painel) — mesma convenção de `addReview`. Com backend real, a remoção
+ * (`text: null`) É suportada aqui, ao contrário do comprovativo/fatura de
+ * pedidos (aquilo não tem endpoint de remoção; respostas de review têm). */
+export async function setReviewReply(reviewId: string, text: string | null): Promise<boolean> {
+  if (hasRealBackend) {
+    const token = readAdminToken();
+    if (!token) return false;
+    try {
+      await replyToApiReview(reviewId, text, token);
+      window.dispatchEvent(new Event(CHANGE_EVENT));
+      return true;
+    } catch {
+      return false;
+    }
+  }
   const state = read();
   const trimmed = text?.trim();
   const { [reviewId]: _removed, ...rest } = state.replies;
@@ -121,6 +148,7 @@ export function setReviewReply(reviewId: string, text: string | null) {
     ? { ...rest, [reviewId]: { text: trimmed, at: new Date().toISOString() } }
     : rest;
   write({ ...state, replies });
+  return true;
 }
 
 /** Rating/contagem do restaurante já com as avaliações custom misturadas. */

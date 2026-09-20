@@ -245,13 +245,12 @@ export function useCouriers() {
 }
 
 /**
- * Leitura pura e síncrona do estafeta atribuído a um pedido — para o lado do
- * cliente (`/entrega`), que não monta o `CouriersProvider` (esse fica só nos
- * ramos de operador). Com backend real, a API não expõe qual estafeta está
- * atribuído a um pedido para o CLIENTE (só para staff, via listagem de
- * estafetas) — devolve sempre `null` nesse caso; a UI já trata isso como
- * "sem informação do estafeta ainda" (mesmo comportamento de um pedido sem
- * estafeta atribuído). Sem backend, lê o localStorage de sempre.
+ * Leitura pura e síncrona do estafeta atribuído a um pedido — só para o modo
+ * mock. Com backend real o cliente já recebe o estafeta embutido no próprio
+ * pedido (`CartOrder.courier`, ver `OrderResource::courier` e
+ * `mapApiOrder`), por isso `entrega.tsx` lê `order.courier` diretamente em
+ * vez de chamar esta função nesse modo. Devolve sempre `null` com backend
+ * real — mantido só para não quebrar quem ainda chamar isto por engano.
  */
 export function readCourierForOrder(
   orderId: string,

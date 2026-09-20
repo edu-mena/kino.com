@@ -4,7 +4,7 @@ import { apiFetch, hasRealBackend } from "@/lib/api-client";
  * backend/app/Http/Requests/Api/V1/Uploads/StoreUploadRequest.php — só
  * imagens (o upload de vídeo é um pipeline à parte, com transcodificação
  * assíncrona, ver `ProcessUploadedVideoJob`; não usa este endpoint). */
-export type UploadPurpose = "dish" | "cover" | "gallery" | "promo" | "story";
+export type UploadPurpose = "dish" | "cover" | "gallery" | "promo" | "story" | "wallpaper";
 
 export function dataUrlToFile(dataUrl: string, filename: string): File {
   const [header, base64] = dataUrl.split(",");

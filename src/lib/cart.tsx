@@ -6,6 +6,7 @@ import {
   dispatchApiOrder,
   fetchApiOrdersForRestaurant,
   fetchMyApiOrders,
+  storeApiInvoice,
   storeApiPaymentProof,
   updateApiOrderStatus,
 } from "@/data/api-orders";
@@ -134,6 +135,11 @@ export type CartOrder = {
   invoiceType?: "normal" | "nif";
   /** ISO — quando a fatura foi carregada. */
   invoiceAt?: string;
+  /** Estafeta a caminho — só presente com backend real enquanto o pedido
+   * está "on_the_way" (ver `OrderResource::courier`, carregado em
+   * `OrderController::show`/`mine`). No mock, ver `@/lib/couriers`
+   * (`readCourierForOrder`) em vez disto. */
+  courier?: { name: string; phone: string; vehicle: string };
 };
 
 export type NewCartLine = {
@@ -587,9 +593,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const token = getAuthToken();
           void storeApiPaymentProof(orderId, dataUrl, token).then(refetchApi);
         },
-        // Fatura do restaurante não existe na API real ainda (sem
-        // coluna/endpoint) — ver auditoria de go-live.
-        setInvoice: () => {},
+        setInvoice: (orderId, dataUrl, type) => {
+          if (!dataUrl) return; // sem suporte a remover na API real
+          const token = getAdminToken();
+          if (!token) return;
+          void storeApiInvoice(orderId, dataUrl, token, type).then(refetchApi);
+        },
         updateOrderStatus: (orderId, status) => {
           const token = getAdminToken();
           if (!token) return;

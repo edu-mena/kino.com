@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight, CircleCheck, Inbox, Store, TrendingUp, Users, Wallet } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   KpiTile,
   StatBars,
@@ -11,9 +11,10 @@ import {
   type StatBarRow,
 } from "@/components/admin-stats";
 import { SystemPageHeading } from "@/components/system-shell";
-import { getAllRestaurants } from "@/data/helpers";
+import { fetchApiCustomersCount, useSystemSubscriptions } from "@/data/api-subscriptions";
 import { INITIAL_CUSTOMERS } from "@/data/mockData";
 import { PLAN_PRICE } from "@/data/subscriptions-store";
+import { useRestaurants } from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
 import { hasRealBackend } from "@/lib/api-client";
 import { useCart } from "@/lib/cart";
@@ -21,6 +22,7 @@ import { formatKz } from "@/lib/format";
 import { usePartnerApps } from "@/lib/partner-apps";
 import { useReservations } from "@/lib/reservations";
 import { useSubscriptions } from "@/lib/subscriptions";
+import { useSystemAdmin } from "@/lib/system-admin";
 import { BCP47, last8Weeks } from "@/lib/week";
 
 export const Route = createFileRoute("/sistema/")({
@@ -35,11 +37,22 @@ const pctDelta = (cur: number, prev: number) =>
 function SistemaIndex() {
   const { orders, orderTotal } = useCart();
   const { reservations } = useReservations();
-  const { subscriptions, mrr, counts } = useSubscriptions();
+  const { token: operatorToken } = useSystemAdmin();
+  const mockSubs = useSubscriptions();
+  const realSubs = useSystemSubscriptions(hasRealBackend ? operatorToken : null);
+  const { subscriptions, mrr, counts } = hasRealBackend ? realSubs : mockSubs;
   const { counts: appCounts } = usePartnerApps();
   const { t, locale } = useTranslation();
 
-  const restaurants = useMemo(() => getAllRestaurants(), []);
+  const [customersCount, setCustomersCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (!hasRealBackend || !operatorToken) return;
+    fetchApiCustomersCount(operatorToken)
+      .then(setCustomersCount)
+      .catch(() => setCustomersCount(null));
+  }, [operatorToken]);
+
+  const { data: restaurants = [] } = useRestaurants();
 
   const stats = useMemo(() => {
     const now = Date.now();
@@ -267,10 +280,11 @@ function SistemaIndex() {
               tone="muted"
               big={false}
               label={t("sistema.index.kpiCustomers")}
-              // Sem endpoint agregado de contagem de clientes no backend
-              // ainda (ver auditoria de go-live) — "—" em vez de inventar
-              // um número com a contagem fictícia da seed.
-              value={hasRealBackend ? "—" : INITIAL_CUSTOMERS.length.toLocaleString(BCP47[locale])}
+              value={
+                hasRealBackend
+                  ? (customersCount?.toLocaleString(BCP47[locale]) ?? "—")
+                  : INITIAL_CUSTOMERS.length.toLocaleString(BCP47[locale])
+              }
               hint={t("sistema.index.kpiCustomersHint")}
             />
           </div>

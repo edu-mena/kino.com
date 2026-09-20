@@ -41,6 +41,12 @@ export interface Restaurant {
   openingHours: string;
   coverImage: string;
   galleryImages: string[];
+  /** Ids reais (PK interna, não uuid) de cada entrada de `galleryImages`,
+   * na mesma ordem — só presente com backend real (ver `mapApiRestaurant`
+   * em `@/data/api-restaurants`), usado por `/admin/perfil` para saber
+   * quais imagens apagar via `DELETE .../gallery/{id}` ao guardar. Ausente
+   * no mock (galeria lá não tem endpoint próprio, é só texto/URLs). */
+  galleryImageIds?: number[];
   /** Fundo de parede opcional da página pública do restaurante — decorativo,
    * mostrado bem subtil atrás do conteúdo (ver `restaurantes_.$id.tsx`).
    * Ausente = fundo normal, sem imagem nenhuma. */

@@ -1,5 +1,11 @@
 import { apiFetch } from "@/lib/api-client";
-import type { FulfillmentType, MenuItem, MenuItemIngredient, Restaurant } from "./types";
+import type {
+  FulfillmentType,
+  MenuItem,
+  MenuItemIngredient,
+  Restaurant,
+  WeeklyHours,
+} from "./types";
 
 /**
  * Restaurantes/menu vindos da API real (backend/), só usados quando
@@ -44,6 +50,13 @@ type ApiRestaurant = {
   acceptsReservations: boolean;
   reservationSlotMinutes: number;
   ordersPausedManually: boolean;
+  wallpaperUrl?: string | null;
+  galleryImages?: { id: number; url: string }[];
+  hours?: {
+    weekday: number;
+    isOpen: boolean;
+    ranges: { start: string; end: string }[];
+  }[];
 };
 
 type ApiMenuItem = {
@@ -99,7 +112,10 @@ export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
     email: r.email ?? "",
     openingHours: "",
     coverImage: r.coverImageUrl ?? FALLBACK_COVER_IMAGE,
-    galleryImages: [],
+    galleryImages: (r.galleryImages ?? []).map((g) => g.url),
+    ...(r.galleryImages ? { galleryImageIds: r.galleryImages.map((g) => g.id) } : {}),
+    ...(r.wallpaperUrl ? { wallpaper: r.wallpaperUrl } : {}),
+    ...(r.hours ? { hours: mapApiHours(r.hours) } : {}),
     isDeliveryAvailable: r.isDeliveryAvailable,
     fulfillmentModes: r.fulfillmentModes as FulfillmentType[],
     acceptedPaymentMethods: r.acceptedPaymentMethods,
@@ -175,4 +191,171 @@ export async function fetchApiAllMenuItems(): Promise<MenuItem[]> {
     restaurants.map((r) => fetchApiMenuItems(r.id).catch(() => [])),
   );
   return perRestaurant.flat();
+}
+
+function mapApiHours(days: NonNullable<ApiRestaurant["hours"]>): WeeklyHours {
+  const week: WeeklyHours = Array.from({ length: 7 }, () => ({ open: false, ranges: [] }));
+  for (const d of days) {
+    if (d.weekday < 0 || d.weekday > 6) continue;
+    week[d.weekday] = {
+      open: d.isOpen,
+      ranges: d.ranges.map((r) => ({ start: r.start, end: r.end })),
+    };
+  }
+  return week;
+}
+
+/** Payload editável de `/admin/perfil` (ver `saveProfileEdits`, o
+ * equivalente mock) — traduzido para os nomes snake_case do
+ * `UpdateRestaurantRequest` em `updateApiRestaurant` abaixo. Todos os
+ * campos são opcionais (`PATCH` parcial), horário/detalhes de pagamento/
+ * galeria têm endpoints próprios (ver funções seguintes), não fazem parte
+ * deste PATCH. */
+export type RestaurantPatchPayload = Partial<{
+  description: string;
+  cuisine: string;
+  address: string;
+  neighborhood: string;
+  city: string;
+  lat: number;
+  lng: number;
+  phone: string;
+  email: string;
+  coverImage: string;
+  wallpaper: string;
+  isDeliveryAvailable: boolean;
+  fulfillmentModes: FulfillmentType[];
+  acceptedPaymentMethods: string[];
+  cautionModesForOrders: FulfillmentType[];
+  deliveryZones: string[];
+  deliveryFee: number;
+  estimatedDeliveryMinutes: number;
+  cautionAmount: number;
+  cautionPolicyNotice: string;
+  ordersPausedManually: boolean;
+}>;
+
+export async function updateApiRestaurant(
+  id: string,
+  patch: RestaurantPatchPayload,
+  token: string,
+): Promise<Restaurant> {
+  const body: Record<string, unknown> = {};
+  if (patch.description !== undefined) body["description"] = patch.description;
+  if (patch.cuisine !== undefined) body["cuisine"] = patch.cuisine;
+  if (patch.address !== undefined) body["address"] = patch.address;
+  if (patch.neighborhood !== undefined) body["neighborhood"] = patch.neighborhood;
+  if (patch.city !== undefined) body["city"] = patch.city;
+  if (patch.lat !== undefined) body["lat"] = patch.lat;
+  if (patch.lng !== undefined) body["lng"] = patch.lng;
+  if (patch.phone !== undefined) body["phone"] = patch.phone;
+  if (patch.email !== undefined) body["email"] = patch.email;
+  if (patch.coverImage !== undefined) body["cover_image_url"] = patch.coverImage;
+  if (patch.wallpaper !== undefined) body["wallpaper_url"] = patch.wallpaper;
+  if (patch.isDeliveryAvailable !== undefined) {
+    body["is_delivery_available"] = patch.isDeliveryAvailable;
+  }
+  if (patch.fulfillmentModes !== undefined) body["fulfillment_modes"] = patch.fulfillmentModes;
+  if (patch.acceptedPaymentMethods !== undefined) {
+    body["accepted_payment_methods"] = patch.acceptedPaymentMethods;
+  }
+  if (patch.cautionModesForOrders !== undefined) {
+    body["caution_modes_for_orders"] = patch.cautionModesForOrders;
+  }
+  if (patch.deliveryZones !== undefined) body["delivery_zones"] = patch.deliveryZones;
+  if (patch.deliveryFee !== undefined) body["delivery_fee"] = patch.deliveryFee;
+  if (patch.estimatedDeliveryMinutes !== undefined) {
+    body["estimated_delivery_minutes"] = patch.estimatedDeliveryMinutes;
+  }
+  if (patch.cautionAmount !== undefined) body["caution_amount"] = patch.cautionAmount;
+  if (patch.cautionPolicyNotice !== undefined) {
+    body["caution_policy_notice"] = patch.cautionPolicyNotice;
+  }
+  if (patch.ordersPausedManually !== undefined) {
+    body["orders_paused_manually"] = patch.ordersPausedManually;
+  }
+
+  const { data } = await apiFetch<{ data: ApiRestaurant }>(`/restaurants/${id}`, {
+    method: "PATCH",
+    token,
+    body,
+  });
+  return mapApiRestaurant(data);
+}
+
+export async function updateApiRestaurantHours(
+  id: string,
+  hours: WeeklyHours,
+  token: string,
+): Promise<void> {
+  await apiFetch(`/restaurants/${id}/hours`, {
+    method: "PUT",
+    token,
+    body: {
+      days: hours.map((day, weekday) => ({
+        weekday,
+        is_open: day.open,
+        ranges: day.ranges.map((r) => ({ start_time: r.start, end_time: r.end })),
+      })),
+    },
+  });
+}
+
+type ApiPaymentDetailRow = { payment_method_code: string; details: string };
+
+/** `showPaymentDetails`/`updatePaymentDetails` não passam por um Resource
+ * no backend (ver RestaurantController) — devolvem as colunas do Eloquent
+ * tal e qual, em snake_case, ao contrário do resto da API. */
+export async function fetchApiRestaurantPaymentDetails(
+  id: string,
+  token: string,
+): Promise<Record<string, string>> {
+  const { data } = await apiFetch<{ data: ApiPaymentDetailRow[] }>(
+    `/restaurants/${id}/payment-details`,
+    { token },
+  );
+  return Object.fromEntries(data.map((d) => [d.payment_method_code, d.details]));
+}
+
+export async function updateApiRestaurantPaymentDetails(
+  id: string,
+  details: Record<string, string>,
+  token: string,
+): Promise<Record<string, string>> {
+  const { data } = await apiFetch<{ data: ApiPaymentDetailRow[] }>(
+    `/restaurants/${id}/payment-details`,
+    {
+      method: "PUT",
+      token,
+      body: {
+        details: Object.entries(details).map(([payment_method_code, value]) => ({
+          payment_method_code,
+          details: value,
+        })),
+      },
+    },
+  );
+  return Object.fromEntries(data.map((d) => [d.payment_method_code, d.details]));
+}
+
+export async function addApiGalleryImage(
+  id: string,
+  file: File,
+  token: string,
+): Promise<{ id: number; url: string }> {
+  const body = new FormData();
+  body.append("image", file);
+  const { data } = await apiFetch<{ data: { id: number; url: string } }>(
+    `/restaurants/${id}/gallery`,
+    { method: "POST", token, body },
+  );
+  return data;
+}
+
+export async function removeApiGalleryImage(
+  id: string,
+  galleryImageId: number,
+  token: string,
+): Promise<void> {
+  await apiFetch(`/restaurants/${id}/gallery/${galleryImageId}`, { method: "DELETE", token });
 }

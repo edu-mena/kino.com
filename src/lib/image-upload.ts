@@ -76,13 +76,16 @@ export function fileToDocumentDataUrl(file: File): Promise<string> {
   return fileToResizedDataUrl(file, 1000);
 }
 
-/** Data URL cujo MIME é `application/pdf` — é assim que se distingue um
- * documento em PDF de uma foto, sem precisar de um campo à parte (ver
- * `fileToDocumentDataUrl`). Usado por quem MOSTRA o documento (comprovativo
- * ou fatura), dos dois lados (cliente em `/entrega`, restaurante em
- * `/admin/pedidos`). */
+/** Documento em PDF, não uma foto — sem campo à parte para o mime/tipo (ver
+ * `fileToDocumentDataUrl`). Cobre os dois casos: data URL local (mock, ou
+ * antes do upload real acabar) e URL real do backend (R2/Tigris, ver
+ * `MediaUploadService::storeDocument` — mantém a extensão original).
+ * Usado por quem MOSTRA o documento (comprovativo ou fatura), dos dois
+ * lados (cliente em `/entrega`, restaurante em `/admin/pedidos`). */
 export function isPdfDataUrl(src: string | undefined): boolean {
-  return !!src?.startsWith("data:application/pdf");
+  if (!src) return false;
+  if (src.startsWith("data:")) return src.startsWith("data:application/pdf");
+  return /\.pdf($|\?)/i.test(src);
 }
 
 /** Dimensões finais de um corte: o lado maior fica em `maxDimension` e o

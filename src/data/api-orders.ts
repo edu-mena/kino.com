@@ -64,6 +64,10 @@ type ApiOrder = {
   promoFreeDelivery: boolean;
   paymentProofUrl: string | null;
   paymentProofAt: string | null;
+  invoiceUrl: string | null;
+  invoiceType: "normal" | "nif" | null;
+  invoiceAt: string | null;
+  courier?: { name: string; phone: string; vehicle: string } | null;
   subtotal: number;
   deliveryFee: number;
   total: number;
@@ -121,6 +125,10 @@ function mapApiOrder(o: ApiOrder, ownerKey: string): CartOrder {
     ...(o.promoFreeDelivery ? { promoFreeDelivery: true } : {}),
     ...(o.paymentProofUrl ? { paymentProof: o.paymentProofUrl } : {}),
     ...(o.paymentProofAt ? { paymentProofAt: o.paymentProofAt } : {}),
+    ...(o.invoiceUrl ? { invoice: o.invoiceUrl } : {}),
+    ...(o.invoiceType ? { invoiceType: o.invoiceType } : {}),
+    ...(o.invoiceAt ? { invoiceAt: o.invoiceAt } : {}),
+    ...(o.courier ? { courier: o.courier } : {}),
   };
 }
 
@@ -246,4 +254,26 @@ export async function storeApiPaymentProof(
     ...(token ? { token } : {}),
     body,
   });
+}
+
+/** Fatura emitida pelo restaurante (`/admin/pedidos`) — imagem ou PDF, daí
+ * `dataUrlToFile` receber a extensão certa em vez de assumir `.jpg` como
+ * `storeApiPaymentProof` (o comprovativo do cliente é sempre foto). */
+export async function storeApiInvoice(
+  id: string,
+  dataUrl: string,
+  token: string,
+  type?: "normal" | "nif",
+): Promise<CartOrder> {
+  const mime = dataUrl.match(/^data:([^;]+);base64/)?.[1] ?? "image/jpeg";
+  const ext = mime === "application/pdf" ? "pdf" : (mime.split("/")[1] ?? "jpg");
+  const body = new FormData();
+  body.append("invoice", dataUrlToFile(dataUrl, `invoice.${ext}`));
+  if (type) body.append("type", type);
+  const { data } = await apiFetch<{ data: ApiOrder }>(`/orders/${id}/invoice`, {
+    method: "POST",
+    token,
+    body,
+  });
+  return mapApiOrder(data, "");
 }

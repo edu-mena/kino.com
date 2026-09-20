@@ -9,7 +9,6 @@ import { setReviewReply } from "@/data/reviews-store";
 import type { Review } from "@/data/types";
 import { useReviews } from "@/data/use-reviews";
 import { useTranslation } from "@/i18n";
-import { hasRealBackend } from "@/lib/api-client";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 export const Route = createFileRoute("/admin/avaliacoes")({
@@ -26,17 +25,25 @@ function ReviewReplyBlock({ review, onChanged }: { review: Review; onChanged: ()
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(review.reply?.text ?? "");
 
-  const save = () => {
+  const save = async () => {
     const trimmed = draft.trim();
     if (!trimmed) return;
-    setReviewReply(review.id, trimmed);
+    const ok = await setReviewReply(review.id, trimmed);
+    if (!ok) {
+      toast.error(t("adminAvaliacoes.replyError"));
+      return;
+    }
     onChanged();
     setEditing(false);
     toast.success(t("adminAvaliacoes.replySavedToast"));
   };
 
-  const remove = () => {
-    setReviewReply(review.id, null);
+  const remove = async () => {
+    const ok = await setReviewReply(review.id, null);
+    if (!ok) {
+      toast.error(t("adminAvaliacoes.replyError"));
+      return;
+    }
     onChanged();
     setEditing(false);
     setDraft("");
@@ -191,11 +198,7 @@ function AdminAvaliacoes() {
                 ))}
               </div>
             )}
-            {/* Resposta do restaurante ainda não existe no backend real
-                (sem coluna/endpoint para isso) — só disponível em mock. */}
-            {!hasRealBackend && (
-              <ReviewReplyBlock review={review} onChanged={() => forceRefresh((n) => n + 1)} />
-            )}
+            <ReviewReplyBlock review={review} onChanged={() => forceRefresh((n) => n + 1)} />
           </div>
         ))}
       </div>

@@ -709,6 +709,7 @@ export const en: Dictionary = {
     replySubmit: "Post reply",
     replySavedToast: "Reply posted.",
     replyRemovedToast: "Reply removed.",
+    replyError: "Couldn't save the reply. Please try again.",
     yourReply: "Your reply",
     editReplyAria: "Edit reply",
     removeReplyAria: "Remove reply",

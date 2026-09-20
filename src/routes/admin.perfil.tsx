@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Bike,
@@ -35,6 +36,14 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { VideoTrimmer } from "@/components/video-trimmer";
 import { WeeklyHoursEditor } from "@/components/weekly-hours-editor";
+import {
+  addApiGalleryImage,
+  fetchApiRestaurantPaymentDetails,
+  removeApiGalleryImage,
+  updateApiRestaurant,
+  updateApiRestaurantHours,
+  updateApiRestaurantPaymentDetails,
+} from "@/data/api-restaurants";
 import { getRestaurantFulfillmentModes, getRestaurantPaymentMethodIds } from "@/data/helpers";
 import { deriveRestaurantCoords } from "@/data/restaurant-coordinates";
 import { saveProfileEdits } from "@/data/restaurant-profile-store";
@@ -44,11 +53,13 @@ import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { paymentMethods } from "@/lib/mock-data";
 import { CROP_PRESETS } from "@/lib/image-crop-presets";
+import { dataUrlToFile } from "@/lib/api-upload";
 import { getVideoDurationSec } from "@/lib/image-upload";
 import { isVideoSrc } from "@/lib/video-trim";
 import { defaultWeeklyHours, formatWeeklyHours, isOpenNow, nextOpenAt } from "@/lib/opening-hours";
-import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
+import { hasRealBackend } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/perfil")({
   head: () => ({ meta: [{ title: "Restaurante — Painel Luku.com" }] }),
@@ -247,10 +258,13 @@ function AdminPerfil() {
   const { restaurant, logout } = useRestaurantAdmin();
   const deliveryPolicy = useDeliveryPolicy();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { t, locale } = useTranslation();
   const viewers = useProfileViewers(restaurant?.id ?? "");
+  const adminToken = getAdminToken();
 
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [coverImage, setCoverImage] = useState("");
   const [description, setDescription] = useState("");
@@ -280,6 +294,10 @@ function AdminPerfil() {
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [wallpaper, setWallpaper] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
+  // Espelha `paymentDetails` para o modo de leitura, só com backend real —
+  // esse endpoint é à parte do `Restaurant` (ver `startEditing`), sem isto
+  // o resumo em modo de leitura mostrava sempre "não definido".
+  const [readPaymentDetails, setReadPaymentDetails] = useState<Record<string, string>>({});
 
   const seedFromRestaurant = () => {
     if (!restaurant) return;
@@ -319,6 +337,11 @@ function AdminPerfil() {
   useEffect(() => {
     seedFromRestaurant();
     setEditing(false);
+    if (hasRealBackend && restaurant && adminToken) {
+      fetchApiRestaurantPaymentDetails(restaurant.id, adminToken)
+        .then(setReadPaymentDetails)
+        .catch(() => setReadPaymentDetails({}));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant]);
 
@@ -332,6 +355,17 @@ function AdminPerfil() {
   const startEditing = () => {
     seedFromRestaurant();
     setEditing(true);
+    // Detalhes de pagamento (IBAN/carteira) vêm de um endpoint à parte no
+    // backend real (não fazem parte do Restaurant devolvido por
+    // useRestaurantDetail) — sem isto o formulário abriria sempre vazio,
+    // apagando o que já estava configurado ao gravar de novo.
+    if (hasRealBackend && adminToken) {
+      fetchApiRestaurantPaymentDetails(restaurant.id, adminToken)
+        .then(setPaymentDetails)
+        .catch(() => {
+          // best-effort — formulário simplesmente abre sem pré-preencher
+        });
+    }
   };
 
   const cancelEditing = () => {
@@ -339,7 +373,7 @@ function AdminPerfil() {
     setEditing(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const fulfillmentModes: FulfillmentType[] = [
       ...(isDeliveryAvailable ? (["delivery"] as const) : []),
@@ -347,6 +381,88 @@ function AdminPerfil() {
       ...(modeDinein ? (["dinein"] as const) : []),
     ];
     const cautionOn = Number(cautionAmount) > 0;
+    const cleanGalleryImages = galleryImages.map((g) => g.trim()).filter(Boolean);
+    const cleanPaymentDetails = Object.fromEntries(
+      Object.entries(paymentDetails)
+        .map(([id, v]) => [id, v.trim()] as const)
+        .filter(([id, v]) => v !== "" && acceptedPay.includes(id)),
+    );
+    const cleanAcceptedPay = acceptedPay.length === paymentMethods.length ? [] : acceptedPay;
+
+    if (hasRealBackend) {
+      if (!adminToken) {
+        toast.error(t("adminPerfil.saveFailedError"));
+        return;
+      }
+      setSaving(true);
+      try {
+        // Galeria tem endpoints próprios (upload multipart / delete por id,
+        // não faz parte do PATCH principal) — reconcilia contra o que já
+        // estava guardado (`restaurant.galleryImages`/`galleryImageIds`)
+        // antes de gravar o resto do perfil.
+        const originalUrls = restaurant.galleryImages;
+        const originalIds = restaurant.galleryImageIds ?? [];
+        const removedIds = originalUrls
+          .map((url, i) => ({ url, id: originalIds[i] }))
+          .filter(({ url }) => !cleanGalleryImages.includes(url))
+          .map(({ id }) => id)
+          .filter((id): id is number => id != null);
+        await Promise.all(
+          removedIds.map((galleryImageId) =>
+            removeApiGalleryImage(restaurant.id, galleryImageId, adminToken),
+          ),
+        );
+        for (const src of cleanGalleryImages) {
+          if (src.startsWith("data:")) {
+            await addApiGalleryImage(restaurant.id, dataUrlToFile(src, "gallery.jpg"), adminToken);
+          }
+        }
+
+        if (Object.keys(cleanPaymentDetails).length > 0) {
+          await updateApiRestaurantPaymentDetails(restaurant.id, cleanPaymentDetails, adminToken);
+        }
+
+        await updateApiRestaurantHours(restaurant.id, hours, adminToken);
+
+        await updateApiRestaurant(
+          restaurant.id,
+          {
+            description: description.trim(),
+            cuisine: cuisine.trim(),
+            address: address.trim(),
+            neighborhood: neighborhood.trim(),
+            city: city.trim(),
+            lat: coords.lat,
+            lng: coords.lng,
+            phone: phone.trim(),
+            email: email.trim(),
+            coverImage: coverImage.trim() || restaurant.coverImage,
+            wallpaper: wallpaper.trim(),
+            ordersPausedManually: ordersPaused,
+            isDeliveryAvailable,
+            fulfillmentModes,
+            acceptedPaymentMethods: cleanAcceptedPay,
+            cautionModesForOrders: cautionOn ? cautionModes : [],
+            deliveryFee: Number(deliveryFee) || 0,
+            estimatedDeliveryMinutes: Number(estimatedDeliveryMinutes) || 0,
+            deliveryZones: deliveryZones.map((z) => z.trim()).filter(Boolean),
+            cautionAmount: Number(cautionAmount) || 0,
+            cautionPolicyNotice: cautionPolicyNotice.trim(),
+          },
+          adminToken,
+        );
+
+        await queryClient.invalidateQueries({ queryKey: ["restaurant", restaurant.id] });
+        toast.success(t("adminPerfil.updatedToast"));
+        setEditing(false);
+      } catch {
+        toast.error(t("adminPerfil.saveFailedError"));
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const ok = saveProfileEdits(restaurant.id, {
       coverImage: coverImage.trim() || restaurant.coverImage,
       description: description.trim(),
@@ -363,19 +479,15 @@ function AdminPerfil() {
       ordersPausedManually: ordersPaused,
       isDeliveryAvailable,
       fulfillmentModes,
-      acceptedPaymentMethods: acceptedPay.length === paymentMethods.length ? [] : acceptedPay,
-      paymentDetails: Object.fromEntries(
-        Object.entries(paymentDetails)
-          .map(([id, v]) => [id, v.trim()] as const)
-          .filter(([id, v]) => v !== "" && acceptedPay.includes(id)),
-      ),
+      acceptedPaymentMethods: cleanAcceptedPay,
+      paymentDetails: cleanPaymentDetails,
       deliveryFee: Number(deliveryFee) || 0,
       estimatedDeliveryMinutes: Number(estimatedDeliveryMinutes) || 0,
       deliveryZones: deliveryZones.map((z) => z.trim()).filter(Boolean),
       cautionAmount: Number(cautionAmount) || 0,
       cautionPolicyNotice: cautionPolicyNotice.trim(),
       cautionModesForOrders: cautionOn ? cautionModes : [],
-      galleryImages: galleryImages.map((g) => g.trim()).filter(Boolean),
+      galleryImages: cleanGalleryImages,
       wallpaper: wallpaper.trim(),
     });
     if (!ok) {
@@ -489,6 +601,8 @@ function AdminPerfil() {
                   onUploadingChange={setImageUploading}
                   label={t("adminPerfil.coverImageLabel")}
                   crop="cover"
+                  purpose="cover"
+                  token={adminToken}
                 />
                 <ImageUploadField
                   value={wallpaper}
@@ -496,6 +610,8 @@ function AdminPerfil() {
                   onUploadingChange={setImageUploading}
                   label={t("adminPerfil.wallpaperLabel")}
                   helpText={t("adminPerfil.wallpaperHelp")}
+                  purpose="wallpaper"
+                  token={adminToken}
                 />
                 <div className="space-y-1.5">
                   <Label htmlFor="rest-description">{t("adminPerfil.descriptionLabel")}</Label>
@@ -915,7 +1031,7 @@ function AdminPerfil() {
               >
                 {t("common.cancel")}
               </Button>
-              <Button type="submit" disabled={imageUploading} className="rounded-xl px-6">
+              <Button type="submit" disabled={imageUploading || saving} className="rounded-xl px-6">
                 {t("adminPerfil.saveChanges")}
               </Button>
             </div>
@@ -1165,7 +1281,9 @@ function AdminPerfil() {
                           .map((id) => paymentMethods.find((m) => m.id === id))
                           .filter((m): m is NonNullable<typeof m> => !!m && m.digital)
                           .map((m) => {
-                            const dest = restaurant.paymentDetails?.[m.id]?.trim();
+                            const dest = (
+                              hasRealBackend ? readPaymentDetails : restaurant.paymentDetails
+                            )?.[m.id]?.trim();
                             return (
                               <div key={m.id} className="text-sm">
                                 <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
