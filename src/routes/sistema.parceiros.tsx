@@ -18,7 +18,7 @@ import { createRestaurant } from "@/data/custom-restaurants-store";
 import type { PartnerAppStatus } from "@/data/partner-apps-store";
 import { addTable } from "@/data/tables-store";
 import { useTranslation } from "@/i18n";
-import { hasRealBackend } from "@/lib/api-client";
+import { ApiError, hasRealBackend } from "@/lib/api-client";
 import { usePartnerApps } from "@/lib/partner-apps";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useSubscriptions } from "@/lib/subscriptions";
@@ -55,7 +55,19 @@ function SistemaParceiros() {
     // o mock local de sempre.
     let restaurant: { id: string; name: string };
     if (hasRealBackend) {
-      const created = await approve(app.id);
+      let created;
+      try {
+        created = await approve(app.id);
+      } catch (error) {
+        // Erros de negócio (ex: email já usado por outra conta, ver
+        // ApprovePartnerApplication::findOrCreateOwner) vêm com uma
+        // mensagem específica do backend — mostrar essa em vez do genérico
+        // sempre que existir, para o operador saber logo o que corrigir.
+        toast.error(
+          error instanceof ApiError ? error.message : t("sistema.parceiros.onboardErrorToast"),
+        );
+        return;
+      }
       if (!created) {
         toast.error(t("sistema.parceiros.onboardErrorToast"));
         return;

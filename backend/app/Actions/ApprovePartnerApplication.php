@@ -77,16 +77,35 @@ class ApprovePartnerApplication
      * (dono com vários locais candidatando-se de novo) — nesse caso liga a
      * conta existente em vez de duplicar/falhar por email único, e não
      * reenvia convite (já sabe entrar).
+     *
+     * `email` é único GLOBALMENTE na tabela `users`, independente de `role`
+     * — se o candidato já tiver conta de cliente (ou, mais raro, de
+     * operador) com este mesmo email, a query abaixo (antes filtrada só por
+     * `role = restaurant_staff`) não encontrava essa conta e a seguir tentava
+     * CRIAR outra com o mesmo email, rebentando com uma violação de
+     * constraint única (500 cru, sem mensagem nenhuma para o operador —
+     * bug real, encontrado ao aprovar uma candidatura a sério em produção).
+     * `role` é exclusivo por design (uma conta é OU cliente OU staff OU
+     * operador, nunca duas ao mesmo tempo), por isso não dá para "juntar"
+     * as duas contas aqui sem risco — falha alto e cedo com uma mensagem
+     * clara em vez de tentar adivinhar o que o operador queria.
      */
     private function findOrCreateOwner(PartnerApplication $application): User
     {
-        $existing = User::query()
-            ->where('role', 'restaurant_staff')
-            ->where('email', $application->email)
-            ->first();
+        $existing = User::query()->where('email', $application->email)->first();
+
+        if ($existing && $existing->role === 'restaurant_staff') {
+            return $existing;
+        }
 
         if ($existing) {
-            return $existing;
+            $roleLabel = match ($existing->role) {
+                'customer' => 'cliente',
+                'system_operator' => 'operador de sistema',
+                default => $existing->role,
+            };
+
+            abort(422, "Este email já pertence a uma conta de {$roleLabel} — não é possível usá-lo para o dono do restaurante. Peça ao candidato um email diferente, ou mude o role dessa conta manualmente antes de aprovar de novo.");
         }
 
         $user = User::query()->create([

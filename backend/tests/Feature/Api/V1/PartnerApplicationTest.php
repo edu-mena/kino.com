@@ -106,6 +106,22 @@ test('aprovar com email já existente liga à conta em vez de duplicar', functio
     expect($restaurant->uuid)->toBe($app->fresh()->createdRestaurant->uuid);
 });
 
+test('aprovar com email já usado por uma conta de CLIENTE falha com 422 claro, não 500 cru', function () {
+    $operator = User::factory()->systemOperator()->create();
+    User::factory()->create(['email' => 'cliente@example.com']); // role padrão: customer
+    $app = PartnerApplication::factory()->create(['email' => 'cliente@example.com']);
+
+    $response = $this->actingAs($operator, 'sanctum')
+        ->postJson("/api/v1/partner-applications/{$app->uuid}/approve");
+
+    $response->assertStatus(422)->assertJsonPath('message', fn ($m) => str_contains($m, 'cliente'));
+
+    // Não fica um restaurante órfão a meio (transação faz rollback) nem
+    // a candidatura marcada como decidida.
+    expect($app->fresh()->status)->toBe('pending');
+    expect(Restaurant::query()->where('email', 'cliente@example.com')->exists())->toBeFalse();
+});
+
 test('rejeitar candidatura não cria restaurante nenhum', function () {
     $operator = User::factory()->systemOperator()->create();
     $app = PartnerApplication::factory()->create();
