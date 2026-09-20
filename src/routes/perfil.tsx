@@ -34,8 +34,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { useAddresses } from "@/lib/addresses";
-import { useAuth } from "@/lib/auth";
+import { getAuthToken, useAuth } from "@/lib/auth";
 import { usePreferences } from "@/lib/preferences";
+import { usePushSubscription } from "@/lib/push-notifications";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/perfil")({
@@ -110,6 +111,7 @@ function Perfil() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { language, setLanguage, notificationSettings, setNotificationSetting } = usePreferences();
+  const pushSubscription = usePushSubscription(getAuthToken());
   const { customAddresses, addAddress } = useAddresses();
   const [addAddressOpen, setAddAddressOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -119,6 +121,24 @@ function Perfil() {
   const handleLogout = () => {
     logout();
     navigate({ to: "/entrar" });
+  };
+
+  const handlePushToggle = async (checked: boolean) => {
+    try {
+      if (checked) {
+        const result = await pushSubscription.subscribe();
+        if (result === "denied") {
+          toast.error(t("perfil.pushDeniedError"));
+          return;
+        }
+        if (result === "granted") toast.success(t("perfil.pushEnabledToast"));
+      } else {
+        await pushSubscription.unsubscribe();
+        toast.success(t("perfil.pushDisabledToast"));
+      }
+    } catch {
+      toast.error(t("perfil.pushError"));
+    }
   };
 
   const handleAddAddress = (e: React.FormEvent) => {
@@ -238,6 +258,23 @@ function Perfil() {
                 </DialogTitle>
                 <DialogDescription>{t("perfil.notificationsDialogDescription")}</DialogDescription>
                 <div className="mt-2 space-y-4">
+                  {pushSubscription.supported && (
+                    <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold">{t("perfil.pushLabel")}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {pushSubscription.permission === "denied"
+                            ? t("perfil.pushDeniedHint")
+                            : t("perfil.pushDescription")}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={pushSubscription.subscribed}
+                        disabled={pushSubscription.busy || pushSubscription.permission === "denied"}
+                        onCheckedChange={handlePushToggle}
+                      />
+                    </div>
+                  )}
                   {notificationOptions.map((opt) => (
                     <div key={opt.key} className="flex items-center justify-between gap-3">
                       <div className="min-w-0">

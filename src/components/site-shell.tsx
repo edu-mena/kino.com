@@ -211,48 +211,71 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
   const isFixedDashboardHeader = isLoggedIn && !isGuestHome;
 
   return (
-    <header
-      className={cn(
-        "z-40 border-b transition-colors duration-300",
-        isFixedDashboardHeader
-          ? "fixed inset-x-0 top-0 h-16 lg:left-24 xl:left-64"
-          : "sticky top-0",
-        isGuestHome
-          ? scrolled
-            ? "border-border/70 bg-white"
-            : "border-transparent bg-transparent"
-          : "border-border/70 bg-white",
-      )}
-      style={isGuestHome ? { viewTransitionName: "guest-header" } : undefined}
-    >
-      <div
+    <>
+      <header
         className={cn(
-          "mx-auto grid max-w-6xl items-center gap-3 px-4 py-3 md:px-6",
-          isGuestHome ? "grid-cols-[auto_1fr_auto]" : "grid-cols-[minmax(0,1fr)_auto]",
+          "z-40 border-b transition-colors duration-300",
+          isFixedDashboardHeader
+            ? "fixed inset-x-0 top-0 h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] lg:left-24 xl:left-64"
+            : "sticky top-0 pt-[env(safe-area-inset-top)]",
+          isGuestHome
+            ? scrolled
+              ? "border-border/70 bg-white"
+              : "border-transparent bg-transparent"
+            : "border-border/70 bg-white",
         )}
+        style={isGuestHome ? { viewTransitionName: "guest-header" } : undefined}
       >
-        <div className={cn("flex min-w-0 items-center", isGuestHome ? "" : "gap-8")}>
-          <Link to="/" className={cn("shrink-0", isFixedDashboardHeader && "lg:hidden")}>
-            <Logo />
-          </Link>
-          {isFixedDashboardHeader && user && (
-            <div className="hidden min-w-0 lg:block">
-              <p className="truncate text-sm font-bold text-primary">
-                {greetingForHour(new Date().getHours(), t)},{" "}
-                <span className="capitalize">{user.name}</span> 👋
-              </p>
-              <p className="truncate text-xs text-muted-foreground">{formatTodayPt(new Date())}</p>
-            </div>
+        <div
+          className={cn(
+            "mx-auto grid max-w-6xl items-center gap-3 px-4 py-3 md:px-6",
+            isGuestHome ? "grid-cols-[auto_1fr_auto]" : "grid-cols-[minmax(0,1fr)_auto]",
           )}
-          {!isGuestHome && !isLoggedIn && (
-            <nav className="hidden items-center gap-6 lg:flex">
-              {navLinks.map((link) => (
+        >
+          <div className={cn("flex min-w-0 items-center", isGuestHome ? "" : "gap-8")}>
+            <Link to="/" className={cn("shrink-0", isFixedDashboardHeader && "lg:hidden")}>
+              <Logo />
+            </Link>
+            {isFixedDashboardHeader && user && (
+              <div className="hidden min-w-0 lg:block">
+                <p className="truncate text-sm font-bold text-primary">
+                  {greetingForHour(new Date().getHours(), t)},{" "}
+                  <span className="capitalize">{user.name}</span> 👋
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {formatTodayPt(new Date())}
+                </p>
+              </div>
+            )}
+            {!isGuestHome && !isLoggedIn && (
+              <nav className="hidden items-center gap-6 lg:flex">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    activeOptions={{ exact: link.to === "/" }}
+                    activeProps={{
+                      className: "text-primary after:w-full",
+                    }}
+                    className="relative py-1 text-sm font-medium text-muted-foreground transition-colors after:absolute after:-bottom-0.5 after:left-0 after:h-0.5 after:w-0 after:bg-brand after:transition-all hover:text-primary"
+                  >
+                    {t(link.labelKey)}
+                  </Link>
+                ))}
+              </nav>
+            )}
+          </div>
+
+          {isGuestHome && (
+            <nav className="hidden w-fit items-center justify-self-center gap-6 rounded-[20rem] bg-white px-12 py-3 lg:flex">
+              {guestNavLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
+                  viewTransition={{ types: guestViewTransitionTypes }}
                   activeOptions={{ exact: link.to === "/" }}
                   activeProps={{
-                    className: "text-primary after:w-full",
+                    className: "text-primary after:w-full guest-nav-active",
                   }}
                   className="relative py-1 text-sm font-medium text-muted-foreground transition-colors after:absolute after:-bottom-0.5 after:left-0 after:h-0.5 after:w-0 after:bg-brand after:transition-all hover:text-primary"
                 >
@@ -261,96 +284,83 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
               ))}
             </nav>
           )}
-        </div>
 
-        {isGuestHome && (
-          <nav className="hidden w-fit items-center justify-self-center gap-6 rounded-[20rem] bg-white px-12 py-3 lg:flex">
-            {guestNavLinks.map((link) => (
+          <div className="flex shrink-0 items-center gap-2 justify-self-end">
+            {!isGuestHome && <LocationSelect />}
+            {!isGuestHome && <NotificationsBell scope="client" />}
+            {!isGuestHome && <CartButton />}
+
+            {isFixedDashboardHeader && (
               <Link
-                key={link.to}
-                to={link.to}
-                viewTransition={{ types: guestViewTransitionTypes }}
-                activeOptions={{ exact: link.to === "/" }}
-                activeProps={{
-                  className: "text-primary after:w-full guest-nav-active",
-                }}
-                className="relative py-1 text-sm font-medium text-muted-foreground transition-colors after:absolute after:-bottom-0.5 after:left-0 after:h-0.5 after:w-0 after:bg-brand after:transition-all hover:text-primary"
+                to="/ajuda"
+                aria-label={t("header.helpCenter")}
+                className="hidden h-10 w-10 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary lg:grid"
               >
-                {t(link.labelKey)}
+                <CircleHelp className="h-4 w-4" />
               </Link>
-            ))}
-          </nav>
-        )}
+            )}
 
-        <div className="flex shrink-0 items-center gap-2 justify-self-end">
-          {!isGuestHome && <LocationSelect />}
-          {!isGuestHome && <NotificationsBell scope="client" />}
-          {!isGuestHome && <CartButton />}
-
-          {isFixedDashboardHeader && (
-            <Link
-              to="/ajuda"
-              aria-label={t("header.helpCenter")}
-              className="hidden h-10 w-10 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary lg:grid"
-            >
-              <CircleHelp className="h-4 w-4" />
-            </Link>
-          )}
-
-          {isLoggedIn && user ? (
-            <div className="hidden items-center gap-2 sm:flex lg:hidden">
-              <span className="text-sm font-medium text-muted-foreground">{user.name}</span>
+            {isLoggedIn && user ? (
+              <div className="hidden items-center gap-2 sm:flex lg:hidden">
+                <span className="text-sm font-medium text-muted-foreground">{user.name}</span>
+                <Link
+                  to="/perfil"
+                  className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary"
+                  aria-label={t("nav.profile")}
+                >
+                  <User className="h-4 w-4" />
+                </Link>
+              </div>
+            ) : (
               <Link
-                to="/perfil"
-                className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary"
-                aria-label={t("nav.profile")}
+                to="/entrar"
+                className={cn(
+                  "rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 sm:px-5 sm:py-2.5",
+                  // Fora da home de convidado, o botão continua só a aparecer
+                  // a partir de `sm:` (mantém o layout já validado das outras
+                  // páginas). Na home de convidado (mobile incluído) fica
+                  // sempre visível, à esquerda do hamburger — sem ele, entrar
+                  // exigia abrir o menu primeiro.
+                  !isGuestHome && "hidden sm:block",
+                )}
               >
-                <User className="h-4 w-4" />
+                Entrar
               </Link>
-            </div>
-          ) : (
-            <Link
-              to="/entrar"
+            )}
+
+            <button
+              type="button"
+              data-tour="nav-menu"
+              aria-label={panelAlwaysAvailable ? t("header.moreOptions") : t("header.openMenu")}
+              onClick={() => setOpen(!open)}
               className={cn(
-                "rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 sm:px-5 sm:py-2.5",
-                // Fora da home de convidado, o botão continua só a aparecer
-                // a partir de `sm:` (mantém o layout já validado das outras
-                // páginas). Na home de convidado (mobile incluído) fica
-                // sempre visível, à esquerda do hamburger — sem ele, entrar
-                // exigia abrir o menu primeiro.
-                !isGuestHome && "hidden sm:block",
+                "grid h-10 w-10 place-items-center rounded-xl lg:hidden",
+                isGuestHome
+                  ? "bg-brand text-brand-foreground"
+                  : panelAlwaysAvailable
+                    ? "bg-brand text-white sm:border sm:border-border sm:bg-card sm:text-foreground"
+                    : "border border-border bg-card text-foreground",
               )}
             >
-              Entrar
-            </Link>
-          )}
-
-          <button
-            type="button"
-            data-tour="nav-menu"
-            aria-label={panelAlwaysAvailable ? t("header.moreOptions") : t("header.openMenu")}
-            onClick={() => setOpen(!open)}
-            className={cn(
-              "grid h-10 w-10 place-items-center rounded-xl lg:hidden",
-              isGuestHome
-                ? "bg-brand text-brand-foreground"
-                : panelAlwaysAvailable
-                  ? "bg-brand text-white sm:border sm:border-border sm:bg-card sm:text-foreground"
-                  : "border border-border bg-card text-foreground",
-            )}
-          >
-            {open ? (
-              <X className="h-4 w-4" />
-            ) : panelAlwaysAvailable ? (
-              <MoreVertical className="h-4 w-4" />
-            ) : (
-              <Menu className="h-4 w-4" />
-            )}
-          </button>
+              {open ? (
+                <X className="h-4 w-4" />
+              ) : panelAlwaysAvailable ? (
+                <MoreVertical className="h-4 w-4" />
+              ) : (
+                <Menu className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      {/* Backdrop */}
+      {/* Backdrop — fora do <header>: o header cria o seu próprio contexto
+          de empilhamento (`position` + `z-index`), o que prendia o painel
+          (z-50) lá dentro — como a MobileTabBar do rodapé também tem z-40 e
+          vinha depois no DOM, ganhava o empate e tapava o painel (fazia os
+          botões de idioma, por exemplo, ficarem por baixo dela). Como
+          irmãos do header, o z-50 do painel compara-se direto com o z-40 da
+          tabbar — e ganha. */}
       <div
         aria-hidden
         onClick={() => setOpen(false)}
@@ -365,11 +375,11 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           é acionável em telas `lg:` pra cima. */}
       <nav
         className={cn(
-          "fixed right-0 top-0 z-50 flex h-[100vh] w-full max-w-xs flex-col border-l border-border bg-card shadow-2xl transition-transform duration-300 ease-in-out lg:hidden",
+          "fixed right-0 top-0 z-50 flex h-[100vh] w-full max-w-xs flex-col border-l border-border bg-card pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-2xl transition-transform duration-300 ease-in-out lg:hidden",
           open ? "translate-x-0" : "translate-x-full",
         )}
       >
-        <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="flex-1 mt-4 overflow-y-auto px-4 py-8">
           {panelLinks.map((link) => (
             <Link
               key={link.to}
@@ -439,7 +449,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           )}
         </div>
       </nav>
-    </header>
+    </>
   );
 }
 
@@ -554,7 +564,7 @@ export function PageShell({
         <main
           className={cn(
             "min-w-0 flex-1",
-            isLoggedIn && "pt-16",
+            isLoggedIn && "pt-[calc(4rem+env(safe-area-inset-top))]",
             // Sempre alguma respiração no fundo — sem isto, páginas sem
             // footer (a maioria das logadas) terminam coladas à base do
             // ecrã. No mobile com tabbar, mais espaço, pra não ficar por

@@ -182,7 +182,7 @@ export function OnboardingTour() {
  * principal (três pontos no mobile, leftbar no desktop) — some sozinho
  * passado um tempo, ou ao tocar. */
 export function TutorialHint() {
-  const { showHint, dismissHint } = useTutorial();
+  const { showHint, dismissHint, setMobileMenuOpen } = useTutorial();
   const { t } = useTranslation();
   const [rect, setRect] = useState<DOMRect | null>(null);
 
@@ -208,6 +208,16 @@ export function TutorialHint() {
   // apontando pra cima.
   const isSideways = rect.height > rect.width * 1.5;
 
+  // Antes o balão só se dispensava a si próprio — apontava para o menu mas
+  // tocar nele não fazia nada, sem nenhum link real para o que anunciava.
+  // No mobile o alvo é o próprio botão que abre o painel "três pontos": ao
+  // tocar no balão, abre esse painel a sério (no desktop a leftbar já está
+  // sempre visível, não há o que abrir).
+  const handleClick = () => {
+    dismissHint();
+    if (!isSideways) setMobileMenuOpen(true);
+  };
+
   return (
     <div
       className="fixed z-[70] animate-in fade-in zoom-in-95"
@@ -219,7 +229,7 @@ export function TutorialHint() {
     >
       <button
         type="button"
-        onClick={dismissHint}
+        onClick={handleClick}
         aria-label={t("tutorial.hint")}
         className="relative flex animate-bounce items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-xl"
       >

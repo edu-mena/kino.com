@@ -8,7 +8,6 @@ import { CategoryShortcutRow } from "@/components/category-shortcut-row";
 import { DietaryOnboardingPopup } from "@/components/dietary-onboarding-popup";
 import { DishRecommendationRow } from "@/components/dish-recommendation-row";
 import { HeaderSearch } from "@/components/header-search";
-import { HomeSkeleton } from "@/components/home-skeleton";
 import { OnboardingTour, TutorialHint } from "@/components/onboarding-tour";
 import { PromoCarousel } from "@/components/promo-carousel";
 import { RestaurantAvatarRow } from "@/components/restaurant-avatar-row";
@@ -43,14 +42,12 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const { isLoggedIn, user, isLoading } = useAuth();
+  const { isLoggedIn, user } = useAuth();
 
-  // Evita mostrar a home errada (convidado ↔ logado) por um instante
-  // antes do AuthProvider terminar de ler o localStorage.
-  if (isLoading) {
-    return <HomeSkeleton />;
-  }
-
+  // `isLoading` (evita mostrar a home errada — convidado ↔ logado — por um
+  // instante antes do AuthProvider terminar de ler o localStorage) já é
+  // tratado globalmente em `__root.tsx` (`AuthGate`), antes de qualquer
+  // rota chegar a montar — por isto não precisa de ser checado aqui.
   if (isLoggedIn && user) {
     return <HomeLoggedIn />;
   }

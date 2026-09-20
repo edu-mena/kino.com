@@ -12,8 +12,8 @@ import { useTranslation } from "@/i18n";
  * acede ao sistema (logado) — uma vez respondido (ou dispensado), nunca
  * mais volta a aparecer. Quando o card abre/fecha é decidido pelo
  * `TutorialProvider` (ver `@/lib/tutorial`), não por este componente — é o
- * que garante, por construção, que ele e o tour de onboarding nunca
- * aparecem ao mesmo tempo. */
+ * que garante, por construção, que só aparece depois do tour de onboarding
+ * terminar (nunca antes, nem ao mesmo tempo). */
 export function DietaryOnboardingPopup() {
   const { t } = useTranslation();
   const { setDietaryRestrictions } = usePreferences();

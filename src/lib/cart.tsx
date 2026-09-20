@@ -100,6 +100,15 @@ export type CartOrder = {
   paymentProof?: string;
   /** ISO — quando o comprovativo foi carregado. */
   paymentProofAt?: string;
+  /** Fatura carregada pelo restaurante (data URL — imagem ou PDF), visível
+   * ao cliente em `/entrega`. Ausente até o restaurante a emitir. */
+  invoice?: string;
+  /** `"nif"` = fatura com o NIF da empresa do cliente (pedida por ele);
+   * ausente/`"normal"` = fatura simples de consumidor final. Só metadados
+   * para exibição — não há campos de NIF nesta fase. */
+  invoiceType?: "normal" | "nif";
+  /** ISO — quando a fatura foi carregada. */
+  invoiceAt?: string;
 };
 
 type NewCartLine = {
@@ -148,6 +157,9 @@ type CartValue = {
   /** Cliente anexa (ou substitui) o comprovativo de pagamento — data URL de
    * imagem. `null` remove. Visível de imediato no painel do restaurante. */
   setPaymentProof: (orderId: string, dataUrl: string | null) => void;
+  /** Restaurante emite (ou substitui) a fatura — data URL de imagem ou PDF.
+   * `null` remove. Visível de imediato ao cliente em `/entrega`. */
+  setInvoice: (orderId: string, dataUrl: string | null, type?: "normal" | "nif") => void;
   /** @deprecated Passo antigo do checkout do cliente — substituído por
    * `acceptOrder` (o restaurante é que fixa o pagamento). Mantido até o
    * fluxo do cliente ser migrado. */
@@ -411,6 +423,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
   }, [orders, hydrated]);
 
+  // Sem backend real, o painel do restaurante e o cliente partilham o mesmo
+  // localStorage — mas só a aba que escreve vê o novo estado de imediato; as
+  // outras ficavam presas ao que tinham ao abrir. O evento `storage` do
+  // browser dispara nas OUTRAS abas quando uma delas muda a chave — é o que
+  // faz um pedido novo, ou uma mudança de estado, aparecer ao vivo (e disparar
+  // a notificação certa) do outro lado sem precisar recarregar a página.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY) return;
+      if (e.newValue == null) {
+        setOrders(seedOrders());
+        return;
+      }
+      try {
+        setOrders((JSON.parse(e.newValue) as CartOrder[]).map(normalizeOrder));
+      } catch {
+        // payload corrompido vindo doutra aba — mantém o que já temos.
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const value = useMemo<CartValue>(() => {
     const subtotal = orders.reduce((sum, o) => sum + orderSubtotal(o), 0);
     const deliveryFee = orders.reduce((sum, o) => sum + orderDeliveryFee(o), 0);
@@ -530,6 +565,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
               return rest;
             }
             return { ...o, paymentProof: dataUrl, paymentProofAt: new Date().toISOString() };
+          }),
+        ),
+      setInvoice: (orderId, dataUrl, type) =>
+        setOrders((prev) =>
+          prev.map((o) => {
+            if (o.id !== orderId) return o;
+            if (!dataUrl) {
+              const { invoice: _i, invoiceAt: _at, invoiceType: _t, ...rest } = o;
+              return rest;
+            }
+            return {
+              ...o,
+              invoice: dataUrl,
+              invoiceAt: new Date().toISOString(),
+              ...(type ? { invoiceType: type } : {}),
+            };
           }),
         ),
       updateOrderStatus: (orderId, status) =>

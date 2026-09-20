@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Jobs\SendPushNotificationJob;
 use App\Models\Notification;
 use App\Models\Reservation;
 
@@ -22,7 +23,7 @@ class ReservationObserver
 
     private function notify(Reservation $reservation, string $event): void
     {
-        Notification::query()->create([
+        $restaurantNotification = Notification::query()->create([
             'restaurant_id' => $reservation->restaurant_id,
             'kind' => 'reservation',
             'ref_id' => $reservation->id,
@@ -30,14 +31,20 @@ class ReservationObserver
             'status_snapshot' => $reservation->status,
         ]);
 
+        foreach ($reservation->restaurant->staff as $staffUser) {
+            SendPushNotificationJob::dispatch($staffUser, $restaurantNotification);
+        }
+
         if ($reservation->user_id) {
-            Notification::query()->create([
+            $customerNotification = Notification::query()->create([
                 'user_id' => $reservation->user_id,
                 'kind' => 'reservation',
                 'ref_id' => $reservation->id,
                 'event' => $event,
                 'status_snapshot' => $reservation->status,
             ]);
+
+            SendPushNotificationJob::dispatch($reservation->user, $customerNotification);
         }
     }
 }

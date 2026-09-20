@@ -14,7 +14,7 @@ type StoriesAdminValue = {
   createStory: (
     restaurantId: string,
     src: string,
-    opts?: { mediaType?: "image" | "video"; durationSec?: number },
+    opts?: { mediaType?: "image" | "video"; durationSec?: number; text?: string; link?: string },
   ) => { story: RestaurantStory; ok: boolean };
   deleteStory: (id: string) => void;
 };

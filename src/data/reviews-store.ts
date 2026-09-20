@@ -16,13 +16,20 @@ type NewReview = {
   tags?: string[];
 };
 
+type ReviewReply = { text: string; at: string };
+
 type ReviewsState = {
   custom: Review[];
   /** refs já avaliadas: "order:<id>" / "reservation:<id>" — evita repetir. */
   reviewed: string[];
+  /** Respostas do restaurante, por id de review — separado de `custom`
+   * porque uma review pode vir do seed (`INITIAL_REVIEWS`, só leitura) e
+   * ainda assim precisar de resposta; aplicado como camada por cima das
+   * duas em `getEffectiveReviews`, mesmo desenho de `applyProfileEdits`. */
+  replies: Record<string, ReviewReply>;
 };
 
-const EMPTY: ReviewsState = { custom: [], reviewed: [] };
+const EMPTY: ReviewsState = { custom: [], reviewed: [], replies: {} };
 
 function read(): ReviewsState {
   if (typeof window === "undefined") return EMPTY;
@@ -42,7 +49,11 @@ function write(state: ReviewsState) {
 }
 
 export function getEffectiveReviews(): Review[] {
-  return [...INITIAL_REVIEWS, ...read().custom];
+  const { custom, replies } = read();
+  return [...INITIAL_REVIEWS, ...custom].map((r) => {
+    const reply = replies[r.id];
+    return reply ? { ...r, reply } : r;
+  });
 }
 
 export function getCustomReviews(): Review[] {
@@ -65,10 +76,24 @@ export function addReview(input: NewReview, ref?: string): Review {
     tags: input.tags ?? [],
   };
   write({
+    ...state,
     custom: [review, ...state.custom],
     reviewed: ref && !state.reviewed.includes(ref) ? [...state.reviewed, ref] : state.reviewed,
   });
   return review;
+}
+
+/** Restaurante responde (ou edita/remove, se chamado de novo) a uma review
+ * — `text` vazio ou `null` remove a resposta. Funciona tanto para reviews
+ * do seed como para as deixadas por clientes (ver `replies` acima). */
+export function setReviewReply(reviewId: string, text: string | null) {
+  const state = read();
+  const trimmed = text?.trim();
+  const { [reviewId]: _removed, ...rest } = state.replies;
+  const replies = trimmed
+    ? { ...rest, [reviewId]: { text: trimmed, at: new Date().toISOString() } }
+    : rest;
+  write({ ...state, replies });
 }
 
 /** Rating/contagem do restaurante já com as avaliações custom misturadas. */

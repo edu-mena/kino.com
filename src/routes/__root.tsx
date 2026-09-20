@@ -2,14 +2,21 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+// Só faz algo com VITE_SHARED_MOCK_URL definida (ambiente de teste local
+// partilhado, ver mock-server/README.md) — vazio em qualquer outro
+// caso (dev normal, Vercel, produção real), incluindo em SSR.
+import "../lib/shared-mock-sync";
 import appCss from "../styles.css?url";
 import iconImage from "../assets/icon.png";
+import { AppSkeleton } from "../components/app-skeleton";
+import { PendingShareDialog } from "../components/pending-share-dialog";
 import { AddressesProvider } from "../lib/addresses";
 import { BillProvider } from "../lib/bill";
 import { CartProvider } from "../lib/cart";
 import { LocationProvider } from "../lib/location";
-import { AuthProvider } from "../lib/auth";
+import { AuthProvider, useAuth } from "../lib/auth";
 import { MenuAdminProvider } from "../lib/menu-admin";
+import { PendingShareProvider } from "../lib/pending-share";
 import { PreferencesProvider } from "../lib/preferences";
 import { ReservationsProvider } from "../lib/reservations";
 import { StoriesProvider } from "../lib/stories";
@@ -76,6 +83,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: RouteErrorBoundary,
 });
 
+/** Segura *toda* a árvore de rotas até `AuthProvider` saber se há sessão
+ * guardada — sem isto, cada página teria de repetir a mesma checagem para
+ * evitar o "flash" de conteúdo de convidado/logado trocado (era o bug: só a
+ * home e o cardápio público tinham isto, o resto das páginas não). */
+function AuthGate({ children }: { children: ReactNode }) {
+  const { isLoading } = useAuth();
+  if (isLoading) return <AppSkeleton />;
+  return <>{children}</>;
+}
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     // `pt` é o idioma por omissão (mercado de Luanda). `useTranslation`
@@ -96,6 +113,33 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    // Na app nativa (Android/iOS), o WebView por definição desenha por
+    // baixo da barra de estado/notificações (edge-to-edge) — sem isto o
+    // conteúdo fica escondido atrás do relógio/ícones do telemóvel.
+    // `overlay: false` faz o Capacitor dar padding ao WebView em vez de o
+    // deixar desenhar por baixo. Import dinâmico: no-op inofensivo na web.
+    import("@capacitor/core").then(({ Capacitor }) => {
+      if (!Capacitor.isNativePlatform()) return;
+      import("@capacitor/status-bar").then(({ StatusBar }) => {
+        StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    // Web Push só existe no browser — a app nativa (Android/iOS) não usa
+    // este caminho (ver capacitor/README.md), por isso nem regista o
+    // service worker aí. Import dinâmico só para o check de plataforma;
+    // `registerPushServiceWorker` já é no-op sozinho sem suporte.
+    import("@capacitor/core").then(({ Capacitor }) => {
+      if (Capacitor.isNativePlatform()) return;
+      import("../lib/push-notifications").then(({ registerPushServiceWorker }) => {
+        registerPushServiceWorker();
+      });
+    });
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -108,15 +152,20 @@ function RootComponent() {
                     <BillProvider>
                       <MenuAdminProvider>
                         <CartProvider>
-                          <TablesProvider>
-                            <NotificationsProvider>
-                              <TutorialProvider>
-                                {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-                                <Outlet />
-                                <Toaster />
-                              </TutorialProvider>
-                            </NotificationsProvider>
-                          </TablesProvider>
+                          <PendingShareProvider>
+                            <TablesProvider>
+                              <NotificationsProvider>
+                                <TutorialProvider>
+                                  <AuthGate>
+                                    {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                                    <Outlet />
+                                  </AuthGate>
+                                  <PendingShareDialog />
+                                  <Toaster />
+                                </TutorialProvider>
+                              </NotificationsProvider>
+                            </TablesProvider>
+                          </PendingShareProvider>
                         </CartProvider>
                       </MenuAdminProvider>
                     </BillProvider>

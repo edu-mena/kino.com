@@ -137,8 +137,12 @@ function DishDetail() {
 
             {removableFree.length > 0 && (
               <div className="mt-7">
-                <h2 className="font-display text-lg font-bold text-primary">Ingredientes</h2>
-                <p className="text-xs text-muted-foreground">Desmarque o que não quiser.</p>
+                <h2 className="font-display text-lg font-bold text-primary">
+                  {t("dishDetail.ingredientsTitle")}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {t("dishDetail.ingredientsHint")}
+                </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {removableFree.map((ing) => {
                     const on = selected.find((s) => s.id === ing.id)?.included ?? true;
@@ -163,7 +167,9 @@ function DishDetail() {
 
             {extras.length > 0 && (
               <div className="mt-7">
-                <h2 className="font-display text-lg font-bold text-primary">Adicionais</h2>
+                <h2 className="font-display text-lg font-bold text-primary">
+                  {t("dishDetail.extrasTitle")}
+                </h2>
                 <div className="mt-3 space-y-2">
                   {extras.map((extra) => {
                     const on = selected.find((s) => s.id === extra.id)?.included ?? false;
@@ -233,7 +239,9 @@ function DishDetail() {
 
             {otherRestaurants.length > 0 && (
               <div className="mt-8 rounded-xl border border-border bg-surface p-4">
-                <p className="text-xs font-semibold text-muted-foreground">Também disponível em:</p>
+                <p className="text-xs font-semibold text-muted-foreground">
+                  {t("dishDetail.alsoAvailableAt")}
+                </p>
                 <div className="mt-2 space-y-2">
                   {otherRestaurants.map((r) => (
                     <Link
@@ -242,7 +250,8 @@ function DishDetail() {
                       search={{ restaurante: r.id }}
                       className="flex items-center gap-2 text-sm font-semibold text-brand hover:underline"
                     >
-                      {r.name} <span className="text-muted-foreground">— ver aqui</span>
+                      {r.name}{" "}
+                      <span className="text-muted-foreground">{t("dishDetail.viewHere")}</span>
                     </Link>
                   ))}
                 </div>
@@ -251,7 +260,9 @@ function DishDetail() {
           </div>
         </div>
 
-        <h2 className="mt-16 text-2xl font-extrabold text-primary">Também vai gostar</h2>
+        <h2 className="mt-16 text-2xl font-extrabold text-primary">
+          {t("dishDetail.alsoLikeTitle")}
+        </h2>
         <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
           {related.map((m) => (
             <DishCard key={m.id} item={m} />

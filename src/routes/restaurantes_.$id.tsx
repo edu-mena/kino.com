@@ -16,6 +16,7 @@ import icon from "@/assets/icon.png";
 import { LocationMap } from "@/components/location-map";
 import { MenuBrowser } from "@/components/menu-browser";
 import { ReservationDialog } from "@/components/reservation-dialog";
+import { RestaurantRecommendationsDialog } from "@/components/restaurant-recommendations-dialog";
 import { PageShell } from "@/components/site-shell";
 import { StoryViewer } from "@/components/story-viewer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -28,6 +29,8 @@ import {
   getRestaurant,
   getReviewsForRestaurant,
 } from "@/data/helpers";
+import { fetchApiRestaurant } from "@/data/api-restaurants";
+import { hasRealBackend } from "@/lib/api-client";
 import { useTranslation, type Locale } from "@/i18n";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
@@ -42,8 +45,14 @@ import { useRestaurantStatus } from "@/lib/restaurant-status";
 import { isVideoSrc, parseTimeFragment } from "@/lib/video-trim";
 
 export const Route = createFileRoute("/restaurantes_/$id")({
-  loader: ({ params }) => {
-    const restaurant = getRestaurant(params.id);
+  // Loader assíncrono — TanStack Router já trata isto nativamente (SSR
+  // aguarda, cliente mostra `pendingComponent`/suspense). Com backend real,
+  // vai buscar à API; sem ele (demo), o mock continua síncrono, só
+  // embrulhado numa Promise já resolvida.
+  loader: async ({ params }) => {
+    const restaurant = hasRealBackend
+      ? await fetchApiRestaurant(params.id)
+      : getRestaurant(params.id);
     if (!restaurant) throw notFound();
     return restaurant;
   },
@@ -69,6 +78,7 @@ function RestaurantDetail() {
   const { user } = useAuth();
   const allStories = useEffectiveStories();
   const [reservingOpen, setReservingOpen] = useState(false);
+  const [recommendationsOpen, setRecommendationsOpen] = useState(false);
   const [storyOpen, setStoryOpen] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
 
@@ -124,6 +134,10 @@ function RestaurantDetail() {
   const activeTab = hasMedia ? contentTab : "menu";
 
   const paused = !status.available;
+  const pausedReasonText =
+    status.reason === "closed"
+      ? t("restaurantDetail.closedNow", { opensAt: status.opensAt ?? "" })
+      : t("restaurantDetail.paused");
   const suspended = status.reason === "suspended";
   const acceptsReservations = restaurant.acceptsReservations ?? true;
   const userProvince = userLocation ? addressProvince(userLocation.line2) : undefined;
@@ -167,6 +181,18 @@ function RestaurantDetail() {
 
   return (
     <PageShell>
+      {/* Fundo de parede do restaurante (`/admin/perfil`) — decorativo e bem
+          subtil (opacidade baixa), fixo atrás de tudo (`-z-10`, abaixo do
+          z-40 do header/tabbar). Propositadamente ligeiro: o conteúdo da
+          página não foi todo pensado para estar sobre uma imagem, por isso
+          isto é textura de fundo, não um wallpaper "cheio". */}
+      {restaurant.wallpaper && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center opacity-[0.07]"
+          style={{ backgroundImage: `url(${restaurant.wallpaper})` }}
+        />
+      )}
       <div className="relative h-[244px] overflow-hidden sm:h-[308px]">
         <img src={restaurant.coverImage} alt="" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
@@ -177,11 +203,18 @@ function RestaurantDetail() {
           {restaurant.rating} ({restaurant.reviewCount})
         </span>
         {paused && (
-          <span className="absolute right-4 top-4 z-10 whitespace-nowrap rounded-full bg-background/90 px-3 py-1.5 text-xs font-semibold text-destructive backdrop-blur">
-            {status.reason === "closed"
-              ? t("restaurantDetail.closedNow", { opensAt: status.opensAt ?? "" })
-              : t("restaurantDetail.paused")}
-          </span>
+          <div className="absolute right-4 top-4 z-10 flex flex-col items-end gap-1.5">
+            <span className="whitespace-nowrap rounded-full bg-background/90 px-3 py-1.5 text-xs font-semibold text-destructive backdrop-blur">
+              {pausedReasonText}
+            </span>
+            <button
+              type="button"
+              onClick={() => setRecommendationsOpen(true)}
+              className="whitespace-nowrap rounded-full bg-background/90 px-3 py-1 text-[11px] font-semibold text-primary backdrop-blur transition-colors hover:bg-background hover:underline"
+            >
+              {t("restaurantDetail.seeAlternatives")}
+            </button>
+          </div>
         )}
         <div className="absolute inset-x-0 bottom-0 mx-auto max-w-6xl px-4 pb-5 md:px-6">
           <div className="w-full min-w-0">
@@ -412,6 +445,16 @@ function RestaurantDetail() {
                         ))}
                       </div>
                     )}
+                    {review.reply && (
+                      <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+                        <p className="text-xs font-bold uppercase tracking-wide text-primary">
+                          {t("restaurantDetail.ownerReplyLabel", { name: restaurant.name })}
+                        </p>
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
+                          {review.reply.text}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -495,6 +538,12 @@ function RestaurantDetail() {
         restaurant={restaurant}
         open={reservingOpen}
         onOpenChange={setReservingOpen}
+      />
+      <RestaurantRecommendationsDialog
+        open={recommendationsOpen}
+        onOpenChange={setRecommendationsOpen}
+        restaurant={restaurant}
+        reasonText={pausedReasonText}
       />
       {storyOpen && (
         <StoryViewer

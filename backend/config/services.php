@@ -50,4 +50,17 @@ return [
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     ],
 
+    // Web Push (ver App\Services\PushNotificationService) — só cobre browser
+    // (Chrome/Edge/Firefox/Safari), não a app nativa Android/iOS (essa
+    // precisaria de FCM/APNs, fora do escopo desta fase). Par de chaves
+    // VAPID gerado com openssl (ver README ou "php artisan push:vapid" —
+    // não há comando nenhum ainda, gera-se à mão como no README do
+    // minishlink/web-push). A chave pública também é usada pelo frontend
+    // (VITE_VAPID_PUBLIC_KEY) — não é secreta, viaja para o browser.
+    'vapid' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT', 'mailto:suporte@luku.com'),
+    ],
+
 ];

@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  FileText,
   List,
   Mail,
   MapPin,
@@ -12,10 +13,12 @@ import {
   Pencil,
   Phone,
   Plus,
+  Receipt,
   Search,
   TrendingUp,
   TriangleAlert,
   Trash2,
+  Upload,
   UserRound,
   Users,
   Wallet,
@@ -34,6 +37,7 @@ import {
   TrendBadge,
 } from "@/components/admin-stats";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
+import { MediaLightbox } from "@/components/media-lightbox";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -60,6 +64,7 @@ import {
   type DeliveryLevel,
 } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
+import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
@@ -158,8 +163,15 @@ function weekStart(d: Date) {
 function AdminPedidos() {
   const { restaurant } = useRestaurantAdmin();
   const deliveryPolicy = useDeliveryPolicy();
-  const { orders, orderTotal, orderSubtotal, orderDiscount, updateOrderStatus, acceptOrder } =
-    useCart();
+  const {
+    orders,
+    orderTotal,
+    orderSubtotal,
+    orderDiscount,
+    updateOrderStatus,
+    acceptOrder,
+    setInvoice,
+  } = useCart();
   const {
     couriersByRestaurant,
     availableByRestaurant,
@@ -187,6 +199,10 @@ function AdminPedidos() {
   const [editingCourier, setEditingCourier] = useState<Courier | null>(null);
   const [courierDraft, setCourierDraft] = useState<CourierDraft>(emptyCourierDraft);
   const [courierFormOpen, setCourierFormOpen] = useState(false);
+  const [proofLightboxOpen, setProofLightboxOpen] = useState(false);
+  const [invoiceLightboxOpen, setInvoiceLightboxOpen] = useState(false);
+  const [invoiceUploading, setInvoiceUploading] = useState(false);
+  const [invoiceTypeChoice, setInvoiceTypeChoice] = useState<"normal" | "nif">("normal");
 
   // Ao trocar de pedido, limpa a escolha de estafeta e o passo de
   // confirmação de "fora do raio" — nunca herdar decisões do pedido anterior.
@@ -194,6 +210,7 @@ function AdminPedidos() {
     setCourierPick("");
     setConfirmFarId(null);
     setAcceptFor(null);
+    setInvoiceTypeChoice("normal");
   }, [activeId]);
 
   // Troca de aba com deslize horizontal — reaproveita a transição de página
@@ -980,18 +997,25 @@ function AdminPedidos() {
                                 </p>
                                 {active.paymentProof ? (
                                   <>
-                                    <a
-                                      href={active.paymentProof}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="mt-2 block"
+                                    <button
+                                      type="button"
+                                      onClick={() => setProofLightboxOpen(true)}
+                                      aria-label={t("adminPedidos.proofViewAria")}
+                                      className="mt-2 block w-full"
                                     >
-                                      <img
-                                        src={active.paymentProof}
-                                        alt=""
-                                        className="max-h-56 w-full rounded-lg border border-border object-contain"
-                                      />
-                                    </a>
+                                      {isPdfDataUrl(active.paymentProof) ? (
+                                        <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                          <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                          {t("adminPedidos.proofPdfLabel")}
+                                        </span>
+                                      ) : (
+                                        <img
+                                          src={active.paymentProof}
+                                          alt=""
+                                          className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                        />
+                                      )}
+                                    </button>
                                     <p className="mt-1.5 text-xs text-success">
                                       {active.paymentProofAt
                                         ? t("adminPedidos.proofReceivedAt", {
@@ -999,6 +1023,13 @@ function AdminPedidos() {
                                           })
                                         : t("adminPedidos.proofReceived")}
                                     </p>
+                                    <MediaLightbox
+                                      open={proofLightboxOpen}
+                                      onOpenChange={setProofLightboxOpen}
+                                      src={active.paymentProof}
+                                      isPdf={isPdfDataUrl(active.paymentProof)}
+                                      title={t("adminPedidos.proofTitle")}
+                                    />
                                   </>
                                 ) : (
                                   <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -1009,6 +1040,125 @@ function AdminPedidos() {
                               </div>
                             );
                           })()}
+
+                          {/* Fatura emitida pelo restaurante — visível ao cliente em
+                              /entrega. Ao contrário do comprovativo (o cliente carrega,
+                              o restaurante só vê), aqui é o inverso: o restaurante
+                              carrega, o cliente só vê. */}
+                          {active.status !== "pending" &&
+                            active.status !== "rejected" &&
+                            active.status !== "canceled" && (
+                              <div className="mt-4 border-t border-border pt-4">
+                                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                  <Receipt className="h-3.5 w-3.5" />
+                                  {t("adminPedidos.invoiceTitle")}
+                                </p>
+                                {active.invoice ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => setInvoiceLightboxOpen(true)}
+                                      aria-label={t("adminPedidos.invoiceViewAria")}
+                                      className="mt-2 block w-full"
+                                    >
+                                      {isPdfDataUrl(active.invoice) ? (
+                                        <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                          <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                          {t("adminPedidos.invoicePdfLabel")}
+                                        </span>
+                                      ) : (
+                                        <img
+                                          src={active.invoice}
+                                          alt=""
+                                          className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                        />
+                                      )}
+                                    </button>
+                                    <div className="mt-1.5 flex items-center justify-between gap-2">
+                                      <p className="text-xs text-success">
+                                        {t(
+                                          active.invoiceType === "nif"
+                                            ? "adminPedidos.invoiceIssuedNif"
+                                            : "adminPedidos.invoiceIssued",
+                                        )}
+                                      </p>
+                                      <button
+                                        type="button"
+                                        onClick={() => setInvoice(active.id, null)}
+                                        className="shrink-0 text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive"
+                                      >
+                                        {t("adminPedidos.invoiceReplace")}
+                                      </button>
+                                    </div>
+                                    <MediaLightbox
+                                      open={invoiceLightboxOpen}
+                                      onOpenChange={setInvoiceLightboxOpen}
+                                      src={active.invoice}
+                                      isPdf={isPdfDataUrl(active.invoice)}
+                                      title={t("adminPedidos.invoiceTitle")}
+                                    />
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                      {t("adminPedidos.invoiceHint")}
+                                    </p>
+                                    <div className="mt-2 flex gap-1.5">
+                                      {(["normal", "nif"] as const).map((ty) => (
+                                        <button
+                                          key={ty}
+                                          type="button"
+                                          onClick={() => setInvoiceTypeChoice(ty)}
+                                          aria-pressed={invoiceTypeChoice === ty}
+                                          className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors ${
+                                            invoiceTypeChoice === ty
+                                              ? "border-brand bg-brand/10 text-foreground"
+                                              : "border-border text-muted-foreground hover:border-brand"
+                                          }`}
+                                        >
+                                          {t(
+                                            ty === "nif"
+                                              ? "adminPedidos.invoiceTypeNif"
+                                              : "adminPedidos.invoiceTypeNormal",
+                                          )}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 px-4 py-3 text-xs font-bold text-primary transition-colors hover:bg-primary/5">
+                                      <Upload className="h-4 w-4" />
+                                      {invoiceUploading
+                                        ? t("adminPedidos.invoiceUploading")
+                                        : t("adminPedidos.invoiceUpload")}
+                                      <input
+                                        type="file"
+                                        accept="image/*,application/pdf"
+                                        className="hidden"
+                                        disabled={invoiceUploading}
+                                        onChange={async (e) => {
+                                          const file = e.target.files?.[0];
+                                          e.target.value = "";
+                                          if (!file) return;
+                                          setInvoiceUploading(true);
+                                          try {
+                                            const dataUrl = await fileToDocumentDataUrl(file);
+                                            setInvoice(active.id, dataUrl, invoiceTypeChoice);
+                                            toast.success(t("adminPedidos.invoiceSentToast"));
+                                          } catch (err) {
+                                            toast.error(
+                                              err instanceof Error
+                                                ? err.message
+                                                : t("adminPedidos.invoiceError"),
+                                            );
+                                          } finally {
+                                            setInvoiceUploading(false);
+                                          }
+                                        }}
+                                      />
+                                    </label>
+                                  </>
+                                )}
+                              </div>
+                            )}
 
                           {/* Avaliação da entrega — distância vs. raio habitual (só delivery) */}
                           {active.fulfillmentType === "delivery" &&

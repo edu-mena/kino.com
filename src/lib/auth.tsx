@@ -29,6 +29,20 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+/** Token Sanctum do cliente autenticado, lido diretamente do localStorage —
+ * para quem precisa de chamar `apiFetch` fora de um componente (ou sem
+ * arrastar `user`/`isLoading` desnecessários, ver `push-notifications.tsx`).
+ * `null` em demo (`!hasRealBackend`, sem token nenhum guardado) ou sem
+ * sessão. */
+export function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
 const TOKEN_KEY = "luku_auth_token";
 /** Sessão fictícia usada só quando `hasRealBackend` é false (demo em
  * `*.vercel.app`, ver DEPLOY.md) — guarda o `AuthUser` inteiro (não um

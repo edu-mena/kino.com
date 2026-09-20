@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Jobs\SendPushNotificationJob;
 use App\Models\Courier;
 use App\Models\Notification;
 use App\Models\Order;
@@ -40,7 +41,7 @@ class OrderObserver
 
     private function notify(Order $order, string $event): void
     {
-        Notification::query()->create([
+        $restaurantNotification = Notification::query()->create([
             'restaurant_id' => $order->restaurant_id,
             'kind' => 'order',
             'ref_id' => $order->id,
@@ -48,14 +49,24 @@ class OrderObserver
             'status_snapshot' => $order->status,
         ]);
 
+        // Push para toda a equipa do restaurante — mais do que um membro
+        // pode ter o telemóvel/browser com a subscrição ativa (ver
+        // PushNotificationService, é um no-op silencioso para quem não
+        // tem nenhuma subscrição guardada).
+        foreach ($order->restaurant->staff as $staffUser) {
+            SendPushNotificationJob::dispatch($staffUser, $restaurantNotification);
+        }
+
         if ($order->user_id) {
-            Notification::query()->create([
+            $customerNotification = Notification::query()->create([
                 'user_id' => $order->user_id,
                 'kind' => 'order',
                 'ref_id' => $order->id,
                 'event' => $event,
                 'status_snapshot' => $order->status,
             ]);
+
+            SendPushNotificationJob::dispatch($order->user, $customerNotification);
         }
     }
 

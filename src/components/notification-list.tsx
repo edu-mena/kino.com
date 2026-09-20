@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { RestaurantRecommendationsDialog } from "@/components/restaurant-recommendations-dialog";
 import { getRestaurant } from "@/data/helpers";
 import { useTranslation } from "@/i18n";
 import type { LukuNotification } from "@/lib/notifications";
@@ -21,6 +23,12 @@ export function NotificationList({
   onNavigate?: () => void;
 }) {
   const { t } = useTranslation();
+  // Notificação de pedido recusado cujo "ver recomendações" está aberto —
+  // mesmo popup usado no card de pedido/página do restaurante (ver
+  // `RestaurantRecommendationsDialog`), para as sugestões nunca divergirem
+  // conforme onde aparecem.
+  const [recFor, setRecFor] = useState<LukuNotification | null>(null);
+  const recRestaurant = recFor ? getRestaurant(recFor.restaurantId) : undefined;
 
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString(undefined, {
@@ -35,44 +43,68 @@ export function NotificationList({
   }
 
   return (
-    <ul className="divide-y divide-border">
-      {items.map((n) => {
-        const name = getRestaurant(n.restaurantId)?.name ?? "";
-        const to = targetFor(scope, n.kind);
-        const body = (
-          <>
-            <span className="flex items-start gap-2">
-              {!n.read && (
+    <>
+      <ul className="divide-y divide-border">
+        {items.map((n) => {
+          const name = getRestaurant(n.restaurantId)?.name ?? "";
+          const to = targetFor(scope, n.kind);
+          // Pedido recusado — o resto da app já trata isto (ver
+          // `order-builder-card.tsx`/`restaurantes_.$id.tsx`), a notificação
+          // é só mais um sítio de onde chegar às mesmas sugestões.
+          const showRecommend = scope === "client" && n.kind === "order" && n.status === "rejected";
+          const body = (
+            <>
+              <span className="flex items-start gap-2">
+                {!n.read && (
+                  <span
+                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand"
+                    aria-hidden="true"
+                  />
+                )}
                 <span
-                  className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand"
-                  aria-hidden="true"
-                />
-              )}
-              <span
-                className={`block min-w-0 text-sm ${
-                  n.read ? "text-muted-foreground" : "font-semibold text-foreground"
-                }`}
-              >
-                {t(`notifications.${n.event}`, { name })}
+                  className={`block min-w-0 text-sm ${
+                    n.read ? "text-muted-foreground" : "font-semibold text-foreground"
+                  }`}
+                >
+                  {t(`notifications.${n.event}`, { name })}
+                </span>
               </span>
-            </span>
-            <span className="mt-0.5 block pl-3.5 text-[11px] text-muted-foreground">
-              {fmt(n.at)}
-            </span>
-          </>
-        );
-        return (
-          <li key={n.id}>
-            {to ? (
-              <Link to={to} onClick={onNavigate} className="block px-4 py-2.5 hover:bg-surface">
-                {body}
-              </Link>
-            ) : (
-              <div className="px-4 py-2.5">{body}</div>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+              <span className="mt-0.5 block pl-3.5 text-[11px] text-muted-foreground">
+                {fmt(n.at)}
+              </span>
+            </>
+          );
+          return (
+            <li key={n.id}>
+              {to ? (
+                <Link to={to} onClick={onNavigate} className="block px-4 py-2.5 hover:bg-surface">
+                  {body}
+                </Link>
+              ) : (
+                <div className="px-4 py-2.5">{body}</div>
+              )}
+              {showRecommend && (
+                <button
+                  type="button"
+                  onClick={() => setRecFor(n)}
+                  className="block px-4 pb-2.5 pl-[1.625rem] text-xs font-semibold text-primary hover:underline"
+                >
+                  {t("restaurantRecommendations.seeAlternatives")}
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {recFor && recRestaurant && (
+        <RestaurantRecommendationsDialog
+          open
+          onOpenChange={(open) => !open && setRecFor(null)}
+          restaurant={recRestaurant}
+          reasonText={t(`notifications.${recFor.event}`, { name: recRestaurant.name })}
+        />
+      )}
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { X } from "lucide-react";
+import { ExternalLink, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getStoriesForRestaurant } from "@/data/helpers";
@@ -159,7 +159,7 @@ export function StoryViewer({
               else goNext();
             }}
           >
-            <div className="absolute inset-x-0 top-0 z-20 flex gap-1 p-2 pt-3">
+            <div className="absolute inset-x-0 top-0 z-20 flex gap-1 p-2 pt-[calc(0.75rem+env(safe-area-inset-top))]">
               {stories.map((s, i) => (
                 <div key={s.id} className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/30">
                   {i < storyIdx ? (
@@ -186,7 +186,7 @@ export function StoryViewer({
               ))}
             </div>
 
-            <div className="absolute inset-x-0 top-6 z-20 flex items-center justify-between px-3">
+            <div className="absolute inset-x-0 top-[calc(1.5rem+env(safe-area-inset-top))] z-20 flex items-center justify-between px-3">
               <Link
                 to="/restaurantes/$id"
                 params={{ id: restaurant.id }}
@@ -247,6 +247,33 @@ export function StoryViewer({
                 />
               )}
             </div>
+
+            {/* Legenda + link — só quando o story tem (ver painel do
+                restaurante). Não bloqueiam o tap de avançar/recuar: o texto
+                não recebe eventos, e o botão do link para a propagação em
+                vez de deixá-la chegar ao container (que trocaria de story). */}
+            {(story.text || story.link) && (
+              <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-3 bg-gradient-to-t from-black/60 to-transparent px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-10">
+                {story.text && (
+                  <p className="pointer-events-none max-w-md text-center text-sm font-medium text-white drop-shadow">
+                    {story.text}
+                  </p>
+                )}
+                {story.link && (
+                  <a
+                    href={story.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onPointerUp={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black shadow-lg transition-transform active:scale-95"
+                  >
+                    <ExternalLink className="h-4 w-4" /> Ver mais
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

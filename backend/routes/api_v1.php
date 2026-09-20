@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CourierController;
 use App\Http\Controllers\Api\V1\CustomerNoteController;
 use App\Http\Controllers\Api\V1\DeliveryPolicyController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\FavoriteController;
 use App\Http\Controllers\Api\V1\MenuItemController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -275,4 +276,20 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::patch('couriers/{courier}', [CourierController::class, 'update']);
     Route::patch('couriers/{courier}/status', [CourierController::class, 'setStatus']);
     Route::delete('couriers/{courier}', [CourierController::class, 'destroy']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Notificações push (Web Push) — Fase 9
+|--------------------------------------------------------------------------
+| A tabela `device_tokens` já vinha antecipada desde a Fase 0 (enum
+| `platform` já com "web"/"android"/"ios") mesmo sem nada disto estar
+| ligado — ver a migração. Só "web" envia de verdade nesta fase
+| (PushNotificationService, chaves VAPID em config/services.php); registar
+| um token "android"/"ios" aqui já funciona, só que ainda não dispara nada
+| (falta FCM/APNs, fora do escopo agora).
+*/
+Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
+    Route::post('device-tokens', [DeviceTokenController::class, 'store']);
+    Route::delete('device-tokens', [DeviceTokenController::class, 'destroy']);
 });
