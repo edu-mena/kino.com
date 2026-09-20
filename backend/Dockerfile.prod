@@ -26,6 +26,7 @@ RUN apk add --no-cache \
         zip \
         gd \
         opcache \
+        pcntl \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apk del $PHPIZE_DEPS
