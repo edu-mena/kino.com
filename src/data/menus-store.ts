@@ -1,3 +1,4 @@
+import { hasRealBackend } from "@/lib/api-client";
 import { INITIAL_RESTAURANTS } from "./mockData";
 import type { RestaurantMenu } from "./types";
 
@@ -58,9 +59,11 @@ function syntheticDefaultMenu(restaurantId: string): RestaurantMenu {
 export function getEffectiveMenus(): RestaurantMenu[] {
   const { customMenus, overrides, deletedIds } = readState();
 
-  const defaults = INITIAL_RESTAURANTS.map((r) => syntheticDefaultMenu(r.id)).filter(
-    (m) => !deletedIds.includes(m.id),
-  );
+  const defaults = hasRealBackend
+    ? []
+    : INITIAL_RESTAURANTS.map((r) => syntheticDefaultMenu(r.id)).filter(
+        (m) => !deletedIds.includes(m.id),
+      );
 
   return [...defaults, ...customMenus.filter((m) => !deletedIds.includes(m.id))].map((menu) => ({
     ...menu,

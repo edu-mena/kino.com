@@ -1,3 +1,4 @@
+import { hasRealBackend } from "@/lib/api-client";
 import { INITIAL_RESTAURANTS } from "./mockData";
 import { safeLocalStorageSet } from "./safe-storage";
 
@@ -32,6 +33,10 @@ function hash(s: string): number {
 
 /** ~6–14 mesas por restaurante, determinístico a partir do id. */
 export function seedTables(): RestaurantTable[] {
+  // Com backend real, mesas nascem de verdade na aprovação do restaurante
+  // (ver backend/app/Actions/ApprovePartnerApplication.php) — sem seed
+  // fictícia aqui por cima.
+  if (hasRealBackend) return [];
   const out: RestaurantTable[] = [];
   for (const r of INITIAL_RESTAURANTS) {
     const h = hash(r.id);

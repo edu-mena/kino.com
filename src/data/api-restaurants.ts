@@ -163,3 +163,16 @@ export async function fetchApiMenuItems(restaurantId: string): Promise<MenuItem[
   );
   return data.map((m) => mapApiMenuItem(m, restaurantId));
 }
+
+/** Todos os pratos de todos os restaurantes — não há endpoint global no
+ * backend (só por restaurante), por isso agrega aqui: lista restaurantes e
+ * pede o cardápio de cada um em paralelo. Usado pela busca global
+ * (`/cardapio`) e por widgets tipo "Tendências" da home, quando há backend
+ * real e nenhum `restaurantId` específico foi pedido. */
+export async function fetchApiAllMenuItems(): Promise<MenuItem[]> {
+  const restaurants = await fetchApiRestaurants();
+  const perRestaurant = await Promise.all(
+    restaurants.map((r) => fetchApiMenuItems(r.id).catch(() => [])),
+  );
+  return perRestaurant.flat();
+}

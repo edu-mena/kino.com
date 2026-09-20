@@ -15,6 +15,7 @@ import { getAllRestaurants } from "@/data/helpers";
 import { INITIAL_CUSTOMERS } from "@/data/mockData";
 import { PLAN_PRICE } from "@/data/subscriptions-store";
 import { useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
 import { useCart } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
 import { usePartnerApps } from "@/lib/partner-apps";
@@ -266,7 +267,10 @@ function SistemaIndex() {
               tone="muted"
               big={false}
               label={t("sistema.index.kpiCustomers")}
-              value={INITIAL_CUSTOMERS.length.toLocaleString(BCP47[locale])}
+              // Sem endpoint agregado de contagem de clientes no backend
+              // ainda (ver auditoria de go-live) — "—" em vez de inventar
+              // um número com a contagem fictícia da seed.
+              value={hasRealBackend ? "—" : INITIAL_CUSTOMERS.length.toLocaleString(BCP47[locale])}
               hint={t("sistema.index.kpiCustomersHint")}
             />
           </div>
