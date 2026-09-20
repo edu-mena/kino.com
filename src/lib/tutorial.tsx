@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
+import { useAuth } from "@/lib/auth";
 import { usePreferences } from "@/lib/preferences";
 
 const STORAGE_KEY = "luku_tutorial_status";
@@ -22,12 +23,12 @@ type TutorialValue = {
   /** Se o card de restrições alimentares (`DietaryOnboardingPopup`) deve
    * estar visível agora. É o `TutorialProvider` — não o próprio popup — quem
    * decide isto, para garantir por construção que ele e o tour nunca ficam
-   * visíveis ao mesmo tempo: o tour só é autorizado a abrir depois deste
-   * card ser resolvido. */
+   * visíveis ao mesmo tempo: o card abre primeiro (assim que faz login) e o
+   * tour só é autorizado a começar depois de o card ser fechado/respondido,
+   * nunca antes nem ao mesmo tempo. */
   dietaryPopupOpen: boolean;
-  /** Chamado pelo `DietaryOnboardingPopup` quando o card é respondido,
-   * dispensado, ou decidido que não precisa de aparecer. Fecha o card e,
-   * se ainda fizer sentido, agenda a abertura do tour. */
+  /** Chamado pelo `DietaryOnboardingPopup` quando o card é respondido ou
+   * dispensado. Fecha o card e marca-o como visto. */
   resolveDietaryOnboarding: () => void;
 };
 
@@ -35,71 +36,80 @@ const TutorialContext = createContext<TutorialValue | null>(null);
 
 export function TutorialProvider({ children }: { children: ReactNode }) {
   const { dietaryRestrictions } = usePreferences();
+  const { isLoggedIn } = useAuth();
   const [isTourOpen, setIsTourOpen] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dietaryPopupOpen, setDietaryPopupOpen] = useState(false);
-  const resolveDietaryRef = useRef<() => void>(() => {});
+  // Evita decidir duas vezes se `isLoggedIn` oscilar (ex: logout e login de
+  // novo na mesma sessão) — a decisão de abrir tour/card é só uma por app.
+  const decidedRef = useRef(false);
 
-  // Decide tudo (se mostra o card de restrições, se mostra o tour, e em que
-  // ordem) num único efeito — evita um flash de quem já viu tudo antes
-  // (SSR/primeira pintura sem storage) e, mais importante, evita a
-  // sobreposição dos dois: antes, cada um decidia sozinho e só se
-  // coordenava por um evento de `window` + timers cruzados entre
-  // componentes montados em pontos diferentes da árvore, o que deixava uma
-  // janela de corrida (efeitos de filho correm antes dos do pai). Com o
-  // estado dos dois a viver aqui, o tour só pode abrir depois deste efeito
-  // marcar o card de restrições como resolvido — nunca em paralelo.
-  useEffect(() => {
+  const markDietaryDone = () => {
+    try {
+      localStorage.setItem(DIETARY_ONBOARDING_KEY, "done");
+    } catch {
+      // ignora — sem storage, a pergunta volta a aparecer na próxima visita.
+    }
+  };
+
+  /** Decide se o tour deve começar agora — chamado só depois de o card de
+   * restrições ser fechado/respondido (ou de imediato, se o card já tinha
+   * sido resolvido antes). */
+  const startTourIfDue = () => {
     let tourSeen = true;
-    let dietarySeen = true;
     try {
       tourSeen = localStorage.getItem(STORAGE_KEY) === "done";
+    } catch {
+      // localStorage indisponível — trata como já visto, não insiste.
+    }
+    if (tourSeen) return;
+    setIsTourOpen(true);
+  };
+
+  useEffect(() => {
+    if (!isLoggedIn || decidedRef.current) return;
+    decidedRef.current = true;
+
+    let dietarySeen = true;
+    try {
       dietarySeen = localStorage.getItem(DIETARY_ONBOARDING_KEY) === "done";
     } catch {
-      // localStorage indisponível (privado/bloqueado) — trata ambos como já
-      // vistos, não insiste em mostrar nada a cada visita.
+      // localStorage indisponível — trata como já visto, não insiste.
     }
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    let dietaryResolved = dietarySeen;
-
-    const openTourIfDue = () => {
-      if (tourSeen) return;
-      timers.push(setTimeout(() => setIsTourOpen(true), 600));
-    };
-
-    const markDietaryDone = () => {
-      if (dietaryResolved) return;
-      dietaryResolved = true;
-      try {
-        localStorage.setItem(DIETARY_ONBOARDING_KEY, "done");
-      } catch {
-        // ignora — sem storage, a pergunta volta a aparecer na próxima visita.
-      }
-      setDietaryPopupOpen(false);
-      openTourIfDue();
-    };
-    resolveDietaryRef.current = markDietaryDone;
+    if (!dietarySeen && dietaryRestrictions.length > 0) {
+      // Já tem restrições guardadas (definidas antes desta pergunta
+      // existir) — não mostra o card, mas conta como resolvido.
+      markDietaryDone();
+      dietarySeen = true;
+    }
 
     if (!dietarySeen) {
-      if (dietaryRestrictions.length > 0) {
-        // Já tem restrições guardadas (definidas antes desta pergunta
-        // existir) — não mostra o card, mas conta como resolvido.
-        markDietaryDone();
-      } else {
-        timers.push(setTimeout(() => setDietaryPopupOpen(true), 800));
-        // Rede de segurança: se o card nunca se resolver (utilizador some
-        // sem interagir), o tour arranca à mesma passado algum tempo.
-        timers.push(setTimeout(markDietaryDone, 8000));
-      }
-    } else {
-      openTourIfDue();
+      // O tempo de exibição conta a partir de agora, não do carregamento da
+      // app — importante para quem demora a fazer login não "gastar" o card
+      // sem nunca chegar a vê-lo (era esse o bug: a rede de segurança de 8s
+      // estava ancorada ao boot da app, por isso muitas vezes o card já
+      // estava a meio da contagem — ou mesmo prestes a fechar sozinho —
+      // quando o utilizador finalmente chegava à home).
+      const timer = setTimeout(() => setDietaryPopupOpen(true), 600);
+      return () => clearTimeout(timer);
     }
+    // Card já visto antes — não há por onde esperar, decide o tour já.
+    const timer = setTimeout(startTourIfDue, 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- decide isto uma única vez, quando o login resolve.
+  }, [isLoggedIn]);
 
-    return () => timers.forEach(clearTimeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- decide isto uma única vez, na primeira pintura.
-  }, []);
+  // Rede de segurança do card de preferências: se ninguém interagir, fecha-se
+  // sozinho — a contagem só começa quando o card fica mesmo visível (não no
+  // boot da app), para nunca comer o tempo de exibição do utilizador.
+  useEffect(() => {
+    if (!dietaryPopupOpen) return;
+    const timer = setTimeout(() => resolveDietaryOnboarding(), 8000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só depende de abrir/fechar.
+  }, [dietaryPopupOpen]);
 
   const markTourDone = () => {
     try {
@@ -111,6 +121,14 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     // O tour pode ter aberto o painel mobile sozinho (passos de idioma/
     // preferências) — não deixa-lo aberto depois de terminar/pular.
     setMobileMenuOpen(false);
+  };
+
+  const resolveDietaryOnboarding = () => {
+    markDietaryDone();
+    setDietaryPopupOpen(false);
+    // O tour só é mostrado depois do card de preferências (respondido ou
+    // dispensado) — nunca antes, para não competir com ele pela atenção.
+    setTimeout(startTourIfDue, 500);
   };
 
   const value: TutorialValue = {
@@ -126,7 +144,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     mobileMenuOpen,
     setMobileMenuOpen,
     dietaryPopupOpen,
-    resolveDietaryOnboarding: () => resolveDietaryRef.current(),
+    resolveDietaryOnboarding,
   };
 
   return <TutorialContext.Provider value={value}>{children}</TutorialContext.Provider>;

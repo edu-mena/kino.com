@@ -104,7 +104,12 @@ function AdminShellContent({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    // Sem `bg-background` aqui de propósito: o `body` já pinta essa mesma
+    // cor globalmente (ver styles.css) — repeti-la aqui criava uma camada
+    // opaca cobrindo o ecrã inteiro, à frente de qualquer fundo com z-index
+    // negativo (ex.: o wallpaper do restaurante em /admin/perfil), tornando-o
+    // impossível de ver mesmo estando corretamente no HTML.
+    <div className="flex min-h-screen">
       {/* Sidebar — desktop */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden h-screen w-24 flex-col border-r border-border bg-background py-6 lg:flex xl:w-64">
         <Link to="/admin" className="mx-auto shrink-0 px-2 pb-6 xl:mx-4">
@@ -154,7 +159,7 @@ function AdminShellContent({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col lg:ml-24 xl:ml-64">
         {/* Top bar — mobile */}
-        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-white px-4 py-3 lg:hidden">
+        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-white px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:hidden">
           <Link to="/admin" className="flex min-w-0 items-center gap-2">
             <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-surface">
               <img src={restaurant.coverImage} alt="" className="h-full w-full object-cover" />
