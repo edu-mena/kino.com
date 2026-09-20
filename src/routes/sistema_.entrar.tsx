@@ -3,6 +3,7 @@ import { ArrowLeft, Lock, Mail, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
+import { ForgotPasswordDialog } from "@/components/forgot-password-dialog";
 import { Logo } from "@/components/logo";
 import { useTranslation } from "@/i18n";
 import { apiFetch, ApiError, hasRealBackend } from "@/lib/api-client";
@@ -31,6 +32,7 @@ function SistemaEntrar() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const { t } = useTranslation();
 
   // Avisa o backend (email de alerta + auditoria, ver
@@ -115,10 +117,19 @@ function SistemaEntrar() {
           </button>
         </form>
 
-        <p className="mt-8 text-center text-xs text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => setForgotOpen(true)}
+          className="mt-4 block w-full text-center text-sm font-semibold text-primary hover:underline"
+        >
+          {t("adminEntrar.forgotPassword")}
+        </button>
+
+        <p className="mt-6 text-center text-xs text-muted-foreground">
           {t("sistema.entrar.notice")}
         </p>
       </div>
+      <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} />
     </div>
   );
 }

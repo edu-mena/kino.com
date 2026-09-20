@@ -16,6 +16,7 @@ import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as CardapioRouteImport } from './routes/cardapio'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactoRouteImport } from './routes/contacto'
+import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as EntregaRouteImport } from './routes/entrega'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
@@ -93,6 +94,11 @@ const CheckoutRoute = CheckoutRouteImport.update({
 const ContactoRoute = ContactoRouteImport.update({
   id: '/contacto',
   path: '/contacto',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DefinirSenhaRoute = DefinirSenhaRouteImport.update({
+  id: '/definir-senha',
+  path: '/definir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntrarRoute = EntrarRouteImport.update({
@@ -319,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/cardapio': typeof CardapioRoute
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
+  '/definir-senha': typeof DefinirSenhaRoute
   '/entrar': typeof EntrarRoute
   '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
@@ -370,6 +377,7 @@ export interface FileRoutesByTo {
   '/cardapio': typeof CardapioRoute
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
+  '/definir-senha': typeof DefinirSenhaRoute
   '/entrar': typeof EntrarRoute
   '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
@@ -422,6 +430,7 @@ export interface FileRoutesById {
   '/cardapio': typeof CardapioRoute
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
+  '/definir-senha': typeof DefinirSenhaRoute
   '/entrar': typeof EntrarRoute
   '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
@@ -476,6 +485,7 @@ export interface FileRouteTypes {
     | '/cardapio'
     | '/checkout'
     | '/contacto'
+    | '/definir-senha'
     | '/entrar'
     | '/entrega'
     | '/favoritos'
@@ -527,6 +537,7 @@ export interface FileRouteTypes {
     | '/cardapio'
     | '/checkout'
     | '/contacto'
+    | '/definir-senha'
     | '/entrar'
     | '/entrega'
     | '/favoritos'
@@ -578,6 +589,7 @@ export interface FileRouteTypes {
     | '/cardapio'
     | '/checkout'
     | '/contacto'
+    | '/definir-senha'
     | '/entrar'
     | '/entrega'
     | '/favoritos'
@@ -631,6 +643,7 @@ export interface RootRouteChildren {
   CardapioRoute: typeof CardapioRoute
   CheckoutRoute: typeof CheckoutRoute
   ContactoRoute: typeof ContactoRoute
+  DefinirSenhaRoute: typeof DefinirSenhaRoute
   EntrarRoute: typeof EntrarRoute
   EntregaRoute: typeof EntregaRoute
   FavoritosRoute: typeof FavoritosRoute
@@ -704,6 +717,13 @@ declare module '@tanstack/react-router' {
       path: '/contacto'
       fullPath: '/contacto'
       preLoaderRoute: typeof ContactoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/definir-senha': {
+      id: '/definir-senha'
+      path: '/definir-senha'
+      fullPath: '/definir-senha'
+      preLoaderRoute: typeof DefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entrar': {
@@ -1077,6 +1097,7 @@ const rootRouteChildren: RootRouteChildren = {
   CardapioRoute: CardapioRoute,
   CheckoutRoute: CheckoutRoute,
   ContactoRoute: ContactoRoute,
+  DefinirSenhaRoute: DefinirSenhaRoute,
   EntrarRoute: EntrarRoute,
   EntregaRoute: EntregaRoute,
   FavoritosRoute: FavoritosRoute,

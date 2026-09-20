@@ -778,6 +778,37 @@ export const fr: Dictionary = {
     notPartnerYet: "Pas encore partenaire ?",
     becomePartner: "Devenir partenaire",
     backHome: "Retour à l'accueil",
+    forgotPassword: "Mot de passe oublié",
+  },
+  forgotPassword: {
+    title: "Mot de passe oublié",
+    description:
+      "Indiquez l'email de votre compte — nous enverrons un lien pour définir un nouveau mot de passe.",
+    emailPlaceholder: "Email",
+    submit: "Envoyer le lien",
+    submitting: "Envoi...",
+    error: "Impossible d'envoyer. Réessayez.",
+    sentTitle: "Consultez votre email",
+    sentDescription:
+      "Si {email} a un compte, nous avons envoyé un lien pour définir un nouveau mot de passe.",
+  },
+  definirSenha: {
+    title: "Définir un nouveau mot de passe",
+    description: "Définition d'un nouveau mot de passe pour {email}.",
+    passwordPlaceholder: "Nouveau mot de passe",
+    confirmPlaceholder: "Confirmer le nouveau mot de passe",
+    submit: "Enregistrer",
+    submitting: "Enregistrement...",
+    mismatchError: "Les mots de passe ne correspondent pas.",
+    error:
+      "Impossible de définir le mot de passe. Le lien a peut-être expiré — demandez-en un nouveau.",
+    invalidTitle: "Lien invalide",
+    invalidDescription:
+      "Ce lien de récupération est incomplet ou déjà utilisé. Demandez-en un nouveau.",
+    doneTitle: "Mot de passe défini",
+    doneDescription: "Votre mot de passe a été modifié. Vous pouvez déjà vous connecter avec.",
+    goToAdmin: "Se connecter au panneau du restaurant",
+    goToSistema: "Se connecter à l'administration système",
   },
   sistema: {
     shellBadge: "Système",

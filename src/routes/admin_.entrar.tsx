@@ -3,6 +3,7 @@ import { ArrowLeft, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
+import { ForgotPasswordDialog } from "@/components/forgot-password-dialog";
 import { Logo } from "@/components/logo";
 import { useTranslation } from "@/i18n";
 import { ApiError } from "@/lib/api-client";
@@ -31,6 +32,7 @@ function AdminEntrar() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,13 +101,22 @@ function AdminEntrar() {
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => setForgotOpen(true)}
+          className="mt-4 block w-full text-center text-sm font-semibold text-primary hover:underline"
+        >
+          {t("adminEntrar.forgotPassword")}
+        </button>
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           {t("adminEntrar.notPartnerYet")}{" "}
           <Link to="/parceiros" className="font-bold text-primary">
             {t("adminEntrar.becomePartner")}
           </Link>
         </p>
       </div>
+      <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} />
     </div>
   );
 }
