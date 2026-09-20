@@ -99,6 +99,18 @@ test('manager pode editar dados gerais mas não campos de política de negócio 
         ->caution_amount->toEqual(0);
 });
 
+test('owner atualiza a imagem de capa do restaurante', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+
+    $this->actingAs($owner, 'sanctum')
+        ->patchJson("/api/v1/restaurants/{$restaurant->uuid}", [
+            'cover_image_url' => 'https://cdn.luku.ao/covers/novo.jpg',
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.coverImageUrl', 'https://cdn.luku.ao/covers/novo.jpg');
+});
+
 test('owner consegue editar campos de política de negócio', function () {
     $restaurant = Restaurant::factory()->create();
     $owner = ownerOf($restaurant);
