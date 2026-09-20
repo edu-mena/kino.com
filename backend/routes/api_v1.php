@@ -248,6 +248,7 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::put('preferences', [UserPreferenceController::class, 'update']);
 
     Route::get('reservations', [ReservationController::class, 'mine']);
+    Route::get('orders', [OrderController::class, 'mine']);
 
     Route::get('restaurants/{restaurant}/tables', [RestaurantTableController::class, 'index']);
     Route::post('restaurants/{restaurant}/tables', [RestaurantTableController::class, 'store']);

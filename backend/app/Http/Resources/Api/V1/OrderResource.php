@@ -14,6 +14,12 @@ class OrderResource extends JsonResource
         return [
             'id' => $this->uuid,
             'restaurantId' => $this->whenLoaded('restaurant', fn () => $this->restaurant->uuid),
+            // Só presentes quando `restaurant` foi carregado (ver
+            // OrderController::mine) — a lista "meus pedidos" do cliente
+            // atravessa vários restaurantes, precisa de mostrar
+            // nome/imagem sem um pedido à parte por pedido.
+            'restaurantName' => $this->whenLoaded('restaurant', fn () => $this->restaurant->name),
+            'restaurantImage' => $this->whenLoaded('restaurant', fn () => $this->restaurant->cover_image_url),
             // guestToken propositadamente FORA daqui — só é devolvido uma
             // vez, na resposta de criação (ver OrderController::store),
             // nunca em GETs subsequentes. O convidado guarda-o localmente;
