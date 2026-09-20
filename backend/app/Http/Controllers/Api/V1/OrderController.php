@@ -32,7 +32,7 @@ class OrderController extends Controller
     public function mine(Request $request): AnonymousResourceCollection
     {
         $orders = $request->user()->orders()
-            ->with('lines.menuItem', 'restaurant')
+            ->with('lines.menuItem', 'restaurant', 'courier')
             ->latest()
             ->cursorPaginate($request->integer('per_page', 30));
 
@@ -60,7 +60,7 @@ class OrderController extends Controller
             $this->assertOwnerOrGuest($request, $order);
         }
 
-        return new OrderResource($order->load('lines.menuItem', 'restaurant'));
+        return new OrderResource($order->load('lines.menuItem', 'restaurant', 'courier'));
     }
 
     public function store(
@@ -218,6 +218,26 @@ class OrderController extends Controller
 
         $url = $uploads->storeImage($request->file('proof'), 'payment-proof', $order->uuid);
         $order->update(['payment_proof_url' => $url, 'payment_proof_at' => now()]);
+
+        return new OrderResource($order);
+    }
+
+    /** Restaurante emite (ou substitui) a fatura — imagem ou PDF, visível
+     * ao cliente em `/entrega` (ver mock, `setInvoice`). */
+    public function storeInvoice(Request $request, Order $order, MediaUploadService $uploads): OrderResource
+    {
+        $this->authorize('manageOperations', $order->restaurant);
+        $data = $request->validate([
+            'invoice' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:8192'],
+            'type' => ['sometimes', 'in:normal,nif'],
+        ]);
+
+        $url = $uploads->storeDocument($request->file('invoice'), 'invoice', $order->uuid);
+        $order->update([
+            'invoice_url' => $url,
+            'invoice_type' => $data['type'] ?? 'normal',
+            'invoice_at' => now(),
+        ]);
 
         return new OrderResource($order);
     }

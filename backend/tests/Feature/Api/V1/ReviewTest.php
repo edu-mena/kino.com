@@ -108,3 +108,50 @@ test('só system_operator apaga review (moderação) — restaurante não pode c
     $this->actingAs($operator, 'sanctum')->deleteJson("/api/v1/reviews/{$review->uuid}")->assertStatus(204);
     expect($restaurant->fresh()->review_count)->toBe(0);
 });
+
+test('dono do restaurante responde a uma avaliação e a resposta aparece no recurso', function () {
+    $restaurant = Restaurant::factory()->create();
+    $user = User::factory()->create();
+    $review = $restaurant->reviews()->create([
+        'customer_name' => $user->name, 'user_id' => $user->id, 'rating' => 3,
+        'date' => now()->toDateString(), 'comment' => 'Podia ser melhor',
+    ]);
+    $owner = ownerOf($restaurant);
+
+    $this->actingAs($owner, 'sanctum')
+        ->putJson("/api/v1/reviews/{$review->uuid}/reply", ['text' => 'Obrigado pelo feedback!'])
+        ->assertOk()
+        ->assertJsonPath('data.reply.text', 'Obrigado pelo feedback!');
+
+    expect($review->fresh()->reply_at)->not->toBeNull();
+});
+
+test('enviar texto vazio apaga a resposta existente', function () {
+    $restaurant = Restaurant::factory()->create();
+    $user = User::factory()->create();
+    $review = $restaurant->reviews()->create([
+        'customer_name' => $user->name, 'user_id' => $user->id, 'rating' => 3,
+        'date' => now()->toDateString(), 'reply_text' => 'Já respondida', 'reply_at' => now(),
+    ]);
+    $owner = ownerOf($restaurant);
+
+    $this->actingAs($owner, 'sanctum')
+        ->putJson("/api/v1/reviews/{$review->uuid}/reply", ['text' => null])
+        ->assertOk()
+        ->assertJsonPath('data.reply', null);
+
+    expect($review->fresh())->reply_text->toBeNull()->reply_at->toBeNull();
+});
+
+test('staff de outro restaurante não consegue responder à avaliação', function () {
+    $restaurant = Restaurant::factory()->create();
+    $otherRestaurant = Restaurant::factory()->create();
+    $otherOwner = ownerOf($otherRestaurant);
+    $review = $restaurant->reviews()->create([
+        'customer_name' => 'X', 'rating' => 3, 'date' => now()->toDateString(),
+    ]);
+
+    $this->actingAs($otherOwner, 'sanctum')
+        ->putJson("/api/v1/reviews/{$review->uuid}/reply", ['text' => 'Oi'])
+        ->assertForbidden();
+});

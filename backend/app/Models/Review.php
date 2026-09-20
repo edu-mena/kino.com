@@ -16,7 +16,7 @@ class Review extends Model
 
     protected $fillable = [
         'restaurant_id', 'user_id', 'customer_name', 'rating', 'date',
-        'comment', 'tags', 'ref_type', 'ref_id',
+        'comment', 'tags', 'ref_type', 'ref_id', 'reply_text', 'reply_at',
     ];
 
     protected function casts(): array
@@ -24,6 +24,7 @@ class Review extends Model
         return [
             'date' => 'date',
             'tags' => 'array',
+            'reply_at' => 'datetime',
         ];
     }
 

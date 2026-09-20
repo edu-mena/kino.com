@@ -7,7 +7,9 @@ use App\Http\Requests\Api\V1\Subscriptions\ExtendTrialRequest;
 use App\Http\Requests\Api\V1\Subscriptions\UpdateSubscriptionRequest;
 use App\Http\Resources\Api\V1\SubscriptionResource;
 use App\Models\Restaurant;
+use App\Models\RestaurantSubscription;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
  * Espelha src/data/subscriptions-store.ts (setPlan/setStatus/
@@ -18,6 +20,18 @@ use Illuminate\Http\Request;
  */
 class SubscriptionController extends Controller
 {
+    /** Todas as subscrições — painel de sistema (`/sistema/subscricoes`,
+     * MRR/trials/atrasos). Não existia nenhum endpoint agregado, só por
+     * restaurante — ver auditoria de go-live. */
+    public function index(Request $request): AnonymousResourceCollection
+    {
+        abort_unless($request->user()->isSystemOperator(), 403);
+
+        return SubscriptionResource::collection(
+            RestaurantSubscription::query()->with('restaurant')->get(),
+        );
+    }
+
     public function show(Request $request, Restaurant $restaurant): SubscriptionResource
     {
         abort_unless(

@@ -45,6 +45,17 @@ class OrderResource extends JsonResource
             'promoFreeDelivery' => $this->promo_free_delivery,
             'paymentProofUrl' => $this->payment_proof_url,
             'paymentProofAt' => $this->payment_proof_at?->toIso8601String(),
+            'invoiceUrl' => $this->invoice_url,
+            'invoiceType' => $this->invoice_type,
+            'invoiceAt' => $this->invoice_at?->toIso8601String(),
+            // Só quando `courier` foi carregado (ver OrderController::show/
+            // mine) — nome/telefone/veículo do estafeta a caminho, visível
+            // ao cliente enquanto o pedido está "on_the_way".
+            'courier' => $this->whenLoaded('courier', fn () => $this->courier ? [
+                'name' => $this->courier->name,
+                'phone' => $this->courier->phone,
+                'vehicle' => $this->courier->vehicle,
+            ] : null),
             'subtotal' => (float) $this->subtotal,
             'deliveryFee' => (float) $this->delivery_fee,
             'total' => (float) $this->total,

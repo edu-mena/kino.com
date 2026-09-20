@@ -16,7 +16,7 @@ class Restaurant extends Model
 
     protected $fillable = [
         'name', 'description', 'cuisine', 'address', 'neighborhood', 'city',
-        'lat', 'lng', 'phone', 'email', 'cover_image_url',
+        'lat', 'lng', 'phone', 'email', 'cover_image_url', 'wallpaper_url',
         'is_delivery_available', 'fulfillment_modes', 'accepted_payment_methods',
         'caution_modes_for_orders', 'delivery_zones', 'delivery_fee',
         'estimated_delivery_minutes', 'caution_amount', 'caution_policy_notice',

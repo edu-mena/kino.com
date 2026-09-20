@@ -25,7 +25,11 @@ class MediaUploadService
     // "payment-proof" (comprovativo de pagamento anexado pelo cliente a um
     // pedido, Fase 3), que não passa por crop/preset nenhum no cliente, só
     // validação de tipo/tamanho aqui.
-    private const IMAGE_PURPOSES = ['dish', 'cover', 'gallery', 'promo', 'story', 'payment-proof'];
+    private const IMAGE_PURPOSES = ['dish', 'cover', 'wallpaper', 'gallery', 'promo', 'story', 'payment-proof'];
+
+    /** Aceitam imagem OU PDF (ver storeDocument) — fatura emitida pelo
+     * restaurante, tal como no mock (`entrega.tsx`, `isPdfDataUrl`). */
+    private const DOCUMENT_PURPOSES = ['invoice'];
 
     /** Só os 2 media_type que aceitam vídeo no schema (ver migrations). */
     private const VIDEO_PURPOSES = ['story', 'promo'];
@@ -50,6 +54,31 @@ class MediaUploadService
         }
 
         $extension = $file->extension() ?: 'jpg';
+        $path = "{$purpose}/{$ownerSegment}/".Str::uuid().".{$extension}";
+
+        Storage::disk('r2')->put($path, file_get_contents($file->getRealPath()), 'public');
+
+        return Storage::disk('r2')->url($path);
+    }
+
+    /** Como `storeImage`, mas aceita imagem OU PDF — fatura emitida pelo
+     * restaurante (ver DOCUMENT_PURPOSES). */
+    public function storeDocument(UploadedFile $file, string $purpose, string $ownerSegment): string
+    {
+        if (! in_array($purpose, self::DOCUMENT_PURPOSES, true)) {
+            throw new RuntimeException('invalid_upload_purpose');
+        }
+
+        if ($file->getSize() > self::MAX_IMAGE_BYTES) {
+            throw new RuntimeException('file_too_large');
+        }
+
+        $mime = (string) $file->getMimeType();
+        if (! str_starts_with($mime, 'image/') && $mime !== 'application/pdf') {
+            throw new RuntimeException('invalid_mime_type');
+        }
+
+        $extension = $file->extension() ?: ($mime === 'application/pdf' ? 'pdf' : 'jpg');
         $path = "{$purpose}/{$ownerSegment}/".Str::uuid().".{$extension}";
 
         Storage::disk('r2')->put($path, file_get_contents($file->getRealPath()), 'public');

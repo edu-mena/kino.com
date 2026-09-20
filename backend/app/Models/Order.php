@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 #[ObservedBy(OrderObserver::class)]
@@ -24,6 +25,7 @@ class Order extends Model
         'payment_method_code', 'caution_required', 'note',
         'promo_code', 'promo_label', 'promo_percent_off', 'promo_free_delivery',
         'payment_proof_url', 'payment_proof_at',
+        'invoice_url', 'invoice_type', 'invoice_at',
         'subtotal', 'delivery_fee', 'total',
     ];
 
@@ -37,6 +39,7 @@ class Order extends Model
             'caution_required' => 'decimal:2',
             'promo_free_delivery' => 'boolean',
             'payment_proof_at' => 'datetime',
+            'invoice_at' => 'datetime',
             'subtotal' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
             'total' => 'decimal:2',
@@ -60,6 +63,15 @@ class Order extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** Estafeta a caminho com este pedido — inverso de
+     * `Courier::activeOrder()` (FK vive lá, `active_order_id`). Só
+     * preenchido enquanto `status === 'on_the_way'` (ver
+     * OrderController::dispatch/updateStatus). */
+    public function courier(): HasOne
+    {
+        return $this->hasOne(Courier::class, 'active_order_id');
     }
 
     public function lines(): HasMany

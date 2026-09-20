@@ -9,6 +9,8 @@ use App\Models\Restaurant;
 use App\Models\RestaurantMenu;
 use App\Models\SavedAddress;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 function createOrderableRestaurant(array $attrs = []): Restaurant
@@ -273,12 +275,58 @@ test('transições de estado seguem a máquina certa (delivery: accepted -> on_t
         ->assertOk()->assertJsonPath('data.status', 'on_the_way');
     expect($courier->fresh())->status->toBe('em_entrega')->active_order_id->toBe($order->id);
 
+    // Estafeta a caminho fica visível ao cliente (ver OrderResource.courier).
+    $this->actingAs($owner, 'sanctum')
+        ->getJson("/api/v1/orders/{$order->uuid}")
+        ->assertOk()->assertJsonPath('data.courier.name', $courier->name);
+
     $this->actingAs($owner, 'sanctum')
         ->patchJson("/api/v1/orders/{$order->uuid}/status", ['status' => 'delivered'])
         ->assertOk()->assertJsonPath('data.status', 'delivered');
     expect($order->fresh()->delivered_at)->not->toBeNull();
     // Entregue -> estafeta libertado automaticamente (OrderObserver).
     expect($courier->fresh())->status->toBe('disponivel')->active_order_id->toBeNull();
+});
+
+test('restaurante emite a fatura do pedido (imagem ou PDF), cliente convidado consegue ver o link', function () {
+    Storage::fake('r2', ['url' => 'https://cdn.luku.com']);
+    $restaurant = createOrderableRestaurant();
+    $owner = ownerOf($restaurant);
+    $order = $restaurant->orders()->create([
+        'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900',
+        'pickup_asap' => true, 'status' => 'accepted', 'subtotal' => 1000, 'total' => 1000,
+        'guest_token' => Str::uuid(),
+    ]);
+
+    $file = UploadedFile::fake()->create('fatura.pdf', 200, 'application/pdf');
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/orders/{$order->uuid}/invoice", ['invoice' => $file, 'type' => 'nif'])
+        ->assertOk()
+        ->assertJsonPath('data.invoiceType', 'nif')
+        ->assertJsonPath('data.invoiceUrl', fn ($url) => str_contains($url, '.pdf'));
+
+    expect($order->fresh()->invoice_at)->not->toBeNull();
+
+    $this->withHeader('X-Guest-Token', (string) $order->guest_token)
+        ->getJson("/api/v1/orders/{$order->uuid}")
+        ->assertOk()
+        ->assertJsonPath('data.invoiceType', 'nif');
+});
+
+test('staff de outro restaurante não consegue emitir fatura', function () {
+    $restaurant = createOrderableRestaurant();
+    $otherRestaurant = createOrderableRestaurant();
+    $otherOwner = ownerOf($otherRestaurant);
+    $order = $restaurant->orders()->create([
+        'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900',
+        'pickup_asap' => true, 'status' => 'accepted', 'subtotal' => 1000, 'total' => 1000,
+    ]);
+    $file = UploadedFile::fake()->create('fatura.pdf', 200, 'application/pdf');
+
+    $this->actingAs($otherOwner, 'sanctum')
+        ->postJson("/api/v1/orders/{$order->uuid}/invoice", ['invoice' => $file])
+        ->assertForbidden();
 });
 
 test('cliente só cancela o próprio pedido enquanto pending', function () {
