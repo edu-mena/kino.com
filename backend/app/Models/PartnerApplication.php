@@ -13,7 +13,7 @@ class PartnerApplication extends Model
 
     protected $fillable = [
         'restaurant_name', 'owner_name', 'phone', 'email', 'province',
-        'message', 'status', 'created_restaurant_id',
+        'message', 'photo_url', 'status', 'created_restaurant_id',
     ];
 
     public function createdRestaurant(): BelongsTo

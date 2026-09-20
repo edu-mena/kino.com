@@ -10,10 +10,12 @@ use App\Http\Resources\Api\V1\RestaurantResource;
 use App\Mail\PartnerApplicationConfirmationMail;
 use App\Mail\PartnerApplicationReceivedMail;
 use App\Models\PartnerApplication;
+use App\Services\MediaUploadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 /** Todo o controller (exceto `store`) é system_operator-only — candidaturas
  * são um assunto interno Luku, nunca visível a restaurant_staff. */
@@ -35,9 +37,20 @@ class PartnerApplicationController extends Controller
      * depender do candidato abrir aplicação de email nenhuma (substitui o
      * `mailto:` que o frontend usava antes): um para a equipa Luku
      * decidir, outro de confirmação para o próprio candidato. */
-    public function store(StorePartnerApplicationRequest $request): JsonResponse
+    public function store(StorePartnerApplicationRequest $request, MediaUploadService $uploads): JsonResponse
     {
-        $application = PartnerApplication::query()->create([...$request->validated(), 'status' => 'pending']);
+        $data = $request->validated();
+        $photo = $request->file('photo');
+        unset($data['photo']);
+
+        // Sem `id`/`uuid` próprio ainda (a linha só nasce a seguir) — usa um
+        // uuid à parte só para nomear a pasta no disco, igual em espírito ao
+        // resto do MediaUploadService (sempre um segmento único por dono).
+        if ($photo) {
+            $data['photo_url'] = $uploads->storeImage($photo, 'partner', (string) Str::uuid());
+        }
+
+        $application = PartnerApplication::query()->create([...$data, 'status' => 'pending']);
 
         Mail::to(config('mail.partners_notification_address'))
             ->queue(new PartnerApplicationReceivedMail($application));

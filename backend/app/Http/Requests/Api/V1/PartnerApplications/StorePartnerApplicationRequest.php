@@ -22,6 +22,11 @@ class StorePartnerApplicationRequest extends FormRequest
             'email' => ['required', 'email', 'max:150'],
             'province' => ['sometimes', 'nullable', 'string', 'max:100'],
             'message' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            // Foto do restaurante escolhida no passo 1 do formulário — vira
+            // a imagem de capa do restaurante, se a candidatura for
+            // aprovada (ver ApprovePartnerApplication). Opcional: nem todo
+            // candidato tem uma foto à mão nesse momento.
+            'photo' => ['sometimes', 'nullable', 'image', 'max:8192'],
         ];
     }
 }

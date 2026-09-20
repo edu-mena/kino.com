@@ -25,7 +25,7 @@ class MediaUploadService
     // "payment-proof" (comprovativo de pagamento anexado pelo cliente a um
     // pedido, Fase 3), que não passa por crop/preset nenhum no cliente, só
     // validação de tipo/tamanho aqui.
-    private const IMAGE_PURPOSES = ['dish', 'cover', 'wallpaper', 'gallery', 'promo', 'story', 'payment-proof'];
+    private const IMAGE_PURPOSES = ['dish', 'cover', 'wallpaper', 'gallery', 'promo', 'story', 'payment-proof', 'partner'];
 
     /** Aceitam imagem OU PDF (ver storeDocument) — fatura emitida pelo
      * restaurante, tal como no mock (`entrega.tsx`, `isPdfDataUrl`). */

@@ -42,6 +42,15 @@ function SistemaParceiros() {
   const { enterAsOperator } = useRestaurantAdmin();
   const { token: operatorToken } = useSystemAdmin();
   const navigate = useNavigate();
+  // Sem isto, um duplo-clique em "Aprovar" (nada na UI mostrava que já
+  // estava a processar) disparava dois pedidos de aprovação em corrida —
+  // no melhor caso o 2º dava 422 "já decidida", no pior caso (backend sem
+  // lock, ver ApprovePartnerApplication) os dois passavam a validação
+  // antes de qualquer um gravar, criando DOIS restaurantes para a mesma
+  // candidatura; cliques a mais a seguir batiam no limite de pedidos
+  // (429). Um id de cada vez chega — só uma candidatura pode estar
+  // "ativa" no painel de detalhe.
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const enterPanel = (restaurantId: string) => {
     if (!operatorToken) return; // não deveria acontecer aqui dentro de /sistema, mas defensivo
@@ -49,6 +58,31 @@ function SistemaParceiros() {
   };
 
   const onboard = async (app: (typeof applications)[number]) => {
+    if (processingId) return; // já há uma candidatura a ser processada
+    setProcessingId(app.id);
+    try {
+      await doOnboard(app);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  /** `reject()` do contexto é fire-and-forget (sem promise nem tratamento de
+   * erro) — aqui só se preocupa em impedir duplo-clique e, mais importante,
+   * em mudar o filtro para "Recusadas" a seguir: sem isto a candidatura
+   * muda de estado corretamente na BD (confirmado), mas o filtro por
+   * omissão é "Pendentes", então ela desaparece da lista sem o operador
+   * perceber que passou a "recusada" em vez de ter sido apagada. */
+  const handleReject = (app: (typeof applications)[number]) => {
+    if (processingId) return;
+    setProcessingId(app.id);
+    reject(app.id);
+    toast.success(t("sistema.parceiros.rejectToast"));
+    setStatusFilter("rejected");
+    setProcessingId(null);
+  };
+
+  const doOnboard = async (app: (typeof applications)[number]) => {
     // Com backend real, `approve()` já cria tudo no servidor (restaurante,
     // subscrição trial, 3 mesas, conta do dono) — ver
     // backend/app/Actions/ApprovePartnerApplication.php. Sem backend, é só
@@ -222,13 +256,22 @@ function SistemaParceiros() {
                   </button>
 
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h2 className="font-display text-lg font-bold text-primary">
-                        {active.restaurantName}
-                      </h2>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {t("sistema.parceiros.received", { date: fmtDate(active.createdAt) })}
-                      </p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      {active.photoUrl && (
+                        <img
+                          src={active.photoUrl}
+                          alt={active.restaurantName}
+                          className="h-12 w-12 shrink-0 rounded-xl object-cover"
+                        />
+                      )}
+                      <div className="min-w-0">
+                        <h2 className="font-display text-lg font-bold text-primary">
+                          {active.restaurantName}
+                        </h2>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {t("sistema.parceiros.received", { date: fmtDate(active.createdAt) })}
+                        </p>
+                      </div>
                     </div>
                     <span
                       className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusTone[active.status]}`}
@@ -283,18 +326,17 @@ function SistemaParceiros() {
                       <>
                         <button
                           type="button"
-                          onClick={() => {
-                            reject(active.id);
-                            toast.success(t("sistema.parceiros.rejectToast"));
-                          }}
-                          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                          disabled={processingId === active.id}
+                          onClick={() => handleReject(active)}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5 disabled:opacity-50"
                         >
                           <X className="h-3.5 w-3.5" /> {t("sistema.parceiros.reject")}
                         </button>
                         <button
                           type="button"
+                          disabled={processingId === active.id}
                           onClick={() => onboard(active)}
-                          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
                         >
                           <Check className="h-3.5 w-3.5" /> {t("sistema.parceiros.approve")}
                         </button>

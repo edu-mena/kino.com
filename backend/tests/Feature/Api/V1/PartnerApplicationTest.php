@@ -5,8 +5,10 @@ use App\Mail\PartnerApplicationReceivedMail;
 use App\Models\PartnerApplication;
 use App\Models\Restaurant;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
 
 test('qualquer um pode candidatar-se, sem autenticação, e dispara os dois emails automáticos', function () {
     Mail::fake();
@@ -31,6 +33,45 @@ test('qualquer um pode candidatar-se, sem autenticação, e dispara os dois emai
     Mail::assertQueued(PartnerApplicationConfirmationMail::class, function ($mail) {
         return $mail->hasTo('maria@example.com');
     });
+});
+
+test('candidatura com foto guarda o photo_url; sem foto fica null (nunca obrigatória)', function () {
+    Storage::fake('r2', ['url' => 'https://cdn.luku.com']);
+    $photo = UploadedFile::fake()->image('fachada.jpg', 800, 800);
+
+    $withPhoto = $this->postJson('/api/v1/partner-applications', [
+        'restaurant_name' => 'Com Foto', 'owner_name' => 'X', 'phone' => '900',
+        'email' => 'com-foto@example.com', 'photo' => $photo,
+    ]);
+    $withPhoto->assertStatus(201);
+    $app = PartnerApplication::query()->where('email', 'com-foto@example.com')->firstOrFail();
+    expect($app->photo_url)->not->toBeNull();
+    Storage::disk('r2')->assertExists(
+        str_replace(Storage::disk('r2')->url(''), '', $app->photo_url),
+    );
+
+    $withoutPhoto = $this->postJson('/api/v1/partner-applications', [
+        'restaurant_name' => 'Sem Foto', 'owner_name' => 'Y', 'phone' => '901',
+        'email' => 'sem-foto@example.com',
+    ]);
+    $withoutPhoto->assertStatus(201);
+    expect(PartnerApplication::query()->where('email', 'sem-foto@example.com')->firstOrFail()->photo_url)
+        ->toBeNull();
+});
+
+test('aprovar uma candidatura com foto usa-a como imagem de capa do restaurante', function () {
+    Storage::fake('r2', ['url' => 'https://cdn.luku.com']);
+    $operator = User::factory()->systemOperator()->create();
+    $app = PartnerApplication::factory()->create([
+        'email' => 'com-capa@example.com',
+        'photo_url' => 'https://cdn.luku.com/partner/abc/foto.jpg',
+    ]);
+
+    $response = $this->actingAs($operator, 'sanctum')
+        ->postJson("/api/v1/partner-applications/{$app->uuid}/approve");
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.coverImageUrl', 'https://cdn.luku.com/partner/abc/foto.jpg');
 });
 
 test('o email da equipa e o de confirmação renderizam sem erro', function () {

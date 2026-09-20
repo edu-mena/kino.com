@@ -161,6 +161,17 @@ function Parceiros() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Um único <form> para os 4 passos — carregar Enter num <input> de
+    // qualquer passo (ex: telefone, morada) dispara este onSubmit mesmo
+    // sem o utilizador ter chegado ao botão final, submetendo a
+    // candidatura cedo demais (incompleta) sem ele perceber; ao continuar
+    // o assistente normalmente a seguir e submeter "a sério" no fim, ficam
+    // DUAS candidaturas para a mesma pessoa. Enter só deve avançar de
+    // passo, nunca submeter, exceto já no último.
+    if (step !== steps.length - 1) {
+      goNext();
+      return;
+    }
     if (!isStepValid(0) || !isStepValid(1) || !isStepValid(2)) {
       // Não deve acontecer (cada passo já bloqueou o avanço), mas se o
       // utilizador chegou aqui por outra via, volta ao primeiro passo com
@@ -193,17 +204,21 @@ function Parceiros() {
       // pedido; simula sucesso em vez de rebentar com erro de rede. Nunca
       // acontece em dev/produção real (ver hasRealBackend).
       if (hasRealBackend) {
-        await apiFetch("/partner-applications", {
-          method: "POST",
-          body: {
-            restaurant_name: form.restaurantName,
-            owner_name: form.ownerName,
-            email: form.email,
-            phone: form.phone,
-            province: form.province,
-            message,
-          },
-        });
+        // FormData mesmo sem foto (não só quando há uma) — mais simples do
+        // que alternar entre JSON e multipart consoante `photoFile`, e o
+        // backend aceita os dois formatos da mesma forma para os campos de
+        // texto. A foto escolhida no passo 1 ficava só na pré-visualização
+        // local antes disto, nunca chegava ao servidor.
+        const body = new FormData();
+        body.append("restaurant_name", form.restaurantName);
+        body.append("owner_name", form.ownerName);
+        body.append("email", form.email);
+        body.append("phone", form.phone);
+        body.append("province", form.province);
+        body.append("message", message);
+        if (photoFile) body.append("photo", photoFile);
+
+        await apiFetch("/partner-applications", { method: "POST", body });
       }
       setSubmitted(true);
     } catch (error) {

@@ -15,6 +15,11 @@ export type PartnerApplication = {
   email: string;
   province: string;
   message: string;
+  /** Foto do restaurante escolhida no passo 1 do formulário — ausente no
+   * mock (nunca teve upload real), presente com backend real quando o
+   * candidato escolheu uma. Vira a imagem de capa do restaurante ao
+   * aprovar (ver ApprovePartnerApplication no backend). */
+  photoUrl?: string;
   createdAt: string; // ISO
   status: PartnerAppStatus;
 };

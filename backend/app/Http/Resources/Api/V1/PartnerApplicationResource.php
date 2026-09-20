@@ -19,6 +19,7 @@ class PartnerApplicationResource extends JsonResource
             'email' => $this->email,
             'province' => $this->province,
             'message' => $this->message,
+            'photoUrl' => $this->photo_url,
             'status' => $this->status,
             'createdRestaurantId' => $this->whenLoaded('createdRestaurant', fn () => $this->createdRestaurant?->uuid),
             'createdAt' => $this->created_at?->toIso8601String(),
