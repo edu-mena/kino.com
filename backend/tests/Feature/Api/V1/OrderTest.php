@@ -30,6 +30,37 @@ beforeEach(function () {
     DeliveryPolicy::query()->firstOrCreate(['id' => 1], ['free_radius_km' => 5, 'per_km_surcharge_kz' => 150]);
 });
 
+test('cliente vê os próprios pedidos de vários restaurantes, com nome/imagem do restaurante', function () {
+    $restaurantA = createOrderableRestaurant();
+    $restaurantB = createOrderableRestaurant();
+    $customer = User::factory()->create();
+    $other = User::factory()->create();
+
+    $restaurantA->orders()->create([
+        'user_id' => $customer->id, 'fulfillment_type' => 'takeaway',
+        'customer_name' => 'Ana', 'customer_phone' => '900',
+        'pickup_asap' => true, 'status' => 'pending', 'estimated_minutes' => 30,
+        'subtotal' => 1000, 'delivery_fee' => 0, 'total' => 1000,
+    ]);
+    $restaurantB->orders()->create([
+        'user_id' => $customer->id, 'fulfillment_type' => 'takeaway',
+        'customer_name' => 'Ana', 'customer_phone' => '900',
+        'pickup_asap' => true, 'status' => 'pending', 'estimated_minutes' => 30,
+        'subtotal' => 2000, 'delivery_fee' => 0, 'total' => 2000,
+    ]);
+    $restaurantA->orders()->create([
+        'user_id' => $other->id, 'fulfillment_type' => 'takeaway',
+        'customer_name' => 'Outro', 'customer_phone' => '901',
+        'pickup_asap' => true, 'status' => 'pending', 'estimated_minutes' => 30,
+        'subtotal' => 500, 'delivery_fee' => 0, 'total' => 500,
+    ]);
+
+    $response = $this->actingAs($customer, 'sanctum')->getJson('/api/v1/orders');
+
+    $response->assertOk()->assertJsonCount(2, 'data');
+    expect($response->json('data.0.restaurantName'))->not->toBeNull();
+});
+
 test('convidado cria um pedido takeaway sem autenticação e recebe guest_token uma única vez', function () {
     $restaurant = createOrderableRestaurant();
     $menu = RestaurantMenu::factory()->for($restaurant)->create();
@@ -40,7 +71,7 @@ test('convidado cria um pedido takeaway sem autenticação e recebe guest_token 
         'customer_name' => 'Ana Convidada',
         'customer_phone' => '923000000',
         'pickup_asap' => true,
-        'items' => [['menu_item_id' => $item->id, 'qty' => 2]],
+        'items' => [['menu_item_id' => $item->uuid, 'qty' => 2]],
     ], ['Idempotency-Key' => Str::uuid()->toString()]);
 
     $response->assertStatus(201)
@@ -60,7 +91,7 @@ test('pedido não escolhe payment_method_code/caution no checkout — só o rest
         'customer_name' => 'X',
         'customer_phone' => '900',
         'pickup_asap' => true,
-        'items' => [['menu_item_id' => $item->id, 'qty' => 1]],
+        'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
         // tentativa maliciosa de injetar estes campos — devem ser ignorados
         'payment_method_code' => 'cash',
         'caution_required' => 999999,
@@ -82,7 +113,7 @@ test('preço de linha soma extras de ingredientes, subtotal/total corretos', fun
         'fulfillment_type' => 'takeaway',
         'customer_name' => 'X', 'customer_phone' => '900', 'pickup_asap' => true,
         'items' => [[
-            'menu_item_id' => $item->id, 'qty' => 2,
+            'menu_item_id' => $item->uuid, 'qty' => 2,
             'selected_ingredients' => [
                 ['ingredient_id' => $extra->id, 'included' => true],
                 ['ingredient_id' => $free->id, 'included' => false],
@@ -105,8 +136,8 @@ test('taxa de entrega usa Haversine real quando restaurante e morada têm lat/ln
     $response = $this->actingAs($user, 'sanctum')
         ->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
             'fulfillment_type' => 'delivery',
-            'saved_address_id' => $address->id,
-            'items' => [['menu_item_id' => $item->id, 'qty' => 1]],
+            'saved_address_id' => $address->uuid,
+            'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
         ], ['Idempotency-Key' => Str::uuid()->toString()]);
 
     $response->assertStatus(201);
@@ -124,7 +155,7 @@ test('código promocional de 20% aplica desconto sobre o subtotal', function () 
 
     $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
         'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900', 'pickup_asap' => true,
-        'items' => [['menu_item_id' => $item->id, 'qty' => 1]],
+        'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
         'promo_code' => 'luku20',
     ], ['Idempotency-Key' => Str::uuid()->toString()]);
 
@@ -142,7 +173,7 @@ test('Idempotency-Key repetido devolve a MESMA resposta sem criar 2 pedidos', fu
 
     $payload = [
         'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900', 'pickup_asap' => true,
-        'items' => [['menu_item_id' => $item->id, 'qty' => 1]],
+        'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
     ];
 
     $first = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", $payload, ['Idempotency-Key' => $key]);
@@ -162,7 +193,7 @@ test('POST de pedido sem Idempotency-Key é rejeitado', function () {
 
     $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
         'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900', 'pickup_asap' => true,
-        'items' => [['menu_item_id' => $item->id, 'qty' => 1]],
+        'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
     ])->assertStatus(400);
 });
 

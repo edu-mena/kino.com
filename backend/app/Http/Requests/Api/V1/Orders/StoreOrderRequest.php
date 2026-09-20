@@ -43,9 +43,12 @@ class StoreOrderRequest extends FormRequest
             'customer_email' => ['sometimes', 'nullable', 'email'],
 
             'items' => ['required', 'array', 'min:1'],
+            // Valida pelo `uuid` — o único id que a API expõe
+            // (MenuItemResource), nunca o interno. O controller resolve
+            // para o id interno antes de gravar.
             'items.*.menu_item_id' => [
-                'required', 'integer',
-                Rule::exists('menu_items', 'id')
+                'required', 'string',
+                Rule::exists('menu_items', 'uuid')
                     ->where('restaurant_id', $restaurant->id)
                     ->where('is_available', true),
             ],
@@ -54,8 +57,10 @@ class StoreOrderRequest extends FormRequest
             'items.*.selected_ingredients.*.ingredient_id' => ['required', 'integer'],
             'items.*.selected_ingredients.*.included' => ['required', 'boolean'],
 
-            // delivery
-            'saved_address_id' => ['sometimes', 'nullable', 'integer', Rule::exists('saved_addresses', 'id')
+            // delivery — valida pelo `uuid` (único id exposto pela API,
+            // ver SavedAddressResource), o controller resolve para o
+            // registo real.
+            'saved_address_id' => ['sometimes', 'nullable', 'string', Rule::exists('saved_addresses', 'uuid')
                 ->where('user_id', $user?->id ?? 0)],
             'delivery_address' => ['required_if:fulfillment_type,delivery', 'sometimes', 'array'],
             'delivery_address.label' => ['sometimes', 'nullable', 'string', 'max:80'],

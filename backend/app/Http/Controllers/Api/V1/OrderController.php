@@ -25,6 +25,20 @@ class OrderController extends Controller
 {
     use AuthorizesGuestOrOwnerAccess;
 
+    /** Pedidos do próprio cliente autenticado, em qualquer restaurante —
+     * ver mock, cart.tsx (`useCart().orders`, lidos pelo cliente em
+     * `/entrega`). Convidados não têm sessão para isto; usam o
+     * `guestToken` devolvido em `store()`/`show()` por pedido. */
+    public function mine(Request $request): AnonymousResourceCollection
+    {
+        $orders = $request->user()->orders()
+            ->with('lines.menuItem', 'restaurant')
+            ->latest()
+            ->cursorPaginate($request->integer('per_page', 30));
+
+        return OrderResource::collection($orders);
+    }
+
     /** Staff do restaurante — nunca lista de todos os pedidos globalmente. */
     public function index(Request $request, Restaurant $restaurant): AnonymousResourceCollection
     {
@@ -58,11 +72,13 @@ class OrderController extends Controller
         // 'sanctum' explícito — rota aceita convidados sem token.
         $user = $request->user('sanctum');
 
+        // `menu_item_id` chega como uuid (único id que a API expõe, ver
+        // StoreOrderRequest) — keyBy('uuid') deixa o lookup abaixo igual.
         $menuItems = MenuItem::query()
             ->with('ingredients')
-            ->whereIn('id', collect($data['items'])->pluck('menu_item_id'))
+            ->whereIn('uuid', collect($data['items'])->pluck('menu_item_id'))
             ->get()
-            ->keyBy('id');
+            ->keyBy('uuid');
 
         $lineInputs = collect($data['items'])->map(fn ($item) => [
             'menu_item' => $menuItems[$item['menu_item_id']],
@@ -74,7 +90,7 @@ class OrderController extends Controller
         $deliverySnapshot = null;
         if ($data['fulfillment_type'] === 'delivery') {
             if (! empty($data['saved_address_id'])) {
-                $deliveryAddress = SavedAddress::query()->find($data['saved_address_id']);
+                $deliveryAddress = SavedAddress::query()->where('uuid', $data['saved_address_id'])->first();
                 $deliverySnapshot = $deliveryAddress ? [
                     'label' => $deliveryAddress->label,
                     'line1' => $deliveryAddress->line1,
