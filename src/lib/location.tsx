@@ -6,8 +6,15 @@ import { useAddresses } from "./addresses";
 
 // Com backend real, um utilizador novo começa sem moradas guardadas — as
 // 3 moradas de exemplo (Casa/Trabalho/Universidade) só fazem sentido sem
-// backend (demo/dev).
-const SEED_SAVED_ADDRESSES: SavedAddress[] = hasRealBackend ? [] : INITIAL_SAVED_ADDRESSES;
+// backend (demo/dev). Função em vez de constante de módulo — calculada só
+// quando o componente renderiza (SSR: todos os módulos já carregados
+// nessa altura), evita um "SEED_SAVED_ADDRESSES is not iterable" em
+// produção quando a ordem de avaliação de imports cíclicos faz este
+// ficheiro correr antes de `mockData.ts` terminar de inicializar
+// `INITIAL_SAVED_ADDRESSES`.
+function seedSavedAddresses(): SavedAddress[] {
+  return hasRealBackend ? [] : INITIAL_SAVED_ADDRESSES;
+}
 
 /** Estado do pedido de geolocalização exata do dispositivo (GPS/Wi-Fi via
  * `navigator.geolocation`) — separado da morada guardada escolhida no chip
@@ -38,12 +45,14 @@ const LocationContext = createContext<LocationValue | null>(null);
 
 export function LocationProvider({ children }: { children: ReactNode }) {
   const { customAddresses } = useAddresses();
+  const seedAddresses = seedSavedAddresses();
   const allAddresses = useMemo(
-    () => [...SEED_SAVED_ADDRESSES, ...customAddresses],
+    () => [...seedAddresses, ...customAddresses],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [customAddresses],
   );
   const [selectedId, setSelectedId] = useState<string | null>(
-    SEED_SAVED_ADDRESSES.find((a) => a.isDefault)?.id ?? SEED_SAVED_ADDRESSES[0]?.id ?? null,
+    seedAddresses.find((a) => a.isDefault)?.id ?? seedAddresses[0]?.id ?? null,
   );
   const [deviceCoords, setDeviceCoords] = useState<[number, number] | null>(null);
   const [deviceLocationStatus, setDeviceLocationStatus] = useState<DeviceLocationStatus>("idle");
