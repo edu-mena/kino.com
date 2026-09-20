@@ -178,6 +178,7 @@ function MediaLightbox({
             src={media.src}
             controls
             autoPlay
+            muted
             playsInline
             className="max-h-[75vh] w-full rounded-[1.5rem] object-contain"
           />

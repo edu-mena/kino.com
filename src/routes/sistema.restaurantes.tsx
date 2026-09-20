@@ -20,6 +20,7 @@ import { useCart } from "@/lib/cart";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useSubscriptions } from "@/lib/subscriptions";
+import { useSystemAdmin } from "@/lib/system-admin";
 
 export const Route = createFileRoute("/sistema/restaurantes")({
   head: () => ({ meta: [{ title: "Restaurantes — Sistema Luku.com" }] }),
@@ -38,7 +39,8 @@ function SistemaRestaurantes() {
   const { byRestaurant } = useSubscriptions();
   const { orders } = useCart();
   const { reservations } = useReservations();
-  const { login: loginRestaurant } = useRestaurantAdmin();
+  const { enterAsOperator } = useRestaurantAdmin();
+  const { token: operatorToken } = useSystemAdmin();
   const { t } = useTranslation();
 
   const [flagsTick, bumpFlags] = useReducer((n: number) => n + 1, 0);
@@ -92,7 +94,8 @@ function SistemaRestaurantes() {
   const activeSub = active ? byRestaurant(active.id) : undefined;
 
   const enterPanel = (id: string, name: string) => {
-    loginRestaurant(id);
+    if (!operatorToken) return; // não deveria acontecer aqui dentro de /sistema, mas defensivo
+    enterAsOperator(id, operatorToken);
     toast.success(t("sistema.restaurantes.enterToast", { name }));
     navigate({ to: "/admin" });
   };

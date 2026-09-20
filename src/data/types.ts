@@ -41,6 +41,10 @@ export interface Restaurant {
   openingHours: string;
   coverImage: string;
   galleryImages: string[];
+  /** Fundo de parede opcional da página pública do restaurante — decorativo,
+   * mostrado bem subtil atrás do conteúdo (ver `restaurantes_.$id.tsx`).
+   * Ausente = fundo normal, sem imagem nenhuma. */
+  wallpaper?: string;
   isDeliveryAvailable: boolean;
   /** Modos de pedido que o restaurante oferece. Ausente = derivado:
    * `delivery` só se `isDeliveryAvailable`, mais `takeaway` e `dinein`
@@ -230,6 +234,10 @@ export interface Review {
   date: string;
   comment: string;
   tags: string[];
+  /** Resposta pública do restaurante — visível ao cliente na página do
+   * restaurante. Ausente até o restaurante responder (ver `/admin/avaliacoes`,
+   * `setReviewReply` em `@/data/reviews-store`). */
+  reply?: { text: string; at: string };
 }
 
 export interface RegisteredCustomer {
@@ -314,5 +322,9 @@ export interface RestaurantStory {
   mediaType?: "image" | "video";
   /** Duração real do vídeo, em segundos (só quando `mediaType === "video"`). */
   durationSec?: number;
+  /** Legenda opcional sobreposta ao story (topo da media, como Instagram). */
+  text?: string;
+  /** Link opcional — mostra um botão tocável no story que abre esta URL. */
+  link?: string;
   createdAt: string; // ISO
 }

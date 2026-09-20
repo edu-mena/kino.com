@@ -42,16 +42,16 @@ const mobileOverflowItems = navItems.filter((i) => !mobileTabRoutes.has(i.to));
  * (`useSystemAdmin`) e navegação própria. Mesma linguagem visual.
  */
 export function SystemShell({ children }: { children: ReactNode }) {
-  const { operatorId, operator, hydrated, logout } = useSystemAdmin();
+  const { operator, hydrated, logout } = useSystemAdmin();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    if (hydrated && !operatorId) navigate({ to: "/sistema/entrar" });
-  }, [hydrated, operatorId, navigate]);
+    if (hydrated && !operator) navigate({ to: "/sistema/entrar" });
+  }, [hydrated, operator, navigate]);
 
-  if (!operatorId || !operator) return null;
+  if (!operator) return null;
 
   const handleLogout = () => {
     logout();
@@ -113,7 +113,7 @@ export function SystemShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col lg:ml-24 xl:ml-64">
         {/* Top bar — mobile */}
-        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-white px-4 py-3 lg:hidden">
+        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-white px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:hidden">
           <Link to="/sistema" className="flex min-w-0 items-center gap-2">
             <Logo className="h-8 w-auto" />
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
@@ -154,11 +154,15 @@ export function SystemShell({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        <main className="min-w-0 flex-1 pb-20 lg:pb-12">{children}</main>
+        {/* + safe-area — a barra fixa abaixo ganhou o mesmo extra (ver
+            MobileTabBar em site-shell.tsx para a explicação). */}
+        <main className="min-w-0 flex-1 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-12">
+          {children}
+        </main>
       </div>
 
       {/* Barra inferior — mobile */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         <div className="grid grid-cols-4">
           {mobileTabItems.map((item) => (
             <Link

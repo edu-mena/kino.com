@@ -1,7 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { enUS, fr as frLocale, ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, ImageIcon, Plus, Sparkles, Trash2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ImageIcon,
+  Link2,
+  Plus,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -29,6 +37,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { FirstUseHint } from "@/components/first-use-hint";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { STORY_VIDEO_MAX_SEC } from "@/data/stories-store";
 import type { RestaurantStory } from "@/data/types";
 import { useTranslation } from "@/i18n";
@@ -61,6 +72,8 @@ function AdminStories() {
   const [media, setMedia] = useState<{ mediaType: "image" | "video"; durationSec?: number }>({
     mediaType: "image",
   });
+  const [text, setText] = useState("");
+  const [link, setLink] = useState("");
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<RestaurantStory | null>(null);
   const [period, setPeriod] = useState<PeriodFilter>("todos");
@@ -156,7 +169,16 @@ function AdminStories() {
       toast.error(t("adminStories.missingImageError"));
       return;
     }
-    const { ok } = createStory(restaurant.id, image.trim(), media);
+    const trimmedLink = link.trim();
+    if (trimmedLink && !/^https?:\/\//i.test(trimmedLink)) {
+      toast.error(t("adminStories.linkInvalidError"));
+      return;
+    }
+    const { ok } = createStory(restaurant.id, image.trim(), {
+      ...media,
+      text: text.trim(),
+      link: trimmedLink,
+    });
     if (!ok) {
       toast.error(t("adminStories.saveFailedError"));
       return;
@@ -165,6 +187,8 @@ function AdminStories() {
     storyHint.dismiss();
     setImage("");
     setMedia({ mediaType: "image" });
+    setText("");
+    setLink("");
     setFormOpen(false);
   };
 
@@ -186,6 +210,8 @@ function AdminStories() {
             onClick={() => {
               setImage("");
               setMedia({ mediaType: "image" });
+              setText("");
+              setLink("");
               setFormOpen(true);
             }}
             className="rounded-xl"
@@ -326,6 +352,24 @@ function AdminStories() {
                         <AdminField label={t("adminStories.detailVisibility")}>
                           {t("adminStories.visibilityValue")}
                         </AdminField>
+                        {active.text && (
+                          <AdminField label={t("adminStories.textLabel")}>
+                            <span className="block whitespace-pre-wrap">{active.text}</span>
+                          </AdminField>
+                        )}
+                        {active.link && (
+                          <AdminField label={t("adminStories.linkLabel")}>
+                            <a
+                              href={active.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 truncate text-primary hover:underline"
+                            >
+                              <Link2 className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">{active.link}</span>
+                            </a>
+                          </AdminField>
+                        )}
                       </dl>
 
                       <div className="mt-5 border-t border-border pt-5">
@@ -424,6 +468,32 @@ function AdminStories() {
             <p className="text-xs text-muted-foreground">
               {t("adminStories.mediaNote", { sec: STORY_VIDEO_MAX_SEC })}
             </p>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="story-text">{t("adminStories.textLabel")}</Label>
+              <Textarea
+                id="story-text"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={t("adminStories.textPlaceholder")}
+                rows={2}
+                maxLength={140}
+                className="rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="story-link">{t("adminStories.linkLabel")}</Label>
+              <Input
+                id="story-link"
+                type="url"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder={t("adminStories.linkPlaceholder")}
+              />
+              <p className="text-xs text-muted-foreground">{t("adminStories.linkHelp")}</p>
+            </div>
+
             <Button type="submit" disabled={uploading} className="w-full rounded-xl">
               {t("adminStories.publish")}
             </Button>

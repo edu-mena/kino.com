@@ -59,6 +59,28 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
   }, [reservations, hydrated]);
 
+  // Mesmo raciocínio que em `cart.tsx`: sem backend real, painel e cliente
+  // partilham o localStorage, mas só a aba que escreve via reativa de
+  // imediato. O evento `storage` dispara nas OUTRAS abas — é o que faz uma
+  // reserva nova, ou uma mudança de estado, aparecer ao vivo do outro lado
+  // (e disparar a notificação certa) sem precisar recarregar a página.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY) return;
+      if (e.newValue == null) {
+        setReservations(INITIAL_RESERVATIONS);
+        return;
+      }
+      try {
+        setReservations(JSON.parse(e.newValue) as Reservation[]);
+      } catch {
+        // payload corrompido vindo doutra aba — mantém o que já temos.
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const addReservation = ({
     restaurant,
     date,

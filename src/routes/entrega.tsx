@@ -4,22 +4,20 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  MapPin,
-  MessageSquare,
+  FileText,
   Package,
   Phone,
-  ShieldAlert,
+  Receipt,
   ShoppingBag,
   Star,
   Trash2,
   Upload,
-  Users,
   Utensils,
-  Wallet,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
+import { MediaLightbox } from "@/components/media-lightbox";
 import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
@@ -31,10 +29,24 @@ import { readCourierForOrder } from "@/lib/couriers";
 import { viewerKey } from "@/lib/customer";
 import { orderDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
-import { fileToResizedDataUrl } from "@/lib/image-upload";
+import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
+import { orderStatusLabel } from "@/lib/order-status";
 import { getPaymentMethod } from "@/lib/mock-data";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { useTranslation } from "@/i18n";
+
+/** Um facto do resumo do pedido — label + valor, sem ícone (mesmo desenho
+ * compacto já usado no detalhe do painel do restaurante, ver `AdminField`
+ * em `admin-stats.tsx`). `span` ocupa as duas colunas da grelha, para
+ * valores mais longos (morada, pagamento, nota) não ficarem espremidos. */
+function Field({ label, span, children }: { label: string; span?: boolean; children: ReactNode }) {
+  return (
+    <div className={`min-w-0 ${span ? "col-span-2" : ""}`}>
+      <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="mt-1 font-medium text-foreground">{children}</dd>
+    </div>
+  );
+}
 
 const MODE_ICON: Record<FulfillmentType, typeof Bike> = {
   delivery: Bike,
@@ -67,22 +79,6 @@ function etaTime(order: CartOrder) {
     return hhmm(new Date(order.pickupAt));
   }
   return hhmm(new Date(new Date(order.createdAt).getTime() + order.estimatedMinutes * 60_000));
-}
-
-/** O estado fica guardado como código, nunca já traduzido — assim trocar
- * de idioma atualiza pedidos já existentes. */
-function statusLabel(status: CartOrder["status"], t: ReturnType<typeof useTranslation>["t"]) {
-  const key = {
-    pending: "statusPending",
-    accepted: "statusAccepted",
-    onTheWay: "statusOnTheWay",
-    ready: "statusReady",
-    delivered: "statusDelivered",
-    completed: "statusCompleted",
-    rejected: "statusRejected",
-    canceled: "statusCanceled",
-  }[status];
-  return t(`entrega.${key}`);
 }
 
 function Entrega() {
@@ -147,7 +143,7 @@ function Entrega() {
                         <span className="block truncate text-xs text-muted-foreground">
                           {t(`fulfillment.${order.fulfillmentType}`)} · {itemCount}{" "}
                           {itemCount === 1 ? t("entrega.itemSingular") : t("entrega.itemPlural")} ·{" "}
-                          {statusLabel(order.status, t)}
+                          {orderStatusLabel(order.status, t)}
                         </span>
                       </span>
                       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
@@ -194,7 +190,6 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
   const reviewRef = `order:${order.id}`;
   const canReview =
     (order.status === "delivered" || order.status === "completed") && !isRefReviewed(reviewRef);
-  const ModeIcon = MODE_ICON[order.fulfillmentType];
   const requiredPayment = getPaymentMethod(order.paymentMethod);
   const payDestination =
     order.paymentMethod && requiredPayment?.digital
@@ -207,6 +202,14 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
     order.status !== "pending" &&
     order.status !== "rejected" &&
     order.status !== "canceled";
+  const courier =
+    order.fulfillmentType === "delivery" && order.status === "onTheWay"
+      ? readCourierForOrder(order.id)
+      : null;
+  const [proofLightboxOpen, setProofLightboxOpen] = useState(false);
+  const proofIsPdf = isPdfDataUrl(order.paymentProof);
+  const [invoiceLightboxOpen, setInvoiceLightboxOpen] = useState(false);
+  const invoiceIsPdf = isPdfDataUrl(order.invoice);
 
   const onProofFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -214,7 +217,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
     if (!file) return;
     setProofUploading(true);
     try {
-      const dataUrl = await fileToResizedDataUrl(file, 1000);
+      const dataUrl = await fileToDocumentDataUrl(file);
       setPaymentProof(order.id, dataUrl);
       toast.success(t("entrega.proofSentToast"));
     } catch (err) {
@@ -254,172 +257,94 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         </div>
       </div>
 
-      <dl className="mt-5 space-y-4 text-sm">
-        <div className="flex items-start gap-3">
-          <ModeIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <div className="min-w-0">
-            <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {t("entrega.deliveryStatus")}
-            </dt>
-            <dd className="mt-0.5">
-              {t(`fulfillment.${order.fulfillmentType}`)} · {statusLabel(order.status, t)}
-            </dd>
-          </div>
-        </div>
+      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
+        <Field label={t("entrega.deliveryStatus")}>
+          {t(`fulfillment.${order.fulfillmentType}`)} · {orderStatusLabel(order.status, t)}
+        </Field>
 
-        <div className="flex items-start gap-3">
-          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <div className="min-w-0">
-            <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {order.fulfillmentType === "takeaway" ? t("entrega.pickupTime") : t("entrega.eta")}
-            </dt>
-            <dd className="mt-0.5">
-              {order.fulfillmentType === "takeaway" && order.pickupAsap
-                ? t("entrega.pickupAsap")
-                : `~${etaTime(order)}`}
-            </dd>
-          </div>
-        </div>
+        <Field
+          label={order.fulfillmentType === "takeaway" ? t("entrega.pickupTime") : t("entrega.eta")}
+        >
+          {order.fulfillmentType === "takeaway" && order.pickupAsap
+            ? t("entrega.pickupAsap")
+            : `~${etaTime(order)}`}
+        </Field>
 
         {order.deliveryAddress && (
-          <div className="flex items-start gap-3">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("entrega.deliverTo")}
-              </dt>
-              <dd className="mt-0.5 truncate">
-                {order.deliveryAddress.label} — {order.deliveryAddress.line1}
-              </dd>
-            </div>
-          </div>
+          <Field label={t("entrega.deliverTo")} span>
+            {order.deliveryAddress.label} — {order.deliveryAddress.line1}
+          </Field>
         )}
 
         {order.fulfillmentType === "takeaway" && restaurant && (
-          <div className="flex items-start gap-3">
-            <ShoppingBag className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("entrega.modeLabel")}
-              </dt>
-              <dd className="mt-0.5">{t("entrega.pickupHere", { name: restaurant.name })}</dd>
-            </div>
-          </div>
+          <Field label={t("entrega.modeLabel")} span>
+            {t("entrega.pickupHere", { name: restaurant.name })}
+          </Field>
         )}
 
         {order.fulfillmentType === "dinein" && (
-          <div className="flex items-start gap-3">
-            <Users className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("entrega.dineInHere")}
-              </dt>
-              <dd className="mt-0.5">
-                {order.partySize ? t("entrega.partySize", { count: order.partySize }) : "—"}
-              </dd>
-            </div>
-          </div>
+          <Field label={t("entrega.dineInHere")}>
+            {order.partySize ? t("entrega.partySize", { count: order.partySize }) : "—"}
+          </Field>
         )}
 
-        {order.fulfillmentType === "delivery" &&
-          order.status === "onTheWay" &&
-          (() => {
-            const courier = readCourierForOrder(order.id);
-            if (!courier) return null;
-            return (
-              <div className="flex items-start gap-3">
-                <Bike className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <div className="min-w-0">
-                  <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    {t("entrega.courierTitle")}
-                  </dt>
-                  <dd className="mt-0.5">
-                    {courier.name} · {t(`entrega.veh.${courier.vehicle}`)}
-                  </dd>
-                  <dd className="mt-0.5">
-                    <a
-                      href={`tel:${courier.phone.replace(/\s/g, "")}`}
-                      className="inline-flex items-center gap-1.5 text-primary hover:underline"
-                    >
-                      <Phone className="h-3.5 w-3.5" />
-                      {courier.phone}
-                    </a>
-                  </dd>
-                </div>
-              </div>
-            );
-          })()}
+        {courier && (
+          <Field label={t("entrega.courierTitle")} span>
+            {courier.name} · {t(`entrega.veh.${courier.vehicle}`)}
+            <a
+              href={`tel:${courier.phone.replace(/\s/g, "")}`}
+              className="mt-0.5 flex items-center gap-1.5 font-normal text-primary hover:underline"
+            >
+              <Phone className="h-3.5 w-3.5 shrink-0" />
+              {courier.phone}
+            </a>
+          </Field>
+        )}
 
         {restaurant && (
-          <div className="flex items-start gap-3">
-            <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("entrega.complaintContact")}
-              </dt>
-              <dd className="mt-0.5">{restaurant.phone}</dd>
-            </div>
-          </div>
+          <Field label={t("entrega.complaintContact")}>
+            <a href={`tel:${restaurant.phone.replace(/\s/g, "")}`} className="hover:underline">
+              {restaurant.phone}
+            </a>
+          </Field>
         )}
 
-        <div className="flex items-start gap-3">
-          <Wallet className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <div className="min-w-0">
-            <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {t("entrega.paymentRequired")}
-            </dt>
-            {order.paymentMethod ? (
-              <>
-                <dd className="mt-0.5 font-semibold text-foreground">
-                  {requiredPayment?.label ?? order.paymentMethod}
-                </dd>
-                {payDestination ? (
-                  <dd className="mt-1 rounded-lg bg-surface px-2.5 py-1.5 text-xs">
-                    <span className="font-bold uppercase tracking-wide text-muted-foreground">
-                      {t("entrega.payToLabel")}
-                    </span>
-                    <span className="mt-0.5 block whitespace-pre-wrap break-words font-medium text-foreground">
-                      {payDestination}
-                    </span>
-                  </dd>
-                ) : (
-                  requiredPayment?.digital && (
-                    <dd className="mt-0.5 text-xs text-muted-foreground">
-                      {t("entrega.digitalPaymentHint")}
-                    </dd>
-                  )
-                )}
-              </>
-            ) : (
-              <dd className="mt-0.5 text-muted-foreground">{t("entrega.paymentPending")}</dd>
-            )}
-          </div>
-        </div>
+        <Field label={t("entrega.paymentRequired")} span>
+          {order.paymentMethod ? (
+            <>
+              <span className="block font-semibold">
+                {requiredPayment?.label ?? order.paymentMethod}
+              </span>
+              {payDestination ? (
+                <span className="mt-1 block rounded-lg bg-surface px-2.5 py-1.5 text-xs font-normal">
+                  <span className="font-bold uppercase tracking-wide text-muted-foreground">
+                    {t("entrega.payToLabel")}
+                  </span>
+                  <span className="mt-0.5 block whitespace-pre-wrap break-words font-medium text-foreground">
+                    {payDestination}
+                  </span>
+                </span>
+              ) : (
+                requiredPayment?.digital && (
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                    {t("entrega.digitalPaymentHint")}
+                  </span>
+                )
+              )}
+            </>
+          ) : (
+            <span className="font-normal text-muted-foreground">{t("entrega.paymentPending")}</span>
+          )}
+        </Field>
 
         {order.cautionRequired ? (
-          <div className="flex items-start gap-3">
-            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-            <div className="min-w-0">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("entrega.cautionRequired")}
-              </dt>
-              <dd className="mt-0.5 font-semibold text-foreground">
-                {formatKz(order.cautionRequired)}
-              </dd>
-            </div>
-          </div>
+          <Field label={t("entrega.cautionRequired")}>{formatKz(order.cautionRequired)}</Field>
         ) : null}
 
         {order.note && (
-          <div className="flex items-start gap-3">
-            <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("entrega.observationLabel")}
-              </dt>
-              <dd className="mt-0.5">{order.note}</dd>
-            </div>
-          </div>
+          <Field label={t("entrega.observationLabel")} span>
+            {order.note}
+          </Field>
         )}
       </dl>
 
@@ -431,11 +356,25 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           </p>
           {order.paymentProof ? (
             <div className="mt-2 space-y-2">
-              <img
-                src={order.paymentProof}
-                alt=""
-                className="max-h-56 w-full rounded-lg border border-border object-contain"
-              />
+              <button
+                type="button"
+                onClick={() => setProofLightboxOpen(true)}
+                aria-label={t("entrega.proofViewAria")}
+                className="block w-full"
+              >
+                {proofIsPdf ? (
+                  <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                    <FileText className="h-5 w-5 shrink-0 text-primary" />
+                    {t("entrega.proofPdfLabel")}
+                  </span>
+                ) : (
+                  <img
+                    src={order.paymentProof}
+                    alt=""
+                    className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                  />
+                )}
+              </button>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-success">{t("entrega.proofSent")}</span>
                 {paymentDue && (
@@ -448,6 +387,13 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
                   </button>
                 )}
               </div>
+              <MediaLightbox
+                open={proofLightboxOpen}
+                onOpenChange={setProofLightboxOpen}
+                src={order.paymentProof}
+                isPdf={proofIsPdf}
+                title={t("entrega.proofTitle")}
+              />
             </div>
           ) : (
             <>
@@ -457,13 +403,68 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
                 {proofUploading ? t("entrega.proofUploading") : t("entrega.proofUpload")}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,application/pdf"
                   className="hidden"
                   disabled={proofUploading}
                   onChange={onProofFile}
                 />
               </label>
             </>
+          )}
+        </div>
+      )}
+
+      {/* Fatura emitida pelo restaurante — o cliente só vê, não carrega */}
+      {(order.invoice ||
+        (order.status !== "pending" &&
+          order.status !== "rejected" &&
+          order.status !== "canceled")) && (
+        <div className="mt-5 rounded-xl border border-border p-4">
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <Receipt className="h-3.5 w-3.5" />
+            {t("entrega.invoiceTitle")}
+          </p>
+          {order.invoice ? (
+            <div className="mt-2 space-y-1.5">
+              <button
+                type="button"
+                onClick={() => setInvoiceLightboxOpen(true)}
+                aria-label={t("entrega.invoiceViewAria")}
+                className="block w-full"
+              >
+                {invoiceIsPdf ? (
+                  <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                    <FileText className="h-5 w-5 shrink-0 text-primary" />
+                    {t("entrega.invoicePdfLabel")}
+                  </span>
+                ) : (
+                  <img
+                    src={order.invoice}
+                    alt=""
+                    className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                  />
+                )}
+              </button>
+              <p className="text-xs font-semibold text-success">
+                {t(
+                  order.invoiceType === "nif"
+                    ? "entrega.invoiceIssuedNif"
+                    : "entrega.invoiceIssued",
+                )}
+              </p>
+              <MediaLightbox
+                open={invoiceLightboxOpen}
+                onOpenChange={setInvoiceLightboxOpen}
+                src={order.invoice}
+                isPdf={invoiceIsPdf}
+                title={t("entrega.invoiceTitle")}
+              />
+            </div>
+          ) : (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="h-3.5 w-3.5 shrink-0" />
+              {t("entrega.invoicePending")}
+            </p>
           )}
         </div>
       )}

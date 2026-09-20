@@ -25,10 +25,12 @@ import { Route as OfertasRouteImport } from './routes/ofertas'
 import { Route as ParceirosRouteImport } from './routes/parceiros'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PreferenciasRouteImport } from './routes/preferencias'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ReservasRouteImport } from './routes/reservas'
 import { Route as RestaurantesRouteImport } from './routes/restaurantes'
 import { Route as SistemaRouteImport } from './routes/sistema'
 import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAvaliacoesRouteImport } from './routes/admin.avaliacoes'
 import { Route as AdminCardapioRouteImport } from './routes/admin.cardapio'
@@ -138,6 +140,11 @@ const PreferenciasRoute = PreferenciasRouteImport.update({
   path: '/preferencias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReservasRoute = ReservasRouteImport.update({
   id: '/reservas',
   path: '/reservas',
@@ -156,6 +163,11 @@ const SistemaRoute = SistemaRouteImport.update({
 const SobreRoute = SobreRouteImport.update({
   id: '/sobre',
   path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -316,10 +328,12 @@ export interface FileRoutesByFullPath {
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reservas': typeof ReservasRoute
   '/restaurantes': typeof RestaurantesRoute
   '/sistema': typeof SistemaRouteWithChildren
   '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
   '/admin/avaliacoes': typeof AdminAvaliacoesRoute
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/clientes': typeof AdminClientesRoute
@@ -365,9 +379,11 @@ export interface FileRoutesByTo {
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reservas': typeof ReservasRoute
   '/restaurantes': typeof RestaurantesRoute
   '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
   '/admin/avaliacoes': typeof AdminAvaliacoesRoute
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/clientes': typeof AdminClientesRoute
@@ -415,10 +431,12 @@ export interface FileRoutesById {
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reservas': typeof ReservasRoute
   '/restaurantes': typeof RestaurantesRoute
   '/sistema': typeof SistemaRouteWithChildren
   '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
   '/admin/avaliacoes': typeof AdminAvaliacoesRoute
   '/admin/cardapio': typeof AdminCardapioRoute
   '/admin/clientes': typeof AdminClientesRoute
@@ -467,10 +485,12 @@ export interface FileRouteTypes {
     | '/parceiros'
     | '/perfil'
     | '/preferencias'
+    | '/privacidade'
     | '/reservas'
     | '/restaurantes'
     | '/sistema'
     | '/sobre'
+    | '/termos'
     | '/admin/avaliacoes'
     | '/admin/cardapio'
     | '/admin/clientes'
@@ -516,9 +536,11 @@ export interface FileRouteTypes {
     | '/parceiros'
     | '/perfil'
     | '/preferencias'
+    | '/privacidade'
     | '/reservas'
     | '/restaurantes'
     | '/sobre'
+    | '/termos'
     | '/admin/avaliacoes'
     | '/admin/cardapio'
     | '/admin/clientes'
@@ -565,10 +587,12 @@ export interface FileRouteTypes {
     | '/parceiros'
     | '/perfil'
     | '/preferencias'
+    | '/privacidade'
     | '/reservas'
     | '/restaurantes'
     | '/sistema'
     | '/sobre'
+    | '/termos'
     | '/admin/avaliacoes'
     | '/admin/cardapio'
     | '/admin/clientes'
@@ -616,10 +640,12 @@ export interface RootRouteChildren {
   ParceirosRoute: typeof ParceirosRoute
   PerfilRoute: typeof PerfilRoute
   PreferenciasRoute: typeof PreferenciasRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   ReservasRoute: typeof ReservasRoute
   RestaurantesRoute: typeof RestaurantesRoute
   SistemaRoute: typeof SistemaRouteWithChildren
   SobreRoute: typeof SobreRoute
+  TermosRoute: typeof TermosRoute
   AdminCardapioPdfRoute: typeof AdminCardapioPdfRoute
   AdminEntrarRoute: typeof AdminEntrarRoute
   MenuRestaurantIdRoute: typeof MenuRestaurantIdRoute
@@ -743,6 +769,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PreferenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reservas': {
       id: '/reservas'
       path: '/reservas'
@@ -769,6 +802,13 @@ declare module '@tanstack/react-router' {
       path: '/sobre'
       fullPath: '/sobre'
       preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -1046,10 +1086,12 @@ const rootRouteChildren: RootRouteChildren = {
   ParceirosRoute: ParceirosRoute,
   PerfilRoute: PerfilRoute,
   PreferenciasRoute: PreferenciasRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   ReservasRoute: ReservasRoute,
   RestaurantesRoute: RestaurantesRoute,
   SistemaRoute: SistemaRouteWithChildren,
   SobreRoute: SobreRoute,
+  TermosRoute: TermosRoute,
   AdminCardapioPdfRoute: AdminCardapioPdfRoute,
   AdminEntrarRoute: AdminEntrarRoute,
   MenuRestaurantIdRoute: MenuRestaurantIdRoute,

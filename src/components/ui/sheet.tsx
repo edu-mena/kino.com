@@ -31,16 +31,25 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out",
+  // `overflow-y-auto`: sem isto, um conteúdo mais alto do que o ecrã ficava
+  // sem maneira nenhuma de chegar ao fundo (ver o mesmo problema/comentário
+  // em `ui/dialog.tsx`).
+  "fixed z-50 gap-4 overflow-y-auto bg-background p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out",
   {
     variants: {
       side: {
-        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
+        // pt/pb extra = a safe-area do topo (notch/barra de estado) e do
+        // fundo (home indicator em iOS) — por cima do p-6 da base, twMerge
+        // (ver cn()) resolve o conflito mantendo só o padding daqui.
+        // max-h nos de topo/fundo: ao contrário de left/right (`h-full`,
+        // já limitados pela própria altura do ecrã via `inset-y-0`), estes
+        // crescem com o conteúdo — sem limite, podiam ultrapassar o ecrã.
+        top: "inset-x-0 top-0 max-h-[85dvh] border-b pt-[calc(1.5rem+env(safe-area-inset-top))] data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
         bottom:
-          "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-        left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
+          "inset-x-0 bottom-0 max-h-[85dvh] border-t pb-[calc(1.5rem+env(safe-area-inset-bottom))] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+        left: "inset-y-0 left-0 h-full w-3/4 border-r pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
         right:
-          "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
+          "inset-y-0 right-0 h-full w-3/4 border-l pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
       },
     },
     defaultVariants: {

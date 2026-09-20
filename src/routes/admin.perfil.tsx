@@ -278,6 +278,7 @@ function AdminPerfil() {
   const [cautionPolicyNotice, setCautionPolicyNotice] = useState("");
   const [cautionModes, setCautionModes] = useState<FulfillmentType[]>([]);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [wallpaper, setWallpaper] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
 
   const seedFromRestaurant = () => {
@@ -310,6 +311,7 @@ function AdminPerfil() {
     setCautionPolicyNotice(restaurant.cautionPolicyNotice);
     setCautionModes(restaurant.cautionModesForOrders ?? []);
     setGalleryImages(restaurant.galleryImages);
+    setWallpaper(restaurant.wallpaper ?? "");
   };
 
   // Reabastece o formulário quando o restaurante gerido muda e sai do modo
@@ -374,6 +376,7 @@ function AdminPerfil() {
       cautionPolicyNotice: cautionPolicyNotice.trim(),
       cautionModesForOrders: cautionOn ? cautionModes : [],
       galleryImages: galleryImages.map((g) => g.trim()).filter(Boolean),
+      wallpaper: wallpaper.trim(),
     });
     if (!ok) {
       toast.error(t("adminPerfil.saveFailedError"));
@@ -386,7 +389,7 @@ function AdminPerfil() {
   const heroCuisine = editing ? cuisine : restaurant.cuisine;
   const heroPrice = restaurant.priceLevel;
   const heroDelivery = editing ? isDeliveryAvailable : restaurant.isDeliveryAvailable;
-  const heroCover = editing ? coverImage || restaurant.coverImage : restaurant.coverImage;
+  const heroWallpaper = editing ? wallpaper || restaurant.wallpaper : restaurant.wallpaper;
   const na = t("adminPerfil.notProvided");
 
   const relTime = (iso: string) =>
@@ -398,39 +401,45 @@ function AdminPerfil() {
 
   return (
     <div className="pb-16">
+      {/* Fundo de parede do restaurante, fixo atrás de toda a página de
+          perfil, em opacidade total — aqui (ao contrário da textura subtil
+          da página pública) é a própria imagem escolhida que deve aparecer
+          como fundo, já que os cartões por cima têm fundo próprio opaco e
+          não perdem legibilidade nenhuma. Substitui a antiga imagem de capa
+          no topo do cartão: em vez de um banner com foto, os elementos
+          (nome, chips, ações) ficam sobre este fundo. */}
+      {heroWallpaper && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroWallpaper})` }}
+        />
+      )}
       <div className="mx-auto mt-8 max-w-[1792px] space-y-6 px-4 md:px-6">
         {/* ---------- Cartão do restaurante ---------- */}
-        <div className="card-soft overflow-hidden">
-          <div className="relative h-64 sm:h-80 lg:h-[26rem]">
-            <img src={heroCover} alt="" className="h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            <Link
-              to="/restaurantes/$id"
-              params={{ id: restaurant.id }}
-              className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-lg bg-white/95 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-white"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              {t("adminPerfil.viewPublicPage")}
-            </Link>
-            <div className="absolute inset-x-0 bottom-0 p-5">
-              <h2 className="font-display text-2xl font-extrabold text-white">{restaurant.name}</h2>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-semibold">
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-white backdrop-blur">
+        <div className="card-soft overflow-hidden p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-2xl font-extrabold text-foreground">
+                {restaurant.name}
+              </h2>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold">
+                <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5 text-foreground">
                   <Star className="h-3 w-3 fill-star text-star" />
                   {restaurant.rating.toFixed(1)} · {restaurant.reviewCount}{" "}
                   {t("adminPerfil.ratingSuffix")}
                 </span>
                 {heroCuisine && (
-                  <span className="rounded-full bg-white/15 px-2 py-0.5 text-white backdrop-blur">
+                  <span className="rounded-full bg-surface px-2 py-0.5 text-foreground">
                     {heroCuisine}
                   </span>
                 )}
-                <span className="rounded-full bg-white/15 px-2 py-0.5 text-white backdrop-blur">
+                <span className="rounded-full bg-surface px-2 py-0.5 text-foreground">
                   {heroPrice}
                 </span>
                 <span
-                  className={`rounded-full px-2 py-0.5 backdrop-blur ${
-                    heroDelivery ? "bg-success/80 text-white" : "bg-white/15 text-white"
+                  className={`rounded-full px-2 py-0.5 ${
+                    heroDelivery ? "bg-success/15 text-success" : "bg-surface text-muted-foreground"
                   }`}
                 >
                   {heroDelivery
@@ -439,8 +448,16 @@ function AdminPerfil() {
                 </span>
               </div>
             </div>
+            <Link
+              to="/restaurantes/$id"
+              params={{ id: restaurant.id }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-surface"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {t("adminPerfil.viewPublicPage")}
+            </Link>
           </div>
-          <p className="flex flex-wrap gap-1 p-5 text-xs text-muted-foreground">
+          <p className="mt-4 flex flex-wrap gap-1 text-xs text-muted-foreground">
             <span>{t("adminPerfil.manageNoticePrefix")}</span>
             <Link to="/admin/suporte" className="font-semibold text-primary hover:underline">
               {t("adminPerfil.contactSupport")}
@@ -472,6 +489,13 @@ function AdminPerfil() {
                   onUploadingChange={setImageUploading}
                   label={t("adminPerfil.coverImageLabel")}
                   crop="cover"
+                />
+                <ImageUploadField
+                  value={wallpaper}
+                  onChange={setWallpaper}
+                  onUploadingChange={setImageUploading}
+                  label={t("adminPerfil.wallpaperLabel")}
+                  helpText={t("adminPerfil.wallpaperHelp")}
                 />
                 <div className="space-y-1.5">
                   <Label htmlFor="rest-description">{t("adminPerfil.descriptionLabel")}</Label>
@@ -905,6 +929,30 @@ function AdminPerfil() {
               hint={t("adminPerfil.secIdentityHint")}
             >
               <div className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>{t("adminPerfil.coverImageLabel")}</Label>
+                    <img
+                      src={restaurant.coverImage}
+                      alt=""
+                      className="h-32 w-full rounded-xl border border-border object-cover"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("adminPerfil.wallpaperLabel")}</Label>
+                    {restaurant.wallpaper ? (
+                      <img
+                        src={restaurant.wallpaper}
+                        alt=""
+                        className="h-32 w-full rounded-xl border border-border object-cover"
+                      />
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {t("adminPerfil.wallpaperEmpty")}
+                      </p>
+                    )}
+                  </div>
+                </div>
                 <p className="text-sm leading-relaxed text-foreground">
                   {restaurant.description || <span className="text-muted-foreground">{na}</span>}
                 </p>

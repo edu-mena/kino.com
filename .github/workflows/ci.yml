@@ -41,6 +41,61 @@ jobs:
       - name: Build
         run: npm run build
 
+  backend-ci:
+    name: backend · pint · pest
+    runs-on: ubuntu-latest
+    # Só o Postgres — os testes correm com CACHE_STORE=array,
+    # QUEUE_CONNECTION=sync, SESSION_DRIVER=array (ver backend/phpunit.xml),
+    # a mesma combinação já usada localmente numa máquina sem a extensão
+    # redis do PHP. Porta/nome/credenciais da BD batem com o que
+    # phpunit.xml já espera — nada a configurar entre os dois.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: luku_test
+          POSTGRES_USER: luku
+          POSTGRES_PASSWORD: luku
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U luku"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, pgsql, mbstring, zip, gd
+          coverage: none
+
+      - name: Composer cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-
+
+      - run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      # Chave/config de dev já vêm preenchidas no próprio .env.example (não
+      # é segredo nenhum, é o placeholder de sempre) — chega para os
+      # testes, que nunca enviam email/upload real (Mail::fake()/
+      # Storage::fake() em cada teste que precisa).
+      - run: cp .env.example .env
+
+      - name: Pint (estilo de código)
+        run: php vendor/bin/pint --test
+
+      - name: Pest
+        run: php vendor/bin/pest
+
   lighthouse:
     name: lighthouse · a11y + perf budget
     runs-on: ubuntu-latest

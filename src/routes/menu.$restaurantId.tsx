@@ -8,7 +8,7 @@ import { MenuDocument } from "@/components/menu-document";
 import { getMenuItemsByRestaurant, getRestaurant } from "@/data/helpers";
 import { defaultMenuId, getMenusByRestaurant } from "@/data/menus-store";
 import { useTranslation } from "@/i18n";
-import { useAuth } from "@/lib/auth";
+import { ApiError, useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/menu/$restaurantId")({
   head: () => ({
@@ -47,7 +47,7 @@ function GoogleIcon(props: SVGProps<SVGSVGElement>) {
 function PublicMenu() {
   const { restaurantId } = Route.useParams();
   const { t, locale } = useTranslation();
-  const { isLoggedIn, isLoading, login } = useAuth();
+  const { isLoggedIn, loginWithGoogle } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
 
   const restaurant = getRestaurant(restaurantId);
@@ -68,13 +68,19 @@ function PublicMenu() {
     { day: "2-digit", month: "long", year: "numeric" },
   );
 
-  const handleGoogle = () => {
+  const handleGoogle = async () => {
     setSigningIn(true);
-    // Simulação: numa integração real abriria o fluxo OAuth do Google.
-    setTimeout(() => {
-      login("Utilizador Luku", "utilizador@gmail.com");
+    try {
+      await loginWithGoogle();
       toast.success(t("publicMenu.signedInToast"));
-    }, 700);
+    } catch (error) {
+      const dismissed = error instanceof Error && error.message === "google_auth_dismissed";
+      if (!dismissed) {
+        toast.error(error instanceof ApiError ? error.message : t("entrar.errorToast"));
+      }
+    } finally {
+      setSigningIn(false);
+    }
   };
 
   if (!restaurant) {
@@ -89,7 +95,9 @@ function PublicMenu() {
     );
   }
 
-  if (isLoading) return null;
+  // `isLoading` (esperar o AuthProvider saber se há sessão guardada, em vez
+  // de mostrar às cegas o cartão de entrada) já é tratado globalmente em
+  // `__root.tsx` (`AuthGate`) — não precisa de ser checado aqui.
 
   // Porta de entrada — para ver o cardápio é preciso conta Luku (simulada).
   if (!isLoggedIn) {

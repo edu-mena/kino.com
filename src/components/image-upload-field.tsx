@@ -36,8 +36,8 @@ export function ImageUploadField({
   onMediaChange,
   accept = "image",
   maxVideoSec = 20,
-  label = "Imagem",
-  helpText = "Cole um link de imagem ou carregue uma foto do dispositivo. Em branco, usa uma imagem genérica.",
+  label,
+  helpText,
   mediaType = "image",
   crop,
 }: {
@@ -59,6 +59,12 @@ export function ImageUploadField({
   crop?: CropPresetName;
 }) {
   const { t } = useTranslation();
+  // `label`/`helpText` são opcionais — sem eles cai no texto genérico (só
+  // fazia sentido nos formulários que não têm nada mais específico a dizer,
+  // ex: stories). Calculado aqui (não como default do parâmetro) porque
+  // precisa de `t()`, só disponível depois de `useTranslation()`.
+  const resolvedLabel = label ?? t("imageUploadField.defaultLabel");
+  const resolvedHelpText = helpText ?? t("imageUploadField.defaultHelpText");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [trimFile, setTrimFile] = useState<File | null>(null);
@@ -81,7 +87,7 @@ export function ImageUploadField({
         // Vídeo → abre o controlador de corte (a confirmação recodifica).
         setTrimFile(file);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Não foi possível carregar o ficheiro.");
+        toast.error(err instanceof Error ? err.message : t("imageUploadField.uploadError"));
       } finally {
         setUploading(false);
         onUploadingChange?.(false);
@@ -114,7 +120,7 @@ export function ImageUploadField({
 
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      <Label>{resolvedLabel}</Label>
       <div className="flex items-center gap-3">
         <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl border border-border bg-surface">
           {uploading ? (
@@ -136,7 +142,7 @@ export function ImageUploadField({
               onChange(e.target.value);
               onMediaChange?.({ mediaType: "image" });
             }}
-            placeholder={isUploaded ? "Ficheiro carregado do dispositivo" : "https://..."}
+            placeholder={isUploaded ? t("imageUploadField.uploadedPlaceholder") : "https://..."}
             disabled={isUploaded}
           />
           <div className="flex items-center gap-2">
@@ -152,7 +158,7 @@ export function ImageUploadField({
               onClick={() => fileInputRef.current?.click()}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary"
             >
-              <ImagePlus className="h-3.5 w-3.5" /> Carregar do dispositivo
+              <ImagePlus className="h-3.5 w-3.5" /> {t("imageUploadField.uploadButton")}
             </button>
             {isUploaded && (
               <button
@@ -163,13 +169,15 @@ export function ImageUploadField({
                 }}
                 className="text-xs font-semibold text-muted-foreground hover:text-destructive"
               >
-                Remover
+                {t("imageUploadField.removeButton")}
               </button>
             )}
           </div>
         </div>
       </div>
-      {helpText && <p className="text-xs text-muted-foreground">{helpText}</p>}
+      {resolvedHelpText && (
+        <p className="text-xs text-muted-foreground">{resolvedHelpText}</p>
+      )}
 
       <VideoTrimmer
         file={trimFile}

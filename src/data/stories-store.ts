@@ -113,7 +113,12 @@ export function pruneExpiredStories() {
 export function createStory(
   restaurantId: string,
   src: string,
-  opts: { mediaType?: "image" | "video"; durationSec?: number } = {},
+  opts: {
+    mediaType?: "image" | "video";
+    durationSec?: number;
+    text?: string;
+    link?: string;
+  } = {},
 ): { story: RestaurantStory; ok: boolean } {
   const state = readState();
   const story: RestaurantStory = {
@@ -127,6 +132,8 @@ export function createStory(
           ...(opts.durationSec ? { durationSec: opts.durationSec } : {}),
         }
       : {}),
+    ...(opts.text?.trim() ? { text: opts.text.trim() } : {}),
+    ...(opts.link?.trim() ? { link: opts.link.trim() } : {}),
   };
   const ok = writeState({ ...state, customStories: [...state.customStories, story] });
   return { story, ok };

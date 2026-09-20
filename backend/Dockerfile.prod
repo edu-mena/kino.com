@@ -1,0 +1,55 @@
+# Imagem de produção — um único container com nginx + php-fpm via
+# supervisord (ao contrário do docker-compose.yml de dev, que usa
+# containers separados por serviço). Pensada para Fly.io, onde cada
+# "process group" do fly.toml reaproveita esta MESMA imagem, só muda o
+# comando de arranque (ver fly.toml): "app" corre supervisord completo
+# (nginx+php-fpm), "worker"/"reverb"/"scheduler" correm só o comando
+# artisan relevante, sem nginx.
+FROM php:8.3-fpm-alpine
+
+RUN apk add --no-cache \
+        nginx \
+        supervisor \
+        postgresql-dev \
+        $PHPIZE_DEPS \
+        oniguruma-dev \
+        libzip-dev \
+        libpng-dev \
+        freetype-dev \
+        libjpeg-turbo-dev \
+        ffmpeg \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo_pgsql \
+        pgsql \
+        mbstring \
+        zip \
+        gd \
+        opcache \
+        pcntl \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del $PHPIZE_DEPS
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --optimize-autoloader
+
+COPY . .
+RUN composer dump-autoload --optimize --no-dev \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+COPY docker/prod/nginx.conf /etc/nginx/http.d/default.conf
+COPY docker/prod/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/prod/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 8080
+
+ENTRYPOINT ["/entrypoint.sh"]
+# Sem CMD — cada process group do fly.toml fornece o seu próprio comando
+# (ver [processes] no fly.toml); localmente (docker run) o comando
+# default correto é: supervisord -c /etc/supervisor/conf.d/supervisord.conf

@@ -38,18 +38,51 @@ export function fileToResizedDataUrl(file: File, maxDimension = 800): Promise<st
 }
 
 /**
- * Lê um ficheiro qualquer e devolve o data URL cru, sem redimensionar. Para
+ * Lê um ficheiro (ou blob — `File` é sempre um `Blob`, útil para o que vem
+ * de `fetch()` ao ler conteúdo partilhado doutra app, ver
+ * `@/lib/pending-share`) e devolve o data URL cru, sem redimensionar. Para
  * vídeos de stories (não dá para "encolher" um vídeo no browser sem um
  * codec) — o tamanho é limitado por `maxBytes` a montante, senão o data URL
  * rebenta a quota do localStorage.
  */
-export function fileToDataUrl(file: File): Promise<string> {
+export function fileToDataUrl(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("Não foi possível ler o ficheiro."));
     reader.onload = () => resolve(reader.result as string);
     reader.readAsDataURL(file);
   });
+}
+
+/** Máximo aceite para um PDF (comprovativo ou fatura) — ao contrário de uma
+ * foto, não dá para "encolher" um PDF no browser, por isso o limite é ao
+ * ficheiro original (a quota do localStorage é a mesma preocupação de
+ * sempre). */
+export const MAX_DOCUMENT_PDF_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Documento anexado a um pedido (comprovativo de pagamento do cliente,
+ * fatura do restaurante) — aceita foto (redimensionada, como qualquer outro
+ * upload) OU PDF (guardado tal e qual, só com um limite de tamanho, já que
+ * não há como comprimi-lo no browser).
+ */
+export function fileToDocumentDataUrl(file: File): Promise<string> {
+  if (file.type === "application/pdf") {
+    if (file.size > MAX_DOCUMENT_PDF_BYTES) {
+      return Promise.reject(new Error("O PDF é grande demais (máx. 4 MB)."));
+    }
+    return fileToDataUrl(file);
+  }
+  return fileToResizedDataUrl(file, 1000);
+}
+
+/** Data URL cujo MIME é `application/pdf` — é assim que se distingue um
+ * documento em PDF de uma foto, sem precisar de um campo à parte (ver
+ * `fileToDocumentDataUrl`). Usado por quem MOSTRA o documento (comprovativo
+ * ou fatura), dos dois lados (cliente em `/entrega`, restaurante em
+ * `/admin/pedidos`). */
+export function isPdfDataUrl(src: string | undefined): boolean {
+  return !!src?.startsWith("data:application/pdf");
 }
 
 /** Dimensões finais de um corte: o lado maior fica em `maxDimension` e o
@@ -65,8 +98,16 @@ export function cropOutputSize(
 
 /**
  * Recorta `img` pela janela `src` (em píxeis naturais da imagem) e devolve
- * um data URL JPEG do tamanho `out`. A janela é ajustada aos limites da
- * imagem antes de desenhar, para nunca pintar fora dos bordos.
+ * um data URL JPEG do tamanho `out`.
+ *
+ * A janela pedida pode ultrapassar os limites reais da imagem nos dois
+ * eixos — acontece sempre que o `ImageCropper` deixa fazer zoom-out abaixo
+ * de "cover" (uma foto horizontal contida por inteiro num enquadramento
+ * vertical, por ex.). Nesse caso, em vez de esticar a imagem toda para
+ * preencher a saída (distorcia-a, perdendo o "letterbox" que se via na
+ * pré-visualização), pinta o fundo a preto e desenha só a parte real da
+ * imagem, à escala certa, no sítio certo — mantém as barras pretas também
+ * no resultado final, tal como apareciam a editar.
  */
 export function croppedImageToDataUrl(
   img: HTMLImageElement,
@@ -76,10 +117,6 @@ export function croppedImageToDataUrl(
 ): string {
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
-  const w = Math.min(src.w, iw);
-  const h = Math.min(src.h, ih);
-  const x = Math.min(Math.max(0, src.x), iw - w);
-  const y = Math.min(Math.max(0, src.y), ih - h);
 
   const canvas = document.createElement("canvas");
   canvas.width = out.width;
@@ -87,7 +124,27 @@ export function croppedImageToDataUrl(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("O navegador não suporta o processamento de imagens.");
   ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(img, x, y, w, h, 0, 0, out.width, out.height);
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, out.width, out.height);
+
+  // Só a parte da janela pedida que existe mesmo na imagem.
+  const sx = Math.max(0, src.x);
+  const sy = Math.max(0, src.y);
+  const sw = Math.min(src.x + src.w, iw) - sx;
+  const sh = Math.min(src.y + src.h, ih) - sy;
+  if (sw <= 0 || sh <= 0) return canvas.toDataURL("image/jpeg", quality); // nada a desenhar (não devia acontecer)
+
+  // Mesma escala pedida (janela → saída), aplicada só a essa parte real —
+  // é o que posiciona a imagem no sítio certo dentro da saída, com as
+  // barras pretas à volta a preencher o resto.
+  const scaleX = out.width / src.w;
+  const scaleY = out.height / src.h;
+  const dx = (sx - src.x) * scaleX;
+  const dy = (sy - src.y) * scaleY;
+  const dw = sw * scaleX;
+  const dh = sh * scaleY;
+
+  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
   return canvas.toDataURL("image/jpeg", quality);
 }
 

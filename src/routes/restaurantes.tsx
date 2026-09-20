@@ -28,8 +28,8 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Restaurant } from "@/data/types";
-import { getAllRestaurants } from "@/data/helpers";
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
+import { useRestaurants } from "@/data/use-restaurants-query";
 import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
 import { haversineKm } from "@/lib/geo";
@@ -101,6 +101,9 @@ function Restaurantes() {
   const [page, setPage] = useState(1);
   const [reservingRestaurant, setReservingRestaurant] = useState<Restaurant | null>(null);
   const [view, setView] = useState<"grid" | "map">("grid");
+  // Sem backend real (demo), resolve-se já com o mock — nunca fica a
+  // "carregar" nesse caso (ver useRestaurants, hasRealBackend).
+  const { data: allRestaurants = [], isLoading: restaurantsLoading } = useRestaurants();
 
   useEffect(() => {
     try {
@@ -120,7 +123,7 @@ function Restaurantes() {
   };
 
   const filtered = useMemo(() => {
-    const list = getAllRestaurants().filter((r) => {
+    const list = allRestaurants.filter((r) => {
       const byQuery =
         !debouncedQuery ||
         r.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
@@ -143,6 +146,7 @@ function Restaurantes() {
     return sorted;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `distanceKm`/`isPaused` são recriadas a cada render, mas só mudam de resultado quando `selectedAddress`/`deviceCoords`/`subByRestaurant`/`locale` mudam.
   }, [
+    allRestaurants,
     debouncedQuery,
     neighborhood,
     priceLevel,
@@ -363,10 +367,16 @@ function Restaurantes() {
           })}
         </div>
 
-        {filtered.length === 0 && (
+        {restaurantsLoading ? (
           <p className="card-soft mt-4 p-10 text-center text-sm text-muted-foreground">
-            {t("restaurantes.noResults")}
+            {t("common.loading")}
           </p>
+        ) : (
+          filtered.length === 0 && (
+            <p className="card-soft mt-4 p-10 text-center text-sm text-muted-foreground">
+              {t("restaurantes.noResults")}
+            </p>
+          )
         )}
 
         {view === "grid" && (

@@ -101,16 +101,36 @@ export function ImageCropper({
   const iw = img?.naturalWidth ?? 0;
   const ih = img?.naturalHeight ?? 0;
   const vp = viewportFor(containerW, aspect, maxViewportH);
-  const baseScale = iw && ih ? Math.max(vp.w / iw, vp.h / ih) : 1;
+  // "Cover" (preenche o enquadramento, corta o que sobrar) continua a ser o
+  // zoom por omissão (`zoom = 1`) — não muda nada para o caso comum (foto
+  // já mais ou menos vertical). "Contain" (mostra a imagem inteira, com
+  // barras) é o MÍNIMO a que se pode fazer zoom-out — antes o slider nunca
+  // deixava passar disso, por isso uma foto horizontal ficava sempre
+  // cortada a quase nada; agora dá para "soltar" o zoom até ver a foto
+  // toda. Quando a imagem já tem a proporção do enquadramento, os dois
+  // valores coincidem e nada muda.
+  const coverScale = iw && ih ? Math.max(vp.w / iw, vp.h / ih) : 1;
+  const containScale = iw && ih ? Math.min(vp.w / iw, vp.h / ih) : 1;
+  const baseScale = coverScale;
+  const minZoom = coverScale > 0 ? containScale / coverScale : 1;
   const scale = baseScale * zoom;
   const dw = iw * scale;
   const dh = ih * scale;
 
+  // Por eixo: se a imagem (já escalada) for mais curta que o enquadramento
+  // nesse eixo — só possível abaixo do "cover", ver `minZoom` acima —, não
+  // há por onde arrastar; fica centrada, é essa a barra preta (letterbox)
+  // que sobra. Só entra no clamp normal (arrastar entre as bordas) quando
+  // a imagem nesse eixo é maior ou igual ao enquadramento.
   const clampOffset = useCallback(
-    (o: Offset, s = scale): Offset => ({
-      x: clamp(o.x, vp.w - iw * s, 0),
-      y: clamp(o.y, vp.h - ih * s, 0),
-    }),
+    (o: Offset, s = scale): Offset => {
+      const scaledW = iw * s;
+      const scaledH = ih * s;
+      return {
+        x: scaledW <= vp.w ? (vp.w - scaledW) / 2 : clamp(o.x, vp.w - scaledW, 0),
+        y: scaledH <= vp.h ? (vp.h - scaledH) / 2 : clamp(o.y, vp.h - scaledH, 0),
+      };
+    },
     [scale, vp.w, vp.h, iw, ih],
   );
 
@@ -123,7 +143,7 @@ export function ImageCropper({
 
   const applyZoom = (next: number) => {
     if (!img) return;
-    const z = clamp(next, 1, MAX_ZOOM);
+    const z = clamp(next, minZoom, MAX_ZOOM);
     const sNew = baseScale * z;
     const cx = vp.w / 2;
     const cy = vp.h / 2;
@@ -183,9 +203,14 @@ export function ImageCropper({
         </div>
 
         <div className="mt-3 min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-1">
-          <div ref={containerRef} className="flex justify-center">
+          {/* Fundo cinza = fora do retângulo final (só aparece quando o
+              enquadramento fica mais estreito que o espaço disponível, ver
+              `viewportFor`/`VIEWPORT_H_CAP`). Preto = dentro do retângulo —
+              inclui as barras do letterbox quando o zoom está abaixo de
+              "cover" (imagem horizontal contida, sem cortar nada). */}
+          <div ref={containerRef} className="flex justify-center rounded-xl bg-neutral-200">
             <div
-              className="relative touch-none select-none overflow-hidden rounded-xl bg-black [cursor:grab] active:[cursor:grabbing]"
+              className="relative touch-none select-none overflow-hidden bg-black [cursor:grab] active:[cursor:grabbing]"
               style={{ width: vp.w, height: vp.h }}
               onPointerDown={(e) => {
                 if (!img) return;
@@ -209,7 +234,7 @@ export function ImageCropper({
                 <div className="absolute inset-y-0 left-2/3 w-px bg-white/40" />
                 <div className="absolute inset-x-0 top-1/3 h-px bg-white/40" />
                 <div className="absolute inset-x-0 top-2/3 h-px bg-white/40" />
-                <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/25" />
+                <div className="absolute inset-0 ring-1 ring-inset ring-white/25" />
               </div>
               {!img && (
                 <div className="absolute inset-0 grid place-items-center">
@@ -224,7 +249,7 @@ export function ImageCropper({
             <span className="sr-only">{t("imageCropper.zoom")}</span>
             <input
               type="range"
-              min={1}
+              min={minZoom}
               max={MAX_ZOOM}
               step={0.01}
               value={zoom}

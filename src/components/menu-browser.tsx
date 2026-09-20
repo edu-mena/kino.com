@@ -66,7 +66,7 @@ export function MenuBrowser({
 }) {
   const effectiveRestaurantId = lockedRestaurantId ?? restaurantFilter?.id;
   const { t, locale } = useTranslation();
-  const items = useMenuItems();
+  const items = useMenuItems(lockedRestaurantId);
   const { cuisinePreferences, excludedIngredients, dietaryRestrictions } = usePreferences();
   const { selected: selectedAddress } = useLocation();
   const addToBill = useAddToBill();
