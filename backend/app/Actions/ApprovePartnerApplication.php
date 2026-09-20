@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\PartnerApplication;
 use App\Models\Restaurant;
+use App\Models\RestaurantMenu;
 use App\Models\RestaurantSubscription;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,8 @@ use Illuminate\Support\Str;
  * Aprovar uma candidatura (ver mock, sistema.parceiros.tsx `onboard()`) cria
  * de facto um restaurante operacional: Restaurant + RestaurantSubscription
  * (trial, 60 dias — mesmo valor do mock, TRIAL_DAYS) + 3 mesas iniciais +
- * a conta do dono. O mock não tinha conta real nenhuma (só "escolher
+ * 1 cardápio principal (sem isto não há onde criar pratos) + a conta do
+ * dono. O mock não tinha conta real nenhuma (só "escolher
  * restaurante" na sessão fake) — aqui isso passa a ser uma conta de
  * restaurant_staff/owner a sério, convidada por email com o MESMO fluxo de
  * "definir senha" do esqueci-a-senha (AuthController::forgotPassword) —
@@ -47,6 +49,14 @@ class ApprovePartnerApplication
             foreach ([['Mesa 1', 4], ['Mesa 2', 2], ['Mesa 3', 6]] as [$name, $seats]) {
                 $restaurant->tables()->create(['name' => $name, 'seats' => $seats, 'area' => 'Interior']);
             }
+
+            // Sem isto, o painel do restaurante não tem onde criar pratos —
+            // `menu_id` é obrigatório em StoreMenuItemRequest.
+            RestaurantMenu::query()->create([
+                'restaurant_id' => $restaurant->id,
+                'name' => 'Cardápio Principal',
+                'is_active' => true,
+            ]);
 
             $owner = $this->findOrCreateOwner($application);
             $restaurant->staff()->attach($owner->id, ['role_in_restaurant' => 'owner']);

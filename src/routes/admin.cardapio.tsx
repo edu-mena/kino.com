@@ -36,10 +36,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { DishFormDialog } from "@/components/dish-form-dialog";
 import { MenuQrDialog } from "@/components/menu-qr-dialog";
+import { fetchApiMenus } from "@/data/api-menus";
 import { defaultMenuId } from "@/data/menus-store";
 import { normalizeIngredients, type MenuItemInput } from "@/data/menu-store";
 import type { MenuItem } from "@/data/types";
 import { translateMenuCategory, useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
 import { formatKz } from "@/lib/format";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -71,6 +73,16 @@ function AdminCardapio() {
   const [editingDish, setEditingDish] = useState<MenuItem | null>(null);
   const [deletingDish, setDeletingDish] = useState<MenuItem | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
+  // Com backend real, o cardápio "sintético" (defaultMenuId) não existe —
+  // busca o cardápio de verdade do restaurante (criado na aprovação, ver
+  // ApprovePartnerApplication). Sem backend, mantém-se o sintético de sempre.
+  const [apiMenuId, setApiMenuId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!hasRealBackend || !restaurant?.id) return;
+    fetchApiMenus(restaurant.id)
+      .then((menus) => setApiMenuId(menus[0]?.id ?? null))
+      .catch(() => setApiMenuId(null));
+  }, [restaurant?.id]);
 
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query);
@@ -157,9 +169,9 @@ function AdminCardapio() {
 
   if (!restaurant) return null;
 
-  // Cardápio único por restaurante — todos os pratos vão para o cardápio
-  // sintético por omissão; a organização é feita só por categoria.
-  const menuId = defaultMenuId(restaurant.id);
+  // Cardápio único por restaurante — todos os pratos vão para o mesmo
+  // cardápio (real ou sintético); a organização é feita só por categoria.
+  const menuId = hasRealBackend ? (apiMenuId ?? "") : defaultMenuId(restaurant.id);
 
   const openCreate = (kind: "dish" | "drink" = "dish") => {
     setEditingDish(null);
@@ -167,17 +179,21 @@ function AdminCardapio() {
     setFormOpen(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deletingDish) return;
     if (activeId === deletingDish.id) setActiveId(null);
-    deleteItem(deletingDish.id);
+    await deleteItem(deletingDish.id);
     toast.success(t("adminCardapio.deletedToast"));
     setDeletingDish(null);
   };
 
   /** Envia uma edição parcial de `dish` — o store só aceita o input completo. */
-  const applyDishPatch = (dish: MenuItem, patch: Partial<MenuItemInput>, successKey: string) => {
-    const ok = updateItem(dish.id, {
+  const applyDishPatch = async (
+    dish: MenuItem,
+    patch: Partial<MenuItemInput>,
+    successKey: string,
+  ) => {
+    const ok = await updateItem(dish.id, {
       menuId: dish.menuId ?? menuId,
       name: dish.name,
       description: dish.description,
@@ -196,7 +212,7 @@ function AdminCardapio() {
     return ok;
   };
 
-  const addIngredient = () => {
+  const addIngredient = async () => {
     if (!active || !ingName.trim()) return;
     const next = normalizeIngredients([
       ...active.ingredients,
@@ -206,7 +222,7 @@ function AdminCardapio() {
         extraPrice: ingKind === "extra" ? Number(ingExtra) || 0 : undefined,
       },
     ]);
-    if (applyDishPatch(active, { ingredients: next }, "adminCardapio.ingredientAddedToast")) {
+    if (await applyDishPatch(active, { ingredients: next }, "adminCardapio.ingredientAddedToast")) {
       setIngName("");
       setIngExtra("");
       setIngKind("main");
@@ -215,7 +231,7 @@ function AdminCardapio() {
 
   const removeIngredient = (ingId: string) => {
     if (!active) return;
-    applyDishPatch(
+    void applyDishPatch(
       active,
       { ingredients: active.ingredients.filter((i) => i.id !== ingId) },
       "adminCardapio.ingredientRemovedToast",
@@ -229,7 +245,7 @@ function AdminCardapio() {
       toast.error(t("dishFormDialog.missingFieldsError"));
       return;
     }
-    applyDishPatch(active, { price: p }, "dishFormDialog.updatedToast");
+    void applyDishPatch(active, { price: p }, "dishFormDialog.updatedToast");
   };
 
   const categoryOptions = ["todas", ...categories];
@@ -682,8 +698,8 @@ function AdminCardapio() {
         menuId={menuId}
         dish={editingDish}
         kind={formKind}
-        onSave={(restaurantId, input, editingId) =>
-          editingId ? updateItem(editingId, input) : createItem(restaurantId, input).ok
+        onSave={async (restaurantId, input, editingId) =>
+          editingId ? updateItem(editingId, input) : (await createItem(restaurantId, input)).ok
         }
       />
 

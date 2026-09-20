@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VideoTrimmer } from "@/components/video-trimmer";
 import { useTranslation } from "@/i18n";
+import { uploadImageDataUrl, type UploadPurpose } from "@/lib/api-upload";
 import { CROP_PRESETS, type CropPresetName } from "@/lib/image-crop-presets";
 import { fileToResizedDataUrl, getVideoDurationSec } from "@/lib/image-upload";
 
@@ -40,6 +41,8 @@ export function ImageUploadField({
   helpText,
   mediaType = "image",
   crop,
+  purpose,
+  token,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -57,6 +60,13 @@ export function ImageUploadField({
   /** Quando definido, um ficheiro de imagem passa primeiro pelo editor de
    * corte com as regras deste preset (rácio, tamanho, orientação). */
   crop?: CropPresetName;
+  /** Com backend real (`hasRealBackend`) e `token`, uma imagem escolhida é
+   * enviada a sério para `POST /uploads` e `onChange` recebe o URL real em
+   * vez da data URL local — omitir mantém o comportamento de sempre
+   * (guardado tal e qual, sem backend). Vídeo nunca passa por aqui (ver
+   * `@/lib/api-upload`, pipeline à parte). */
+  purpose?: UploadPurpose;
+  token?: string | null;
 }) {
   const { t } = useTranslation();
   // `label`/`helpText` são opcionais — sem eles cai no texto genérico (só
@@ -69,6 +79,18 @@ export function ImageUploadField({
   const [uploading, setUploading] = useState(false);
   const [trimFile, setTrimFile] = useState<File | null>(null);
   const [cropFile, setCropFile] = useState<File | null>(null);
+
+  /** Sobe a imagem a sério quando possível (`purpose`+`token`+backend
+   * real); senão devolve a data URL tal e qual (comportamento de sempre). */
+  const finalizeImage = async (dataUrl: string): Promise<string> => {
+    if (!purpose || !token) return dataUrl;
+    try {
+      return await uploadImageDataUrl(dataUrl, purpose, token);
+    } catch {
+      toast.error(t("imageUploadField.uploadError"));
+      return dataUrl;
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -103,7 +125,7 @@ export function ImageUploadField({
     setUploading(true);
     onUploadingChange?.(true);
     try {
-      onChange(await fileToResizedDataUrl(file));
+      onChange(await finalizeImage(await fileToResizedDataUrl(file)));
       onMediaChange?.({ mediaType: "image" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível carregar o ficheiro.");
@@ -201,9 +223,18 @@ export function ImageUploadField({
           maxDimension={preset.maxDimension}
           hint={t(preset.hintKey)}
           onConfirm={(dataUrl) => {
-            onChange(dataUrl);
-            onMediaChange?.({ mediaType: "image" });
             setCropFile(null);
+            setUploading(true);
+            onUploadingChange?.(true);
+            finalizeImage(dataUrl)
+              .then((url) => {
+                onChange(url);
+                onMediaChange?.({ mediaType: "image" });
+              })
+              .finally(() => {
+                setUploading(false);
+                onUploadingChange?.(false);
+              });
           }}
         />
       )}

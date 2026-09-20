@@ -6,6 +6,19 @@ import { ApiError, apiFetch, hasRealBackend } from "@/lib/api-client";
 
 const TOKEN_KEY = "luku_admin_token";
 const RESTAURANT_ID_KEY = "luku_admin_restaurant";
+
+/** Token Sanctum do restaurante/operador autenticado no painel `/admin`,
+ * lido diretamente do localStorage — para quem precisa de chamar `apiFetch`
+ * fora de um componente (ver `getAuthToken` em `@/lib/auth`, mesmo padrão).
+ * `null` em demo (`!hasRealBackend`) ou sem sessão. */
+export function getAdminToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
 /** "1" quando o token guardado acima é EMPRESTADO de `useSystemAdmin` (ver
  * `enterAsOperator`) — nunca um token próprio deste painel. Persistido para
  * sobreviver a um refresh enquanto "emprestado". */
@@ -210,4 +223,12 @@ export function useRestaurantAdmin() {
   const ctx = useContext(RestaurantAdminContext);
   if (!ctx) throw new Error("useRestaurantAdmin must be used inside RestaurantAdminProvider");
   return ctx;
+}
+
+/** Como `useRestaurantAdmin`, mas `null` fora do provider em vez de
+ * lançar — para consumidores montados fora de `OperatorProviders` (ex:
+ * `MenuAdminProvider`, no `__root`, partilhado com páginas de cliente que
+ * nunca montam o painel do restaurante). */
+export function useRestaurantAdminOptional() {
+  return useContext(RestaurantAdminContext);
 }

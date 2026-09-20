@@ -15,9 +15,10 @@ class UpdateMenuItemRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // Valida pelo `uuid` — ver StoreMenuItemRequest.
             'menu_id' => [
-                'sometimes', 'integer',
-                Rule::exists('restaurant_menus', 'id')->where('restaurant_id', $this->route('menuItem')->restaurant_id),
+                'sometimes', 'string',
+                Rule::exists('restaurant_menus', 'uuid')->where('restaurant_id', $this->route('menuItem')->restaurant_id),
             ],
             'name' => ['sometimes', 'string', 'max:150'],
             'description' => ['sometimes', 'nullable', 'string'],

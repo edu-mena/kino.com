@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\Menus\UpdateMenuItemRequest;
 use App\Http\Resources\Api\V1\MenuItemResource;
 use App\Models\MenuItem;
 use App\Models\Restaurant;
+use App\Models\RestaurantMenu;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -38,6 +39,9 @@ class MenuItemController extends Controller
         $data = $request->validated();
         $ingredients = $data['ingredients'] ?? [];
         unset($data['ingredients']);
+        // `menu_id` chega como uuid (único id que a API expõe, ver
+        // StoreMenuItemRequest) — resolve para o id interno antes de gravar.
+        $data['menu_id'] = RestaurantMenu::where('uuid', $data['menu_id'])->value('id');
 
         $item = DB::transaction(function () use ($restaurant, $data, $ingredients) {
             $item = $restaurant->menuItems()->create($data);
@@ -56,6 +60,9 @@ class MenuItemController extends Controller
         $data = $request->validated();
         $ingredients = $data['ingredients'] ?? null;
         unset($data['ingredients']);
+        if (array_key_exists('menu_id', $data)) {
+            $data['menu_id'] = RestaurantMenu::where('uuid', $data['menu_id'])->value('id');
+        }
 
         DB::transaction(function () use ($menuItem, $data, $ingredients) {
             $menuItem->update($data);

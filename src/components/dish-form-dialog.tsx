@@ -19,6 +19,7 @@ import {
 import type { MenuItem, MenuItemIngredient } from "@/data/types";
 import { translateMenuCategory, useTranslation } from "@/i18n";
 import { useFirstUseHint } from "@/lib/first-use-hints";
+import { getAdminToken } from "@/lib/restaurant-admin";
 import { cn } from "@/lib/utils";
 
 type IngredientRow = {
@@ -86,7 +87,11 @@ export function DishFormDialog({
    * modelo de dados é o mesmo (`MenuItem`). */
   kind?: "dish" | "drink";
   /** `false` = a escrita falhou (ex: quota do localStorage excedida). */
-  onSave: (restaurantId: string, input: MenuItemInput, editingId?: string) => boolean;
+  onSave: (
+    restaurantId: string,
+    input: MenuItemInput,
+    editingId?: string,
+  ) => boolean | Promise<boolean>;
 }) {
   const suggestions = useDishSuggestions();
   const { t, locale } = useTranslation();
@@ -103,6 +108,7 @@ export function DishFormDialog({
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([]);
   const [isPromoted, setIsPromoted] = useState(false);
   const [promotionLabel, setPromotionLabel] = useState("");
@@ -161,7 +167,7 @@ export function DishFormDialog({
   const removeRow = (index: number) =>
     setIngredientRows((rows) => rows.filter((_, i) => i !== index));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const priceNum = Number(price);
     if (!name.trim() || !category.trim() || !priceNum || priceNum <= 0) {
@@ -190,7 +196,9 @@ export function DishFormDialog({
       ...(isPromoted && promotionLabel.trim() ? { promotionLabel: promotionLabel.trim() } : {}),
     };
 
-    const ok = onSave(restaurantId, input, dish?.id);
+    setSaving(true);
+    const ok = await onSave(restaurantId, input, dish?.id);
+    setSaving(false);
     if (!ok) {
       toast.error(t("dishFormDialog.saveFailedError"));
       return;
@@ -361,6 +369,8 @@ export function DishFormDialog({
             onChange={setImage}
             onUploadingChange={setImageUploading}
             crop="dish"
+            purpose="dish"
+            token={getAdminToken()}
           />
 
           <div className="space-y-2 rounded-xl border border-border p-3">
@@ -456,7 +466,7 @@ export function DishFormDialog({
             </p>
           </div>
 
-          <Button type="submit" disabled={imageUploading} className="w-full rounded-xl">
+          <Button type="submit" disabled={imageUploading || saving} className="w-full rounded-xl">
             {dish
               ? t("dishFormDialog.saveChanges")
               : t(kind === "drink" ? "dishFormDialog.createDrink" : "dishFormDialog.createDish")}
