@@ -319,7 +319,7 @@ export function PromoCarousel() {
   // idioma, só o texto da "casca".
   const { t } = useTranslation();
   const offers = useOffers();
-  const menuItems = useMenuItems();
+  const { items: menuItems } = useMenuItems();
   const promotedDishes = useMemo(() => menuItems.filter((item) => item.isPromoted), [menuItems]);
   const slides = useMemo(() => buildSlides(t, offers, promotedDishes), [t, offers, promotedDishes]);
   const [api, setApi] = useState<CarouselApi>();

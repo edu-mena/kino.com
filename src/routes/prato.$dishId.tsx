@@ -76,7 +76,7 @@ function DishDetail() {
   const unit = item.price + extraTotal;
 
   const otherRestaurants = getRestaurantsOfferingDish(item.name, item.restaurantId);
-  const menuItems = useMenuItems();
+  const { items: menuItems } = useMenuItems();
   const related = menuItems.filter((m) => m.id !== item.id).slice(0, 4);
 
   return (

@@ -44,7 +44,7 @@ function insertAsThird(rows: ReactNode[], extra: ReactNode): ReactNode[] {
 
 export function HeaderSearch() {
   const { t } = useTranslation();
-  const items = useMenuItems();
+  const { items } = useMenuItems();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query);

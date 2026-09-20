@@ -9,6 +9,7 @@ import { LazyImage } from "@/components/lazy-image";
 import { ListPagination } from "@/components/list-pagination";
 import { LocationFilterSelect, matchesLocation } from "@/components/search-filters";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -66,7 +67,7 @@ export function MenuBrowser({
 }) {
   const effectiveRestaurantId = lockedRestaurantId ?? restaurantFilter?.id;
   const { t, locale } = useTranslation();
-  const items = useMenuItems(lockedRestaurantId);
+  const { items, loading: itemsLoading } = useMenuItems(lockedRestaurantId);
   const { cuisinePreferences, excludedIngredients, dietaryRestrictions } = usePreferences();
   const { selected: selectedAddress } = useLocation();
   const addToBill = useAddToBill();
@@ -337,7 +338,17 @@ export function MenuBrowser({
         )}
       </div>
 
-      {lockedRestaurantId && viewMode === "list" ? (
+      {itemsLoading ? (
+        // Sem isto, a 1ª renderização (incl. o HTML que o servidor manda,
+        // SSR nunca corre o fetch) mostrava "nenhum resultado" mesmo num
+        // restaurante cheio de pratos, só porque `items` ainda estava vazio
+        // à espera do pedido resolver — bug real, não só cosmético.
+        <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 rounded-2xl" />
+          ))}
+        </div>
+      ) : lockedRestaurantId && viewMode === "list" ? (
         <div className="mt-4 divide-y divide-border border-y border-border">
           {pageItems.map((item) => (
             <DishListRow key={item.id} item={item} onViewDetail={setDetailItem} />
@@ -351,7 +362,7 @@ export function MenuBrowser({
         </div>
       )}
 
-      {resultCount === 0 && (
+      {!itemsLoading && resultCount === 0 && (
         <p className="card-soft mt-4 p-10 text-center text-sm text-muted-foreground">
           {t("cardapio.noResults")}
         </p>

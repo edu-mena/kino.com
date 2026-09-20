@@ -171,7 +171,7 @@ function SectionHeading({
 
 function HomeLoggedIn() {
   const { t } = useTranslation();
-  const items = useMenuItems();
+  const { items } = useMenuItems();
   const { cuisinePreferences, excludedIngredients, dietaryRestrictions } = usePreferences();
   const { selected: selectedAddress } = useLocation();
 

@@ -23,14 +23,27 @@ import { hasRealBackend } from "@/lib/api-client";
  * cardápio de um restaurante, `/menu/$restaurantId`, e o cardápio dentro do
  * detalhe do restaurante). Sem `restaurantId` (busca global,
  * `/cardapio`) ou sem backend real (demo), comportamento inalterado.
+ *
+ * `loading`: com backend real, `items` começa vazio até o pedido resolver
+ * (SSR nunca corre o `useEffect`, por isso a 1ª renderização — incl. o HTML
+ * que o servidor manda) fica sempre sem pratos nenhum). Sem `loading`
+ * distinto de "está mesmo vazio", `MenuBrowser` mostrava "nenhum resultado"
+ * nesse instante mesmo num restaurante cheio de pratos — bug real,
+ * encontrado a testar /restaurantes/$id logo depois de cadastrar um prato
+ * (a corrida entre o primeiro paint e o fetch resolver às vezes perdia).
  */
-export function useMenuItems(restaurantId?: string): MenuItem[] {
+export function useMenuItems(restaurantId?: string): { items: MenuItem[]; loading: boolean } {
   const [items, setItems] = useState<MenuItem[]>(hasRealBackend ? [] : INITIAL_MENU_ITEMS);
+  const [loading, setLoading] = useState(hasRealBackend);
 
   useEffect(() => {
     if (hasRealBackend) {
+      setLoading(true);
       const fetcher = restaurantId ? fetchApiMenuItems(restaurantId) : fetchApiAllMenuItems();
-      fetcher.then(setItems).catch(() => setItems([]));
+      fetcher
+        .then(setItems)
+        .catch(() => setItems([]))
+        .finally(() => setLoading(false));
       return;
     }
 
@@ -44,5 +57,5 @@ export function useMenuItems(restaurantId?: string): MenuItem[] {
     };
   }, [restaurantId]);
 
-  return items;
+  return { items, loading };
 }
