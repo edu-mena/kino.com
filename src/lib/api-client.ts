@@ -16,8 +16,15 @@ const RAW_BASE_URL = (import.meta.env["VITE_API_BASE_URL"] as string | undefined
  * produção real (ver DEPLOY.md). Existe para a demo em `*.vercel.app`, que
  * publica o site sem nenhum backend por trás: consumido por `auth.tsx` para
  * desviar o login de cliente para uma sessão local fictícia em vez de deixar
- * `apiFetch` rebentar com erro de rede. */
-export const hasRealBackend = Boolean(RAW_BASE_URL);
+ * `apiFetch` rebentar com erro de rede.
+ *
+ * ESTA BRANCH (`demo/dados-mockados`) força sempre `false` — é a branch de
+ * apresentação com dados mockados, nunca deve depender de nenhum backend
+ * estar no ar nem de nenhuma variável de ambiente estar (ou não estar)
+ * definida no ambiente de quem a corre. Não fazer merge disto para
+ * master/main. */
+const FORCE_MOCK_DEMO = true;
+export const hasRealBackend = FORCE_MOCK_DEMO ? false : Boolean(RAW_BASE_URL);
 
 const API_BASE_URL = (RAW_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
 
