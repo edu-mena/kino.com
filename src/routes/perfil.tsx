@@ -34,6 +34,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { useAddresses } from "@/lib/addresses";
+import { hasRealBackend } from "@/lib/api-client";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { usePreferences } from "@/lib/preferences";
 import { usePushSubscription } from "@/lib/push-notifications";
@@ -173,7 +174,7 @@ function Perfil() {
     .map((n) => n[0])
     .join("")
     .toUpperCase();
-  const allAddresses = [...INITIAL_SAVED_ADDRESSES, ...customAddresses];
+  const allAddresses = [...(hasRealBackend ? [] : INITIAL_SAVED_ADDRESSES), ...customAddresses];
 
   return (
     <PageShell>

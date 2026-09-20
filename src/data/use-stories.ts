@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { hasRealBackend } from "@/lib/api-client";
 import { getEffectiveStories, pruneExpiredStories } from "./stories-store";
 import { INITIAL_STORIES } from "./mockData";
 import type { RestaurantStory } from "./types";
@@ -11,7 +12,9 @@ import type { RestaurantStory } from "./types";
  * logo a seguir, só no cliente.
  */
 export function useEffectiveStories(): RestaurantStory[] {
-  const [stories, setStories] = useState<RestaurantStory[]>(INITIAL_STORIES);
+  const [stories, setStories] = useState<RestaurantStory[]>(
+    hasRealBackend ? [] : INITIAL_STORIES,
+  );
 
   useEffect(() => {
     const sync = () => {

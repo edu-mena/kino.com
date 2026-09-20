@@ -72,7 +72,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          extensions: pdo_pgsql, pgsql, mbstring, zip, gd
+          extensions: pdo_pgsql, pgsql, mbstring, zip, gd, pcntl
           coverage: none
 
       - name: Composer cache

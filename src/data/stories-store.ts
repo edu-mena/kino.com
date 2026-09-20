@@ -1,3 +1,4 @@
+import { hasRealBackend } from "@/lib/api-client";
 import { INITIAL_STORIES } from "./mockData";
 import { safeLocalStorageSet } from "./safe-storage";
 import type { RestaurantStory } from "./types";
@@ -74,6 +75,9 @@ function seedEpoch(): number {
  * a ordem original (o mais recente fica em `epoch`, o mais antigo a ~22h).
  */
 function seededStories(): RestaurantStory[] {
+  // Com backend real, stories de restaurantes mock (que não existem na BD
+  // real) não fazem sentido — um restaurante novo começa sem stories.
+  if (hasRealBackend) return [];
   const epoch = seedEpoch();
   const ordered = [...INITIAL_STORIES].sort(
     (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
