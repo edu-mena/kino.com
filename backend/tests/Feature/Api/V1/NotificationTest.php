@@ -3,6 +3,7 @@
 use App\Models\Notification;
 use App\Models\Restaurant;
 use App\Models\User;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 
 test('criar um pedido gera notificação para o restaurante E para o cliente autenticado', function () {
@@ -130,6 +131,31 @@ test('notificação devolve o uuid público do pedido de origem em refId', funct
         ->assertOk()
         ->assertJsonPath('data.0.refId', $order->uuid)
         ->assertJsonPath('data.0.restaurantId', $restaurant->uuid);
+});
+
+test('criar um pedido não falha quando o cliente tem um device token Android mas FCM não está configurado', function () {
+    Config::set('firebase.projects.app.credentials', null);
+
+    $restaurant = Restaurant::factory()->create();
+    $user = User::factory()->create();
+    $user->deviceTokens()->create(['platform' => 'android', 'token' => 'fcm-token-fake']);
+
+    // Cria o pedido direto no Eloquent (dispara o OrderObserver::created a
+    // sério, incl. SendPushNotificationJob para o token Android acima) sem
+    // depender do endpoint HTTP inteiro — o que se quer testar é só que o
+    // envio de push sem credenciais Firebase não rebenta nada.
+    $restaurant->orders()->create([
+        'user_id' => $user->id,
+        'fulfillment_type' => 'takeaway',
+        'customer_name' => $user->name,
+        'customer_phone' => '900',
+        'pickup_asap' => true,
+        'status' => 'pending',
+        'subtotal' => 1000,
+        'total' => 1000,
+    ]);
+
+    expect(Notification::where('user_id', $user->id)->where('event', 'orderNew')->exists())->toBeTrue();
 });
 
 test('sino do restaurante só mostra as notificações do próprio restaurante, staff de outro não acede', function () {

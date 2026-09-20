@@ -177,6 +177,105 @@ npm run cap:sync
 
 ---
 
+## Push Android (FCM)
+
+O sino de notificações + push já funcionam de ponta a ponta na web (Web
+Push, VAPID — ver `src/lib/push-notifications.tsx`). Na app nativa
+(Android/iOS) o código também já está todo pronto (plugin
+`@capacitor/push-notifications`, endpoint `/device-tokens`, envio via
+Firebase Cloud Messaging em `backend/app/Services/PushNotificationService.php`)
+— falta só a configuração externa (projeto Firebase + `google-services.json`)
+que **não dá para fazer a partir daqui**, mesma situação do login Google
+nativo acima.
+
+### 1. Criar/reaproveitar um projeto Firebase
+
+[Firebase Console](https://console.firebase.google.com) → "Adicionar
+projeto". Pode ser um projeto novo só para push, ou o mesmo projeto do
+Google Cloud já usado para o login Google (`GOOGLE_WEB_CLIENT_ID` etc.) —
+Firebase e Google Cloud Console partilham o mesmo projeto por baixo, ligar
+um ao Firebase não interfere com o OAuth já configurado.
+
+### 2. Registar a app Android no Firebase
+
+Dentro do projeto Firebase → "Adicionar app" → Android:
+
+- **Nome do pacote**: `com.luku.app` (tem de ser exatamente este, é o
+  `applicationId` em `android/app/build.gradle`).
+- SHA-1: opcional para push em si (só é preciso para Dynamic Links/App
+  Check, não usados aqui) — pode saltar esse passo.
+- Descarrega o `google-services.json` gerado.
+
+### 3. Colocar o `google-services.json`
+
+```
+android/app/google-services.json
+```
+
+`android/app/build.gradle` já tem o bloco condicional que ativa o plugin
+`com.google.gms.google-services` sozinho assim que este ficheiro existir
+(gerado pelo próprio Capacitor ao sincronizar o plugin de push — nada a
+mexer aí). Depois:
+
+```sh
+npm run cap:sync
+```
+
+**Atenção**: `android/` está no `.gitignore` (regenera-se com `npx cap add
+android`) — se a pasta for apagada/recriada do zero, o `google-services.json`
+tem de ser copiado para lá de novo (guarda o ficheiro original nalgum
+sítio fora do repo, ex. o gestor de passwords da equipa — é uma
+credencial, mesmo sendo só do lado do cliente).
+
+### 4. Gerar a credencial do lado do SERVIDOR
+
+O backend envia a notificação em si (não o telemóvel que "puxa" sozinho) —
+precisa de uma conta de serviço do MESMO projeto Firebase:
+
+Firebase Console → ⚙️ Definições do projeto → **Contas de serviço** →
+"Gerar nova chave privada" → descarrega um ficheiro `.json`.
+
+Esse ficheiro (o conteúdo JSON inteiro, não o caminho) vai para a variável
+`FIREBASE_CREDENTIALS` do backend:
+
+```sh
+# local (backend/.env) — cola o JSON todo numa linha só
+FIREBASE_CREDENTIALS='{"type":"service_account","project_id":"...","private_key":"...", ...}'
+
+# produção (Fly.io)
+fly secrets set FIREBASE_CREDENTIALS='{"type":"service_account", ...}' -a luku-api
+```
+
+Sem isto configurado, o envio Android fica em no-op silencioso — o resto
+da app continua a funcionar normalmente (mesmo comportamento do Web Push
+sem `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`).
+
+### 5. Testar
+
+```sh
+npm run android:run
+```
+
+Ativa o toggle de notificações em `/perfil` dentro da app — deve pedir
+permissão do sistema e, se aceite, registar o token (`POST
+/device-tokens`, `platform: "android"`). Cria/atualiza um pedido desse
+utilizador (via `/admin/pedidos` de outro dispositivo/browser, por
+exemplo) para confirmar que a notificação chega ao telemóvel.
+
+### iOS — falta ainda mais um passo (APNs)
+
+O mesmo plugin cobre iOS, e o `PushNotificationController`/`device_tokens`
+já aceitam `platform: "ios"`, mas `PushNotificationService` só envia para
+`web`/`android` por agora — enviar para iOS precisa de uma chave APNs
+(Apple Developer → Certificates, Identifiers & Profiles → Keys) associada
+ao mesmo projeto Firebase (Firebase Console → Definições do projeto → Cloud
+Messaging → carregar a chave `.p8` da Apple). Depois disso, o SDK do
+Firebase (`kreait/firebase-php`, já instalado) consegue enviar tanto para
+Android como iOS pelo mesmo `sendMulticast` — só falta o código distinguir
+o `AndroidConfig`/`ApnsConfig` por mensagem, e a credencial Apple em si.
+
+---
+
 ## Partilhar um documento PARA a app (comprovativo/fatura)
 
 Permite que a Luku apareça na folha de partilha nativa do telemóvel — ex.
@@ -331,5 +430,6 @@ npm run cap:sync        # copia webDir + aplica capacitor.config + plugins
 - Precisa de rede para o servidor configurado — **não é offline**.
 - Para a submissão à App Store convém, mais tarde, um **bundle SPA/prerender**
   do TanStack Start empacotado na app (ver o documento de infraestrutura).
-- Plugins nativos (push, câmara, geolocalização) instalam-se à parte quando
-  forem precisos: `npm i @capacitor/push-notifications` etc., depois `cap:sync`.
+- Plugins nativos ainda por integrar (câmara, geolocalização) instalam-se à
+  parte quando forem precisos, depois `cap:sync`. Push (`@capacitor/push-notifications`)
+  já está integrado — ver secção "Push Android (FCM)" acima.

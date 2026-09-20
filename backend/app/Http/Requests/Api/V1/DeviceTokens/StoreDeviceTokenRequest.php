@@ -7,11 +7,10 @@ use Illuminate\Validation\Rule;
 
 /**
  * Regista (ou atualiza, se já existir — ver DeviceTokenController::store)
- * um destino de push para o utilizador autenticado. `web` é o único
- * enviado de verdade nesta fase (ver PushNotificationService); `android`/
- * `ios` já são aceites porque a coluna/enum foram pensados para os três
- * desde o início (ver migração `device_tokens`), mas ainda sem FCM/APNs
- * ligado — ficam só guardados, prontos para quando essa fase entrar.
+ * um destino de push para o utilizador autenticado. `web` e `android` são
+ * enviados de verdade (ver PushNotificationService — `android` precisa de
+ * `FIREBASE_CREDENTIALS` configurado, senão fica só guardado); `ios` ainda
+ * não tem APNs ligado, fica só guardado.
  */
 class StoreDeviceTokenRequest extends FormRequest
 {

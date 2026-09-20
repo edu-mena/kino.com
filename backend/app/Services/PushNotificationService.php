@@ -5,15 +5,24 @@ namespace App\Services;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Kreait\Firebase\Contract\Messaging as FirebaseMessaging;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification as FcmNotification;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\WebPush;
 use Throwable;
 
 /**
- * Web Push — entrega uma `Notification` já persistida (ver Order/
- * ReservationObserver) às subscrições `web` do utilizador. Sem cobertura
- * nativa (Android/iOS) nesta fase — precisaria de FCM/APNs, fora do escopo
- * (ver `device_tokens`, coluna `platform` já preparada para quando entrar).
+ * Entrega uma `Notification` já persistida (ver Order/ReservationObserver)
+ * às subscrições do utilizador — Web Push (`platform=web`) e Android via
+ * Firebase Cloud Messaging (`platform=android`). iOS (APNs) continua fora
+ * do escopo (ver `device_tokens`, coluna `platform` já preparada).
+ *
+ * FCM precisa de credenciais reais dum projeto Firebase
+ * (`FIREBASE_CREDENTIALS`, ver config/firebase.php e capacitor/README.md
+ * para o passo a passo de criar o projeto/`google-services.json`) — sem
+ * isso configurado, vira no-op silencioso, mesmo padrão do Web Push sem
+ * VAPID.
  *
  * Texto só em português por agora — a app não tem (ainda) o idioma
  * preferido do utilizador acessível daqui de forma fiável em todos os
@@ -29,6 +38,11 @@ class PushNotificationService
      * do mesmo request/job; `$client` sozinho não chega porque `null` é
      * também o valor de "já tentei e falhou", não só de "ainda não tentei". */
     private bool $attempted = false;
+
+    private ?FirebaseMessaging $fcmClient = null;
+
+    /** Mesma razão do `$attempted` acima, para o cliente FCM. */
+    private bool $fcmAttempted = false;
 
     /** `null` = sem chaves VAPID configuradas, OU o pacote `minishlink/
      * web-push` ainda não foi instalado (`composer install` por correr) —
@@ -72,6 +86,30 @@ class PushNotificationService
         }
     }
 
+    /** `null` = sem credenciais Firebase configuradas (`FIREBASE_CREDENTIALS`,
+     * ver config/firebase.php) — o SDK só falha ao tentar USAR o componente,
+     * não ao criar o container, por isso testa-se a config diretamente aqui
+     * em vez de esperar pela exceção. */
+    private function fcmClient(): ?FirebaseMessaging
+    {
+        if ($this->fcmAttempted) {
+            return $this->fcmClient;
+        }
+        $this->fcmAttempted = true;
+
+        if (! config('firebase.projects.'.config('firebase.default').'.credentials')) {
+            return null;
+        }
+
+        try {
+            return $this->fcmClient = app(FirebaseMessaging::class);
+        } catch (Throwable $e) {
+            Log::warning('fcm: falhou a criar o cliente', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
     /** Envia para todas as subscrições `web` do utilizador — apaga sozinho
      * as que o browser já invalidou (o utilizador limpou os dados do site,
      * desinstalou, etc. — 410/404 do serviço de push). Nunca deixa uma
@@ -82,7 +120,7 @@ class PushNotificationService
         try {
             $this->doSendForNotification($user, $notification);
         } catch (Throwable $e) {
-            Log::warning('web-push: envio falhou inesperadamente', [
+            Log::warning('push: envio falhou inesperadamente', [
                 'notification_id' => $notification->id,
                 'error' => $e->getMessage(),
             ]);
@@ -90,6 +128,14 @@ class PushNotificationService
     }
 
     private function doSendForNotification(User $user, Notification $notification): void
+    {
+        [$title, $body] = $this->textFor($notification);
+
+        $this->sendWeb($user, $notification, $title, $body);
+        $this->sendAndroid($user, $notification, $title, $body);
+    }
+
+    private function sendWeb(User $user, Notification $notification, string $title, string $body): void
     {
         $client = $this->client();
         if (! $client) {
@@ -101,7 +147,6 @@ class PushNotificationService
             return;
         }
 
-        [$title, $body] = $this->textFor($notification);
         $payload = json_encode([
             'title' => $title,
             'body' => $body,
@@ -143,6 +188,44 @@ class PushNotificationService
                 'endpoint' => $report->getEndpoint(),
                 'reason' => $report->getReason(),
             ]);
+        }
+    }
+
+    /** Um só CloudMessage, enviado a todos os tokens Android do utilizador
+     * de uma vez (`sendMulticast`) — o próprio relatório já diz quais
+     * tokens ficaram inválidos/desconhecidos (app desinstalada, etc.),
+     * apagados a seguir, mesmo espírito do 410/404 do Web Push acima. */
+    private function sendAndroid(User $user, Notification $notification, string $title, string $body): void
+    {
+        $client = $this->fcmClient();
+        if (! $client) {
+            return;
+        }
+
+        $tokens = $user->deviceTokens()->where('platform', 'android')->pluck('token');
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        $message = CloudMessage::new()
+            ->withNotification(FcmNotification::create($title, $body))
+            ->withData([
+                'kind' => $notification->kind,
+                'refId' => (string) $notification->ref_id,
+                'url' => $this->urlFor($notification),
+            ]);
+
+        try {
+            $report = $client->sendMulticast($message, $tokens->all());
+        } catch (Throwable $e) {
+            Log::warning('fcm: envio falhou', ['error' => $e->getMessage()]);
+
+            return;
+        }
+
+        $stale = [...$report->invalidTokens(), ...$report->unknownTokens()];
+        if ($stale !== []) {
+            $user->deviceTokens()->where('platform', 'android')->whereIn('token', $stale)->delete();
         }
     }
 
