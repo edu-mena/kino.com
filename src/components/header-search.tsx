@@ -15,7 +15,12 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LocationFilterSelect, matchesLocation } from "@/components/search-filters";
-import { addressProvince, getAllRestaurants, getMenuCategories, getRestaurant } from "@/data/helpers";
+import {
+  addressProvince,
+  getAllRestaurants,
+  getMenuCategories,
+  getRestaurant,
+} from "@/data/helpers";
 import type { MenuItem, Restaurant } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { formatKz } from "@/lib/format";

@@ -12,9 +12,7 @@ import type { RestaurantStory } from "./types";
  * logo a seguir, só no cliente.
  */
 export function useEffectiveStories(): RestaurantStory[] {
-  const [stories, setStories] = useState<RestaurantStory[]>(
-    hasRealBackend ? [] : INITIAL_STORIES,
-  );
+  const [stories, setStories] = useState<RestaurantStory[]>(hasRealBackend ? [] : INITIAL_STORIES);
 
   useEffect(() => {
     const sync = () => {

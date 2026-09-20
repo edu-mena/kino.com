@@ -1,15 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { enUS, fr as frLocale, ptBR } from "date-fns/locale";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ImageIcon,
-  Link2,
-  Plus,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageIcon, Link2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {

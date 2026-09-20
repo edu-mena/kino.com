@@ -90,5 +90,7 @@ const server = createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`[mock-server] a correr em http://0.0.0.0:${PORT} (estado em ${STATE_FILE})`);
-  console.log(`[mock-server] aponta o frontend com VITE_SHARED_MOCK_URL=http://<IP-desta-máquina>:${PORT}`);
+  console.log(
+    `[mock-server] aponta o frontend com VITE_SHARED_MOCK_URL=http://<IP-desta-máquina>:${PORT}`,
+  );
 });

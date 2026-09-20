@@ -2,13 +2,13 @@
 
 Dois ambientes, propositadamente separados e sem dependência um do outro:
 
-| | Demo (apresentação a restaurantes) | Produção real |
-|---|---|---|
-| Domínio | `*.vercel.app` (gratuito) | `luku.ao` (comprado na Hostinger, DNS aponta para fora) |
-| Frontend | Vercel | Vercel ou Cloudflare Workers (já configurado) — mesmo build, domínio diferente |
-| Backend | **nenhum** — tudo mock/localStorage | Fly.io (`backend/fly.toml` + `Dockerfile.prod`, região `jnb`) |
-| Base de dados | nenhuma (localStorage do browser) | Postgres gerido pelo Fly |
-| Risco se cair | zero (é só um site estático) | pedidos/reservas reais dependem disto |
+|               | Demo (apresentação a restaurantes)  | Produção real                                                                  |
+| ------------- | ----------------------------------- | ------------------------------------------------------------------------------ |
+| Domínio       | `*.vercel.app` (gratuito)           | `luku.ao` (comprado na Hostinger, DNS aponta para fora)                        |
+| Frontend      | Vercel                              | Vercel ou Cloudflare Workers (já configurado) — mesmo build, domínio diferente |
+| Backend       | **nenhum** — tudo mock/localStorage | Fly.io (`backend/fly.toml` + `Dockerfile.prod`, região `jnb`)                  |
+| Base de dados | nenhuma (localStorage do browser)   | Postgres gerido pelo Fly                                                       |
+| Risco se cair | zero (é só um site estático)        | pedidos/reservas reais dependem disto                                          |
 
 A Hostinger continua a ser só o **registo do domínio** `luku.ao` — o plano StartUp (partilhado) não corre Postgres/Redis/filas persistentes, então o backend corre no Fly.io e o DNS do domínio é só apontado para lá (CNAME/A record no hPanel da Hostinger). Isto é normal e comum — comprar domínio num sítio e hospedar noutro.
 
@@ -76,6 +76,7 @@ O `release_command` no `fly.toml` corre `php artisan migrate --force` automatica
 **Backend ↔ Base de dados**: o Laravel fala com o Postgres via Eloquent ORM — nenhum SQL cru espalhado pelos controllers, o que torna trivial trocar de Postgres local (dev) para o Postgres gerido do Fly (produção): é outra variável de ambiente (`DB_URL`), zero mudança de código.
 
 **Como atualizar depois de publicado — a distinção importa**:
+
 - **Frontend web** (Vercel/Cloudflare): cada `git push` → novo deploy → todos os visitantes veem a versão nova no refresh seguinte. Instantâneo, sem fricção, sem aprovação de terceiros.
 - **Backend** (Fly.io): idem, `fly deploy` → nova versão ao vivo em segundos, sem o cliente precisar fazer nada — é por isto que a versão do backend é `/api/v1` no caminho: se um dia for preciso um `/api/v2` incompatível, o `v1` continua a responder em paralelo até todos os clientes migrarem, em vez de partir alguém de repente.
 - **App mobile nativa** (quando existir, Android/iOS via Capacitor — já há `cap:sync`/`cap:open` no `package.json`): aqui a atualização **não é instantânea** — muda o binário na loja (Google Play/App Store), sujeito a revisão, e cada utilizador só recebe quando atualiza a app. É por isto que o backend deve manter-se compatível com versões antigas de app por um tempo (mesma razão do versionamento `/api/v1`), e por isto que a comunicação em tempo real (notificações) foi desenhada para nunca depender de uma versão nova de app — só de o backend, que é sempre atualizável na hora.

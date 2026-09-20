@@ -16,23 +16,18 @@ type ApiPartnerApplication = PartnerApplication & { createdRestaurantId?: string
 // devolve isto quer venha de /restaurants quer de partner-applications/{id}/approve.
 type ApiRestaurant = Parameters<typeof mapApiRestaurant>[0];
 
-export async function fetchApiPartnerApplications(
-  token: string,
-): Promise<PartnerApplication[]> {
+export async function fetchApiPartnerApplications(token: string): Promise<PartnerApplication[]> {
   const { data } = await apiFetch<{ data: ApiPartnerApplication[] }>("/partner-applications", {
     token,
   });
   return data;
 }
 
-export async function approveApiPartnerApplication(
-  id: string,
-  token: string,
-): Promise<Restaurant> {
-  const { data } = await apiFetch<{ data: ApiRestaurant }>(
-    `/partner-applications/${id}/approve`,
-    { method: "POST", token },
-  );
+export async function approveApiPartnerApplication(id: string, token: string): Promise<Restaurant> {
+  const { data } = await apiFetch<{ data: ApiRestaurant }>(`/partner-applications/${id}/approve`, {
+    method: "POST",
+    token,
+  });
   return mapApiRestaurant(data);
 }
 

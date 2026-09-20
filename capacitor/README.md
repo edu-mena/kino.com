@@ -9,7 +9,7 @@ botão «voltar» do Android, base para push/GPS mais tarde).
 - `appId`: `com.luku.app` · `appName`: `Luku`
 - Projeto nativo Android em `android/`, iOS em `ios/` — **nenhum dos dois
   versionado** (regeneram-se com `npx cap add android` / `npx cap add
-  ios`). Config comum em `capacitor.config.ts` (raiz).
+ios`). Config comum em `capacitor.config.ts` (raiz).
 - **iOS precisa de Xcode + macOS** — nada disto (adicionar o projeto,
   compilar, correr no simulador/dispositivo) é possível numa máquina só
   Windows; só quem tiver Mac consegue os passos de `ios/` abaixo.
@@ -31,7 +31,7 @@ Confirmar: `java -version`, `adb devices`.
 ### iOS (só em Mac)
 
 1. **Xcode** (App Store) + **Command Line Tools** (`xcode-select
-   --install`).
+--install`).
 2. **CocoaPods** (`sudo gem install cocoapods`) — Capacitor usa-o para as
    dependências nativas do projeto iOS.
 3. `npx cap add ios` (uma vez, na raiz do repo) — cria `ios/`.
@@ -243,7 +243,7 @@ que não estão publicados num sítio fixo). Passos:
    - Chama `.synchronize()` e reabre a app principal pelo URL scheme do
      passo 4.
    - **Não há um snippet oficial completo para colar** — ao chegar a este
-     passo no Mac, o mais rápido é abrir as *issues* do repositório
+     passo no Mac, o mais rápido é abrir as _issues_ do repositório
      (`github.com/Cap-go/capacitor-share-target`) à procura de um exemplo
      de `ShareViewController`, ou adaptar um tutorial genérico de "iOS
      Share Extension + App Group" (o mecanismo é standard da Apple, só o
@@ -267,7 +267,7 @@ que não estão publicados num sítio fixo). Passos:
    (`NSExtensionActivationSupportsFileWithMaxCount` cobre o PDF — a Apple
    não distingue por extensão nesta chave simples; se aparecer para tipos
    de ficheiro indesejados, é preciso a variante `NSExtensionActivationRule`
-   como *predicate string*, mais granular.)
+   como _predicate string_, mais granular.)
 7. Testar no simulador/dispositivo: partilhar uma foto (Fotos → Partilhar)
    ou um PDF (Ficheiros → Partilhar) e confirmar que "Luku" aparece na
    lista e que o `PendingShareDialog` abre com o ficheiro certo.
