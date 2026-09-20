@@ -18,9 +18,12 @@ class StoreMenuItemRequest extends FormRequest
             // Garante que o menu pertence a ESTE restaurante — sem isto, um
             // staff podia associar o prato ao cardápio de outro restaurante
             // (cross-tenant), mesmo sem conseguir editá-lo diretamente.
+            // Valida pelo `uuid` (o único id que a API expõe ao frontend,
+            // ver RestaurantMenuResource) — o controller resolve para o id
+            // interno antes de gravar.
             'menu_id' => [
-                'required', 'integer',
-                Rule::exists('restaurant_menus', 'id')->where('restaurant_id', $this->route('restaurant')->id),
+                'required', 'string',
+                Rule::exists('restaurant_menus', 'uuid')->where('restaurant_id', $this->route('restaurant')->id),
             ],
             'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string'],

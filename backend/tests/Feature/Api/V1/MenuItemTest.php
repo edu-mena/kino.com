@@ -11,7 +11,7 @@ test('criar prato com ingredientes grava tudo numa transação', function () {
     $owner = ownerOf($restaurant);
 
     $response = $this->actingAs($owner, 'sanctum')->postJson("/api/v1/restaurants/{$restaurant->uuid}/menu-items", [
-        'menu_id' => $menu->id,
+        'menu_id' => $menu->uuid,
         'name' => 'Muamba de Galinha',
         'price' => 3500,
         'category' => 'Pratos principais',
@@ -31,7 +31,7 @@ test('não é possível associar um prato a um cardápio de outro restaurante', 
     $owner = ownerOf($restaurant);
 
     $response = $this->actingAs($owner, 'sanctum')->postJson("/api/v1/restaurants/{$restaurant->uuid}/menu-items", [
-        'menu_id' => $foreignMenu->id,
+        'menu_id' => $foreignMenu->uuid,
         'name' => 'Prato Suspeito',
         'price' => 1000,
         'category' => 'Pratos principais',
@@ -47,7 +47,7 @@ test('manager consegue criar prato mas não editar payment-details (papéis dife
     $manager->restaurantUsers()->create(['restaurant_id' => $restaurant->id, 'role_in_restaurant' => 'manager']);
 
     $this->actingAs($manager, 'sanctum')->postJson("/api/v1/restaurants/{$restaurant->uuid}/menu-items", [
-        'menu_id' => $menu->id,
+        'menu_id' => $menu->uuid,
         'name' => 'Calulu de Peixe',
         'price' => 4000,
         'category' => 'Pratos principais',
