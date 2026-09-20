@@ -64,6 +64,7 @@ import {
   type DeliveryLevel,
 } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
+import { hasRealBackend } from "@/lib/api-client";
 import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
@@ -171,6 +172,7 @@ function AdminPedidos() {
     updateOrderStatus,
     acceptOrder,
     setInvoice,
+    dispatchOrder,
   } = useCart();
   const {
     couriersByRestaurant,
@@ -477,8 +479,14 @@ function AdminPedidos() {
       toast.error(t("adminPedidos.courierRequired"));
       return;
     }
-    assign(courier.id, order.id);
-    updateOrderStatus(order.id, "onTheWay");
+    if (hasRealBackend) {
+      // Atómico no backend real (OrderController::dispatch) — atribui e
+      // avança o estado numa só chamada.
+      dispatchOrder(order.id, courier.id);
+    } else {
+      assign(courier.id, order.id);
+      updateOrderStatus(order.id, "onTheWay");
+    }
     toast.success(t("adminPedidos.dispatchedToast", { name: courier.name }));
   };
 

@@ -1,13 +1,24 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createApiCourier,
+  deleteApiCourier,
+  fetchApiCouriers,
+  setApiCourierStatus,
+  updateApiCourier,
+} from "@/data/api-couriers";
 import { STORAGE_KEYS } from "@/data/storage-keys";
+import { hasRealBackend } from "@/lib/api-client";
+import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 /**
- * Estafetas de cada restaurante — a Luku já não opera uma frota partilhada;
- * cada restaurante é inteiramente responsável pelos seus estafetas, geridos
- * no painel de Pedidos (`/admin/pedidos`). Não há backend — o estado vive no
- * localStorage e é a fonte da verdade sobre quem está livre. Um estafeta em
- * entrega não pode ser reatribuído nem posto offline; ao concluir/recusar o
- * pedido volta a ficar disponível.
+ * Estafetas de cada restaurante — geridos no painel de Pedidos
+ * (`/admin/pedidos`). Com backend real, CRUD ligado à API (ver
+ * @/data/api-couriers), escopado ao restaurante do painel. A atribuição a
+ * um pedido em concreto (`assign`) acontece de facto no backend via
+ * `OrderController::dispatch` (ver `dispatchOrder` em `@/lib/cart`) — aqui
+ * `assign`/`releaseOrder` só pedem um refetch para refletir o novo estado.
+ * `CouriersProvider` vive dentro de `OperatorProviders` (só `/admin/*` e
+ * `/sistema/*`), por isso pode usar `useRestaurantAdmin()` diretamente.
  */
 const STORAGE_KEY = STORAGE_KEYS.couriers;
 
@@ -84,7 +95,9 @@ type CouriersValue = {
   /** Estafetas livres de um restaurante. */
   availableByRestaurant: (restaurantId: string) => Courier[];
   courierForOrder: (orderId: string) => Courier | undefined;
-  /** Atribui um estafeta livre a um pedido (fica "em entrega"). */
+  /** Atribui um estafeta livre a um pedido (fica "em entrega"). Com
+   * backend real, isto só pede um refetch — a atribuição de facto
+   * acontece via `dispatchOrder` (@/lib/cart), atomicamente com o pedido. */
   assign: (courierId: string, orderId: string) => void;
   /** Liberta quem estiver atribuído a este pedido — usar ao entregar/recusar. */
   releaseOrder: (orderId: string) => void;
@@ -102,14 +115,33 @@ type CouriersValue = {
 const CouriersContext = createContext<CouriersValue | null>(null);
 
 export function CouriersProvider({ children }: { children: ReactNode }) {
-  const [couriers, setCouriers] = useState<Courier[]>(SEED);
+  const { managedRestaurantId } = useRestaurantAdmin();
+  const [apiCouriers, setApiCouriers] = useState<Courier[]>([]);
+  const [mockCouriers, setMockCouriers] = useState<Courier[]>(SEED);
   const [hydrated, setHydrated] = useState(false);
 
+  const refetchApi = () => {
+    const token = getAdminToken();
+    if (!managedRestaurantId || !token) return setApiCouriers([]);
+    fetchApiCouriers(managedRestaurantId, token)
+      .then(setApiCouriers)
+      .catch(() => setApiCouriers([]));
+  };
+
   useEffect(() => {
+    if (hasRealBackend) {
+      refetchApi();
+      return;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [managedRestaurantId]);
+
+  useEffect(() => {
+    if (hasRealBackend) return;
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        setCouriers(JSON.parse(stored) as Courier[]);
+        setMockCouriers(JSON.parse(stored) as Courier[]);
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -118,22 +150,57 @@ export function CouriersProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(couriers));
-  }, [couriers, hydrated]);
+    if (hasRealBackend || !hydrated) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(mockCouriers));
+  }, [mockCouriers, hydrated]);
 
-  const value = useMemo<CouriersValue>(
-    () => ({
-      couriersByRestaurant: (restaurantId) =>
-        couriers.filter((c) => c.restaurantId === restaurantId),
-      availableByRestaurant: (restaurantId) =>
-        couriers.filter((c) => c.restaurantId === restaurantId && c.status === "disponivel"),
-      courierForOrder: (orderId) => couriers.find((c) => c.activeOrderId === orderId),
+  const couriers = hasRealBackend ? apiCouriers : mockCouriers;
+
+  const value = useMemo<CouriersValue>(() => {
+    const forRestaurant = (restaurantId: string) =>
+      couriers.filter((c) => c.restaurantId === restaurantId);
+    const base = {
+      couriersByRestaurant: forRestaurant,
+      availableByRestaurant: (restaurantId: string) =>
+        forRestaurant(restaurantId).filter((c) => c.status === "disponivel"),
+      courierForOrder: (orderId: string) => couriers.find((c) => c.activeOrderId === orderId),
+    };
+    if (hasRealBackend) {
+      return {
+        ...base,
+        assign: () => refetchApi(),
+        releaseOrder: () => refetchApi(),
+        setStatus: (courierId, status) => {
+          const token = getAdminToken();
+          const item = couriers.find((c) => c.id === courierId);
+          if (!token || !item) return;
+          void setApiCourierStatus(courierId, item.restaurantId, status, token).then(refetchApi);
+        },
+        addCourier: (input) => {
+          const token = getAdminToken();
+          if (!token) return;
+          const { restaurantId, ...rest } = input;
+          void createApiCourier(restaurantId, rest, token).then(refetchApi);
+        },
+        updateCourier: (courierId, patch) => {
+          const token = getAdminToken();
+          const item = couriers.find((c) => c.id === courierId);
+          if (!token || !item) return;
+          void updateApiCourier(courierId, item.restaurantId, patch, token).then(refetchApi);
+        },
+        removeCourier: (courierId) => {
+          const token = getAdminToken();
+          if (!token) return;
+          void deleteApiCourier(courierId, token).then(refetchApi);
+        },
+      };
+    }
+    return {
+      ...base,
       assign: (courierId, orderId) =>
-        setCouriers((prev) =>
+        setMockCouriers((prev) =>
           prev.map((c) => {
             if (c.id === courierId) return { ...c, status: "em_entrega", activeOrderId: orderId };
-            // defensivo: nenhum outro estafeta fica preso ao mesmo pedido
             if (c.activeOrderId === orderId) {
               const { activeOrderId: _drop, ...rest } = c;
               return { ...rest, status: "disponivel" };
@@ -142,7 +209,7 @@ export function CouriersProvider({ children }: { children: ReactNode }) {
           }),
         ),
       releaseOrder: (orderId) =>
-        setCouriers((prev) =>
+        setMockCouriers((prev) =>
           prev.map((c) => {
             if (c.activeOrderId !== orderId) return c;
             const { activeOrderId: _drop, ...rest } = c;
@@ -150,23 +217,23 @@ export function CouriersProvider({ children }: { children: ReactNode }) {
           }),
         ),
       setStatus: (courierId, status) =>
-        setCouriers((prev) =>
+        setMockCouriers((prev) =>
           prev.map((c) => (c.id === courierId && c.status !== "em_entrega" ? { ...c, status } : c)),
         ),
       addCourier: (input) =>
-        setCouriers((prev) => [
+        setMockCouriers((prev) => [
           ...prev,
           { ...input, id: `cour-${Date.now()}`, status: "disponivel" },
         ]),
       updateCourier: (courierId, patch) =>
-        setCouriers((prev) => prev.map((c) => (c.id === courierId ? { ...c, ...patch } : c))),
+        setMockCouriers((prev) => prev.map((c) => (c.id === courierId ? { ...c, ...patch } : c))),
       removeCourier: (courierId) =>
-        setCouriers((prev) =>
+        setMockCouriers((prev) =>
           prev.filter((c) => !(c.id === courierId && c.status !== "em_entrega")),
         ),
-    }),
-    [couriers],
-  );
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [couriers]);
 
   return <CouriersContext.Provider value={value}>{children}</CouriersContext.Provider>;
 }
@@ -180,13 +247,16 @@ export function useCouriers() {
 /**
  * Leitura pura e síncrona do estafeta atribuído a um pedido — para o lado do
  * cliente (`/entrega`), que não monta o `CouriersProvider` (esse fica só nos
- * ramos de operador). Não é reativa: quem chama re-renderiza quando o estado
- * do pedido muda, o que cobre o caso principal (o estafeta é atribuído no
- * mesmo passo em que o pedido passa a "A caminho").
+ * ramos de operador). Com backend real, a API não expõe qual estafeta está
+ * atribuído a um pedido para o CLIENTE (só para staff, via listagem de
+ * estafetas) — devolve sempre `null` nesse caso; a UI já trata isso como
+ * "sem informação do estafeta ainda" (mesmo comportamento de um pedido sem
+ * estafeta atribuído). Sem backend, lê o localStorage de sempre.
  */
 export function readCourierForOrder(
   orderId: string,
 ): Pick<Courier, "name" | "phone" | "vehicle"> | null {
+  if (hasRealBackend) return null;
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);

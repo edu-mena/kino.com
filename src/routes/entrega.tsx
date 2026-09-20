@@ -22,6 +22,7 @@ import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
 import { isRefReviewed } from "@/data/reviews-store";
+import { useRestaurantDetail } from "@/data/use-restaurants-query";
 import type { FulfillmentType } from "@/data/types";
 import { useAuth } from "@/lib/auth";
 import { lineCustomizations, lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
@@ -138,7 +139,7 @@ function Entrega() {
                       </span>
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-bold">
-                          {restaurant?.name ?? "Restaurante"}
+                          {order.restaurantName || restaurant?.name || "Restaurante"}
                         </span>
                         <span className="block truncate text-xs text-muted-foreground">
                           {t(`fulfillment.${order.fulfillmentType}`)} · {itemCount}{" "}
@@ -176,12 +177,12 @@ function Entrega() {
 function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }) {
   const { cancelOrder, orderTotal, orderDiscount, setPaymentProof } = useCart();
   const deliveryPolicy = useDeliveryPolicy();
-  const restaurant = getRestaurant(order.restaurantId);
+  const { data: restaurant } = useRestaurantDetail(order.restaurantId);
   const { t } = useTranslation();
   const [proofUploading, setProofUploading] = useState(false);
   const canCancel = order.status === "pending";
   const isDelivery = order.fulfillmentType === "delivery";
-  const subtotal = order.lines.reduce((s, l) => s + lineUnitPrice(l) * l.qty, 0);
+  const subtotal = order.subtotal ?? order.lines.reduce((s, l) => s + lineUnitPrice(l) * l.qty, 0);
   const deliveryFee = isDelivery ? orderTotal(order) - subtotal + orderDiscount(order) : 0;
   const surchargeKm = isDelivery
     ? Math.max(0, Math.ceil(orderDistanceKm(order) - deliveryPolicy.freeRadiusKm))
