@@ -16,20 +16,29 @@ import { SystemAdminProvider } from "./system-admin";
  * e o código destes providers passa a code-split para os chunks de `/admin`
  * e `/sistema`.
  *
- * Nenhum destes providers depende de outro, por isso a ordem é indiferente.
+ * A ordem NÃO é indiferente: `OffersAdminProvider` chama `useSystemAdmin()`
+ * E `useRestaurantAdmin()` no próprio corpo (não num filho) — um provider
+ * ancestral nunca consegue ler o contexto de um descendente, por isso
+ * `RestaurantAdminProvider` e `SystemAdminProvider` têm de envolver
+ * `OffersAdminProvider` por fora, nunca por dentro (bug real, encontrado
+ * porque `/sistema/entrar` rebentava com "useSystemAdmin must be used
+ * inside SystemAdminProvider" — SystemAdminProvider estava mais para
+ * dentro do que OffersAdminProvider). `PartnerAppsProvider` (só
+ * useSystemAdmin) e `CouriersProvider` (só useRestaurantAdmin) continuam
+ * bem onde estão, cada um já dentro do respetivo provider.
  */
 export function OperatorProviders({ children }: { children: ReactNode }) {
   return (
     <RestaurantAdminProvider>
-      <StoriesAdminProvider>
-        <OffersAdminProvider>
-          <CouriersProvider>
-            <SystemAdminProvider>
+      <SystemAdminProvider>
+        <StoriesAdminProvider>
+          <OffersAdminProvider>
+            <CouriersProvider>
               <PartnerAppsProvider>{children}</PartnerAppsProvider>
-            </SystemAdminProvider>
-          </CouriersProvider>
-        </OffersAdminProvider>
-      </StoriesAdminProvider>
+            </CouriersProvider>
+          </OffersAdminProvider>
+        </StoriesAdminProvider>
+      </SystemAdminProvider>
     </RestaurantAdminProvider>
   );
 }
