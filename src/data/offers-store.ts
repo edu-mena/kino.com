@@ -104,10 +104,14 @@ export type PromoEffect = {
  * `restaurantId`). `null` = código inexistente ou sem nada a descontar.
  * Case-insensitive.
  */
-export function resolvePromoCode(restaurantId: string, rawCode: string): PromoEffect | null {
+export function resolvePromoCode(
+  restaurantId: string,
+  rawCode: string,
+  offers: Offer[] = getEffectiveOffers(),
+): PromoEffect | null {
   const code = rawCode.trim().toUpperCase();
   if (!code) return null;
-  const offer = getEffectiveOffers().find(
+  const offer = offers.find(
     (o) =>
       o.code?.trim().toUpperCase() === code && (!o.restaurantId || o.restaurantId === restaurantId),
   );

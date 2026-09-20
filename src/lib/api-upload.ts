@@ -6,7 +6,7 @@ import { apiFetch, hasRealBackend } from "@/lib/api-client";
  * assíncrona, ver `ProcessUploadedVideoJob`; não usa este endpoint). */
 export type UploadPurpose = "dish" | "cover" | "gallery" | "promo" | "story";
 
-function dataUrlToFile(dataUrl: string, filename: string): File {
+export function dataUrlToFile(dataUrl: string, filename: string): File {
   const [header, base64] = dataUrl.split(",");
   const mime = header?.match(/data:(.*);base64/)?.[1] ?? "image/jpeg";
   const binary = atob(base64 ?? "");

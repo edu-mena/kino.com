@@ -31,6 +31,7 @@ import {
 } from "@/data/helpers";
 import { resolvePromoCode, type PromoEffect } from "@/data/offers-store";
 import { computeDeliveryFee } from "@/data/platform-settings-store";
+import { useOffers } from "@/data/use-offers";
 import type { FulfillmentType } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { billLineUnitPrice, useBill } from "@/lib/bill";
@@ -100,6 +101,7 @@ export function OrderBuilderCard() {
   const [note, setNote] = useState("");
   const [promoInput, setPromoInput] = useState("");
   const [promo, setPromo] = useState<PromoEffect | null>(null);
+  const offers = useOffers();
   const [promoError, setPromoError] = useState(false);
   const [pickupChoice, setPickupChoice] = useState<"asap" | "scheduled">("asap");
   const [pickupTime, setPickupTime] = useState(defaultPickupTime);
@@ -148,7 +150,7 @@ export function OrderBuilderCard() {
       resetPromo();
       return;
     }
-    const effect = restaurantId ? resolvePromoCode(restaurantId, trimmed) : null;
+    const effect = restaurantId ? resolvePromoCode(restaurantId, trimmed, offers) : null;
     setPromo(effect);
     setPromoError(!effect);
   };
