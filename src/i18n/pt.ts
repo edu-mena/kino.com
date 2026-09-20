@@ -713,6 +713,7 @@ export const pt = {
     replySubmit: "Publicar resposta",
     replySavedToast: "Resposta publicada.",
     replyRemovedToast: "Resposta removida.",
+    replyError: "Não foi possível guardar a resposta. Tente novamente.",
     yourReply: "A sua resposta",
     editReplyAria: "Editar resposta",
     removeReplyAria: "Remover resposta",

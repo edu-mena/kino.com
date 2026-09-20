@@ -716,6 +716,7 @@ export const fr: Dictionary = {
     replySubmit: "Publier la réponse",
     replySavedToast: "Réponse publiée.",
     replyRemovedToast: "Réponse supprimée.",
+    replyError: "Impossible d'enregistrer la réponse. Réessayez.",
     yourReply: "Votre réponse",
     editReplyAria: "Modifier la réponse",
     removeReplyAria: "Supprimer la réponse",

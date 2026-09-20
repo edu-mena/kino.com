@@ -24,6 +24,7 @@ import { getMenuItem, getRestaurant } from "@/data/helpers";
 import { isRefReviewed } from "@/data/reviews-store";
 import { useRestaurantDetail } from "@/data/use-restaurants-query";
 import type { FulfillmentType } from "@/data/types";
+import { hasRealBackend } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth";
 import { lineCustomizations, lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
 import { readCourierForOrder } from "@/lib/couriers";
@@ -205,7 +206,9 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
     order.status !== "canceled";
   const courier =
     order.fulfillmentType === "delivery" && order.status === "onTheWay"
-      ? readCourierForOrder(order.id)
+      ? hasRealBackend
+        ? (order.courier ?? null)
+        : readCourierForOrder(order.id)
       : null;
   const [proofLightboxOpen, setProofLightboxOpen] = useState(false);
   const proofIsPdf = isPdfDataUrl(order.paymentProof);

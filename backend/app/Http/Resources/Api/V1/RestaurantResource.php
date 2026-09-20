@@ -27,6 +27,7 @@ class RestaurantResource extends JsonResource
             'phone' => $this->phone,
             'email' => $this->email,
             'coverImageUrl' => $this->cover_image_url,
+            'wallpaperUrl' => $this->wallpaper_url,
             'galleryImages' => $this->whenLoaded('galleryImages', fn () => $this->galleryImages->map(fn ($g) => [
                 'id' => $g->id,
                 'url' => $g->url,

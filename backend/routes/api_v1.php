@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\V1\StoryController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupportTicketController;
 use App\Http\Controllers\Api\V1\SystemAccessController;
+use App\Http\Controllers\Api\V1\SystemStatsController;
 use App\Http\Controllers\Api\V1\UploadController;
 use App\Http\Controllers\Api\V1\UserPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -85,6 +86,7 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('restaurants', [RestaurantController::class, 'store']);
     Route::patch('restaurants/{restaurant}', [RestaurantController::class, 'update']);
     Route::put('restaurants/{restaurant}/hours', [RestaurantController::class, 'updateHours']);
+    Route::get('restaurants/{restaurant}/payment-details', [RestaurantController::class, 'showPaymentDetails']);
     Route::put('restaurants/{restaurant}/payment-details', [RestaurantController::class, 'updatePaymentDetails']);
     Route::delete('restaurants/{restaurant}/gallery/{galleryImage}', [RestaurantController::class, 'destroyGalleryImage']);
 
@@ -131,6 +133,7 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::patch('orders/{order}/accept', [OrderController::class, 'accept']);
     Route::patch('orders/{order}/dispatch', [OrderController::class, 'dispatch']);
     Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus']);
+    Route::post('orders/{order}/invoice', [OrderController::class, 'storeInvoice']);
 
     Route::get('restaurants/{restaurant}/reservations', [ReservationController::class, 'index']);
     Route::patch('reservations/{reservation}/status', [ReservationController::class, 'updateStatus']);
@@ -185,6 +188,8 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('partner-applications/{application}/reject', [PartnerApplicationController::class, 'reject']);
     Route::delete('partner-applications/{application}', [PartnerApplicationController::class, 'destroy']);
 
+    Route::get('subscriptions', [SubscriptionController::class, 'index']);
+    Route::get('system/customers-count', [SystemStatsController::class, 'customersCount']);
     Route::get('restaurants/{restaurant}/subscription', [SubscriptionController::class, 'show']);
     Route::patch('restaurants/{restaurant}/subscription', [SubscriptionController::class, 'update']);
     Route::post('restaurants/{restaurant}/subscription/register-payment', [SubscriptionController::class, 'registerPayment']);
@@ -213,6 +218,7 @@ Route::get('restaurants/{restaurant}/reviews', [ReviewController::class, 'index'
 
 Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('restaurants/{restaurant}/reviews', [ReviewController::class, 'store']);
+    Route::put('reviews/{review}/reply', [ReviewController::class, 'reply']);
     Route::delete('reviews/{review}', [ReviewController::class, 'destroy']);
 
     Route::get('favorites', [FavoriteController::class, 'index']);

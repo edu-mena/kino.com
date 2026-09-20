@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\MenuItem;
+use App\Models\PaymentMethod;
 use App\Models\Restaurant;
 use App\Models\RestaurantMenu;
 use App\Models\User;
@@ -137,6 +138,35 @@ test('só o owner consegue atualizar payment-details, manager não', function ()
             'details' => [['payment_method_code' => 'cash', 'details' => 'Pagamento à entrega']],
         ])
         ->assertForbidden();
+});
+
+test('manager consegue LER payment-details (só escrever é owner-only)', function () {
+    PaymentMethod::query()->firstOrCreate(['code' => 'cash'], ['name' => 'Numerário', 'is_digital' => false, 'position' => 1]);
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+    $manager = User::factory()->restaurantStaff()->create();
+    $manager->restaurantUsers()->create(['restaurant_id' => $restaurant->id, 'role_in_restaurant' => 'manager']);
+
+    $this->actingAs($owner, 'sanctum')->putJson("/api/v1/restaurants/{$restaurant->uuid}/payment-details", [
+        'details' => [['payment_method_code' => 'cash', 'details' => 'Pagamento à entrega']],
+    ])->assertOk();
+
+    $this->actingAs($manager, 'sanctum')
+        ->getJson("/api/v1/restaurants/{$restaurant->uuid}/payment-details")
+        ->assertOk()
+        ->assertJsonFragment(['payment_method_code' => 'cash', 'details' => 'Pagamento à entrega']);
+});
+
+test('owner atualiza o wallpaper do restaurante', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+
+    $this->actingAs($owner, 'sanctum')
+        ->patchJson("/api/v1/restaurants/{$restaurant->uuid}", [
+            'wallpaper_url' => 'https://cdn.luku.ao/wallpapers/novo.jpg',
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.wallpaperUrl', 'https://cdn.luku.ao/wallpapers/novo.jpg');
 });
 
 test('price_level do restaurante recalcula quando o preço de um prato muda', function () {

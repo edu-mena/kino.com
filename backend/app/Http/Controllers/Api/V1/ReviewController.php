@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Reviews\ReplyReviewRequest;
 use App\Http\Requests\Api\V1\Reviews\StoreReviewRequest;
 use App\Http\Resources\Api\V1\ReviewResource;
 use App\Models\Restaurant;
@@ -38,6 +39,19 @@ class ReviewController extends Controller
         ]);
 
         return (new ReviewResource($review))->response()->setStatusCode(201);
+    }
+
+    /** Restaurante responde (ou edita/remove, com `text` vazio/nulo) a uma
+     * avaliação — ver mock, setReviewReply. */
+    public function reply(ReplyReviewRequest $request, Review $review): ReviewResource
+    {
+        $text = $request->validated('text');
+        $review->update([
+            'reply_text' => $text ?: null,
+            'reply_at' => $text ? now() : null,
+        ]);
+
+        return new ReviewResource($review);
     }
 
     /** Moderação — só system_operator, nunca o próprio restaurante (não

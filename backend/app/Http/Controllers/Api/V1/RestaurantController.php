@@ -113,6 +113,17 @@ class RestaurantController extends Controller
         return new RestaurantResource($restaurant->load('hours.ranges'));
     }
 
+    /** Staff (qualquer role) pode VER os detalhes já preenchidos — só a
+     * escrita é owner-only (ver updatePaymentDetails abaixo). Sem isto, o
+     * formulário de perfil não tinha como pré-preencher o que já foi
+     * configurado. */
+    public function showPaymentDetails(Request $request, Restaurant $restaurant): JsonResponse
+    {
+        abort_unless($request->user()->can('manageOperations', $restaurant), 403);
+
+        return response()->json(['data' => $restaurant->paymentDetails()->get(['payment_method_code', 'details'])]);
+    }
+
     /** Só owner — ver UpdateRestaurantPaymentDetailsRequest::authorize(). */
     public function updatePaymentDetails(UpdateRestaurantPaymentDetailsRequest $request, Restaurant $restaurant): JsonResponse
     {

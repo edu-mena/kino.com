@@ -19,6 +19,10 @@ class ReviewResource extends JsonResource
             'date' => $this->date?->toDateString(),
             'comment' => $this->comment,
             'tags' => $this->tags ?? [],
+            'reply' => $this->reply_text ? [
+                'text' => $this->reply_text,
+                'at' => $this->reply_at?->toIso8601String(),
+            ] : null,
         ];
     }
 }

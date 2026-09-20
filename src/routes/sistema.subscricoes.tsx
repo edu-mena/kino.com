@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ADMIN_FILTER_SELECT, AdminField, KpiTile, StatSection } from "@/components/admin-stats";
 import { SystemPageHeading } from "@/components/system-shell";
-import { getAllRestaurants } from "@/data/helpers";
+import { useSystemSubscriptions } from "@/data/api-subscriptions";
 import { PLAN_PRICE, type SubStatus } from "@/data/subscriptions-store";
+import { useRestaurants } from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
 import { formatKz } from "@/lib/format";
 import { useSubscriptions } from "@/lib/subscriptions";
+import { useSystemAdmin } from "@/lib/system-admin";
 import { BCP47 } from "@/lib/week";
 
 export const Route = createFileRoute("/sistema/subscricoes")({
@@ -31,12 +34,20 @@ const statusTone: Record<SubStatus, string> = {
 
 function SistemaSubscricoes() {
   const { r: preselect } = Route.useSearch();
-  const { subscriptions, mrr, counts, setStatus, registerPayment, extendTrial } =
-    useSubscriptions();
+  const { token: operatorToken } = useSystemAdmin();
+  const mock = useSubscriptions();
+  const real = useSystemSubscriptions(hasRealBackend ? operatorToken : null);
+  const { subscriptions, mrr, counts, setStatus, registerPayment, extendTrial } = hasRealBackend
+    ? real
+    : mock;
   const { t, locale } = useTranslation();
   const bcp = BCP47[locale];
 
-  const restaurants = useMemo(() => getAllRestaurants(), []);
+  // Com backend real, `SubscriptionResource` não inclui o nome do
+  // restaurante (endpoint agregado é system_operator-only, ver
+  // @/data/api-subscriptions) — resolve-se aqui via `useRestaurants()`, a
+  // mesma fonte real usada no resto do painel.
+  const { data: restaurants = [] } = useRestaurants();
   const nameOf = (id: string) => restaurants.find((x) => x.id === id)?.name ?? id;
 
   const [query, setQuery] = useState("");

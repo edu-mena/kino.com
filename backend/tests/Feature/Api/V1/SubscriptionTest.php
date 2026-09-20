@@ -48,6 +48,19 @@ test('só system_operator muda status/plano — owner não pode (billing é inte
         ->assertOk()->assertJsonPath('data.status', 'suspended')->assertJsonPath('data.locked', true);
 });
 
+test('só system_operator vê a lista agregada de subscrições (painel de sistema)', function () {
+    $restaurantA = createSubscribedRestaurant(['status' => 'trial']);
+    $restaurantB = createSubscribedRestaurant(['status' => 'active']);
+    $owner = ownerOf($restaurantA);
+
+    $this->actingAs($owner, 'sanctum')->getJson('/api/v1/subscriptions')->assertForbidden();
+
+    $operator = User::factory()->systemOperator()->create();
+    $this->actingAs($operator, 'sanctum')
+        ->getJson('/api/v1/subscriptions')
+        ->assertOk()->assertJsonCount(2, 'data');
+});
+
 test('registerPayment nunca desbloqueia uma suspensão sozinho', function () {
     $restaurant = createSubscribedRestaurant(['status' => 'suspended']);
     $operator = User::factory()->systemOperator()->create();

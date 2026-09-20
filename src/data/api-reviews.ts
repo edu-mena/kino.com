@@ -2,9 +2,10 @@ import { apiFetch } from "@/lib/api-client";
 import type { Review } from "./types";
 
 /** Avaliações reais (backend/app/Http/Controllers/Api/V1/ReviewController.php)
- * — só usado quando `hasRealBackend`. Sem suporte a resposta do
- * restaurante no backend ainda (o mock tem `setReviewReply`, mas não há
- * coluna/endpoint para isso na API real) — ver reviews-store.ts. */
+ * — só usado quando `hasRealBackend`. Resposta do restaurante (`reply`)
+ * também é real (`PUT /reviews/{id}/reply`, ver `replyToApiReview`
+ * abaixo) — `setReviewReply` em reviews-store.ts escolhe entre isto e o
+ * mock consoante `hasRealBackend`. */
 
 type ApiReview = {
   id: string;
@@ -14,6 +15,7 @@ type ApiReview = {
   date: string;
   comment: string | null;
   tags: string[];
+  reply?: { text: string; at: string } | null;
 };
 
 function mapApiReview(r: ApiReview): Review {
@@ -25,6 +27,7 @@ function mapApiReview(r: ApiReview): Review {
     date: r.date,
     comment: r.comment ?? "",
     tags: r.tags,
+    ...(r.reply ? { reply: r.reply } : {}),
   };
 }
 
@@ -59,4 +62,20 @@ export async function createApiReview(
     },
   });
   return { ...mapApiReview(data), restaurantId };
+}
+
+/** `text` vazio/`null` remove a resposta (ver `ReplyReviewRequest`, mesma
+ * convenção do mock `setReviewReply`). Só o restaurante que gere a review
+ * pode responder (`manageOperations`) — usa o token do painel `/admin`. */
+export async function replyToApiReview(
+  reviewId: string,
+  text: string | null,
+  token: string,
+): Promise<Review> {
+  const { data } = await apiFetch<{ data: ApiReview }>(`/reviews/${reviewId}/reply`, {
+    method: "PUT",
+    token,
+    body: { text: text?.trim() || null },
+  });
+  return mapApiReview(data);
 }
