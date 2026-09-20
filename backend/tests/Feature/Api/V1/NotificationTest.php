@@ -106,6 +106,32 @@ test('markManyRead só marca as que pertencem ao próprio user, ignora ids de ou
     expect($notifB->fresh()->read_at)->toBeNull();
 });
 
+test('notificação devolve o uuid público do pedido de origem em refId', function () {
+    $restaurant = Restaurant::factory()->create();
+    $user = User::factory()->create();
+    $order = $restaurant->orders()->create([
+        'user_id' => $user->id, 'fulfillment_type' => 'takeaway', 'customer_name' => $user->name,
+        'customer_phone' => '900', 'pickup_asap' => true, 'status' => 'pending',
+        'subtotal' => 1000, 'total' => 1000,
+    ]);
+
+    // A notificação do CLIENTE não tem restaurant_id (só a do restaurante
+    // tem, ver OrderObserver::notify) — o frontend resolve o restaurante
+    // via refId contra os próprios pedidos já carregados, não por aqui.
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/notifications')
+        ->assertOk()
+        ->assertJsonPath('data.0.refId', $order->uuid)
+        ->assertJsonPath('data.0.restaurantId', null);
+
+    $owner = ownerOf($restaurant);
+    $this->actingAs($owner, 'sanctum')
+        ->getJson("/api/v1/restaurants/{$restaurant->uuid}/notifications")
+        ->assertOk()
+        ->assertJsonPath('data.0.refId', $order->uuid)
+        ->assertJsonPath('data.0.restaurantId', $restaurant->uuid);
+});
+
 test('sino do restaurante só mostra as notificações do próprio restaurante, staff de outro não acede', function () {
     $restaurant = Restaurant::factory()->create();
     $otherRestaurant = Restaurant::factory()->create();

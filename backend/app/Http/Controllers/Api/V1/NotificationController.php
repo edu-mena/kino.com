@@ -15,6 +15,7 @@ class NotificationController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $notifications = $request->user()->notifications()
+            ->with('restaurant')
             ->when($request->boolean('unread'), fn ($q) => $q->whereNull('read_at'))
             ->latest()
             ->cursorPaginate($request->integer('per_page', 30));
@@ -27,6 +28,7 @@ class NotificationController extends Controller
         $this->authorize('manageOperations', $restaurant);
 
         $notifications = $restaurant->notifications()
+            ->with('restaurant')
             ->when($request->boolean('unread'), fn ($q) => $q->whereNull('read_at'))
             ->latest()
             ->cursorPaginate($request->integer('per_page', 30));

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { RestaurantRecommendationsDialog } from "@/components/restaurant-recommendations-dialog";
-import { getRestaurant } from "@/data/helpers";
+import { useRestaurants } from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
 import type { LukuNotification } from "@/lib/notifications";
 
@@ -23,12 +23,14 @@ export function NotificationList({
   onNavigate?: () => void;
 }) {
   const { t } = useTranslation();
+  const { data: restaurants = [] } = useRestaurants();
+  const restaurantById = useMemo(() => new Map(restaurants.map((r) => [r.id, r])), [restaurants]);
   // Notificação de pedido recusado cujo "ver recomendações" está aberto —
   // mesmo popup usado no card de pedido/página do restaurante (ver
   // `RestaurantRecommendationsDialog`), para as sugestões nunca divergirem
   // conforme onde aparecem.
   const [recFor, setRecFor] = useState<LukuNotification | null>(null);
-  const recRestaurant = recFor ? getRestaurant(recFor.restaurantId) : undefined;
+  const recRestaurant = recFor ? restaurantById.get(recFor.restaurantId) : undefined;
 
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString(undefined, {
@@ -46,7 +48,7 @@ export function NotificationList({
     <>
       <ul className="divide-y divide-border">
         {items.map((n) => {
-          const name = getRestaurant(n.restaurantId)?.name ?? "";
+          const name = restaurantById.get(n.restaurantId)?.name ?? "";
           const to = targetFor(scope, n.kind);
           // Pedido recusado — o resto da app já trata isto (ver
           // `order-builder-card.tsx`/`restaurantes_.$id.tsx`), a notificação

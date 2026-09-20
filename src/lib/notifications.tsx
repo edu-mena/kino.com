@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -8,10 +9,20 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { STORAGE_KEYS } from "@/data/storage-keys";
+import {
+  fetchApiNotifications,
+  fetchApiRestaurantNotifications,
+  markApiNotificationRead,
+  markManyApiNotificationsRead,
+} from "@/data/api-notifications";
 import { getRestaurant } from "@/data/helpers";
+import { STORAGE_KEYS } from "@/data/storage-keys";
 import { useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
+import { getAuthToken, useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
+import { viewerKey } from "@/lib/customer";
+import { getAdminToken, getManagedRestaurantId } from "@/lib/restaurant-admin";
 import { useReservations } from "@/lib/reservations";
 
 /**
@@ -90,7 +101,19 @@ function mergeNotifications(a: LukuNotification[], b: LukuNotification[]): LukuN
     .slice(0, CAP);
 }
 
+/** Escolhe a implementação logo aqui (não com `if (hasRealBackend) return`
+ * espalhado pelos effects abaixo) — os dois modos têm efeitos/ordem de
+ * hooks bem diferentes (diffing local vs. fetch+poll), separar em dois
+ * componentes evita ter de justificar cada guard individualmente. */
 export function NotificationsProvider({ children }: { children: ReactNode }) {
+  return hasRealBackend ? (
+    <RealNotificationsProvider>{children}</RealNotificationsProvider>
+  ) : (
+    <MockNotificationsProvider>{children}</MockNotificationsProvider>
+  );
+}
+
+function MockNotificationsProvider({ children }: { children: ReactNode }) {
   const { orders, hydrated: ordersHydrated } = useCart();
   const { reservations, hydrated: reservationsHydrated } = useReservations();
   const { t } = useTranslation();
@@ -248,6 +271,132 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }),
     [all],
   );
+
+  return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
+}
+
+const POLL_MS = 30_000;
+
+/** Com backend real, não há diffing local nenhum — o servidor já cria a
+ * notificação certa no evento (ver Observers em backend/app/Observers).
+ * Sem WebSocket/broadcast ligado ainda (Reverb corre no Fly mas nenhum
+ * evento transmite por ele hoje), a atualização é por poll período + focus,
+ * não instantânea — aceitável para um sino, o toast "em tempo real" de
+ * verdade já existe via push (ver @/lib/push-notifications). */
+function RealNotificationsProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const { orders } = useCart();
+  const { reservations } = useReservations();
+  const [clientNotes, setClientNotes] = useState<LukuNotification[]>([]);
+  const [restaurantNotes, setRestaurantNotes] = useState<LukuNotification[]>([]);
+
+  const refetchClient = useCallback(() => {
+    const token = getAuthToken();
+    if (!token) {
+      setClientNotes([]);
+      return;
+    }
+    fetchApiNotifications(token, viewerKey(user))
+      .then(setClientNotes)
+      .catch(() => setClientNotes([]));
+  }, [user]);
+
+  const refetchRestaurant = useCallback(() => {
+    const token = getAdminToken();
+    const restaurantId = getManagedRestaurantId();
+    if (!token || !restaurantId) {
+      setRestaurantNotes([]);
+      return;
+    }
+    fetchApiRestaurantNotifications(restaurantId, token)
+      .then(setRestaurantNotes)
+      .catch(() => setRestaurantNotes([]));
+  }, []);
+
+  const refetchAll = useCallback(() => {
+    refetchClient();
+    refetchRestaurant();
+  }, [refetchClient, refetchRestaurant]);
+
+  useEffect(() => {
+    refetchAll();
+    const onFocus = () => refetchAll();
+    const onStorage = (e: StorageEvent) => {
+      // Login/logout do painel (`getAdminToken`) ou da conta (`getAuthToken`)
+      // não disparam re-render sozinhos aqui — reagir ao `storage` cobre
+      // login/logout nesta ou noutra aba.
+      if (e.key === null) return;
+      refetchAll();
+    };
+    const interval = window.setInterval(refetchAll, POLL_MS);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [refetchAll]);
+
+  // `refId` do cliente não vem com `restaurantId` do backend (a notificação
+  // do cliente só guarda user_id, ver OrderObserver::notify) — resolve-se
+  // aqui contra os pedidos/reservas já carregados pelo próprio cliente, a
+  // mesma fonte que o resto do site usa.
+  const enrichedClientNotes = useMemo(() => {
+    const orderRestaurant = new Map(orders.map((o) => [o.id, o.restaurantId]));
+    const resvRestaurant = new Map(reservations.map((r) => [r.id, r.restaurantId]));
+    return clientNotes.map((n) => ({
+      ...n,
+      restaurantId:
+        n.restaurantId ||
+        (n.kind === "order" ? orderRestaurant.get(n.refId) : resvRestaurant.get(n.refId)) ||
+        "",
+    }));
+  }, [clientNotes, orders, reservations]);
+
+  const all = useMemo(
+    () => mergeNotifications(enrichedClientNotes, restaurantNotes),
+    [enrichedClientNotes, restaurantNotes],
+  );
+
+  const value = useMemo<NotificationsValue>(
+    () => ({
+      all,
+      markRead: (id) => {
+        const note = all.find((n) => n.id === id);
+        if (!note) return;
+        setAllRead([id]);
+        const token = note.ownerKey ? getAuthToken() : getAdminToken();
+        if (!token) return;
+        void markApiNotificationRead(id, token).catch(() => refetchAll());
+      },
+      markManyRead: (ids) => {
+        if (ids.length === 0) return;
+        setAllRead(ids);
+        const byOwner = ids.filter((id) => all.find((n) => n.id === id)?.ownerKey);
+        const byRestaurant = ids.filter((id) => !all.find((n) => n.id === id)?.ownerKey);
+        const clientToken = getAuthToken();
+        const adminToken = getAdminToken();
+        const restaurantId = getManagedRestaurantId();
+        if (byOwner.length > 0 && clientToken) {
+          void markManyApiNotificationsRead(byOwner, clientToken).catch(() => refetchAll());
+        }
+        if (byRestaurant.length > 0 && adminToken && restaurantId) {
+          void markManyApiNotificationsRead(byRestaurant, adminToken, restaurantId).catch(() =>
+            refetchAll(),
+          );
+        }
+      },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [all],
+  );
+
+  function setAllRead(ids: string[]) {
+    const set = new Set(ids);
+    setClientNotes((cur) => cur.map((n) => (set.has(n.id) ? { ...n, read: true } : n)));
+    setRestaurantNotes((cur) => cur.map((n) => (set.has(n.id) ? { ...n, read: true } : n)));
+  }
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }
