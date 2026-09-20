@@ -37,11 +37,7 @@ export async function fetchApiReviews(restaurantId: string): Promise<Review[]> {
 }
 
 /** `sourceRef` no formato "order:<uuid>" | "reservation:<uuid>" (ver
- * review-dialog.tsx) — traduzido para `ref_type`/`ref_id` da API. Pedidos
- * ainda não estão ligados ao backend real (ver auditoria de go-live), por
- * isso uma review de origem "order:" falha aqui com erro de validação
- * ("Pedido inválido para avaliar") até essa parte ser ligada — comportamento
- * correto: mais vale falhar claramente do que fingir sucesso. */
+ * review-dialog.tsx) — traduzido para `ref_type`/`ref_id` da API. */
 export async function createApiReview(
   restaurantId: string,
   input: { rating: number; comment: string; tags: string[] },

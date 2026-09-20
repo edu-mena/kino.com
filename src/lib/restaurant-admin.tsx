@@ -19,6 +19,20 @@ export function getAdminToken(): string | null {
     return null;
   }
 }
+/** Id (uuid) do restaurante gerido pelo token acima — mesmo padrão/uso:
+ * consumido por `SubscriptionsProvider` (raiz), que precisa de saber a
+ * subscrição do PRÓPRIO restaurante do painel `/admin` mas não pode usar
+ * `useRestaurantAdmin()` (esse provider só existe dentro de
+ * `OperatorProviders`, montado abaixo da raiz — nunca um ancestral pode ler
+ * o contexto de um descendente). */
+export function getManagedRestaurantId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(RESTAURANT_ID_KEY);
+  } catch {
+    return null;
+  }
+}
 /** "1" quando o token guardado acima é EMPRESTADO de `useSystemAdmin` (ver
  * `enterAsOperator`) — nunca um token próprio deste painel. Persistido para
  * sobreviver a um refresh enquanto "emprestado". */

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from "react";
+import { useOwnRestaurantSubscription } from "@/data/api-subscriptions";
 import {
   createSubscription,
   extendTrial,
@@ -12,6 +13,7 @@ import {
   type SubscriptionPlan,
   type SubStatus,
 } from "@/data/subscriptions-store";
+import { hasRealBackend } from "@/lib/api-client";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 const DAY = 86_400_000;
@@ -111,9 +113,15 @@ export function useSubscriptions() {
   return ctx;
 }
 
-/** Acesso do restaurante que está com sessão no painel (`/admin/*`). */
+/** Acesso do restaurante que está com sessão no painel (`/admin/*`). Com
+ * backend real, lê a subscrição verdadeira via `useOwnRestaurantSubscription`
+ * (endpoint `GET /restaurants/{id}/subscription`, acessível ao próprio
+ * restaurante) — o contexto partilhado (`useSubscriptions`) fica mock-only,
+ * não dá para o alcançar dali (ver `@/data/api-subscriptions`). */
 export function useRestaurantAccess(): RestaurantAccess {
   const { access } = useSubscriptions();
   const { restaurant } = useRestaurantAdmin();
+  const real = useOwnRestaurantSubscription(hasRealBackend ? restaurant?.id : undefined);
+  if (hasRealBackend) return computeAccess(real.sub ?? undefined);
   return restaurant ? access(restaurant.id) : computeAccess(undefined);
 }

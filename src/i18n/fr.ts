@@ -2189,6 +2189,7 @@ export const fr: Dictionary = {
     renewSimulated: "Renouveler (simulé)",
     renewToast: "Paiement simulé enregistré — abonnement actif.",
     renewNote: "Dans une version réelle, le paiement de la mensualité serait ici.",
+    renewContactSupport: "Pour régulariser le paiement, contactez le support Luku.",
     bannerLocked: "Abonnement suspendu — panneau inactif.",
     bannerLockedCta: "Régulariser",
     bannerOverdue: "Mensualité en retard.",

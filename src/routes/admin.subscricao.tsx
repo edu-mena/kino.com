@@ -3,8 +3,10 @@ import { CalendarClock, CheckCircle2, CreditCard, TriangleAlert } from "lucide-r
 import { toast } from "sonner";
 import { AdminPageHeading } from "@/components/admin-shell";
 import { KpiTile } from "@/components/admin-stats";
+import { useOwnRestaurantSubscription } from "@/data/api-subscriptions";
 import { PLAN_PRICE } from "@/data/subscriptions-store";
 import { useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
 import { formatKz } from "@/lib/format";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useSubscriptions } from "@/lib/subscriptions";
@@ -20,10 +22,11 @@ const DAY = 86_400_000;
 function AdminSubscricao() {
   const { restaurant } = useRestaurantAdmin();
   const { byRestaurant, registerPayment } = useSubscriptions();
+  const real = useOwnRestaurantSubscription(hasRealBackend ? restaurant?.id : undefined);
   const { t, locale } = useTranslation();
 
   if (!restaurant) return null;
-  const sub = byRestaurant(restaurant.id);
+  const sub = hasRealBackend ? real.sub : byRestaurant(restaurant.id);
   if (!sub) return null;
 
   const bcp = BCP47[locale];
@@ -136,6 +139,14 @@ function AdminSubscricao() {
           <button
             type="button"
             onClick={() => {
+              // Registar pagamento é system_operator-only no backend real
+              // (billing é assunto interno Luku, nunca self-service — ver
+              // SubscriptionController::registerPayment) — chamar isto
+              // aqui daria 403. Só o mock simula o pagamento em si.
+              if (hasRealBackend) {
+                toast.info(t("adminSubscricao.renewContactSupport"));
+                return;
+              }
               registerPayment(restaurant.id);
               toast.success(t("adminSubscricao.renewToast"));
             }}

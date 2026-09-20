@@ -19,19 +19,21 @@ import {
 import { useMemo } from "react";
 import { KpiTile, StatCard, StatSection, TrendArea, TrendBadge } from "@/components/admin-stats";
 import { AdminPageHeading } from "@/components/admin-shell";
+import { useOwnRestaurantSubscription } from "@/data/api-subscriptions";
 import { getReviewsForRestaurant } from "@/data/helpers";
+import { PLAN_PRICE } from "@/data/subscriptions-store";
 import { useTranslation } from "@/i18n";
-import { isOpenNow, nextOpenAt } from "@/lib/opening-hours";
+import { hasRealBackend } from "@/lib/api-client";
 import { useCart } from "@/lib/cart";
 import { useCouriers } from "@/lib/couriers";
-import { PLAN_PRICE } from "@/data/subscriptions-store";
 import { formatKz } from "@/lib/format";
-import { useSubscriptions } from "@/lib/subscriptions";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { useOffersAdmin } from "@/lib/offers-admin";
+import { isOpenNow, nextOpenAt } from "@/lib/opening-hours";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useStoriesAdmin } from "@/lib/stories-admin";
+import { useSubscriptions } from "@/lib/subscriptions";
 import { BCP47, last8Weeks } from "@/lib/week";
 
 export const Route = createFileRoute("/admin/")({
@@ -51,6 +53,7 @@ function AdminDashboard() {
   const { storiesByRestaurant } = useStoriesAdmin();
   const { availableByRestaurant } = useCouriers();
   const { byRestaurant: subByRestaurant } = useSubscriptions();
+  const realSub = useOwnRestaurantSubscription(hasRealBackend ? restaurant?.id : undefined);
   const { t, locale } = useTranslation();
 
   const restaurantId = restaurant?.id ?? "";
@@ -408,7 +411,7 @@ function AdminDashboard() {
           })()}
 
           {(() => {
-            const sub = subByRestaurant(restaurant.id);
+            const sub = hasRealBackend ? realSub.sub : subByRestaurant(restaurant.id);
             if (!sub) return null;
             const tone =
               sub.status === "active" || sub.status === "trial"

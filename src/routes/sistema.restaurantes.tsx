@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   ChevronLeft,
@@ -8,14 +9,16 @@ import {
   Sparkles,
   Star,
 } from "lucide-react";
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ADMIN_FILTER_SELECT, AdminField } from "@/components/admin-stats";
 import { SystemPageHeading } from "@/components/system-shell";
-import { getAllRestaurants } from "@/data/helpers";
+import { useSystemSubscriptions } from "@/data/api-subscriptions";
 import { setFeatured } from "@/data/system-flags-store";
 import type { SubStatus } from "@/data/subscriptions-store";
+import { useRestaurants } from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
 import { useCart } from "@/lib/cart";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -36,21 +39,26 @@ const statusTone: Record<SubStatus, string> = {
 
 function SistemaRestaurantes() {
   const navigate = useNavigate();
-  const { byRestaurant } = useSubscriptions();
+  const mockSubs = useSubscriptions();
+  const { token: operatorToken } = useSystemAdmin();
+  const realSubs = useSystemSubscriptions(hasRealBackend ? operatorToken : null);
+  const byRestaurant = hasRealBackend ? realSubs.byRestaurant : mockSubs.byRestaurant;
   const { orders } = useCart();
   const { reservations } = useReservations();
   const { enterAsOperator } = useRestaurantAdmin();
-  const { token: operatorToken } = useSystemAdmin();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
 
-  const [flagsTick, bumpFlags] = useReducer((n: number) => n + 1, 0);
+  // `setFeatured` (mock) muta o store local diretamente, fora do cache do
+  // TanStack Query — sem isto, marcar/desmarcar destaque não refletia na
+  // lista até à próxima navegação. Com backend real, o mesmo evento também
+  // dispara depois de qualquer PATCH ao restaurante (ver admin.perfil.tsx).
   useEffect(() => {
-    window.addEventListener("luku:menu-changed", bumpFlags);
-    return () => window.removeEventListener("luku:menu-changed", bumpFlags);
-  }, []);
-  // `flagsTick` força reler os restaurantes quando o destaque muda.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const restaurants = useMemo(() => getAllRestaurants(), [flagsTick]);
+    const invalidate = () => void queryClient.invalidateQueries({ queryKey: ["restaurants"] });
+    window.addEventListener("luku:menu-changed", invalidate);
+    return () => window.removeEventListener("luku:menu-changed", invalidate);
+  }, [queryClient]);
+  const { data: restaurants = [] } = useRestaurants();
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"todos" | SubStatus>("todos");

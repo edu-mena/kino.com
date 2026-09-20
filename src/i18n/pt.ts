@@ -2174,6 +2174,7 @@ export const pt = {
     renewSimulated: "Renovar (simulado)",
     renewToast: "Pagamento simulado registado — subscrição ativa.",
     renewNote: "Numa versão real, aqui entraria o pagamento da mensalidade.",
+    renewContactSupport: "Para regularizar o pagamento, contacte o suporte da Luku.",
     bannerLocked: "Subscrição suspensa — painel inativo.",
     bannerLockedCta: "Regularizar",
     bannerOverdue: "Mensalidade em atraso.",

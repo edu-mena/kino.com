@@ -27,6 +27,7 @@ import { NotificationsBell } from "./notifications-bell";
 import { AdminOnboardingTour, AdminTutorialHint } from "./admin-onboarding-tour";
 import { useTranslation } from "@/i18n";
 import { AdminTutorialProvider, useAdminTutorial } from "@/lib/admin-tutorial";
+import { hasRealBackend } from "@/lib/api-client";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useRestaurantAccess, useSubscriptions } from "@/lib/subscriptions";
 
@@ -306,6 +307,12 @@ export function RestaurantGate({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={() => {
+            // Ver o mesmo comentário em admin.subscricao.tsx — registar
+            // pagamento é system_operator-only no backend real.
+            if (hasRealBackend) {
+              toast.info(t("adminSubscricao.renewContactSupport"));
+              return;
+            }
             registerPayment(restaurant.id);
             toast.success(t("adminSubscricao.renewToast"));
           }}
