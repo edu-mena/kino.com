@@ -45,7 +45,7 @@ export function ForgotPasswordDialog({
     e.preventDefault();
     setLoading(true);
     try {
-      await apiFetch("/forgot-password", { method: "POST", body: { email } });
+      await apiFetch("/auth/forgot-password", { method: "POST", body: { email } });
       setSent(true);
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : t("forgotPassword.error"));

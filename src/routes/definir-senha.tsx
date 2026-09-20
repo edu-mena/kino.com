@@ -44,7 +44,7 @@ function DefinirSenha() {
     }
     setLoading(true);
     try {
-      await apiFetch("/reset-password", {
+      await apiFetch("/auth/reset-password", {
         method: "POST",
         body: { email, token, password, password_confirmation: confirmation },
       });
