@@ -45,6 +45,16 @@ class RestaurantResource extends JsonResource
             'acceptsReservations' => $this->accepts_reservations,
             'reservationSlotMinutes' => $this->reservation_slot_minutes,
             'ordersPausedManually' => $this->orders_paused_manually,
+            // Só isto da subscrição é público — nunca plano/valores/datas de
+            // pagamento (billing é interno, ver SubscriptionController). O
+            // cliente só precisa de saber se pode encomendar agora ou não.
+            // NÃO usar whenLoaded() aqui: quando a relação está carregada
+            // mas não há linha (HasOne sem subscrição), ele devolve `null`
+            // sem sequer chamar a closure — teria de ser tratado à parte de
+            // qualquer forma, então calcula-se direto.
+            'isSuspended' => $this->relationLoaded('subscription')
+                ? $this->subscription?->status === 'suspended'
+                : false,
             'hours' => $this->whenLoaded('hours', fn () => $this->hours->map(fn ($h) => [
                 'weekday' => $h->weekday,
                 'isOpen' => $h->is_open,

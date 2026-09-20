@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\Subscriptions\UpdateSubscriptionRequest;
 use App\Http\Resources\Api\V1\SubscriptionResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantSubscription;
+use App\Support\RestaurantIndexCache;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -47,6 +48,11 @@ class SubscriptionController extends Controller
         $subscription = $restaurant->subscription()->firstOrFail();
         $subscription->update($request->validated());
 
+        // `status` pode mudar aqui (ex: suspender) — afeta `isSuspended` na
+        // listagem pública de restaurantes, que está cacheada (ver
+        // RestaurantController::index).
+        RestaurantIndexCache::forget();
+
         return new SubscriptionResource($subscription);
     }
 
@@ -74,6 +80,9 @@ class SubscriptionController extends Controller
             'trial_ends_at' => $base->addDays($request->validated('days')),
             'status' => 'trial',
         ]);
+
+        // Sai de "suspended" para "trial" — mesma razão do update() acima.
+        RestaurantIndexCache::forget();
 
         return new SubscriptionResource($subscription);
     }

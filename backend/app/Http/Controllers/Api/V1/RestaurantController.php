@@ -13,6 +13,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantGalleryImage;
 use App\Models\RestaurantHour;
 use App\Services\MediaUploadService;
+use App\Support\RestaurantIndexCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -45,6 +46,7 @@ class RestaurantController extends Controller
         // tem esse problema, e continua válido em qualquer driver.
         $payload = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($request) {
             $restaurants = QueryBuilder::for(Restaurant::class)
+                ->with('subscription')
                 ->allowedFilters(
                     AllowedFilter::exact('city'),
                     AllowedFilter::exact('cuisine'),
@@ -69,7 +71,7 @@ class RestaurantController extends Controller
     public function show(Restaurant $restaurant): RestaurantResource
     {
         return new RestaurantResource(
-            $restaurant->load(['galleryImages', 'hours.ranges'])
+            $restaurant->load(['galleryImages', 'hours.ranges', 'subscription'])
         );
     }
 
@@ -165,9 +167,11 @@ class RestaurantController extends Controller
     /** Invalida TODAS as combinações de filtros cacheadas de uma vez, sem
      * precisar de Cache::tags() (só redis/memcached suportam) — incrementar
      * a geração faz as chaves antigas nunca mais serem lidas (expiram
-     * sozinhas pelo TTL, sem precisar apagar cada uma). */
+     * sozinhas pelo TTL, sem precisar apagar cada uma). Ver
+     * `RestaurantIndexCache` — outros controllers também invalidam isto
+     * (ex: `SubscriptionController`, cujas mudanças afetam `isSuspended`). */
     private function forgetIndexCache(): void
     {
-        Cache::increment('restaurants:index:generation');
+        RestaurantIndexCache::forget();
     }
 }

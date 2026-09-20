@@ -50,6 +50,7 @@ type ApiRestaurant = {
   acceptsReservations: boolean;
   reservationSlotMinutes: number;
   ordersPausedManually: boolean;
+  isSuspended: boolean;
   wallpaperUrl?: string | null;
   galleryImages?: { id: number; url: string }[];
   hours?: {
@@ -129,6 +130,7 @@ export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
     acceptsReservations: r.acceptsReservations,
     reservationSlotMinutes: r.reservationSlotMinutes,
     ordersPausedManually: r.ordersPausedManually,
+    isSuspended: r.isSuspended,
   };
 }
 

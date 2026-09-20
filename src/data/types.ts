@@ -94,6 +94,12 @@ export interface Restaurant {
   /** Override manual: o restaurante pausou os pedidos agora, independente
    * do horário. */
   ordersPausedManually?: boolean;
+  /** Subscrição suspensa (mensalidade em atraso demais) — só o booleano é
+   * público, nunca plano/valores/datas de pagamento (ver
+   * RestaurantResource.isSuspended no backend). Ausente/false = normal.
+   * Usado por `computeRestaurantStatus` para esconder o restaurante do
+   * cliente sem precisar de acesso à subscrição em si. */
+  isSuspended?: boolean;
 }
 
 /** Um intervalo de funcionamento, "HH:mm"–"HH:mm". `end` pode ser menor que

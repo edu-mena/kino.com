@@ -4,6 +4,7 @@ use App\Models\MenuItem;
 use App\Models\PaymentMethod;
 use App\Models\Restaurant;
 use App\Models\RestaurantMenu;
+use App\Models\RestaurantSubscription;
 use App\Models\User;
 
 test('listagem pública de restaurantes não precisa de auth', function () {
@@ -32,6 +33,53 @@ test('listagem cacheada não fica desatualizada depois de um update (invalidaç�
         ->assertOk();
 
     $this->getJson('/api/v1/restaurants')->assertJsonPath('data.0.name', 'Nome Novo');
+});
+
+test('listagem e detalhe públicos expõem isSuspended, nunca plano/valores/datas de pagamento', function () {
+    $restaurant = Restaurant::factory()->create();
+    RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id,
+        'plan' => 'luku',
+        'started_at' => now(),
+        'trial_ends_at' => now()->addDays(60),
+        'status' => 'suspended',
+    ]);
+
+    $index = $this->getJson('/api/v1/restaurants');
+    $index->assertOk()->assertJsonPath('data.0.isSuspended', true);
+    expect($index->json('data.0'))
+        ->not->toHaveKeys(['plan', 'trialEndsAt', 'lastPaymentAt', 'status', 'locked']);
+
+    $show = $this->getJson("/api/v1/restaurants/{$restaurant->uuid}");
+    $show->assertOk()->assertJsonPath('data.isSuspended', true);
+    expect($show->json('data'))
+        ->not->toHaveKeys(['plan', 'trialEndsAt', 'lastPaymentAt', 'status', 'locked']);
+});
+
+test('restaurante sem subscrição aparece como não suspenso (nunca crasha)', function () {
+    Restaurant::factory()->create();
+
+    $this->getJson('/api/v1/restaurants')->assertOk()->assertJsonPath('data.0.isSuspended', false);
+});
+
+test('suspender/reativar a subscrição invalida a cache da listagem pública', function () {
+    $restaurant = Restaurant::factory()->create();
+    $subscription = RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id,
+        'plan' => 'luku',
+        'started_at' => now(),
+        'trial_ends_at' => now()->addDays(60),
+        'status' => 'active',
+    ]);
+    $operator = User::factory()->systemOperator()->create();
+
+    $this->getJson('/api/v1/restaurants')->assertJsonPath('data.0.isSuspended', false);
+
+    $this->actingAs($operator, 'sanctum')
+        ->patchJson("/api/v1/restaurants/{$restaurant->uuid}/subscription", ['status' => 'suspended'])
+        ->assertOk();
+
+    $this->getJson('/api/v1/restaurants')->assertJsonPath('data.0.isSuspended', true);
 });
 
 test('customer não pode criar restaurante (só system_operator)', function () {
