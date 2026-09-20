@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { fetchApiMenuItems } from "./api-restaurants";
 import { getEffectiveMenuItems } from "./menu-store";
 import { INITIAL_MENU_ITEMS } from "./mockData";
 import type { MenuItem } from "./types";
+import { hasRealBackend } from "@/lib/api-client";
 
 /**
  * Todos os pratos visíveis a clientes (só de cardápios ativos), reativo a
@@ -14,11 +16,25 @@ import type { MenuItem } from "./types";
  * `@/data/mockData` para montar listas/filtros devem usar isto — é o que
  * faz um prato criado/editado/apagado no painel aparecer (ou desaparecer)
  * de verdade na busca, no cardápio e na home.
+ *
+ * `restaurantId` (opcional): com backend real, restringe a busca ao
+ * cardápio DESSE restaurante via API (rápido, um pedido só) — usado por
+ * `MenuBrowser` quando `lockedRestaurantId` está definido (a página de
+ * cardápio de um restaurante, `/menu/$restaurantId`, e o cardápio dentro do
+ * detalhe do restaurante). Sem `restaurantId` (busca global,
+ * `/cardapio`) ou sem backend real (demo), comportamento inalterado.
  */
-export function useMenuItems(): MenuItem[] {
+export function useMenuItems(restaurantId?: string): MenuItem[] {
   const [items, setItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS);
 
   useEffect(() => {
+    if (restaurantId && hasRealBackend) {
+      fetchApiMenuItems(restaurantId)
+        .then(setItems)
+        .catch(() => setItems([]));
+      return;
+    }
+
     const sync = () => setItems(getEffectiveMenuItems());
     sync();
     window.addEventListener("luku:menu-changed", sync);
@@ -27,7 +43,7 @@ export function useMenuItems(): MenuItem[] {
       window.removeEventListener("luku:menu-changed", sync);
       window.removeEventListener("storage", sync);
     };
-  }, []);
+  }, [restaurantId]);
 
   return items;
 }
