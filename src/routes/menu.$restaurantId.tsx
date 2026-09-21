@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ExternalLink, Printer } from "lucide-react";
-import { useMemo, useState, type SVGProps } from "react";
-import { toast } from "sonner";
+import { useMemo } from "react";
 import icon from "@/assets/icon.png";
 import logo from "@/assets/logo.png";
 import { MenuDocument } from "@/components/menu-document";
@@ -12,7 +11,6 @@ import {
   useRestaurantMenus,
 } from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
-import { ApiError, useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/menu/$restaurantId")({
   head: () => ({
@@ -25,34 +23,9 @@ export const Route = createFileRoute("/menu/$restaurantId")({
   component: PublicMenu,
 });
 
-function GoogleIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" {...props}>
-      <path
-        fill="#4285F4"
-        d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47a5.54 5.54 0 0 1-2.4 3.63v3h3.87c2.27-2.09 3.58-5.17 3.58-8.82Z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 24c3.24 0 5.96-1.07 7.94-2.91l-3.87-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.28v3.11A12 12 0 0 0 12 24Z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28V6.61H1.28A12 12 0 0 0 0 12c0 1.94.47 3.77 1.28 5.39l3.99-3.11Z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.28 6.61l3.99 3.11C6.22 6.86 8.87 4.75 12 4.75Z"
-      />
-    </svg>
-  );
-}
-
 function PublicMenu() {
   const { restaurantId } = Route.useParams();
   const { t, locale } = useTranslation();
-  const { isLoggedIn, loginWithGoogle } = useAuth();
-  const [signingIn, setSigningIn] = useState(false);
 
   // Ligado à API real quando disponível (`useRestaurantDetail`/
   // `useRestaurantMenus`/`useRestaurantMenuItems`, ver @/data/use-restaurants-query)
@@ -71,21 +44,6 @@ function PublicMenu() {
     locale === "en" ? "en-GB" : locale === "fr" ? "fr-FR" : "pt-PT",
     { day: "2-digit", month: "long", year: "numeric" },
   );
-
-  const handleGoogle = async () => {
-    setSigningIn(true);
-    try {
-      await loginWithGoogle();
-      toast.success(t("publicMenu.signedInToast"));
-    } catch (error) {
-      const dismissed = error instanceof Error && error.message === "google_auth_dismissed";
-      if (!dismissed) {
-        toast.error(error instanceof ApiError ? error.message : t("entrar.errorToast"));
-      }
-    } finally {
-      setSigningIn(false);
-    }
-  };
 
   // Espera a resposta da API antes de decidir "não encontrado" — sem isto,
   // um restaurante real (que só resolve depois do fetch) mostrava sempre
@@ -112,38 +70,11 @@ function PublicMenu() {
     );
   }
 
-  // `isLoading` (esperar o AuthProvider saber se há sessão guardada, em vez
-  // de mostrar às cegas o cartão de entrada) já é tratado globalmente em
-  // `__root.tsx` (`AuthGate`) — não precisa de ser checado aqui.
-
-  // Porta de entrada — para ver o cardápio é preciso conta Luku (simulada).
-  if (!isLoggedIn) {
-    return (
-      <div className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-6 px-6 text-center">
-        <img src={logo} alt="Luku.com" className="h-10 w-auto" />
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-brand">
-            {t("publicMenu.eyebrow")}
-          </p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold text-primary">
-            {restaurant.name}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t("publicMenu.gateText")}</p>
-        </div>
-        <button
-          type="button"
-          onClick={handleGoogle}
-          disabled={signingIn}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 py-3 text-sm font-bold text-foreground transition-colors hover:border-primary disabled:opacity-60"
-        >
-          <GoogleIcon className="h-5 w-5" />
-          {signingIn ? t("publicMenu.signingIn") : t("publicMenu.continueWithGoogle")}
-        </button>
-        <p className="text-xs text-muted-foreground">{t("publicMenu.gateHint")}</p>
-      </div>
-    );
-  }
-
+  // Sem porta de entrada — ver o cardápio pelo QR code não exige conta Luku
+  // (só pediria login mais à frente, se o cliente tentar algo que precise de
+  // conta, ex: pedir/favoritar; nada nesta página exige isso). Antes disto
+  // era exigido login com Google logo ao abrir, o que matava a experiência
+  // de quem só queria ver o cardápio estando já no restaurante.
   return (
     <div className="min-h-screen bg-neutral-100 py-8 print:bg-white print:py-0">
       <style>{`
