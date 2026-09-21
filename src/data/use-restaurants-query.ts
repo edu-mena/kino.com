@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
+import { fetchApiMenus } from "./api-menus";
 import { fetchApiMenuItems, fetchApiRestaurant, fetchApiRestaurants } from "./api-restaurants";
 import { getAllRestaurants, getMenuItemsByRestaurant, getRestaurant } from "./helpers";
-import type { MenuItem, Restaurant } from "./types";
+import { getMenusByRestaurant } from "./menus-store";
+import type { MenuItem, Restaurant, RestaurantMenu } from "./types";
 import { hasRealBackend } from "@/lib/api-client";
 
 /**
@@ -42,6 +44,22 @@ export function useRestaurantMenuItems(restaurantId: string | undefined) {
       hasRealBackend
         ? fetchApiMenuItems(restaurantId!)
         : Promise.resolve(getMenuItemsByRestaurant(restaurantId!)),
+    enabled: !!restaurantId,
+    staleTime: 30_000,
+  });
+}
+
+/** Cardápios nomeados (ex: "Almoço", "Sobremesas") de um restaurante — mesmo
+ * padrão `hasRealBackend` dos hooks acima. Usado por páginas públicas/de
+ * impressão que precisam da lista completa de `RestaurantMenu` (não só do
+ * `apiMenuId` que `admin.cardapio.tsx` guarda para criar pratos). */
+export function useRestaurantMenus(restaurantId: string | undefined) {
+  return useQuery({
+    queryKey: ["restaurant-menus", restaurantId],
+    queryFn: (): Promise<RestaurantMenu[]> =>
+      hasRealBackend
+        ? fetchApiMenus(restaurantId!)
+        : Promise.resolve(getMenusByRestaurant(restaurantId!)),
     enabled: !!restaurantId,
     staleTime: 30_000,
   });

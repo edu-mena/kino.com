@@ -5,8 +5,12 @@ import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import logo from "@/assets/logo.png";
 import { MenuDocument } from "@/components/menu-document";
-import { getMenuItemsByRestaurant, getRestaurant } from "@/data/helpers";
-import { defaultMenuId, getMenusByRestaurant } from "@/data/menus-store";
+import { defaultMenuId } from "@/data/menus-store";
+import {
+  useRestaurantDetail,
+  useRestaurantMenuItems,
+  useRestaurantMenus,
+} from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
 import { ApiError, useAuth } from "@/lib/auth";
 
@@ -50,16 +54,16 @@ function PublicMenu() {
   const { isLoggedIn, loginWithGoogle } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
 
-  const restaurant = getRestaurant(restaurantId);
+  // Ligado à API real quando disponível (`useRestaurantDetail`/
+  // `useRestaurantMenus`/`useRestaurantMenuItems`, ver @/data/use-restaurants-query)
+  // — antes lia só `getRestaurant`/`getMenusByRestaurant` locais (mock), por
+  // isso o QR code de um restaurante real caía sempre em "não encontrado".
+  const { data: restaurant, isLoading: restaurantLoading } = useRestaurantDetail(restaurantId);
+  const { data: menusData } = useRestaurantMenus(restaurantId);
+  const { data: itemsData } = useRestaurantMenuItems(restaurantId);
 
-  const menus = useMemo(
-    () => getMenusByRestaurant(restaurantId).filter((m) => m.isActive),
-    [restaurantId],
-  );
-  const items = useMemo(
-    () => getMenuItemsByRestaurant(restaurantId).filter((d) => d.isAvailable),
-    [restaurantId],
-  );
+  const menus = useMemo(() => (menusData ?? []).filter((m) => m.isActive), [menusData]);
+  const items = useMemo(() => (itemsData ?? []).filter((d) => d.isAvailable), [itemsData]);
   const dishesFor = (menuId: string) =>
     items.filter((d) => (d.menuId ?? defaultMenuId(restaurantId)) === menuId);
 
@@ -82,6 +86,19 @@ function PublicMenu() {
       setSigningIn(false);
     }
   };
+
+  // Espera a resposta da API antes de decidir "não encontrado" — sem isto,
+  // um restaurante real (que só resolve depois do fetch) mostrava sempre
+  // esta mensagem por um instante, e em conexões lentas até substituía o
+  // cardápio real por engano.
+  if (restaurantLoading) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-4 px-6 text-center">
+        <img src={logo} alt="Luku.com" className="h-9 w-auto" />
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+      </div>
+    );
+  }
 
   if (!restaurant) {
     return (

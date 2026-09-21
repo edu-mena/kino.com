@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Printer } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { MenuDocument } from "@/components/menu-document";
-import { defaultMenuId, getMenusByRestaurant } from "@/data/menus-store";
-import type { MenuItem, RestaurantMenu } from "@/data/types";
+import { defaultMenuId } from "@/data/menus-store";
+import type { MenuItem } from "@/data/types";
+import { useRestaurantMenus } from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { OperatorProviders } from "@/lib/operator-providers";
@@ -29,10 +30,13 @@ function CardapioPdf() {
   const { t, locale } = useTranslation();
   const printed = useRef(false);
 
-  const menus = useMemo<RestaurantMenu[]>(
-    () => (restaurant ? getMenusByRestaurant(restaurant.id) : []),
-    [restaurant],
-  );
+  // Ligado à API real quando disponível (`useRestaurantMenus`, ver
+  // @/data/use-restaurants-query) — antes lia `getMenusByRestaurant` do
+  // módulo local legado (`@/data/menus-store`), que devolve sempre `[]` com
+  // backend real, e por isso o PDF nunca tinha pratos para um restaurante
+  // de verdade (mesmo `admin.cardapio.tsx` já mostrando os pratos certos).
+  const { data: apiMenus } = useRestaurantMenus(restaurant?.id);
+  const menus = useMemo(() => apiMenus ?? [], [apiMenus]);
 
   const menusToPrint = useMemo(
     () => (menuParam === "all" ? menus : menus.filter((m) => m.id === menuParam)),
