@@ -6,7 +6,30 @@ test('sem preferências gravadas devolve valores por omissão, não 404', functi
     $user = User::factory()->create();
 
     $this->actingAs($user, 'sanctum')->getJson('/api/v1/preferences')
-        ->assertOk()->assertJsonPath('data.dietaryRestrictions', []);
+        ->assertOk()
+        ->assertJsonPath('data.dietaryRestrictions', [])
+        ->assertJsonPath('data.tutorialSeen', false)
+        ->assertJsonPath('data.dietaryOnboardingSeen', false);
+});
+
+test('marcar tutorial/onboarding de restrições como visto persiste e não regride sozinho', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user, 'sanctum')->putJson('/api/v1/preferences', ['tutorial_seen' => true])
+        ->assertStatus(201)
+        ->assertJsonPath('data.tutorialSeen', true)
+        ->assertJsonPath('data.dietaryOnboardingSeen', false);
+
+    $this->actingAs($user, 'sanctum')->putJson('/api/v1/preferences', ['dietary_onboarding_seen' => true])
+        ->assertOk()
+        ->assertJsonPath('data.tutorialSeen', true) // não perde o que já tinha
+        ->assertJsonPath('data.dietaryOnboardingSeen', true);
+
+    // Persistiu mesmo (leitura nova, não só o eco da resposta do PUT).
+    $this->actingAs($user, 'sanctum')->getJson('/api/v1/preferences')
+        ->assertOk()
+        ->assertJsonPath('data.tutorialSeen', true)
+        ->assertJsonPath('data.dietaryOnboardingSeen', true);
 });
 
 test('atualizar preferências grava e devolve o novo valor', function () {

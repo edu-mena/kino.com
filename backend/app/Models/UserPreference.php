@@ -11,13 +11,18 @@ class UserPreference extends Model
 
     public $incrementing = false;
 
-    protected $fillable = ['user_id', 'dietary_restrictions', 'language', 'notifications_enabled'];
+    protected $fillable = [
+        'user_id', 'dietary_restrictions', 'language', 'notifications_enabled',
+        'tutorial_seen_at', 'dietary_onboarding_seen_at',
+    ];
 
     protected function casts(): array
     {
         return [
             'dietary_restrictions' => 'array',
             'notifications_enabled' => 'boolean',
+            'tutorial_seen_at' => 'datetime',
+            'dietary_onboarding_seen_at' => 'datetime',
         ];
     }
 

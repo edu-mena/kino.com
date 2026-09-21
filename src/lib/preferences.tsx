@@ -1,4 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { fetchApiPreferences, updateApiPreferences } from "@/data/api-preferences";
+import { hasRealBackend } from "@/lib/api-client";
+import { getAuthToken, useAuth } from "@/lib/auth";
 
 export type NotificationSettings = {
   orderUpdates: boolean;
@@ -52,6 +55,7 @@ const PreferencesContext = createContext<PreferencesValue | null>(null);
 const STORAGE_KEY = "luku_preferences";
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
+  const { isLoggedIn } = useAuth();
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
 
   useEffect(() => {
@@ -63,6 +67,25 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(STORAGE_KEY);
     }
   }, []);
+
+  // `dietaryRestrictions` é o único campo aqui com equivalente real no
+  // backend (ver @/data/api-preferences) — as outras preferências
+  // (favoritos, faixa de preço, etc.) continuam só em localStorage. Sem
+  // isto, a conta "esquecia" as restrições ao trocar de browser/
+  // dispositivo, e o card de onboarding (@/lib/tutorial) reaparecia
+  // sempre — o próprio bug reportado.
+  useEffect(() => {
+    if (!hasRealBackend || !isLoggedIn) return;
+    const token = getAuthToken();
+    if (!token) return;
+    fetchApiPreferences(token)
+      .then(({ dietaryRestrictions }) => {
+        setPrefs((cur) => ({ ...cur, dietaryRestrictions }));
+      })
+      .catch(() => {
+        // best-effort — mantém o que já estava em localStorage
+      });
+  }, [isLoggedIn]);
 
   const persist = (next: Preferences) => {
     setPrefs(next);
@@ -87,7 +110,16 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
           ? prefs.favoriteDishIds.filter((id) => id !== dishId)
           : [...prefs.favoriteDishIds, dishId],
       }),
-    setDietaryRestrictions: (list) => persist({ ...prefs, dietaryRestrictions: list }),
+    setDietaryRestrictions: (list) => {
+      persist({ ...prefs, dietaryRestrictions: list });
+      if (!hasRealBackend) return;
+      const token = getAuthToken();
+      if (!token) return;
+      void updateApiPreferences({ dietary_restrictions: list }, token).catch(() => {
+        // best-effort — a UI já refletiu localmente; tenta de novo na
+        // próxima mudança/login
+      });
+    },
     setPriceRange: (value) => persist({ ...prefs, priceRange: value }),
     setCuisinePreferences: (list) => persist({ ...prefs, cuisinePreferences: list }),
     setServicePreferences: (list) => persist({ ...prefs, servicePreferences: list }),

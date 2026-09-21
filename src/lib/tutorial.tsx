@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
-import { useAuth } from "@/lib/auth";
+import { fetchApiPreferences, updateApiPreferences } from "@/data/api-preferences";
+import { hasRealBackend } from "@/lib/api-client";
+import { getAuthToken, useAuth } from "@/lib/auth";
 import { usePreferences } from "@/lib/preferences";
 
 const STORAGE_KEY = "luku_tutorial_status";
@@ -44,24 +46,61 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   // Evita decidir duas vezes se `isLoggedIn` oscilar (ex: logout e login de
   // novo na mesma sessão) — a decisão de abrir tour/card é só uma por app.
   const decidedRef = useRef(false);
+  // Com backend real, guarda o `tutorialSeen` já lido da API (ver efeito
+  // abaixo) — para `resolveDietaryOnboarding` não ter de reler localStorage
+  // (que deixou de ser a fonte de verdade nesse modo, sempre diria "não
+  // visto" e reabriria o tour a cada vez que o card de restrições fosse
+  // respondido).
+  const apiTourSeenRef = useRef<boolean | undefined>(undefined);
 
+  /** Com backend real, "visto" fica preso à CONTA (`user_preferences`), não
+   * ao browser — localStorage sozinho fazia o tutorial/card reaparecerem
+   * em qualquer dispositivo/browser novo, ou depois de limpar dados do
+   * site, mesmo já respondidos antes (bug real, reportado). Sem backend
+   * (demo), mantém-se o localStorage de sempre. Grava nos dois sítios
+   * quando há backend — localStorage fica como cache otimista, não como
+   * fonte de verdade. */
   const markDietaryDone = () => {
     try {
       localStorage.setItem(DIETARY_ONBOARDING_KEY, "done");
     } catch {
       // ignora — sem storage, a pergunta volta a aparecer na próxima visita.
     }
+    if (!hasRealBackend) return;
+    const token = getAuthToken();
+    if (!token) return;
+    void updateApiPreferences({ dietary_onboarding_seen: true }, token).catch(() => {
+      // best-effort — pior caso, volta a perguntar na próxima sessão
+    });
+  };
+
+  const markTourSeenPersisted = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, "done");
+    } catch {
+      // ignora — sem storage, o tour volta a aparecer na próxima visita.
+    }
+    if (!hasRealBackend) return;
+    const token = getAuthToken();
+    if (!token) return;
+    void updateApiPreferences({ tutorial_seen: true }, token).catch(() => {
+      // best-effort — pior caso, volta a aparecer na próxima sessão
+    });
   };
 
   /** Decide se o tour deve começar agora — chamado só depois de o card de
    * restrições ser fechado/respondido (ou de imediato, se o card já tinha
-   * sido resolvido antes). */
-  const startTourIfDue = () => {
-    let tourSeen = true;
-    try {
-      tourSeen = localStorage.getItem(STORAGE_KEY) === "done";
-    } catch {
-      // localStorage indisponível — trata como já visto, não insiste.
+   * sido resolvido antes). `tourSeen` já vem decidido de quem chama (ver
+   * useEffect abaixo) — sem backend real lê-se aqui mesmo, com backend real
+   * já veio do fetch inicial (não dá para reler login síncrono ali). */
+  const startTourIfDue = (tourSeenOverride?: boolean) => {
+    let tourSeen = tourSeenOverride ?? true;
+    if (tourSeenOverride === undefined) {
+      try {
+        tourSeen = localStorage.getItem(STORAGE_KEY) === "done";
+      } catch {
+        // localStorage indisponível — trata como já visto, não insiste.
+      }
     }
     if (tourSeen) return;
     setIsTourOpen(true);
@@ -70,6 +109,34 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isLoggedIn || decidedRef.current) return;
     decidedRef.current = true;
+
+    if (hasRealBackend) {
+      const token = getAuthToken();
+      if (!token) return;
+      fetchApiPreferences(token)
+        .then(({ tutorialSeen, dietaryOnboardingSeen, dietaryRestrictions: apiDietary }) => {
+          apiTourSeenRef.current = tutorialSeen;
+          let dietarySeen = dietaryOnboardingSeen;
+          if (!dietarySeen && apiDietary.length > 0) {
+            // Já tem restrições guardadas (definidas antes desta pergunta
+            // existir) — não mostra o card, mas conta como resolvido.
+            markDietaryDone();
+            dietarySeen = true;
+          }
+          if (!dietarySeen) {
+            // Mesma razão do comentário abaixo (rede de segurança) — a
+            // contagem só começa quando o card fica mesmo visível.
+            setTimeout(() => setDietaryPopupOpen(true), 600);
+            return;
+          }
+          setTimeout(() => startTourIfDue(tutorialSeen), 600);
+        })
+        .catch(() => {
+          // Falha de rede a ler preferências — não insiste (evita mostrar
+          // o onboarding a cada falha temporária da API).
+        });
+      return;
+    }
 
     let dietarySeen = true;
     try {
@@ -96,7 +163,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
       return () => clearTimeout(timer);
     }
     // Card já visto antes — não há por onde esperar, decide o tour já.
-    const timer = setTimeout(startTourIfDue, 600);
+    const timer = setTimeout(() => startTourIfDue(), 600);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- decide isto uma única vez, quando o login resolve.
   }, [isLoggedIn]);
@@ -112,11 +179,8 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   }, [dietaryPopupOpen]);
 
   const markTourDone = () => {
-    try {
-      localStorage.setItem(STORAGE_KEY, "done");
-    } catch {
-      // ignora — sem storage, o tour volta a aparecer na próxima visita.
-    }
+    markTourSeenPersisted();
+    apiTourSeenRef.current = true;
     setIsTourOpen(false);
     // O tour pode ter aberto o painel mobile sozinho (passos de idioma/
     // preferências) — não deixa-lo aberto depois de terminar/pular.
@@ -128,7 +192,9 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     setDietaryPopupOpen(false);
     // O tour só é mostrado depois do card de preferências (respondido ou
     // dispensado) — nunca antes, para não competir com ele pela atenção.
-    setTimeout(startTourIfDue, 500);
+    // `apiTourSeenRef` (não localStorage) é a fonte de verdade com backend
+    // real — já foi lido no efeito acima, antes do card sequer aparecer.
+    setTimeout(() => startTourIfDue(apiTourSeenRef.current), 500);
   };
 
   const value: TutorialValue = {

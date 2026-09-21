@@ -18,7 +18,20 @@ class UserPreferenceController extends Controller
 
     public function update(UpdateUserPreferenceRequest $request): UserPreferenceResource
     {
-        $preference = $request->user()->preferences()->updateOrCreate([], $request->validated());
+        $data = $request->validated();
+
+        // Booleano na entrada, timestamp gravada — mesma convenção de
+        // `email_verified_at` (ver User::casts()). `false`/ausente nunca
+        // limpa a timestamp: uma vez visto, fica visto (não há caso de uso
+        // real para "esquecer" isto).
+        foreach (['tutorial_seen' => 'tutorial_seen_at', 'dietary_onboarding_seen' => 'dietary_onboarding_seen_at'] as $input => $column) {
+            if (($data[$input] ?? false) === true) {
+                $data[$column] = now();
+            }
+            unset($data[$input]);
+        }
+
+        $preference = $request->user()->preferences()->updateOrCreate([], $data);
 
         return new UserPreferenceResource($preference);
     }
