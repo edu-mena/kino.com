@@ -18,7 +18,7 @@ import { hasRealBackend } from "@/lib/api-client";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
 import { orderDistanceKm } from "@/lib/delivery-eval";
-import { getAdminToken, useRestaurantAdminOptional } from "@/lib/restaurant-admin";
+import { getAdminToken, useManagedRestaurantId } from "@/lib/restaurant-admin";
 import type { FulfillmentType, SavedAddress, SelectedIngredient } from "@/data/types";
 
 // Sufixo de versão: subir quando `seedOrders()` mudar de forma relevante —
@@ -442,9 +442,11 @@ function normalizeOrder(o: CartOrder): CartOrder {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  // `null` em páginas de cliente (fora de `OperatorProviders`) — mesmo
-  // padrão de `menu-admin.tsx`/`tables.tsx`.
-  const managedRestaurantId = useRestaurantAdminOptional()?.managedRestaurantId ?? null;
+  // `null` em páginas de cliente (fora do painel) — ver `useManagedRestaurantId`
+  // (@/lib/restaurant-admin) para porque não dá para usar
+  // `useRestaurantAdminOptional` aqui (CartProvider vive no `__root`,
+  // ancestral de `RestaurantAdminProvider`).
+  const managedRestaurantId = useManagedRestaurantId();
   const [apiOrders, setApiOrders] = useState<CartOrder[]>([]);
   const [mockOrders, setMockOrders] = useState<CartOrder[]>(seedOrders);
   const [hydrated, setHydrated] = useState(false);

@@ -17,7 +17,7 @@ import {
   type RestaurantTable,
 } from "@/data/tables-store";
 import { hasRealBackend } from "@/lib/api-client";
-import { getAdminToken, useRestaurantAdminOptional } from "@/lib/restaurant-admin";
+import { getAdminToken, useManagedRestaurantId } from "@/lib/restaurant-admin";
 
 type TablesValue = {
   tables: RestaurantTable[];
@@ -34,16 +34,18 @@ const TablesContext = createContext<TablesValue | null>(null);
 /**
  * Mesas da sala de cada restaurante. Com backend real, fala com a API
  * (ver @/data/api-tables), escopada ao restaurante do painel
- * (`useRestaurantAdminOptional` — `null` em páginas de cliente, ver mesmo
- * padrão em `@/lib/menu-admin`): `tablesByRestaurant` só devolve dados para
- * o restaurante do próprio painel; para qualquer outro (ex: cliente a
- * reservar noutro restaurante), devolve `[]` — `totalSeats` cai então a 0 e
- * `reservation-dialog.tsx` já trata isso como "capacidade desconhecida"
- * (não bloqueia a reserva), o mesmo que já acontecia sem mesas configuradas.
- * Sem backend, mantém-se o mock local de sempre.
+ * (`useManagedRestaurantId()` — `null` em páginas de cliente; não dá para
+ * usar `useRestaurantAdminOptional` aqui, este provider é ancestral de
+ * `RestaurantAdminProvider` na árvore, ver `@/lib/restaurant-admin`):
+ * `tablesByRestaurant` só devolve dados para o restaurante do próprio
+ * painel; para qualquer outro (ex: cliente a reservar noutro restaurante),
+ * devolve `[]` — `totalSeats` cai então a 0 e `reservation-dialog.tsx` já
+ * trata isso como "capacidade desconhecida" (não bloqueia a reserva), o
+ * mesmo que já acontecia sem mesas configuradas. Sem backend, mantém-se o
+ * mock local de sempre.
  */
 export function TablesProvider({ children }: { children: ReactNode }) {
-  const managedRestaurantId = useRestaurantAdminOptional()?.managedRestaurantId ?? null;
+  const managedRestaurantId = useManagedRestaurantId();
   const [tick, bump] = useReducer((n: number) => n + 1, 0);
   const [apiTables, setApiTables] = useState<RestaurantTable[]>([]);
 

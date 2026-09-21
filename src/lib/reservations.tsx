@@ -11,7 +11,7 @@ import type { Reservation, Restaurant } from "@/data/types";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { hasRealBackend } from "@/lib/api-client";
 import { viewerKey } from "@/lib/customer";
-import { getAdminToken, useRestaurantAdminOptional } from "@/lib/restaurant-admin";
+import { getAdminToken, useManagedRestaurantId } from "@/lib/restaurant-admin";
 
 const SEED_RESERVATIONS: Reservation[] = hasRealBackend ? [] : INITIAL_RESERVATIONS;
 
@@ -49,8 +49,11 @@ const ReservationsContext = createContext<ReservationsValue | null>(null);
  * app está a ser usada — este provider é único (montado no `__root`), mas
  * o painel do restaurante e as páginas de cliente nunca estão ativos ao
  * mesmo tempo:
- * - dentro do painel (`useRestaurantAdminOptional` não-nulo): busca as
+ * - dentro do painel (`useManagedRestaurantId()` não-nulo): busca as
  *   reservas DESSE restaurante (staff, `GET /restaurants/{id}/reservations`).
+ *   Não dá para usar `useRestaurantAdminOptional` aqui — este provider é
+ *   ancestral de `RestaurantAdminProvider` na árvore, nunca consegue ler o
+ *   contexto dele (ver `useManagedRestaurantId` em `@/lib/restaurant-admin`).
  * - fora dele (cliente): busca "as minhas reservas" do utilizador
  *   autenticado (`GET /reservations`) — convidados sem sessão ficam sem
  *   lista agregada (limitação conhecida: a API só permite ver uma reserva
@@ -59,7 +62,7 @@ const ReservationsContext = createContext<ReservationsValue | null>(null);
  */
 export function ReservationsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const managedRestaurantId = useRestaurantAdminOptional()?.managedRestaurantId ?? null;
+  const managedRestaurantId = useManagedRestaurantId();
   const [apiReservations, setApiReservations] = useState<Reservation[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>(SEED_RESERVATIONS);
   const [hydrated, setHydrated] = useState(false);

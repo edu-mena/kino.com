@@ -33,6 +33,37 @@ export function getManagedRestaurantId(): string | null {
     return null;
   }
 }
+/** Versão reativa de `getManagedRestaurantId()` — para providers montados no
+ * `__root` (`MenuAdminProvider`, `CartProvider`, `ReservationsProvider`,
+ * `TablesProvider`) que precisam de saber qual restaurante o painel
+ * `/admin` está a gerir, sem poderem usar `useRestaurantAdminOptional()`
+ * pela mesma razão do comentário acima: esses providers são ANCESTRAIS de
+ * `RestaurantAdminProvider` na árvore (montado só dentro de
+ * `OperatorProviders`, abaixo da raiz), nunca conseguem ler o contexto
+ * dele. Bug real, encontrado porque isto fazia `managedRestaurantId` ficar
+ * sempre `null` nesses 4 providers — cardápio/pedidos/reservas/mesas do
+ * painel do restaurante ficavam sempre vazios com backend real, mesmo com
+ * dados a existir a sério no servidor (`login`/`enterAsOperator`/`logout`
+ * disparam `luku:menu-changed` propositadamente para isto reagir no
+ * mesmo instante, sem depender do evento `storage` — que só chega a
+ * OUTRAS abas, nunca à mesma que acabou de fazer login). */
+export function useManagedRestaurantId(): string | null {
+  const [id, setId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sync = () => setId(getManagedRestaurantId());
+    sync();
+    window.addEventListener("luku:menu-changed", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("luku:menu-changed", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  return id;
+}
+
 /** "1" quando o token guardado acima é EMPRESTADO de `useSystemAdmin` (ver
  * `enterAsOperator`) — nunca um token próprio deste painel. Persistido para
  * sobreviver a um refresh enquanto "emprestado". */
@@ -170,6 +201,7 @@ export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(RESTAURANT_ID_KEY, DEMO_RESTAURANT_ID);
       localStorage.removeItem(BORROWED_KEY);
       setManagedRestaurantId(DEMO_RESTAURANT_ID);
+      window.dispatchEvent(new Event("luku:menu-changed"));
       return;
     }
 
@@ -191,6 +223,7 @@ export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(RESTAURANT_ID_KEY, restaurantId);
     localStorage.removeItem(BORROWED_KEY);
     setManagedRestaurantId(restaurantId);
+    window.dispatchEvent(new Event("luku:menu-changed"));
   };
 
   const enterAsOperator = (restaurantId: string, operatorToken: string) => {
@@ -198,6 +231,7 @@ export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(RESTAURANT_ID_KEY, restaurantId);
     localStorage.setItem(BORROWED_KEY, "1");
     setManagedRestaurantId(restaurantId);
+    window.dispatchEvent(new Event("luku:menu-changed"));
   };
 
   const logout = async () => {
@@ -207,6 +241,7 @@ export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(RESTAURANT_ID_KEY);
     localStorage.removeItem(BORROWED_KEY);
     setManagedRestaurantId(null);
+    window.dispatchEvent(new Event("luku:menu-changed"));
     if (!token || borrowed || !hasRealBackend) return; // token emprestado, ou demo — não revoga
     try {
       await apiFetch("/auth/logout", { method: "POST", token });
@@ -237,12 +272,4 @@ export function useRestaurantAdmin() {
   const ctx = useContext(RestaurantAdminContext);
   if (!ctx) throw new Error("useRestaurantAdmin must be used inside RestaurantAdminProvider");
   return ctx;
-}
-
-/** Como `useRestaurantAdmin`, mas `null` fora do provider em vez de
- * lançar — para consumidores montados fora de `OperatorProviders` (ex:
- * `MenuAdminProvider`, no `__root`, partilhado com páginas de cliente que
- * nunca montam o painel do restaurante). */
-export function useRestaurantAdminOptional() {
-  return useContext(RestaurantAdminContext);
 }

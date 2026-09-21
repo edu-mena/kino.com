@@ -17,19 +17,22 @@ import {
 import { INITIAL_MENU_ITEMS } from "@/data/mockData";
 import type { MenuItem } from "@/data/types";
 import { hasRealBackend } from "@/lib/api-client";
-import { getAdminToken, useRestaurantAdminOptional } from "@/lib/restaurant-admin";
+import { getAdminToken, useManagedRestaurantId } from "@/lib/restaurant-admin";
 
 /**
  * CRUD de pratos + disponibilidade, gerido pelo painel do restaurante
  * (`/admin/cardapio`). Com backend real (`hasRealBackend`), fala com a API
  * (ver @/data/api-menu-items) escopada ao restaurante do painel
- * (`useRestaurantAdmin().managedRestaurantId`) — sem backend, a
- * leitura/escrita de sempre vive em `@/data/menu-store` (síncrona,
- * localStorage). `items`/`isAvailable` também são lidos por páginas de
- * cliente (dish-card.tsx, prato.$dishId.tsx) fora do painel — aí
- * `managedRestaurantId` é `null`, então `items` fica vazio e `isAvailable`
- * cai no fallback `true` (a verificação real de disponibilidade nesses
- * casos já vem do próprio `item.isAvailable` da API).
+ * (`useManagedRestaurantId()` — este provider vive no `__root`, ANCESTRAL
+ * de `RestaurantAdminProvider`/`OperatorProviders`, nunca consegue ler o
+ * contexto deles; ver o comentário de `useManagedRestaurantId` em
+ * `@/lib/restaurant-admin`) — sem backend, a leitura/escrita de sempre
+ * vive em `@/data/menu-store` (síncrona, localStorage). `items`/
+ * `isAvailable` também são lidos por páginas de cliente (dish-card.tsx,
+ * prato.$dishId.tsx) fora do painel — aí `managedRestaurantId` é `null`,
+ * então `items` fica vazio e `isAvailable` cai no fallback `true` (a
+ * verificação real de disponibilidade nesses casos já vem do próprio
+ * `item.isAvailable` da API).
  */
 type MenuAdminValue = {
   /** Todos os pratos do restaurante do painel, já com criações/edições/
@@ -51,9 +54,8 @@ type MenuAdminValue = {
 const MenuAdminContext = createContext<MenuAdminValue | null>(null);
 
 export function MenuAdminProvider({ children }: { children: ReactNode }) {
-  // `null` em páginas de cliente (fora de `OperatorProviders`, que só
-  // monta em `/admin/*`) — ver `useRestaurantAdminOptional`.
-  const managedRestaurantId = useRestaurantAdminOptional()?.managedRestaurantId ?? null;
+  // `null` em páginas de cliente (fora do painel) — ver `useManagedRestaurantId`.
+  const managedRestaurantId = useManagedRestaurantId();
   // SSR-safe: a primeira renderização (servidor, e a do cliente antes da
   // hidratação) usa sempre o seed estático puro, sem tocar em localStorage
   // — evita mismatch de hidratação. O `useEffect` abaixo, que só corre no
