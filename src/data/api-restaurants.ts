@@ -62,6 +62,11 @@ type ApiRestaurant = {
 
 type ApiMenuItem = {
   id: string;
+  // Só vem preenchido se o backend tiver carregado a relação `menu` (ver
+  // `whenLoaded` em MenuItemResource.php) — sem isto, todo prato caía no
+  // cardápio "sintético" de mock (`defaultMenuId`) em vez do cardápio real,
+  // e por isso o PDF/página pública do QR mostravam sempre 0 pratos.
+  menuId?: string | null;
   name: string;
   description: string | null;
   price: number | string;
@@ -147,6 +152,7 @@ export function mapApiMenuItem(m: ApiMenuItem, restaurantId: string): MenuItem {
   return {
     id: m.id,
     restaurantId,
+    ...(m.menuId ? { menuId: m.menuId } : {}),
     name: m.name,
     description: m.description ?? "",
     price: Number(m.price),

@@ -28,7 +28,11 @@ class MenuItemController extends Controller
             )
             ->allowedSorts('name', 'price')
             ->defaultSort('category', 'name')
-            ->with('ingredients')
+            // `menu` também precisa de estar carregado — `MenuItemResource`
+            // só devolve `menuId` com `whenLoaded('menu', ...)`; sem isto o
+            // campo desaparecia da resposta e o frontend nunca conseguia
+            // agrupar os pratos pelo cardápio real (PDF/QR mostravam 0 pratos).
+            ->with(['ingredients', 'menu'])
             ->cursorPaginate($request->integer('per_page', 30));
 
         return MenuItemResource::collection($items);

@@ -65,3 +65,13 @@ test('filtrar pratos por categoria e disponibilidade', function () {
 
     $response->assertOk()->assertJsonCount(1, 'data');
 });
+
+test('listagem de pratos devolve o menuId — sem isto o PDF/QR do cardápio não conseguem agrupar os pratos por cardápio', function () {
+    $restaurant = Restaurant::factory()->create();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id]);
+
+    $response = $this->getJson("/api/v1/restaurants/{$restaurant->uuid}/menu-items");
+
+    $response->assertOk()->assertJsonPath('data.0.menuId', $menu->uuid);
+});
