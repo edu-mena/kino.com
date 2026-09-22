@@ -1,9 +1,7 @@
 <?php
 
-use App\Models\MenuItem;
 use App\Models\PaymentMethod;
 use App\Models\Restaurant;
-use App\Models\RestaurantMenu;
 use App\Models\RestaurantSubscription;
 use App\Models\User;
 use Database\Seeders\PaymentMethodSeeder;
@@ -255,28 +253,4 @@ test('owner atualiza o wallpaper do restaurante', function () {
         ])
         ->assertOk()
         ->assertJsonPath('data.wallpaperUrl', 'https://cdn.luku.ao/wallpapers/novo.jpg');
-});
-
-test('price_level do restaurante recalcula quando o preço de um prato muda', function () {
-    $restaurant = Restaurant::factory()->create();
-    $menu = RestaurantMenu::factory()->for($restaurant)->create();
-    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 1000]);
-
-    expect($restaurant->fresh()->price_level)->toBe(1); // faixa mais barata
-
-    $item->update(['price' => 20000]);
-
-    expect($restaurant->fresh()->price_level)->toBe(4); // faixa mais cara
-});
-
-test('price_level volta a null quando o restaurante fica sem pratos disponíveis', function () {
-    $restaurant = Restaurant::factory()->create();
-    $menu = RestaurantMenu::factory()->for($restaurant)->create();
-    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 1000]);
-
-    expect($restaurant->fresh()->price_level)->not->toBeNull();
-
-    $item->delete();
-
-    expect($restaurant->fresh()->price_level)->toBeNull();
 });

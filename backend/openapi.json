@@ -6233,9 +6233,6 @@
                     "cuisine": {
                         "type": ["string", "null"]
                     },
-                    "priceLevel": {
-                        "type": ["integer", "null"]
-                    },
                     "rating": {
                         "type": ["number", "null"]
                     },
@@ -6375,7 +6372,6 @@
                     "name",
                     "description",
                     "cuisine",
-                    "priceLevel",
                     "rating",
                     "reviewCount",
                     "address",

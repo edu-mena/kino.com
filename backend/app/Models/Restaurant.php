@@ -24,9 +24,9 @@ class Restaurant extends Model
         'orders_paused_manually',
     ];
 
-    // price_level/rating/review_count ficam de fora de $fillable de propósito
-    // — nunca graváveis via API, só por App\Services\PriceLevelCalculator /
-    // App\Observers\ReviewObserver (mass assignment protection real).
+    // rating/review_count ficam de fora de $fillable de propósito — nunca
+    // graváveis via API, só por App\Observers\ReviewObserver (mass
+    // assignment protection real).
 
     protected function casts(): array
     {

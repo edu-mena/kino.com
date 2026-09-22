@@ -16,7 +16,6 @@ class RestaurantResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'cuisine' => $this->cuisine,
-            'priceLevel' => $this->price_level,
             'rating' => $this->rating === null ? null : (float) $this->rating,
             'reviewCount' => $this->review_count,
             'address' => $this->address,
