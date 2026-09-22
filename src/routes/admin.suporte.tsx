@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, Mail, MessageCircle, Phone, Send } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AdminPageHeading } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
@@ -14,16 +14,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { createTicket, getTickets } from "@/data/support-tickets-store";
+import { createApiSupportTicket, fetchApiSupportTickets } from "@/data/api-support";
+import { createTicket, getTickets, type SupportTicket } from "@/data/support-tickets-store";
 import { useTranslation } from "@/i18n";
-import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { hasRealBackend } from "@/lib/api-client";
+import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 export const Route = createFileRoute("/admin/suporte")({
   head: () => ({ meta: [{ title: "Suporte — Painel Luku.com" }] }),
   component: AdminSuporte,
 });
 
-const SUPPORT_EMAIL = "parceiros@luku.com";
+// Endereço real da equipa Luku (config('mail.contact_address') no
+// backend) — antes tinha um domínio errado e nunca era usado para envio de
+// verdade, só para abrir o cliente de email do próprio restaurante.
+const SUPPORT_EMAIL = "ola@luku.ao";
 const SUPPORT_WHATSAPP = "https://wa.me/244930814277";
 
 const subjectValues = ["nome", "destaque", "avaliacao", "pagamentos", "tecnico", "outro"] as const;
@@ -33,12 +38,27 @@ function AdminSuporte() {
   const [subject, setSubject] = useState<(typeof subjectValues)[number]>("nome");
   const [message, setMessage] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
+  const [apiTickets, setApiTickets] = useState<SupportTicket[]>([]);
   const { t } = useTranslation();
 
+  useEffect(() => {
+    if (!hasRealBackend || !restaurant?.id) return;
+    const token = getAdminToken();
+    if (!token) return;
+    fetchApiSupportTickets(restaurant.id, token)
+      .then(setApiTickets)
+      .catch(() => setApiTickets([]));
+  }, [restaurant?.id, refreshTick]);
+
   const myTickets = useMemo(
-    () => (restaurant ? getTickets().filter((tk) => tk.restaurantId === restaurant.id) : []),
+    () =>
+      hasRealBackend
+        ? apiTickets
+        : restaurant
+          ? getTickets().filter((tk) => tk.restaurantId === restaurant.id)
+          : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [restaurant, refreshTick],
+    [restaurant, refreshTick, apiTickets],
   );
 
   const subjects = [
@@ -52,21 +72,45 @@ function AdminSuporte() {
 
   if (!restaurant) return null;
 
-  // Sem backend a app não tem sistema de tickets — em vez de simular um
-  // envio, abrimos o cliente de email do restaurante já preenchido, que é
-  // a única ação real que o frontend consegue disparar sozinho.
-  const handleSubmit = (e: React.FormEvent) => {
+  // Com backend real, envia de verdade para a API (que já dispara um email
+  // real para a equipa Luku, ver SupportTicketMail) — sem backend (demo),
+  // mantém o comportamento de sempre: guarda localmente e abre o cliente de
+  // email do restaurante, a única ação real possível nesse caso.
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) {
       toast.error(t("adminSuporte.emptyMessageError"));
       return;
     }
     const subjectLabel = subjects.find((s) => s.value === subject)?.label ?? "Suporte";
+    const trimmedMessage = message.trim();
+
+    if (hasRealBackend) {
+      const token = getAdminToken();
+      if (!token) {
+        toast.error(t("adminSuporte.sendFailedError"));
+        return;
+      }
+      try {
+        await createApiSupportTicket(
+          restaurant.id,
+          { subject: subjectLabel, message: trimmedMessage },
+          token,
+        );
+        setRefreshTick((n) => n + 1);
+        toast.success(t("adminSuporte.ticketSentToast"));
+        setMessage("");
+      } catch {
+        toast.error(t("adminSuporte.sendFailedError"));
+      }
+      return;
+    }
+
     createTicket({
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
       subject: subjectLabel,
-      message: message.trim(),
+      message: trimmedMessage,
     });
     setRefreshTick((n) => n + 1);
     const body = `${message}\n\n— ${restaurant.name}`;

@@ -10,8 +10,11 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 /**
  * Destino do link enviado por `Password::sendResetLink()` (ver
  * backend/app/Providers/AppServiceProvider.php, `ResetPassword::createUrlUsing`)
- * — só staff/operador têm senha (clientes entram por Google), por isso não
- * sabe à partida qual painel, mostra os dois no fim.
+ * — só staff/operador têm senha (clientes entram por Google). O backend
+ * devolve o `role` do utilizador na resposta do reset (ver
+ * AuthController::resetPassword), usado para mostrar só o botão certo —
+ * antes mostrava sempre os dois, mesmo a quem não geria nenhum restaurante
+ * (ou vice-versa), um bug de UX real reportado em teste.
  */
 export const Route = createFileRoute("/definir-senha")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -35,6 +38,7 @@ function DefinirSenha() {
   const [confirmation, setConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [role, setRole] = useState<"restaurant_staff" | "system_operator" | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -44,10 +48,14 @@ function DefinirSenha() {
     }
     setLoading(true);
     try {
-      await apiFetch("/auth/reset-password", {
+      const res = await apiFetch<{
+        message: string;
+        role?: "restaurant_staff" | "system_operator" | null;
+      }>("/auth/reset-password", {
         method: "POST",
         body: { email, token, password, password_confirmation: confirmation },
       });
+      setRole(res.role ?? null);
       setDone(true);
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : t("definirSenha.error"));
@@ -85,18 +93,25 @@ function DefinirSenha() {
               {t("definirSenha.doneDescription")}
             </p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-              <Link
-                to="/admin/entrar"
-                className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-primary"
-              >
-                {t("definirSenha.goToAdmin")}
-              </Link>
-              <Link
-                to="/sistema/entrar"
-                className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-primary"
-              >
-                {t("definirSenha.goToSistema")}
-              </Link>
+              {/* Só o botão do painel a que este utilizador de facto
+                  pertence — sem `role` (resposta antiga/inesperada), mostra
+                  os dois como reserva, em vez de deixar ninguém sem saída. */}
+              {(role === "restaurant_staff" || !role) && (
+                <Link
+                  to="/admin/entrar"
+                  className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-primary"
+                >
+                  {t("definirSenha.goToAdmin")}
+                </Link>
+              )}
+              {(role === "system_operator" || !role) && (
+                <Link
+                  to="/sistema/entrar"
+                  className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-primary"
+                >
+                  {t("definirSenha.goToSistema")}
+                </Link>
+              )}
             </div>
           </div>
         ) : (

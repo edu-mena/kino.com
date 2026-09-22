@@ -198,12 +198,21 @@ class AuthController extends Controller
 
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
+        // `forgotPassword()` já sabe se é staff de restaurante ou operador de
+        // sistema (só esses dois têm senha), mas `Password::reset()` só
+        // devolve um status string — captura o `role` aqui dentro do
+        // callback para o frontend saber para qual painel mandar o
+        // utilizador a seguir, em vez de mostrar sempre os dois botões
+        // (definir-senha.tsx, bug real: um restaurante via o botão de
+        // "administração de sistema" e vice-versa).
+        $role = null;
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user, string $password) {
+            function (User $user, string $password) use (&$role) {
                 $user->forceFill(['password' => Hash::make($password)])->save();
                 $user->tokens()->delete(); // força novo login em todos os dispositivos
                 event(new PasswordReset($user));
+                $role = $user->role;
             }
         );
 
@@ -211,7 +220,7 @@ class AuthController extends Controller
             return response()->json(['message' => __($status)], 422);
         }
 
-        return response()->json(['message' => 'Senha alterada com sucesso.']);
+        return response()->json(['message' => 'Senha alterada com sucesso.', 'role' => $role]);
     }
 
     /**

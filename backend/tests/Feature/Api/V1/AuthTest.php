@@ -3,6 +3,7 @@
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Password;
 
 beforeEach(function () {
     // 3 client_ids distintos (um por plataforma) — ver GoogleOAuthService.
@@ -177,4 +178,32 @@ test('me devolve os restaurantes geridos quando é staff', function () {
     $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/auth/me');
 
     $response->assertOk()->assertJsonPath('data.restaurants.0.restaurantId', $restaurant->uuid);
+});
+
+test('reset de senha devolve o role do utilizador — o frontend usa isto pra saber a qual painel mandar', function () {
+    $user = User::factory()->restaurantStaff()->create();
+    $token = Password::createToken($user);
+
+    $response = $this->postJson('/api/v1/auth/reset-password', [
+        'email' => $user->email,
+        'token' => $token,
+        'password' => 'nova-senha-123',
+        'password_confirmation' => 'nova-senha-123',
+    ]);
+
+    $response->assertOk()->assertJsonPath('role', 'restaurant_staff');
+});
+
+test('reset de senha com token inválido não devolve role nenhum', function () {
+    $user = User::factory()->systemOperator()->create();
+
+    $response = $this->postJson('/api/v1/auth/reset-password', [
+        'email' => $user->email,
+        'token' => 'token-invalido',
+        'password' => 'nova-senha-123',
+        'password_confirmation' => 'nova-senha-123',
+    ]);
+
+    $response->assertStatus(422);
+    expect($response->json('role'))->toBeNull();
 });

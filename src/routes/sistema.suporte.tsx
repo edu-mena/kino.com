@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, LifeBuoy } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ADMIN_FILTER_SELECT, KpiTile } from "@/components/admin-stats";
 import { SystemPageHeading } from "@/components/system-shell";
-import { getTickets, setTicketStatus } from "@/data/support-tickets-store";
+import { fetchApiSupportTickets, updateApiSupportTicketStatus } from "@/data/api-support";
+import { getTickets, setTicketStatus, type SupportTicket } from "@/data/support-tickets-store";
 import { useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
 import { BCP47 } from "@/lib/week";
+import { useSystemAdmin } from "@/lib/system-admin";
 
 export const Route = createFileRoute("/sistema/suporte")({
   head: () => ({ meta: [{ title: "Suporte — Sistema Luku.com" }] }),
@@ -15,13 +18,22 @@ export const Route = createFileRoute("/sistema/suporte")({
 
 function SistemaSuporte() {
   const { t, locale } = useTranslation();
+  const { token } = useSystemAdmin();
   const [tick, setTick] = useState(0);
   const [filter, setFilter] = useState<"open" | "resolved" | "todos">("open");
+  const [apiTickets, setApiTickets] = useState<SupportTicket[]>([]);
+
+  useEffect(() => {
+    if (!hasRealBackend || !token) return;
+    fetchApiSupportTickets(undefined, token)
+      .then(setApiTickets)
+      .catch(() => setApiTickets([]));
+  }, [token, tick]);
 
   const tickets = useMemo(
-    () => getTickets(),
+    () => (hasRealBackend ? apiTickets : getTickets()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tick],
+    [tick, apiTickets],
   );
   const openCount = tickets.filter((tk) => tk.status === "open").length;
   const list = tickets.filter((tk) => filter === "todos" || tk.status === filter);
@@ -93,7 +105,21 @@ function SistemaSuporte() {
                   {tk.status === "open" ? (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
+                        if (hasRealBackend) {
+                          if (!token) {
+                            toast.error(t("sistemaSuporte.resolveFailedError"));
+                            return;
+                          }
+                          try {
+                            await updateApiSupportTicketStatus(tk.id, "resolved", token);
+                            setTick((n) => n + 1);
+                            toast.success(t("sistemaSuporte.resolvedToast"));
+                          } catch {
+                            toast.error(t("sistemaSuporte.resolveFailedError"));
+                          }
+                          return;
+                        }
                         setTicketStatus(tk.id, "resolved");
                         setTick((n) => n + 1);
                         toast.success(t("sistemaSuporte.resolvedToast"));

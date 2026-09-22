@@ -736,6 +736,7 @@ export const pt = {
     emptyMessageError: "Escreva a sua mensagem primeiro.",
     openingEmailToast: "A abrir o seu email para enviar o pedido à equipa de parceiros.",
     ticketSentToast: "Pedido registado. A equipa Luku responde em breve.",
+    sendFailedError: "Não foi possível enviar o pedido. Tente novamente.",
     myTicketsTitle: "Os seus pedidos",
     statusOpen: "Em aberto",
     statusResolved: "Resolvido",
@@ -761,6 +762,7 @@ export const pt = {
     markResolved: "Marcar resolvido",
     resolved: "Resolvido",
     resolvedToast: "Pedido marcado como resolvido.",
+    resolveFailedError: "Não foi possível marcar como resolvido. Tente novamente.",
   },
   adminEntrar: {
     title: "Painel do restaurante",

@@ -739,6 +739,7 @@ export const fr: Dictionary = {
     emptyMessageError: "Écrivez d'abord votre message.",
     openingEmailToast: "Ouverture de votre email pour envoyer la demande à l'équipe partenaires.",
     ticketSentToast: "Demande enregistrée. L'équipe Luku répondra bientôt.",
+    sendFailedError: "Impossible d'envoyer la demande. Réessayez.",
     myTicketsTitle: "Vos demandes",
     statusOpen: "Ouverte",
     statusResolved: "Résolue",
@@ -764,6 +765,7 @@ export const fr: Dictionary = {
     markResolved: "Marquer résolue",
     resolved: "Résolue",
     resolvedToast: "Demande marquée comme résolue.",
+    resolveFailedError: "Impossible de marquer comme résolue. Réessayez.",
   },
   adminEntrar: {
     title: "Panneau du restaurant",

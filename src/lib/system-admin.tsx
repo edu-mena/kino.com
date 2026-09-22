@@ -30,6 +30,18 @@ type SystemAdminValue = {
   logout: () => Promise<void>;
 };
 
+/** Leitura direta do token guardado, fora de React — para o `beforeLoad` de
+ * `/sistema` (ver src/routes/sistema.tsx), que corre antes de qualquer
+ * provider montar. Mesmo padrão de `getAdminToken` em `restaurant-admin.tsx`. */
+export function getSystemToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
 const SystemAdminContext = createContext<SystemAdminValue | null>(null);
 
 export function SystemAdminProvider({ children }: { children: ReactNode }) {

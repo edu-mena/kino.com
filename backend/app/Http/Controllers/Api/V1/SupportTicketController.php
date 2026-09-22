@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\SupportTickets\StoreSupportTicketRequest;
 use App\Http\Resources\Api\V1\SupportTicketResource;
+use App\Mail\SupportTicketMail;
 use App\Models\Restaurant;
 use App\Models\SupportTicket;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 class SupportTicketController extends Controller
@@ -36,12 +38,24 @@ class SupportTicketController extends Controller
             403,
         );
 
-        return SupportTicketResource::collection($restaurant->supportTickets()->latest()->get());
+        // `->with('restaurant')` — sem isto, `SupportTicketResource`
+        // (`whenLoaded('restaurant', ...)`) nunca devolvia `restaurantId`/
+        // `restaurantName` aqui, mesmo sabendo o restaurante pela rota.
+        return SupportTicketResource::collection(
+            $restaurant->supportTickets()->with('restaurant')->latest()->get(),
+        );
     }
 
     public function store(StoreSupportTicketRequest $request, Restaurant $restaurant): JsonResponse
     {
         $ticket = $restaurant->supportTickets()->create([...$request->validated(), 'status' => 'open']);
+        $ticket->setRelation('restaurant', $restaurant);
+
+        // Antes disto, o frontend só abria o cliente de email do PRÓPRIO
+        // restaurante (mailto:), com o endereço errado — a mensagem nunca
+        // chegava de facto à Luku. Mesmo endereço do formulário de
+        // /contacto (config('mail.contact_address')).
+        Mail::to(config('mail.contact_address'))->queue(new SupportTicketMail($ticket));
 
         return (new SupportTicketResource($ticket))->response()->setStatusCode(201);
     }

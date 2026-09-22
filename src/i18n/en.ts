@@ -732,6 +732,7 @@ export const en: Dictionary = {
     emptyMessageError: "Write your message first.",
     openingEmailToast: "Opening your email to send the request to the partners team.",
     ticketSentToast: "Request logged. The Luku team will reply soon.",
+    sendFailedError: "Couldn't send the request. Try again.",
     myTicketsTitle: "Your requests",
     statusOpen: "Open",
     statusResolved: "Resolved",
@@ -757,6 +758,7 @@ export const en: Dictionary = {
     markResolved: "Mark resolved",
     resolved: "Resolved",
     resolvedToast: "Request marked as resolved.",
+    resolveFailedError: "Couldn't mark as resolved. Try again.",
   },
   adminEntrar: {
     title: "Restaurant panel",
