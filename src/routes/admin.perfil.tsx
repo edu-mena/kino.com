@@ -40,6 +40,7 @@ import { LocationMap, LocationPicker } from "@/components/location-map";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { TemplatePicker } from "@/components/ui/template-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { VideoTrimmer } from "@/components/video-trimmer";
 import { WeeklyHoursEditor } from "@/components/weekly-hours-editor";
@@ -59,6 +60,7 @@ import { useProfileViewers } from "@/data/use-profile-viewers";
 import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { paymentMethods } from "@/lib/mock-data";
+import { REFUND_POLICY_TEMPLATES } from "@/lib/refund-policy-templates";
 import { CROP_PRESETS } from "@/lib/image-crop-presets";
 import { dataUrlToFile } from "@/lib/api-upload";
 import { getVideoDurationSec } from "@/lib/image-upload";
@@ -1016,9 +1018,16 @@ function AdminPerfil() {
                   </div>
                   {Number(cautionAmount) > 0 && (
                     <div className="space-y-1.5">
-                      <Label htmlFor="rest-caution-policy">
-                        {t("adminPerfil.cautionPolicyLabel")}
-                      </Label>
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <Label htmlFor="rest-caution-policy">
+                          {t("adminPerfil.cautionPolicyLabel")}
+                        </Label>
+                        <TemplatePicker
+                          templates={REFUND_POLICY_TEMPLATES}
+                          onSelect={(tpl) => setCautionPolicyNotice(tpl.text)}
+                          triggerLabel={t("adminPerfil.cautionPolicyUseTemplate")}
+                        />
+                      </div>
                       <Textarea
                         id="rest-caution-policy"
                         value={cautionPolicyNotice}

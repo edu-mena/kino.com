@@ -1570,6 +1570,7 @@ export const fr: Dictionary = {
     cautionReservationSectionTitle: "Caution de table (réservation)",
     cautionOrdersSectionTitle: "Appliquer aussi aux commandes",
     cautionPolicyPlaceholder: "Ex : remboursée si la table est occupée.",
+    cautionPolicyUseTemplate: "Utiliser un modèle",
     galleryLabel: "Galerie photo",
     galleryPlaceholder: "https://...",
     viewPublicPage: "Voir la page publique",
@@ -1814,12 +1815,24 @@ export const fr: Dictionary = {
     categoryOther: "Autre",
     restaurantNamePlaceholder: "Nom du restaurant",
     categoryPlaceholder: "Catégorie",
+    categorySearchPlaceholder: "Rechercher ou saisir une catégorie...",
+    categoryEmptyText: "Aucune catégorie trouvée.",
+    categoryUseCustom: "Utiliser « {value} »",
     ownerNamePlaceholder: "Nom du responsable",
     emailPlaceholder: "Email de contact",
     phonePlaceholder: "Téléphone",
     provincePlaceholder: "Province",
     addressPlaceholder: "Adresse (quartier, rue)",
     aboutPlaceholder: "Parlez-nous un peu du restaurant (facultatif)",
+    useDescriptionTemplate: "Utiliser un modèle pour {category}",
+    descriptionTemplateAngolana:
+      "Cuisine angolaise traditionnelle, avec des plats comme le muamba, le calulu et le funge, préparés avec des ingrédients frais et des recettes de famille.",
+    descriptionTemplateBurgers:
+      "Burgers artisanaux, préparés à la commande, avec des ingrédients sélectionnés et des options pour tous les goûts.",
+    descriptionTemplatePizza:
+      "Pizzas à pâte fine ou traditionnelle, cuites dans notre propre four, avec une variété de garnitures, toujours fraîches.",
+    descriptionTemplateSobremesas:
+      "Sucreries, gâteaux et desserts maison, accompagnés d'un bon café — l'endroit idéal pour adoucir la journée.",
     requiredFieldsError: "Remplissez les champs obligatoires avant de continuer.",
     back: "Retour",
     next: "Continuer",

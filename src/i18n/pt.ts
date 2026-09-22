@@ -1557,6 +1557,7 @@ export const pt = {
     cautionReservationSectionTitle: "Caução de mesa (reserva)",
     cautionOrdersSectionTitle: "Aplicar também a pedidos",
     cautionPolicyPlaceholder: "Ex: reembolsada se a mesa for ocupada.",
+    cautionPolicyUseTemplate: "Usar modelo",
     galleryLabel: "Galeria de fotos",
     galleryPlaceholder: "https://...",
     viewPublicPage: "Ver página pública",
@@ -1797,12 +1798,24 @@ export const pt = {
     categoryOther: "Outra",
     restaurantNamePlaceholder: "Nome do restaurante",
     categoryPlaceholder: "Categoria",
+    categorySearchPlaceholder: "Procurar ou escrever uma categoria...",
+    categoryEmptyText: "Nenhuma categoria encontrada.",
+    categoryUseCustom: "Usar “{value}”",
     ownerNamePlaceholder: "Nome do responsável",
     emailPlaceholder: "Email de contacto",
     phonePlaceholder: "Telefone",
     provincePlaceholder: "Província",
     addressPlaceholder: "Morada (bairro, rua)",
     aboutPlaceholder: "Fale um pouco sobre o restaurante (opcional)",
+    useDescriptionTemplate: "Usar modelo para {category}",
+    descriptionTemplateAngolana:
+      "Cozinha angolana tradicional, com pratos como muamba, calulu e funge, preparados com ingredientes frescos e receitas de família.",
+    descriptionTemplateBurgers:
+      "Hambúrgueres artesanais, feitos na hora, com ingredientes selecionados e opções para todos os gostos.",
+    descriptionTemplatePizza:
+      "Pizzas de massa fina ou tradicional, assadas em forno próprio, com recheios variados e sempre fresquinhas.",
+    descriptionTemplateSobremesas:
+      "Doces, bolos e sobremesas caseiras, acompanhados de um bom café — o lugar certo para adoçar o dia.",
     requiredFieldsError: "Preencha os campos obrigatórios antes de continuar.",
     back: "Voltar",
     next: "Continuar",

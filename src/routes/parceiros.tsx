@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { deriveRestaurantCoords } from "@/data/restaurant-coordinates";
 import { apiFetch, ApiError, hasRealBackend } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -106,13 +107,28 @@ const EMPTY_FORM: FormState = {
 function Parceiros() {
   const { t } = useTranslation();
 
+  // Sem "outra" na lista — o SearchableSelect já deixa escrever qualquer
+  // categoria que não esteja aqui (ver `customLabel` abaixo), então esse
+  // item deixou de fazer sentido como opção fixa (antes escolhê-lo não
+  // dava nenhuma forma de escrever qual era a categoria de facto).
   const categories = [
     { value: "angolana", label: t("parceiros.categoryAngolan") },
     { value: "burgers", label: t("parceiros.categoryBurgers") },
     { value: "pizza", label: t("parceiros.categoryPizza") },
     { value: "sobremesas", label: t("parceiros.categoryDesserts") },
-    { value: "outra", label: t("parceiros.categoryOther") },
   ];
+
+  // Modelo de descrição por categoria — mesmo espírito de
+  // `useDishSuggestions`/`applySuggestion` em dish-form-dialog.tsx
+  // (preenche automaticamente, mas continua livremente editável depois).
+  // Só cobre as 4 categorias predefinidas; uma categoria personalizada não
+  // tem modelo (não há como adivinhar o texto certo).
+  const descriptionTemplates: Record<string, string> = {
+    angolana: t("parceiros.descriptionTemplateAngolana"),
+    burgers: t("parceiros.descriptionTemplateBurgers"),
+    pizza: t("parceiros.descriptionTemplatePizza"),
+    sobremesas: t("parceiros.descriptionTemplateSobremesas"),
+  };
 
   const steps = [
     { key: "restaurant", title: t("parceiros.step1Title") },
@@ -135,6 +151,9 @@ function Parceiros() {
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  const categoryLabel = categories.find((c) => c.value === form.category)?.label ?? form.category;
+  const descriptionTemplate = descriptionTemplates[form.category];
 
   const recenterToProvince = (province: string) => {
     const coords = deriveRestaurantCoords(form.restaurantName || "novo-parceiro", province);
@@ -207,8 +226,10 @@ function Parceiros() {
 
     // `StorePartnerApplicationRequest` (backend) não tem campos próprios
     // para categoria/morada/foto — dobrados dentro de `message`, único
-    // campo livre que ele aceita, em vez de os perder.
-    const categoryLabel = categories.find((c) => c.value === form.category)?.label ?? "";
+    // campo livre que ele aceita, em vez de os perder. `categoryLabel`
+    // (definido acima) já cai para o próprio `form.category` quando é uma
+    // categoria personalizada (sem isso, "Comida Italiana" digitado à mão
+    // desaparecia da mensagem, virando categoria vazia).
     const message = [
       `Categoria: ${categoryLabel}`,
       `Morada: ${form.address}`,
@@ -353,25 +374,17 @@ function Parceiros() {
                     />
                   </div>
 
-                  <Select
-                    {...(form.category ? { value: form.category } : {})}
-                    onValueChange={(v) => update("category", v)}
-                  >
-                    <SelectTrigger className="h-auto rounded-xl border-border bg-background px-4 py-3 text-sm text-foreground focus:ring-1 focus:ring-primary sm:col-span-2">
-                      <SelectValue placeholder={t("parceiros.categoryPlaceholder")} />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-border p-2 shadow-lg">
-                      {categories.map((c) => (
-                        <SelectItem
-                          key={c.value}
-                          value={c.value}
-                          className="rounded-lg py-2.5 pl-3 focus:bg-surface focus:text-foreground"
-                        >
-                          {c.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="sm:col-span-2">
+                    <SearchableSelect
+                      options={categories}
+                      value={form.category}
+                      onChange={(v) => update("category", v)}
+                      placeholder={t("parceiros.categoryPlaceholder")}
+                      searchPlaceholder={t("parceiros.categorySearchPlaceholder")}
+                      emptyText={t("parceiros.categoryEmptyText")}
+                      customLabel={(query) => t("parceiros.categoryUseCustom", { value: query })}
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -480,13 +493,27 @@ function Parceiros() {
                   </p>
                 </div>
 
-                <textarea
-                  value={form.about}
-                  onChange={(e) => update("about", e.target.value)}
-                  placeholder={t("parceiros.aboutPlaceholder")}
-                  rows={4}
-                  className={`${inputClass} resize-none sm:col-span-2`}
-                />
+                <div className="space-y-1.5 sm:col-span-2">
+                  <textarea
+                    value={form.about}
+                    onChange={(e) => update("about", e.target.value)}
+                    placeholder={t("parceiros.aboutPlaceholder")}
+                    rows={4}
+                    className={`${inputClass} resize-none`}
+                  />
+                  {/* Mesma lógica de "preenche mas continua editável" de
+                      applySuggestion em dish-form-dialog.tsx — só aparece
+                      quando há modelo pra categoria escolhida no passo 1. */}
+                  {descriptionTemplate && (
+                    <button
+                      type="button"
+                      onClick={() => update("about", descriptionTemplate)}
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      {t("parceiros.useDescriptionTemplate", { category: categoryLabel })}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -509,9 +536,7 @@ function Parceiros() {
                     <p className="truncate text-base font-bold text-primary">
                       {form.restaurantName}
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      {categories.find((c) => c.value === form.category)?.label}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{categoryLabel}</p>
                   </div>
                 </div>
 

@@ -1554,6 +1554,7 @@ export const en: Dictionary = {
     cautionReservationSectionTitle: "Table deposit (reservation)",
     cautionOrdersSectionTitle: "Also apply to orders",
     cautionPolicyPlaceholder: "E.g.: refunded if the table is taken.",
+    cautionPolicyUseTemplate: "Use template",
     galleryLabel: "Photo gallery",
     galleryPlaceholder: "https://...",
     viewPublicPage: "View public page",
@@ -1791,12 +1792,24 @@ export const en: Dictionary = {
     categoryOther: "Other",
     restaurantNamePlaceholder: "Restaurant name",
     categoryPlaceholder: "Category",
+    categorySearchPlaceholder: "Search or type a category...",
+    categoryEmptyText: "No category found.",
+    categoryUseCustom: "Use “{value}”",
     ownerNamePlaceholder: "Owner's name",
     emailPlaceholder: "Contact email",
     phonePlaceholder: "Phone",
     provincePlaceholder: "Province",
     addressPlaceholder: "Address (neighborhood, street)",
     aboutPlaceholder: "Tell us a bit about the restaurant (optional)",
+    useDescriptionTemplate: "Use template for {category}",
+    descriptionTemplateAngolana:
+      "Traditional Angolan cuisine, with dishes like muamba, calulu and funge, made with fresh ingredients and family recipes.",
+    descriptionTemplateBurgers:
+      "Handmade burgers, cooked to order, with hand-picked ingredients and options for every taste.",
+    descriptionTemplatePizza:
+      "Thin-crust or traditional pizzas, baked in our own oven, with a variety of toppings, always fresh.",
+    descriptionTemplateSobremesas:
+      "Sweets, cakes and homemade desserts, paired with a good coffee — the right spot to sweeten your day.",
     requiredFieldsError: "Fill in the required fields before continuing.",
     back: "Back",
     next: "Continue",
