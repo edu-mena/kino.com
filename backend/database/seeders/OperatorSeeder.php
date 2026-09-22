@@ -22,6 +22,14 @@ use Illuminate\Support\Str;
  * "esqueci a senha" já usa (ver AuthController::forgotPassword,
  * AppServiceProvider::boot — o link já aponta para /definir-senha no
  * frontend). Cada operador define a própria senha a partir do email.
+ *
+ * `email` é único na tabela — se a pessoa já tinha conta de cliente com
+ * este email (ex: já usou a app como cliente via Google antes de se tornar
+ * operador, caso real encontrado ao rodar isto), PROMOVE essa conta em vez
+ * de tentar criar uma segunda linha (que rebentaria a constraint). Seguro:
+ * nenhum código do lado do cliente lê `role` (ver UserResource/auth.tsx), e
+ * o login Google continua a encontrar a mesma conta pelo `google_id`
+ * independentemente do `role` — só passa a também ter acesso de operador.
  */
 class OperatorSeeder extends Seeder
 {
@@ -34,7 +42,22 @@ class OperatorSeeder extends Seeder
 
         foreach ($operators as $operator) {
             $existing = User::query()->where('email', $operator['email'])->first();
+
+            if ($existing?->role === 'system_operator') {
+                continue; // já é operador — idempotente, não reenvia o email
+            }
+
             if ($existing) {
+                $previousRole = $existing->role;
+                $existing->forceFill([
+                    'role' => 'system_operator',
+                    'password' => Hash::make(Str::random(40)),
+                ])->save();
+                Password::sendResetLink(['email' => $existing->email]);
+                $this->command?->info(
+                    "Operador promovido (já existia como '{$previousRole}'): {$operator['email']} — email de \"definir senha\" enviado."
+                );
+
                 continue;
             }
 
