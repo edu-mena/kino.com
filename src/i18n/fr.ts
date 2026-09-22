@@ -2201,6 +2201,7 @@ export const fr: Dictionary = {
     create: "Ajouter",
     updatedToast: "Table mise à jour.",
     addedToast: "Table ajoutée.",
+    saveFailedError: "Impossible d'enregistrer. Réessayez.",
   },
   adminSubscricao: {
     eyebrow: "Abonnement",

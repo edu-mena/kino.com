@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Armchair, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -9,10 +10,12 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { updateApiRestaurant } from "@/data/api-restaurants";
 import { saveProfileEdits } from "@/data/restaurant-profile-store";
 import type { RestaurantTable } from "@/data/tables-store";
 import { useTranslation } from "@/i18n";
-import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { hasRealBackend } from "@/lib/api-client";
+import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useTables } from "@/lib/tables";
 
 export const Route = createFileRoute("/admin/mesas")({
@@ -33,6 +36,8 @@ function AdminMesas() {
   const { restaurant } = useRestaurantAdmin();
   const { tablesByRestaurant, addTable, updateTable, removeTable } = useTables();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const adminToken = getAdminToken();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<RestaurantTable | null>(null);
@@ -48,6 +53,32 @@ function AdminMesas() {
 
   const acceptsReservations = restaurant.acceptsReservations ?? true;
   const slotMinutes = restaurant.reservationSlotMinutes ?? 120;
+
+  // Antes gravava sempre em `saveProfileEdits` (mock/localStorage), mesmo
+  // com backend real — o toast de sucesso disparava sem nada ser de facto
+  // persistido, então o toggle "reverte" ao recarregar. Mesmo padrão de
+  // `admin.perfil.tsx`: com backend real, PATCH de verdade + invalida a
+  // query do restaurante; sem backend, mantém o mock de sempre.
+  const saveReservationSetting = async (
+    patch: { acceptsReservations: boolean } | { reservationSlotMinutes: number },
+  ) => {
+    if (hasRealBackend) {
+      if (!adminToken) {
+        toast.error(t("adminMesas.saveFailedError"));
+        return;
+      }
+      try {
+        await updateApiRestaurant(restaurant.id, patch, adminToken);
+        await queryClient.invalidateQueries({ queryKey: ["restaurant", restaurant.id] });
+        toast.success(t("adminMesas.savedToast"));
+      } catch {
+        toast.error(t("adminMesas.saveFailedError"));
+      }
+      return;
+    }
+    saveProfileEdits(restaurant.id, patch);
+    toast.success(t("adminMesas.savedToast"));
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -121,10 +152,7 @@ function AdminMesas() {
             </div>
             <Switch
               checked={acceptsReservations}
-              onCheckedChange={(v) => {
-                saveProfileEdits(restaurant.id, { acceptsReservations: v });
-                toast.success(t("adminMesas.savedToast"));
-              }}
+              onCheckedChange={(v) => void saveReservationSetting({ acceptsReservations: v })}
             />
           </div>
           <div>
@@ -135,10 +163,7 @@ function AdminMesas() {
                 <button
                   key={m}
                   type="button"
-                  onClick={() => {
-                    saveProfileEdits(restaurant.id, { reservationSlotMinutes: m });
-                    toast.success(t("adminMesas.savedToast"));
-                  }}
+                  onClick={() => void saveReservationSetting({ reservationSlotMinutes: m })}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
                     slotMinutes === m
                       ? "border-primary bg-primary/10 text-primary"

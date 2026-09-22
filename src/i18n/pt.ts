@@ -2182,6 +2182,7 @@ export const pt = {
     create: "Adicionar",
     updatedToast: "Mesa atualizada.",
     addedToast: "Mesa adicionada.",
+    saveFailedError: "Não foi possível guardar. Tente novamente.",
   },
   adminSubscricao: {
     eyebrow: "Subscrição",

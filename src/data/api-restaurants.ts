@@ -241,6 +241,8 @@ export type RestaurantPatchPayload = Partial<{
   cautionAmount: number;
   cautionPolicyNotice: string;
   ordersPausedManually: boolean;
+  acceptsReservations: boolean;
+  reservationSlotMinutes: number;
 }>;
 
 export async function updateApiRestaurant(
@@ -281,6 +283,12 @@ export async function updateApiRestaurant(
   }
   if (patch.ordersPausedManually !== undefined) {
     body["orders_paused_manually"] = patch.ordersPausedManually;
+  }
+  if (patch.acceptsReservations !== undefined) {
+    body["accepts_reservations"] = patch.acceptsReservations;
+  }
+  if (patch.reservationSlotMinutes !== undefined) {
+    body["reservation_slot_minutes"] = patch.reservationSlotMinutes;
   }
 
   const { data } = await apiFetch<{ data: ApiRestaurant }>(`/restaurants/${id}`, {

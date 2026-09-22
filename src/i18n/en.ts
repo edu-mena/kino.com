@@ -2176,6 +2176,7 @@ export const en: Dictionary = {
     create: "Add",
     updatedToast: "Table updated.",
     addedToast: "Table added.",
+    saveFailedError: "Couldn't save. Try again.",
   },
   adminSubscricao: {
     eyebrow: "Subscription",
