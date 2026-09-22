@@ -58,9 +58,18 @@ class RestaurantResource extends JsonResource
             'hours' => $this->whenLoaded('hours', fn () => $this->hours->map(fn ($h) => [
                 'weekday' => $h->weekday,
                 'isOpen' => $h->is_open,
+                // `time` no Postgres devolve "HH:MM:SS" — corta pra "HH:MM"
+                // (formato que o frontend manda e a validação de
+                // atualização exige, `date_format:H:i`). Sem isto, guardar o
+                // horário uma vez já bastava para nenhuma gravação seguinte
+                // do perfil funcionar mais: o formulário reabastecia com
+                // "HH:MM:SS" (ver seedFromRestaurant em admin.perfil.tsx),
+                // reenviava esse valor no próximo "Guardar" (mesmo sem tocar
+                // no horário) e a API recusava com 422 — bug real,
+                // encontrado a testar o fluxo completo.
                 'ranges' => $h->relationLoaded('ranges') ? $h->ranges->map(fn ($r) => [
-                    'start' => $r->start_time,
-                    'end' => $r->end_time,
+                    'start' => substr((string) $r->start_time, 0, 5),
+                    'end' => substr((string) $r->end_time, 0, 5),
                 ]) : [],
             ])),
             'createdAt' => $this->created_at?->toIso8601String(),
