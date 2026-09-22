@@ -393,7 +393,7 @@ function seedOrders(): CartOrder[] {
       addressIndex: 1,
     }),
     buildSeedOrder("order-b3", ["menu-103"], "ready", 0, {
-      paymentMethod: "multicaixa-express",
+      paymentMethod: "multicaixa_express",
       hoursAgo: 2,
       fulfillmentType: "takeaway",
     }),

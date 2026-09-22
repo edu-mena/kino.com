@@ -16,6 +16,14 @@
  * presencialmente (na entrega, ao balcão ou no local).
  */
 export type PaymentMethod = {
+  /** Igual ao `code` de `payment_methods` no backend (ver
+   * backend/database/seeders/PaymentMethodSeeder.php) — os dois catálogos
+   * são estáticos e têm de bater exatamente, não há endpoint que devolva
+   * os métodos reais. Já esteve dessincronizado (ids com hífen aqui,
+   * `exists:payment_methods,code` a validar contra códigos com underscore
+   * lá — ex: "kwik" vs "kwik_bfa", "transferencia" vs "bank_transfer"), o
+   * que fazia TODA tentativa de guardar um detalhe de pagamento falhar com
+   * "payment_method_code is invalid" (bug real, encontrado em produção). */
   id: string;
   label: string;
   detail: string;
@@ -25,42 +33,42 @@ export type PaymentMethod = {
 
 export const paymentMethods: PaymentMethod[] = [
   {
-    id: "multicaixa-express",
+    id: "multicaixa_express",
     label: "Multicaixa Express",
     detail: "Pagamento pela app Multicaixa Express (referência ou telefone)",
     brand: "MCX",
     digital: true,
   },
   {
-    id: "kwik",
+    id: "kwik_bfa",
     label: "KWiK",
     detail: "Transferência instantânea KWiK (BFA)",
     brand: "KWiK",
     digital: true,
   },
   {
-    id: "bai-directo",
+    id: "bai_directo",
     label: "BAI Directo",
     detail: "Transferência pela app BAI Directo",
     brand: "BAI",
     digital: true,
   },
   {
-    id: "paypay",
+    id: "paypay_ao",
     label: "PayPay",
     detail: "Pagamento pela carteira PayPay AO",
     brand: "PayPay",
     digital: true,
   },
   {
-    id: "unitel-money",
+    id: "unitel_money",
     label: "Unitel Money",
     detail: "Transferência pela carteira Unitel Money",
     brand: "UNITEL",
     digital: true,
   },
   {
-    id: "transferencia",
+    id: "bank_transfer",
     label: "Transferência bancária",
     detail: "Transferência interbancária combinada com o restaurante",
     brand: "BANCO",

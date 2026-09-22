@@ -1,12 +1,16 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
+  ArrowLeftRight,
+  Banknote,
   Bike,
   Clock,
+  CreditCard,
   Eye,
   ExternalLink,
   Images,
   ImagePlus,
+  Landmark,
   Mail,
   MapPin,
   Pencil,
@@ -15,11 +19,14 @@ import {
   Plus,
   ShieldCheck,
   ShoppingBag,
+  Smartphone,
   Star,
   Store,
   Trash2,
   Utensils,
   Wallet,
+  Zap,
+  type LucideIcon,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { enUS, fr as frLocale, ptBR } from "date-fns/locale";
@@ -71,6 +78,23 @@ export const Route = createFileRoute("/admin/perfil")({
 });
 
 const dateLocales = { pt: ptBR, en: enUS, fr: frLocale };
+
+/** Identidade visual por método de pagamento (id de `@/lib/mock-data` →
+ * ícone + cor) — sem ficheiro de logo próprio para cada marca (Multicaixa
+ * Express, BAI, Unitel, etc. são marcas de terceiros; usar o logo oficial
+ * de cada uma exigiria o ficheiro de imagem real de cada marca, que ainda
+ * não existe no projeto). Cada classe é escrita por extenso (não
+ * interpolada) para o Tailwind conseguir detetá-las no build. */
+const PAYMENT_METHOD_VISUALS: Record<string, { icon: LucideIcon; tile: string }> = {
+  multicaixa_express: { icon: CreditCard, tile: "bg-blue-500/10 text-blue-600" },
+  kwik_bfa: { icon: Zap, tile: "bg-orange-500/10 text-orange-600" },
+  bai_directo: { icon: Landmark, tile: "bg-emerald-500/10 text-emerald-600" },
+  paypay_ao: { icon: Wallet, tile: "bg-teal-500/10 text-teal-600" },
+  unitel_money: { icon: Smartphone, tile: "bg-red-500/10 text-red-600" },
+  bank_transfer: { icon: ArrowLeftRight, tile: "bg-slate-500/10 text-slate-600" },
+  cash: { icon: Banknote, tile: "bg-green-500/10 text-green-600" },
+};
+const DEFAULT_PAYMENT_VISUAL = { icon: Wallet, tile: "bg-surface text-primary" };
 
 /** Bloco com cabeçalho (ícone + título + descrição) e conteúdo num cartão. */
 function Section({
@@ -876,72 +900,82 @@ function AdminPerfil() {
               title={t("adminPerfil.secPaymentsTitle")}
               hint={t("adminPerfil.secPaymentsHint")}
             >
-              <div className="space-y-2">
-                {paymentMethods.map((m) => {
-                  const on = acceptedPay.includes(m.id);
-                  const needsDetail = on && m.digital;
-                  const detailMissing = needsDetail && !paymentDetails[m.id]?.trim();
-                  return (
-                    <div
-                      key={m.id}
-                      className={`overflow-hidden rounded-xl border ${
-                        on ? "border-brand" : "border-border"
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setAcceptedPay((prev) =>
-                            prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id],
-                          )
-                        }
-                        aria-pressed={on}
-                        className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-3 text-left ${
-                          on ? "bg-brand/5" : ""
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {paymentMethods.map((m) => {
+                    const on = acceptedPay.includes(m.id);
+                    const needsDetail = on && m.digital;
+                    const detailMissing = needsDetail && !paymentDetails[m.id]?.trim();
+                    const visual = PAYMENT_METHOD_VISUALS[m.id] ?? DEFAULT_PAYMENT_VISUAL;
+                    const MethodIcon = visual.icon;
+                    return (
+                      <div
+                        key={m.id}
+                        className={`overflow-hidden rounded-xl border ${
+                          on ? "border-brand" : "border-border"
                         }`}
                       >
-                        <span className="grid h-8 w-14 shrink-0 place-items-center rounded-lg bg-surface text-[10px] font-bold text-primary">
-                          {m.brand}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm font-bold">{m.label}</span>
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {m.detail}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setAcceptedPay((prev) =>
+                              prev.includes(m.id)
+                                ? prev.filter((x) => x !== m.id)
+                                : [...prev, m.id],
+                            )
+                          }
+                          aria-pressed={on}
+                          className={`flex w-full flex-col gap-2.5 p-3.5 text-left ${
+                            on ? "bg-brand/5" : ""
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span
+                              className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${visual.tile}`}
+                            >
+                              <MethodIcon className="h-5 w-5" />
+                            </span>
+                            <Switch checked={on} tabIndex={-1} className="pointer-events-none" />
+                          </div>
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-bold">{m.label}</span>
+                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                              {m.detail}
+                            </span>
                           </span>
-                        </span>
-                        <Switch checked={on} tabIndex={-1} className="pointer-events-none" />
-                      </button>
-                      {needsDetail && (
-                        <div className="border-t border-brand/30 bg-brand/5 px-3 py-2.5">
-                          <label
-                            htmlFor={`pay-detail-${m.id}`}
-                            className="text-xs font-semibold text-foreground"
-                          >
-                            {t("adminPerfil.paymentDetailLabel", { method: m.label })}
-                          </label>
-                          <Input
-                            id={`pay-detail-${m.id}`}
-                            value={paymentDetails[m.id] ?? ""}
-                            onChange={(e) =>
-                              setPaymentDetails((prev) => ({ ...prev, [m.id]: e.target.value }))
-                            }
-                            placeholder={t(
-                              m.id === "transferencia"
-                                ? "adminPerfil.paymentDetailIbanPlaceholder"
-                                : "adminPerfil.paymentDetailWalletPlaceholder",
+                        </button>
+                        {needsDetail && (
+                          <div className="border-t border-brand/30 bg-brand/5 px-3.5 py-2.5">
+                            <label
+                              htmlFor={`pay-detail-${m.id}`}
+                              className="text-xs font-semibold text-foreground"
+                            >
+                              {t("adminPerfil.paymentDetailLabel", { method: m.label })}
+                            </label>
+                            <Input
+                              id={`pay-detail-${m.id}`}
+                              value={paymentDetails[m.id] ?? ""}
+                              onChange={(e) =>
+                                setPaymentDetails((prev) => ({ ...prev, [m.id]: e.target.value }))
+                              }
+                              placeholder={t(
+                                m.id === "bank_transfer"
+                                  ? "adminPerfil.paymentDetailIbanPlaceholder"
+                                  : "adminPerfil.paymentDetailWalletPlaceholder",
+                              )}
+                              className="mt-1"
+                            />
+                            {detailMissing && (
+                              <p className="mt-1 text-xs text-destructive">
+                                {t("adminPerfil.paymentDetailMissing")}
+                              </p>
                             )}
-                            className="mt-1"
-                          />
-                          {detailMissing && (
-                            <p className="mt-1 text-xs text-destructive">
-                              {t("adminPerfil.paymentDetailMissing")}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {t("adminPerfil.paymentsExplainer")}
                 </p>

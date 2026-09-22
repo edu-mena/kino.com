@@ -6,6 +6,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantMenu;
 use App\Models\RestaurantSubscription;
 use App\Models\User;
+use Database\Seeders\PaymentMethodSeeder;
 
 test('listagem pública de restaurantes não precisa de auth', function () {
     Restaurant::factory()->count(3)->create();
@@ -203,6 +204,45 @@ test('manager consegue LER payment-details (só escrever é owner-only)', functi
         ->getJson("/api/v1/restaurants/{$restaurant->uuid}/payment-details")
         ->assertOk()
         ->assertJsonFragment(['payment_method_code' => 'cash', 'details' => 'Pagamento à entrega']);
+});
+
+/**
+ * Regressão de um bug real: os 7 códigos aqui (usados pelo seeder de
+ * produção, PaymentMethodSeeder) e os 7 ids em src/lib/mock-data.ts têm de
+ * bater exatamente — não há endpoint que devolva o catálogo real, os dois
+ * lados são hardcoded e ficaram dessincronizados (ex: "kwik" no frontend
+ * vs "kwik_bfa" aqui, "transferencia" vs "bank_transfer") — o admin via
+ * "payment_method_code is invalid" ao tentar guardar QUALQUER método
+ * exceto numerário (o único que já batia por coincidência).
+ */
+test('todos os métodos de pagamento do catálogo (PaymentMethodSeeder) são aceites', function () {
+    (new PaymentMethodSeeder)->run();
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+
+    // Mesmos 7 ids de src/lib/mock-data.ts (paymentMethods) — mantém os
+    // dois lados em sincronia; se um mudar sem o outro, este teste falha.
+    $codes = [
+        'multicaixa_express',
+        'kwik_bfa',
+        'bai_directo',
+        'paypay_ao',
+        'unitel_money',
+        'bank_transfer',
+        'cash',
+    ];
+
+    $response = $this->actingAs($owner, 'sanctum')->putJson(
+        "/api/v1/restaurants/{$restaurant->uuid}/payment-details",
+        ['details' => collect($codes)->map(fn ($code) => [
+            'payment_method_code' => $code,
+            'details' => "Detalhe de {$code}",
+        ])->all()],
+    );
+
+    $response->assertOk();
+    $returnedCodes = collect($response->json('data'))->pluck('payment_method_code')->all();
+    expect($returnedCodes)->toEqualCanonicalizing($codes);
 });
 
 test('owner atualiza o wallpaper do restaurante', function () {
