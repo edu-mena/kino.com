@@ -2,8 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { ExternalLink, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { getStoriesForRestaurant } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
+import { storiesForRestaurant, useEffectiveStories } from "@/data/use-stories";
 import { useStories } from "@/lib/stories";
 import { parseTimeFragment } from "@/lib/video-trim";
 
@@ -35,10 +35,11 @@ export function StoryViewer({
   const pointerDownAt = useRef(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const allStories = useEffectiveStories();
   const restaurant = restaurants[restaurantIdx];
   const stories = useMemo(
-    () => (restaurant ? getStoriesForRestaurant(restaurant.id) : []),
-    [restaurant],
+    () => (restaurant ? storiesForRestaurant(allStories, restaurant.id) : []),
+    [allStories, restaurant],
   );
   const story = stories[storyIdx];
   const isVideo = story?.mediaType === "video";
@@ -79,7 +80,7 @@ export function StoryViewer({
     }
     if (restaurantIdx > 0) {
       const prevRestaurant = restaurants[restaurantIdx - 1];
-      const prevStories = prevRestaurant ? getStoriesForRestaurant(prevRestaurant.id) : [];
+      const prevStories = prevRestaurant ? storiesForRestaurant(allStories, prevRestaurant.id) : [];
       setRestaurantIdx((i) => i - 1);
       setStoryIdx(Math.max(0, prevStories.length - 1));
     }

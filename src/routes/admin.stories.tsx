@@ -155,7 +155,7 @@ function AdminStories() {
       minute: "2-digit",
     });
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!image.trim()) {
       toast.error(t("adminStories.missingImageError"));
@@ -166,7 +166,7 @@ function AdminStories() {
       toast.error(t("adminStories.linkInvalidError"));
       return;
     }
-    const { ok } = createStory(restaurant.id, image.trim(), {
+    const { ok } = await createStory(restaurant.id, image.trim(), {
       ...media,
       text: text.trim(),
       link: trimmedLink,
@@ -184,10 +184,14 @@ function AdminStories() {
     setFormOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleting) return;
+    const ok = await deleteStory(deleting.id);
+    if (!ok) {
+      toast.error(t("adminStories.deleteFailedError"));
+      return;
+    }
     if (activeId === deleting.id) setActiveId(null);
-    deleteStory(deleting.id);
     toast.success(t("adminStories.deletedToast"));
     setDeleting(null);
   };

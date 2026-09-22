@@ -1289,6 +1289,7 @@ export const fr: Dictionary = {
       "Impossible d'enregistrer — le stockage du navigateur est plein. Essayez une image plus légère ou libérez de l'espace.",
     createdToast: "Story publiée.",
     deletedToast: "Story supprimée.",
+    deleteFailedError: "Impossible de supprimer le story. Réessayez.",
     deleteDialogTitle: "Supprimer cette story ?",
     deleteDialogDescription: "Elle ne sera plus visible pour les clients. Action irréversible.",
     deleteConfirm: "Supprimer",

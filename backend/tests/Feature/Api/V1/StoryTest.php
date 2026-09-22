@@ -27,6 +27,21 @@ test('staff cria story de imagem — síncrono, fica ready de imediato', functio
     expect($response->json('data.mediaUrl'))->not->toBeEmpty();
 });
 
+test('story guarda e devolve legenda (text) e link opcionais', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+    $file = UploadedFile::fake()->image('story.jpg', 720, 1280);
+
+    $response = $this->actingAs($owner, 'sanctum')->postJson(
+        "/api/v1/restaurants/{$restaurant->uuid}/stories",
+        ['media' => $file, 'text' => 'Só hoje!', 'link' => 'https://luku.ao/promo'],
+    );
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.text', 'Só hoje!')
+        ->assertJsonPath('data.link', 'https://luku.ao/promo');
+});
+
 test('staff envia vídeo de story — fica processing e despacha o job, não trava a resposta à espera do ffmpeg', function () {
     Bus::fake();
     $restaurant = Restaurant::factory()->create();

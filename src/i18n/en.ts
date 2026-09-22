@@ -1277,6 +1277,7 @@ export const en: Dictionary = {
       "Couldn't save — the browser's storage is full. Try a smaller image or free up space.",
     createdToast: "Story published.",
     deletedToast: "Story removed.",
+    deleteFailedError: "Couldn't remove the story. Try again.",
     deleteDialogTitle: "Remove this story?",
     deleteDialogDescription: "It stops showing to customers. This action can't be undone.",
     deleteConfirm: "Remove",

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { getStoriesForRestaurant } from "@/data/helpers";
+import { storiesForRestaurant, useEffectiveStories } from "@/data/use-stories";
 
 const STORAGE_KEY = "luku_viewed_stories";
 
@@ -15,6 +15,7 @@ const StoriesContext = createContext<StoriesValue | null>(null);
 
 export function StoriesProvider({ children }: { children: ReactNode }) {
   const [viewedStoryIds, setViewedStoryIds] = useState<string[]>([]);
+  const stories = useEffectiveStories();
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -40,8 +41,11 @@ export function StoriesProvider({ children }: { children: ReactNode }) {
     isStoryViewed: (storyId) => viewedStoryIds.includes(storyId),
     markStoryViewed,
     isRestaurantFullyViewed: (restaurantId) => {
-      const stories = getStoriesForRestaurant(restaurantId);
-      return stories.length > 0 && stories.every((s) => viewedStoryIds.includes(s.id));
+      const restaurantStories = storiesForRestaurant(stories, restaurantId);
+      return (
+        restaurantStories.length > 0 &&
+        restaurantStories.every((s) => viewedStoryIds.includes(s.id))
+      );
     },
   };
 

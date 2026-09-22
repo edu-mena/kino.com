@@ -22,6 +22,8 @@ class StoreStoryRequest extends FormRequest
         return [
             'media' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,mp4,mov,webm', 'max:102400'],
             'duration_sec' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:120'],
+            'text' => ['sometimes', 'nullable', 'string', 'max:140'],
+            'link' => ['sometimes', 'nullable', 'url', 'max:2048'],
         ];
     }
 }

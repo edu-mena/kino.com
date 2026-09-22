@@ -5,10 +5,13 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { HorizontalCarousel } from "@/components/horizontal-carousel";
 import { LazyImage } from "@/components/lazy-image";
 import { StoryViewer } from "@/components/story-viewer";
-import { getRestaurantsWithStories, suspendedRestaurantIds } from "@/data/helpers";
+import { suspendedRestaurantIds } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
 import { useRestaurants } from "@/data/use-restaurants-query";
-import { useEffectiveStories } from "@/data/use-stories";
+import {
+  restaurantsWithStories as deriveRestaurantsWithStories,
+  useEffectiveStories,
+} from "@/data/use-stories";
 import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
 import { useLocation } from "@/lib/location";
 import { useStories } from "@/lib/stories";
@@ -40,18 +43,16 @@ export function RestaurantAvatarRow() {
   // há nada mais a mostrar aqui). Story não visto: abre o story direto,
   // como antes.
   const [choosing, setChoosing] = useState<Restaurant | null>(null);
-  // Reage a stories criados/apagados no painel do restaurante — não os
-  // usa diretamente (a lista já vem por restaurante via
-  // `getRestaurantsWithStories()`), só para saber quando recalcular.
+  // Stories reais (mock OU API, ver useEffectiveStories) + a lista de
+  // restaurantes já carregada acima — deriva localmente quais têm stories,
+  // em vez de reler um store só-mock.
   const stories = useEffectiveStories();
-  const restaurantsWithStories = useMemo(
-    () => {
-      const suspended = suspendedRestaurantIds();
-      return getRestaurantsWithStories().filter((r) => !suspended.has(r.id));
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `stories` not read directly, only used to know when to recompute (getRestaurantsWithStories() reads the same live store itself).
-    [stories],
-  );
+  const restaurantsWithStories = useMemo(() => {
+    const suspended = suspendedRestaurantIds();
+    return deriveRestaurantsWithStories(stories, restaurants ?? []).filter(
+      (r) => !suspended.has(r.id),
+    );
+  }, [stories, restaurants]);
   const storyRestaurantIds = useMemo(
     () => new Set(restaurantsWithStories.map((r) => r.id)),
     [restaurantsWithStories],

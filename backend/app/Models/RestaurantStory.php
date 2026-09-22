@@ -15,6 +15,7 @@ class RestaurantStory extends Model
 
     protected $fillable = [
         'restaurant_id', 'media_url', 'media_type', 'duration_sec', 'processing_status',
+        'text', 'link',
     ];
 
     public function restaurant(): BelongsTo

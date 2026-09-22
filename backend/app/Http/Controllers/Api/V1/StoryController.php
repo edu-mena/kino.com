@@ -84,6 +84,8 @@ class StoryController extends Controller
             'media_type' => $isVideo ? 'video' : 'image',
             'duration_sec' => $request->validated('duration_sec'),
             'processing_status' => $isVideo ? 'processing' : 'ready',
+            'text' => $request->validated('text'),
+            'link' => $request->validated('link'),
         ]);
 
         if ($isVideo) {

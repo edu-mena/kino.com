@@ -1280,6 +1280,7 @@ export const pt = {
       "Não foi possível guardar — o armazenamento do navegador está cheio. Tente uma imagem mais leve ou liberte espaço.",
     createdToast: "Story publicado.",
     deletedToast: "Story removido.",
+    deleteFailedError: "Não foi possível remover o story. Tente novamente.",
     deleteDialogTitle: "Remover este story?",
     deleteDialogDescription: "Deixa de aparecer para os clientes. Esta ação não pode ser desfeita.",
     deleteConfirm: "Remover",

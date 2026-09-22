@@ -18,6 +18,8 @@ class StoryResource extends JsonResource
             'mediaType' => $this->media_type,
             'durationSec' => $this->duration_sec,
             'processingStatus' => $this->processing_status,
+            'text' => $this->text,
+            'link' => $this->link,
             'createdAt' => $this->created_at?->toIso8601String(),
         ];
     }
