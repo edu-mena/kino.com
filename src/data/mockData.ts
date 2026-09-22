@@ -21,7 +21,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Gastronomia contemporânea com inspiração angolana e internacional. Pratos elaborados com ingredientes frescos locais em ambiente acolhedor.",
     cuisine: "Angolana / Típica",
-    priceLevel: "Kz Kz Kz",
     rating: 4.9,
     reviewCount: 128,
     distanceKm: 1.2,
@@ -52,7 +51,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Especialista em marisco fresco da costa angolana. Lagosta grelhada, gambas ao alho e caldeirada de peixe com vista panorâmica para o mar.",
     cuisine: "Marisqueira",
-    priceLevel: "Kz Kz Kz Kz",
     rating: 4.8,
     reviewCount: 210,
     distanceKm: 2.8,
@@ -83,7 +81,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Autêntica culinária italiana com massas artesanais preparadas diariamente, pizzas no forno a lenha e carta de vinhos selecionada.",
     cuisine: "Italiana",
-    priceLevel: "Kz Kz Kz",
     rating: 4.7,
     reviewCount: 94,
     distanceKm: 4.1,
@@ -113,7 +110,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "O melhor rodízio e cortes de carne nobre grelhados na brasa, servidos com banana pão frita, farofa temperada e molhos artesanais.",
     cuisine: "Grelhados",
-    priceLevel: "Kz Kz Kz",
     rating: 4.6,
     reviewCount: 165,
     distanceKm: 8.5,
@@ -141,7 +137,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Experiência gastronómica japonesa com peixe fresco selecionado, combinados especiais, temakis e ambiente intimista refinado.",
     cuisine: "Japonês",
-    priceLevel: "Kz Kz Kz Kz",
     rating: 4.9,
     reviewCount: 82,
     distanceKm: 3.5,
@@ -171,7 +166,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Restaurante rústico angolano tradicional. Autêntica comida caseira com receitas passadas de geração em geração. O melhor da culinária de rua refinada.",
     cuisine: "Angolana Tradicional",
-    priceLevel: "Kz Kz",
     rating: 4.8,
     reviewCount: 342,
     distanceKm: 0.8,
@@ -200,7 +194,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Casa especializada em pratos tradicionais de toda Angola. De Luanda ao Cuanza, provamos a variedade do país numa mesa.",
     cuisine: "Angolana Regional",
-    priceLevel: "Kz Kz",
     rating: 4.7,
     reviewCount: 256,
     distanceKm: 2.3,
@@ -228,7 +221,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Especialidade em peixe fresco grelhado na hora. Barracuda, tubarão, carapau, peixe-espada. Simples, saboroso e pura tradição.",
     cuisine: "Peixaria / Grelhados",
-    priceLevel: "Kz Kz",
     rating: 4.9,
     reviewCount: 198,
     distanceKm: 1.5,
@@ -257,7 +249,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Cachupa de todas as formas: com ovo frito, com queijo, com peixe. A especialidade é a Cachupa Miúda cremosa, receita da avó Florinda.",
     cuisine: "Cachupa / Típica",
-    priceLevel: "Kz",
     rating: 4.8,
     reviewCount: 425,
     distanceKm: 3.2,
@@ -285,7 +276,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Frango assado à angolana com molho piri-piri caseiro. Acompanhado com arroz de milho e salada fresca. Comida de boteco de qualidade.",
     cuisine: "Frango Assado",
-    priceLevel: "Kz Kz",
     rating: 4.7,
     reviewCount: 312,
     distanceKm: 1.8,
@@ -313,7 +303,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Comida de avó, feita com amor. Moamba, Matamba, Caldeirada. Ingredientes naturais, sem conservantes, receitas centenárias.",
     cuisine: "Angolana Caseira",
-    priceLevel: "Kz Kz",
     rating: 4.9,
     reviewCount: 287,
     distanceKm: 2.6,
@@ -341,7 +330,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Ambiente despretensioso, comida genuína. Caldeirada, Peixe à Luanda, Feijoada à Angolana e bebidas refrescantes.",
     cuisine: "Boteco / Típica",
-    priceLevel: "Kz",
     rating: 4.6,
     reviewCount: 267,
     distanceKm: 2.1,
@@ -369,7 +357,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Especialidade em pratos de cuisson lenta. Matamba de banana verde, Moamba cremosa. Servido quente na tradição angolana.",
     cuisine: "Pratos de Cuisson",
-    priceLevel: "Kz Kz",
     rating: 4.8,
     reviewCount: 198,
     distanceKm: 3.8,
@@ -397,7 +384,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Marisco fresco em arroz cremoso. Combinação perfeita de camarão, lula, amêijoa e peixe branco em caldo aromático.",
     cuisine: "Arroz de Marisco",
-    priceLevel: "Kz Kz Kz",
     rating: 4.9,
     reviewCount: 156,
     distanceKm: 4.2,
@@ -425,7 +411,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Fast-food angolano com comida rápida e saborosa. Fahita, Franguité, Cabrité, Pinchos e muito mais. Comida de rua refinada.",
     cuisine: "Snacks",
-    priceLevel: "Kz Kz",
     rating: 4.6,
     reviewCount: 445,
     distanceKm: 1.5,
@@ -453,7 +438,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Marisco fresco da costa do Lobito: lagosta, camarão e peixe grelhado, servidos à beira-mar com vista para a baía.",
     cuisine: "Marisqueira",
-    priceLevel: "Kz Kz Kz",
     rating: 4.3,
     reviewCount: 60,
     distanceKm: 610,
@@ -482,7 +466,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Churrasco à moda de Benguela com carnes marinadas 24 horas e acompanhamentos tradicionais.",
     cuisine: "Grelhados",
-    priceLevel: "Kz Kz",
     rating: 4.4,
     reviewCount: 71,
     distanceKm: 600,
@@ -511,7 +494,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Cozinha caseira do planalto central: muamba, feijão de óleo de palma e mufete servidos em porções generosas.",
     cuisine: "Angolana / Típica",
-    priceLevel: "Kz Kz",
     rating: 4.5,
     reviewCount: 82,
     distanceKm: 600,
@@ -540,7 +522,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Pizzas artesanais de massa fina, assadas em forno a lenha, num salão com vista para as colinas do Huambo.",
     cuisine: "Pizza",
-    priceLevel: "Kz Kz",
     rating: 4.6,
     reviewCount: 93,
     distanceKm: 605,
@@ -569,7 +550,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Especialistas em carnes fumadas e grelhadas à lenha, tradição da região montanhosa da Huíla.",
     cuisine: "Churrascaria",
-    priceLevel: "Kz Kz Kz",
     rating: 4.7,
     reviewCount: 104,
     distanceKm: 780,
@@ -598,7 +578,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Pastelaria de tradição colonial reinventada: bolos, croissants e o famoso café da Huíla.",
     cuisine: "Café / Pastelaria",
-    priceLevel: "Kz",
     rating: 4.8,
     reviewCount: 115,
     distanceKm: 785,
@@ -627,7 +606,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "O melhor marisco do enclave de Cabinda: caranguejo, gambas e peixe do dia, direto do cais.",
     cuisine: "Marisqueira",
-    priceLevel: "Kz Kz Kz Kz",
     rating: 4.3,
     reviewCount: 126,
     distanceKm: 500,
@@ -656,7 +634,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Grelhados ao estilo Kianda, com temperos da floresta do Mayombe e acompanhamentos regionais.",
     cuisine: "Grelhados",
-    priceLevel: "Kz Kz",
     rating: 4.4,
     reviewCount: 137,
     distanceKm: 505,
@@ -685,7 +662,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Bistrô contemporâneo à beira do deserto do Namibe, com pratos leves e vista para a duna.",
     cuisine: "Bistrô",
-    priceLevel: "Kz Kz Kz",
     rating: 4.5,
     reviewCount: 148,
     distanceKm: 880,
@@ -713,7 +689,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     name: "Peixaria do Deserto",
     description: "Peixe grelhado fresco da baía do Namibe, servido simples e no ponto certo.",
     cuisine: "Peixaria",
-    priceLevel: "Kz Kz",
     rating: 4.6,
     reviewCount: 159,
     distanceKm: 885,
@@ -742,7 +717,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Cozinha típica do Uíge com influência do café: funge, kizaka e frango caipira grelhado.",
     cuisine: "Angolana / Típica",
-    priceLevel: "Kz Kz",
     rating: 4.7,
     reviewCount: 170,
     distanceKm: 330,
@@ -771,7 +745,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Pizzas com ingredientes frescos da região cafeeira do Uíge, num ambiente descontraído.",
     cuisine: "Pizza",
-    priceLevel: "Kz Kz",
     rating: 4.8,
     reviewCount: 181,
     distanceKm: 335,
@@ -800,7 +773,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Cozinha regional de Malanje inspirada nas Quedas de Kalandula, com pratos à base de peixe de rio e funge.",
     cuisine: "Angolana / Típica",
-    priceLevel: "Kz Kz",
     rating: 4.3,
     reviewCount: 192,
     distanceKm: 340,
@@ -829,7 +801,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Grelhados e espetadas preparados na brasa, com molhos picantes tradicionais de Malanje.",
     cuisine: "Grelhados",
-    priceLevel: "Kz Kz",
     rating: 4.4,
     reviewCount: 203,
     distanceKm: 345,
@@ -858,7 +829,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Comida caseira do Bié: feijão de óleo de palma, funge de bombó e carne de porco à moda do Kuíto.",
     cuisine: "Angolana / Típica",
-    priceLevel: "Kz Kz",
     rating: 4.5,
     reviewCount: 214,
     distanceKm: 540,
@@ -887,7 +857,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Pão fresco todos os dias, pastéis e lanches rápidos para quem passa pelo centro do Kuito.",
     cuisine: "Padaria / Snacks",
-    priceLevel: "Kz",
     rating: 4.6,
     reviewCount: 225,
     distanceKm: 545,
@@ -916,7 +885,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Peixe e marisco fresco do estuário do rio Congo, com temperos únicos da região do Zaire.",
     cuisine: "Peixaria",
-    priceLevel: "Kz Kz Kz",
     rating: 4.7,
     reviewCount: 236,
     distanceKm: 360,
@@ -945,7 +913,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Grelhados tradicionais servidos em Mbanza Congo, antiga capital do Reino do Congo.",
     cuisine: "Grelhados",
-    priceLevel: "Kz Kz",
     rating: 4.8,
     reviewCount: 247,
     distanceKm: 365,
@@ -973,7 +940,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     name: "Restaurante Waku Kungo",
     description: "Sabores do Cuanza Sul com produtos frescos da região agrícola de Waku Kungo.",
     cuisine: "Angolana / Típica",
-    priceLevel: "Kz Kz",
     rating: 4.3,
     reviewCount: 258,
     distanceKm: 280,
@@ -1002,7 +968,6 @@ export const INITIAL_RESTAURANTS: Restaurant[] = [
     description:
       "Marisco fresco do porto de Amboim, na costa do Cuanza Sul, com terraço à beira-mar.",
     cuisine: "Marisqueira",
-    priceLevel: "Kz Kz Kz",
     rating: 4.4,
     reviewCount: 269,
     distanceKm: 285,

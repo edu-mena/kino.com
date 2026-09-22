@@ -76,7 +76,7 @@ export function RestaurantRecommendationsDialog({
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-bold">{r.name}</span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {r.cuisine} · {r.priceLevel}
+                      {r.cuisine}
                     </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-foreground">

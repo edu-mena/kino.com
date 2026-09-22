@@ -533,7 +533,6 @@ function AdminPerfil() {
   };
 
   const heroCuisine = editing ? cuisine : restaurant.cuisine;
-  const heroPrice = restaurant.priceLevel;
   const heroDelivery = editing ? isDeliveryAvailable : restaurant.isDeliveryAvailable;
   const heroWallpaper = editing ? wallpaper || restaurant.wallpaper : restaurant.wallpaper;
   const na = t("adminPerfil.notProvided");
@@ -580,9 +579,6 @@ function AdminPerfil() {
                     {heroCuisine}
                   </span>
                 )}
-                <span className="rounded-full bg-surface px-2 py-0.5 text-foreground">
-                  {heroPrice}
-                </span>
                 <span
                   className={`rounded-full px-2 py-0.5 ${
                     heroDelivery ? "bg-success/15 text-success" : "bg-surface text-muted-foreground"
@@ -656,24 +652,13 @@ function AdminPerfil() {
                     className="rounded-xl"
                   />
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="rest-cuisine">{t("adminPerfil.cuisineLabel")}</Label>
-                    <Input
-                      id="rest-cuisine"
-                      value={cuisine}
-                      onChange={(e) => setCuisine(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>{t("adminPerfil.priceLevelLabel")}</Label>
-                    <div className="flex h-9 items-center rounded-xl border border-border bg-surface px-3 text-sm font-semibold text-foreground">
-                      {restaurant.priceLevel}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {t("adminPerfil.priceLevelAuto")}
-                    </p>
-                  </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="rest-cuisine">{t("adminPerfil.cuisineLabel")}</Label>
+                  <Input
+                    id="rest-cuisine"
+                    value={cuisine}
+                    onChange={(e) => setCuisine(e.target.value)}
+                  />
                 </div>
               </div>
             </Section>
@@ -1146,12 +1131,6 @@ function AdminPerfil() {
                 <dl className="grid gap-4 sm:grid-cols-2">
                   <ReadRow label={t("adminPerfil.cuisineLabel")}>
                     {restaurant.cuisine || na}
-                  </ReadRow>
-                  <ReadRow label={t("adminPerfil.priceLevelLabel")}>
-                    {restaurant.priceLevel}
-                    <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                      {t("adminPerfil.priceLevelAuto")}
-                    </span>
                   </ReadRow>
                 </dl>
               </div>

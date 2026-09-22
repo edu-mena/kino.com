@@ -20,14 +20,11 @@ describe("getRestaurant / getMenuItem", () => {
     const first = INITIAL_RESTAURANTS[0]!;
     // `getRestaurant` funde o seed com destaque/avaliações/horário (ver
     // `withOverrides` em `helpers.ts`) — sem edições guardadas, os campos
-    // originais mantêm-se, exceto `priceLevel` (calculado da média do
-    // cardápio) e `hours`/`openingHours` (sempre preenchidos).
-    const { priceLevel: _seedPriceLevel, ...rest } = first;
+    // originais mantêm-se, exceto `hours`/`openingHours` (sempre preenchidos).
     const result = getRestaurant(first.id);
     expect(result).toMatchObject({
-      ...rest,
+      ...first,
       openingHours: expect.any(String),
-      priceLevel: expect.stringMatching(/^Kz( Kz){0,2}$/),
     });
     expect(result?.hours).toBeDefined();
   });

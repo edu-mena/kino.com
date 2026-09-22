@@ -29,7 +29,6 @@ type ApiRestaurant = {
   // com frequência real, ao contrário do que o tipo antigo (`string`)
   // prometia (ver mapApiRestaurant, onde isto é normalizado para "").
   cuisine: string | null;
-  priceLevel: number | null;
   rating: number | null;
   reviewCount: number;
   address: string | null;
@@ -91,14 +90,6 @@ const FALLBACK_COVER_IMAGE =
 const FALLBACK_DISH_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop";
 
-/** "Kz" repetido N vezes — o frontend usa a string diretamente no ecrã (ver
- * tipo `Restaurant.priceLevel`), a API devolve o nível 1-4 como número. */
-function formatPriceLevel(level: number | null): string {
-  return Array(Math.max(1, level ?? 1))
-    .fill("Kz")
-    .join(" ");
-}
-
 export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
   return {
     id: r.id,
@@ -115,7 +106,6 @@ export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
     // resto dos campos intactos (bug real, encontrado a testar em
     // produção).
     cuisine: r.cuisine ?? "",
-    priceLevel: formatPriceLevel(r.priceLevel),
     rating: r.rating ?? 0,
     reviewCount: r.reviewCount,
     // Sem valor "de seed" para a distância (ao contrário do mock) — quem

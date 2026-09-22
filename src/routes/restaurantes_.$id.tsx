@@ -204,9 +204,7 @@ function RestaurantDetail() {
             <h1 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
               {restaurant.name}
             </h1>
-            <p className="mt-1 text-sm text-white/90">
-              {restaurant.cuisine} · {restaurant.priceLevel}
-            </p>
+            <p className="mt-1 text-sm text-white/90">{restaurant.cuisine}</p>
             {hasStories && !suspended && (
               <button
                 type="button"

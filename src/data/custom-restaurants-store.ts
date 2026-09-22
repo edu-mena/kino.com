@@ -52,7 +52,6 @@ export function createRestaurant(input: CreateInput): Restaurant {
     name: input.name,
     description: "",
     cuisine: input.cuisine || "Restaurante",
-    priceLevel: "Kz Kz",
     rating: 0,
     reviewCount: 0,
     distanceKm: 3,

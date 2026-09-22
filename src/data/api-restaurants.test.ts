@@ -17,7 +17,6 @@ describe("mapApiRestaurant", () => {
     name: "Restaurante Teste",
     description: null,
     cuisine: null,
-    priceLevel: null,
     rating: null,
     reviewCount: 0,
     address: null,

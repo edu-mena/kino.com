@@ -26,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Restaurant } from "@/data/types";
 import { addressProvince } from "@/data/helpers";
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
@@ -35,7 +34,6 @@ import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
 import { haversineKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
-import { PRICE_TIER_LABELS } from "@/lib/price-level";
 import { usePreferences } from "@/lib/preferences";
 import { computeRestaurantStatus } from "@/lib/restaurant-status";
 import { useSubscriptions } from "@/lib/subscriptions";
@@ -58,8 +56,6 @@ export const Route = createFileRoute("/restaurantes")({
   }),
   component: Restaurantes,
 });
-
-const priceLevels = [...PRICE_TIER_LABELS];
 
 const sortOptions = [
   { value: "proximidade", labelKey: "restaurantes.sortProximity" },
@@ -96,7 +92,6 @@ function Restaurantes() {
   const debouncedQuery = useDebouncedValue(query);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [neighborhood, setNeighborhood] = useState("todos");
-  const [priceLevel, setPriceLevel] = useState<string | undefined>(undefined);
   const [deliveryOnly, setDeliveryOnly] = useState(false);
   const [sort, setSort] = useState<(typeof sortOptions)[number]["value"]>("proximidade");
   const [page, setPage] = useState(1);
@@ -131,9 +126,8 @@ function Restaurantes() {
         r.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
         r.cuisine.toLowerCase().includes(debouncedQuery.toLowerCase());
       const byNeighborhood = matchesLocation(r.neighborhood, neighborhood, myProvince);
-      const byPriceLevel = !priceLevel || r.priceLevel === priceLevel;
       const byDelivery = !deliveryOnly || r.isDeliveryAvailable;
-      return byQuery && byNeighborhood && byPriceLevel && byDelivery;
+      return byQuery && byNeighborhood && byDelivery;
     });
     const sorted = [...list];
     if (sort === "proximidade") sorted.sort((a, b) => distanceKm(a) - distanceKm(b));
@@ -151,7 +145,6 @@ function Restaurantes() {
     allRestaurants,
     debouncedQuery,
     neighborhood,
-    priceLevel,
     deliveryOnly,
     sort,
     selectedAddress,
@@ -161,15 +154,14 @@ function Restaurantes() {
     locale,
   ]);
 
-  const activeExtraFilters =
-    (neighborhood !== "todos" ? 1 : 0) + (priceLevel ? 1 : 0) + (deliveryOnly ? 1 : 0);
+  const activeExtraFilters = (neighborhood !== "todos" ? 1 : 0) + (deliveryOnly ? 1 : 0);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedQuery, neighborhood, priceLevel, deliveryOnly, sort]);
+  }, [debouncedQuery, neighborhood, deliveryOnly, sort]);
 
   return (
     <PageShell>
@@ -338,9 +330,7 @@ function Restaurantes() {
                         {r.rating}
                       </span>
                     </div>
-                    <p className="truncate text-sm text-muted-foreground">
-                      {r.cuisine} · {r.priceLevel}
-                    </p>
+                    <p className="truncate text-sm text-muted-foreground">{r.cuisine}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3.5 w-3.5" />
@@ -398,28 +388,6 @@ function Restaurantes() {
               {t("cardapio.location")}
             </p>
             <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
-          </div>
-
-          <div className="mt-5">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {t("restaurantes.priceLevel")}
-            </p>
-            <ToggleGroup
-              type="single"
-              value={priceLevel ?? ""}
-              onValueChange={(v) => setPriceLevel(v || undefined)}
-              className="flex-wrap justify-start"
-            >
-              {priceLevels.map((level) => (
-                <ToggleGroupItem
-                  key={level}
-                  value={level}
-                  className="rounded-full border border-border"
-                >
-                  {level}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
           </div>
 
           <label className="mt-5 flex items-center justify-between gap-3 rounded-xl border border-border p-3">
