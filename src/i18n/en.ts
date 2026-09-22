@@ -1624,6 +1624,7 @@ export const en: Dictionary = {
     saveChanges: "Save changes",
     saveFailedError:
       "Couldn't save — the browser's storage is full. Try smaller images or free up space.",
+    saveFailedErrorGeneric: "Couldn't save. Try again.",
     updatedToast: "Profile updated.",
     logout: "Log out",
   },

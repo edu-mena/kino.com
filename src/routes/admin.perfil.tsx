@@ -59,7 +59,7 @@ import { isVideoSrc } from "@/lib/video-trim";
 import { defaultWeeklyHours, formatWeeklyHours, isOpenNow, nextOpenAt } from "@/lib/opening-hours";
 import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
-import { hasRealBackend } from "@/lib/api-client";
+import { ApiError, hasRealBackend } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/perfil")({
   head: () => ({ meta: [{ title: "Restaurante — Painel Luku.com" }] }),
@@ -391,7 +391,7 @@ function AdminPerfil() {
 
     if (hasRealBackend) {
       if (!adminToken) {
-        toast.error(t("adminPerfil.saveFailedError"));
+        toast.error(t("adminPerfil.saveFailedErrorGeneric"));
         return;
       }
       setSaving(true);
@@ -455,8 +455,16 @@ function AdminPerfil() {
         await queryClient.invalidateQueries({ queryKey: ["restaurant", restaurant.id] });
         toast.success(t("adminPerfil.updatedToast"));
         setEditing(false);
-      } catch {
-        toast.error(t("adminPerfil.saveFailedError"));
+      } catch (error) {
+        // Antes mostrava sempre a mesma mensagem genérica de "armazenamento
+        // do navegador cheio" (herdada do caminho mock/localStorage, ver
+        // branch abaixo) mesmo com backend real e sem imagem nenhuma — sem
+        // diagnóstico nenhum, impossível saber qual dos vários pedidos
+        // desta função (galeria/pagamento/horário/perfil) falhou e porquê.
+        console.error("Falha ao guardar perfil do restaurante:", error);
+        toast.error(
+          error instanceof ApiError ? error.message : t("adminPerfil.saveFailedErrorGeneric"),
+        );
       } finally {
         setSaving(false);
       }

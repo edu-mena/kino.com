@@ -1643,6 +1643,7 @@ export const fr: Dictionary = {
     saveChanges: "Enregistrer les modifications",
     saveFailedError:
       "Impossible d'enregistrer — le stockage du navigateur est plein. Essayez des images plus légères ou libérez de l'espace.",
+    saveFailedErrorGeneric: "Impossible d'enregistrer. Réessayez.",
     updatedToast: "Profil mis à jour.",
     logout: "Se déconnecter",
   },

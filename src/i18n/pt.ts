@@ -1627,6 +1627,7 @@ export const pt = {
     saveChanges: "Guardar alterações",
     saveFailedError:
       "Não foi possível guardar — o armazenamento do navegador está cheio. Tente imagens mais leves ou liberte espaço.",
+    saveFailedErrorGeneric: "Não foi possível guardar. Tente novamente.",
     updatedToast: "Perfil atualizado.",
     logout: "Sair do painel",
   },
