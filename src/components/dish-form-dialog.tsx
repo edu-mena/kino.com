@@ -6,10 +6,12 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { ImageUploadField } from "@/components/image-upload-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import icon from "@/assets/icon.png";
 import { FirstUseHint } from "@/components/first-use-hint";
+import { INGREDIENT_CATALOG } from "@/data/ingredient-catalog";
 import {
   DISH_CATEGORY_OPTIONS,
   getEffectiveMenuItems,
@@ -39,6 +41,10 @@ function toRows(ingredients: MenuItemIngredient[]): IngredientRow[] {
 }
 
 const emptyRow: IngredientRow = { name: "", kind: "main", extraPrice: "" };
+
+// Calculado uma vez, fora do componente — `INGREDIENT_CATALOG` é estático,
+// não há motivo pra remapear a cada render/instância do diálogo.
+const INGREDIENT_OPTIONS = INGREDIENT_CATALOG.map((name) => ({ value: name, label: name }));
 
 /** Valor do `<select>` de categoria que revela o campo de texto livre. */
 const CUSTOM_CATEGORY = "__custom__";
@@ -416,11 +422,17 @@ export function DishFormDialog({
                   key={index}
                   className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2"
                 >
-                  <Input
+                  <SearchableSelect
+                    options={INGREDIENT_OPTIONS}
                     value={row.name}
-                    onChange={(e) => updateRow(index, { name: e.target.value })}
+                    onChange={(v) => updateRow(index, { name: v })}
                     placeholder={t("dishFormDialog.ingredientNamePlaceholder")}
-                    className="min-w-0"
+                    searchPlaceholder={t("dishFormDialog.ingredientSearchPlaceholder")}
+                    emptyText={t("dishFormDialog.ingredientEmptyText")}
+                    customLabel={(query) =>
+                      t("dishFormDialog.ingredientUseCustom", { value: query })
+                    }
+                    className="min-w-0 py-2"
                   />
                   <select
                     value={row.kind}

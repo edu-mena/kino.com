@@ -1511,6 +1511,9 @@ export const fr: Dictionary = {
     noIngredientsHint:
       "Aucun ingrédient répertorié — le plat n'aura pas d'options de personnalisation.",
     ingredientNamePlaceholder: "Nom de l'ingrédient",
+    ingredientSearchPlaceholder: "Rechercher ou saisir un ingrédient...",
+    ingredientEmptyText: "Aucun ingrédient trouvé.",
+    ingredientUseCustom: "Utiliser « {value} »",
     kindMain: "Principal",
     kindExtra: "Supplément",
     extraPricePlaceholder: "Prix",

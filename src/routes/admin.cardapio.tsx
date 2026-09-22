@@ -33,10 +33,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Switch } from "@/components/ui/switch";
 import { DishFormDialog } from "@/components/dish-form-dialog";
 import { MenuQrDialog } from "@/components/menu-qr-dialog";
 import { fetchApiMenus } from "@/data/api-menus";
+import { INGREDIENT_CATALOG } from "@/data/ingredient-catalog";
 import { defaultMenuId } from "@/data/menus-store";
 import { normalizeIngredients, type MenuItemInput } from "@/data/menu-store";
 import type { MenuItem } from "@/data/types";
@@ -61,6 +63,9 @@ type SortKey = "nome" | "preco-asc" | "preco-desc" | "categoria";
 
 const selectClass =
   "rounded-lg border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground accent-brand outline-none transition-colors focus:border-brand focus:text-brand";
+
+// Calculado uma vez, fora do componente — `INGREDIENT_CATALOG` é estático.
+const INGREDIENT_OPTIONS = INGREDIENT_CATALOG.map((name) => ({ value: name, label: name }));
 
 function AdminCardapio() {
   const { restaurant } = useRestaurantAdmin();
@@ -536,12 +541,17 @@ function AdminCardapio() {
 
                         {/* Adicionar ingrediente */}
                         <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-                          <input
+                          <SearchableSelect
+                            options={INGREDIENT_OPTIONS}
                             value={ingName}
-                            onChange={(e) => setIngName(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && addIngredient()}
+                            onChange={setIngName}
                             placeholder={t("dishFormDialog.ingredientNamePlaceholder")}
-                            className="min-w-0 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
+                            searchPlaceholder={t("dishFormDialog.ingredientSearchPlaceholder")}
+                            emptyText={t("dishFormDialog.ingredientEmptyText")}
+                            customLabel={(query) =>
+                              t("dishFormDialog.ingredientUseCustom", { value: query })
+                            }
+                            className="min-w-0 py-2 text-sm"
                           />
                           <button
                             type="button"
