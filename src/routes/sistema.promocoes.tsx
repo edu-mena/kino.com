@@ -101,10 +101,17 @@ function SistemaPromocoes() {
     setDialogOpen(true);
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.title.trim() || !draft.description.trim()) return;
     const pct = Math.round(Number(draft.percentOff));
+    // Mesma regra do backend (`required_unless:type,delivery`) — sem isto,
+    // deixar a percentagem vazia fazia o pedido ser recusado (422) e a
+    // promoção nunca era criada, mesmo mostrando "sucesso" antes desta correção.
+    if (draft.type !== "delivery" && !(pct > 0 && pct <= 100)) {
+      toast.error(t("sistema.promocoes.percentOffRequiredError"));
+      return;
+    }
     const media = draft.image.trim();
     const input = {
       type: draft.type,
@@ -117,15 +124,16 @@ function SistemaPromocoes() {
         ? { thumbnail: draft.thumbnail }
         : {}),
       ...(draft.code.trim() ? { code: draft.code.trim().toUpperCase() } : {}),
-      ...(draft.type !== "delivery" && pct > 0 ? { percentOff: Math.min(100, pct) } : {}),
+      ...(draft.type !== "delivery" ? { percentOff: Math.min(100, pct) } : {}),
     };
-    if (editing) {
-      updateOffer(editing.id, input);
-      toast.success(t("sistema.promocoes.updatedToast"));
-    } else {
-      createLukuOffer(input);
-      toast.success(t("sistema.promocoes.createdToast"));
+    const ok = editing ? await updateOffer(editing.id, input) : await createLukuOffer(input);
+    if (!ok) {
+      toast.error(t("sistema.promocoes.saveFailedError"));
+      return;
     }
+    toast.success(
+      editing ? t("sistema.promocoes.updatedToast") : t("sistema.promocoes.createdToast"),
+    );
     setDialogOpen(false);
   };
 
@@ -379,9 +387,13 @@ function SistemaPromocoes() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
+              onClick={async () => {
                 if (toDelete) {
-                  deleteOffer(toDelete.id);
+                  const ok = await deleteOffer(toDelete.id);
+                  if (!ok) {
+                    toast.error(t("sistema.promocoes.deleteFailedError"));
+                    return;
+                  }
                   toast.success(t("sistema.promocoes.deletedToast"));
                 }
                 setToDelete(null);

@@ -170,13 +170,21 @@ function AdminPromocoes() {
     setFormOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       toast.error(t("adminPromocoes.missingFieldsError"));
       return;
     }
     const pct = Math.round(Number(percentOff));
+    // O backend exige percentagem para todo tipo exceto "delivery"
+    // (`required_unless:type,delivery`) — sem esta validação, deixar o
+    // campo vazio fazia o formulário omitir `percentOff` do pedido, a API
+    // recusava com 422, e o admin via "sucesso" sem a promoção existir.
+    if (type !== "delivery" && !(pct > 0 && pct <= 100)) {
+      toast.error(t("adminPromocoes.percentOffRequiredError"));
+      return;
+    }
     const media = image.trim();
     const input = {
       type,
@@ -187,23 +195,32 @@ function AdminPromocoes() {
       ...(media ? { mediaType } : {}),
       ...(media && mediaType === "video" && thumbnail ? { thumbnail } : {}),
       ...(code.trim() ? { code: code.trim() } : {}),
-      ...(type !== "delivery" && pct > 0 ? { percentOff: Math.min(100, pct) } : {}),
+      ...(type !== "delivery" ? { percentOff: Math.min(100, pct) } : {}),
     };
+    const ok = editing
+      ? await updateOffer(editing.id, input)
+      : await createOffer(restaurant.id, input);
+    if (!ok) {
+      toast.error(t("adminPromocoes.saveFailedError"));
+      return;
+    }
     if (editing) {
-      updateOffer(editing.id, input);
       toast.success(t("adminPromocoes.updatedToast"));
     } else {
-      createOffer(restaurant.id, input);
       toast.success(t("adminPromocoes.createdToast"));
       promoHint.dismiss();
     }
     setFormOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleting) return;
+    const ok = await deleteOffer(deleting.id);
+    if (!ok) {
+      toast.error(t("adminPromocoes.deleteFailedError"));
+      return;
+    }
     if (activeId === deleting.id) setActiveId(null);
-    deleteOffer(deleting.id);
     toast.success(t("adminPromocoes.deletedToast"));
     setDeleting(null);
   };

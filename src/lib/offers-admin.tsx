@@ -20,10 +20,15 @@ type OffersAdminValue = {
   offersByRestaurant: (restaurantId: string) => Offer[];
   /** Ofertas globais da Luku — sem `restaurantId` (geridas em `/sistema/promocoes`). */
   lukuOffers: Offer[];
-  createOffer: (restaurantId: string, input: OfferInput) => void;
-  createLukuOffer: (input: OfferInput) => void;
-  updateOffer: (id: string, input: OfferInput) => void;
-  deleteOffer: (id: string) => void;
+  /** `ok: false` = a escrita falhou (ex: validação do backend — percentagem
+   * em falta num tipo que a exige — ou erro de rede); a promoção pode não
+   * ter sido guardada. Antes eram `void` (fire-and-forget): a chamada quem
+   * criava mostrava sempre "sucesso" mesmo quando a API rejeitava o pedido
+   * (ex: 422 por faltar `percent_off`), e a promoção nunca aparecia. */
+  createOffer: (restaurantId: string, input: OfferInput) => Promise<boolean>;
+  createLukuOffer: (input: OfferInput) => Promise<boolean>;
+  updateOffer: (id: string, input: OfferInput) => Promise<boolean>;
+  deleteOffer: (id: string) => Promise<boolean>;
 };
 
 const OffersAdminContext = createContext<OffersAdminValue | null>(null);
@@ -87,34 +92,70 @@ export function OffersAdminProvider({ children }: { children: ReactNode }) {
         offers,
         offersByRestaurant: (restaurantId) => offers.filter((o) => o.restaurantId === restaurantId),
         lukuOffers: offers.filter((o) => !o.restaurantId),
-        createOffer: (restaurantId, input) => {
+        createOffer: async (restaurantId, input) => {
           const token = getAdminToken();
-          if (!token) return;
-          void createApiOffer(restaurantId, toApiInput(input), token).then(refetchApi);
+          if (!token) return false;
+          try {
+            await createApiOffer(restaurantId, toApiInput(input), token);
+            refetchApi();
+            return true;
+          } catch {
+            return false;
+          }
         },
-        createLukuOffer: (input) => {
-          if (!operatorToken) return;
-          void createApiOffer(null, toApiInput(input), operatorToken).then(refetchApi);
+        createLukuOffer: async (input) => {
+          if (!operatorToken) return false;
+          try {
+            await createApiOffer(null, toApiInput(input), operatorToken);
+            refetchApi();
+            return true;
+          } catch {
+            return false;
+          }
         },
-        updateOffer: (id, input) => {
+        updateOffer: async (id, input) => {
           const token = getAdminToken() ?? operatorToken;
-          if (!token) return;
-          void updateApiOffer(id, toApiInput(input), token).then(refetchApi);
+          if (!token) return false;
+          try {
+            await updateApiOffer(id, toApiInput(input), token);
+            refetchApi();
+            return true;
+          } catch {
+            return false;
+          }
         },
-        deleteOffer: (id) => {
+        deleteOffer: async (id) => {
           const token = getAdminToken() ?? operatorToken;
-          if (!token) return;
-          void deleteApiOffer(id, token).then(refetchApi);
+          if (!token) return false;
+          try {
+            await deleteApiOffer(id, token);
+            refetchApi();
+            return true;
+          } catch {
+            return false;
+          }
         },
       }
     : {
         offers,
         offersByRestaurant: (restaurantId) => offers.filter((o) => o.restaurantId === restaurantId),
         lukuOffers: offers.filter((o) => !o.restaurantId),
-        createOffer: (restaurantId, input) => void createOffer(restaurantId, input),
-        createLukuOffer: (input) => void createLukuOffer(input),
-        updateOffer: (id, input) => updateOffer(id, input),
-        deleteOffer: (id) => deleteOffer(id),
+        createOffer: (restaurantId, input) => {
+          createOffer(restaurantId, input);
+          return Promise.resolve(true);
+        },
+        createLukuOffer: (input) => {
+          createLukuOffer(input);
+          return Promise.resolve(true);
+        },
+        updateOffer: (id, input) => {
+          updateOffer(id, input);
+          return Promise.resolve(true);
+        },
+        deleteOffer: (id) => {
+          deleteOffer(id);
+          return Promise.resolve(true);
+        },
       };
 
   return <OffersAdminContext.Provider value={value}>{children}</OffersAdminContext.Provider>;
