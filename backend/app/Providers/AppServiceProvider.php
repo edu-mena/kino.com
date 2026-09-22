@@ -58,15 +58,31 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
-        // Escrita de pedidos/reservas — evita spam de bots. 'sanctum'
-        // explícito: algumas destas rotas (checkout/reserva) aceitam
-        // convidados sem token e não passam por auth:sanctum, então
+        // Escrita de pedidos/reservas (checkout/reserva anónimos) — evita
+        // spam de bots, 20/min por IP. 'sanctum' explícito: essas rotas
+        // aceitam convidados sem token e não passam por auth:sanctum, então
         // $request->user() sem guard nunca veria um Bearer token presente
         // mesmo quando o cliente está autenticado.
+        //
+        // Este MESMO limiter (`throttle:writes`) acabou reaproveitado, fase
+        // após fase, em quase toda escrita autenticada da API — perfil do
+        // restaurante, horário, menus, pratos, gestão de pedidos/mesas,
+        // etc. Um ator autenticado (staff/operador/cliente com conta) é bem
+        // menos arriscado que um IP anónimo, mas ficava preso ao MESMO teto
+        // de 20/min pensado só pra bots no checkout — um admin a gerir
+        // pedidos ou a guardar o próprio perfil (que sozinho já dispara
+        // 2-5 pedidos de escrita em sequência: horário + pagamento +
+        // galeria + perfil) esgotava isso rápido e via "Too Many Attempts"
+        // em uso normal (bug real, encontrado a testar o perfil). Autenticado
+        // ganha um teto bem mais folgado; só o caminho anónimo (sem
+        // `user('sanctum')`) mantém o limite original, apertado de propósito.
         RateLimiter::for('writes', function (Request $request) {
-            $owner = $request->user('sanctum')?->id ?? $request->ip();
+            $userId = $request->user('sanctum')?->id;
+            if ($userId) {
+                return Limit::perMinute(120)->by("user:{$userId}");
+            }
 
-            return Limit::perMinute(20)->by($owner);
+            return Limit::perMinute(20)->by($request->ip());
         });
 
         // Upload de imagem/vídeo — protege storage/fila de abuso.
