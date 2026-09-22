@@ -10,8 +10,12 @@ import { getSystemToken } from "@/lib/system-admin";
  */
 export const Route = createFileRoute("/sistema")({
   // Mesma camada extra de `/admin` (ver src/routes/admin.tsx) — só checa
-  // presença do token, não validade (isso continua no `SystemShell`).
+  // presença do token, não validade (isso continua no `SystemShell`). Pula
+  // no servidor (SSR): `getSystemToken()` aí nunca vê o localStorage do
+  // browser, então sem este `if` todo F5 em `/sistema` fazia logout mesmo
+  // com sessão válida (bug real, encontrado em produção).
   beforeLoad: () => {
+    if (typeof window === "undefined") return;
     if (!getSystemToken()) throw redirect({ to: "/sistema/entrar" });
   },
   component: SystemLayout,

@@ -16,7 +16,19 @@ export const Route = createFileRoute("/admin")({
   // dá pra saber aqui se o token é válido, só se existe). Sem token nenhum,
   // corta o acesso direto já na navegação, em vez de deixar o `AdminShell`
   // renderizar `null` por um instante antes do efeito redirecionar.
+  //
+  // `typeof window === "undefined"` — `beforeLoad` também corre no
+  // servidor (SSR/primeiro load de um refresh de página inteira), onde
+  // `getAdminToken()` NUNCA vê o localStorage do browser e devolve `null`
+  // sempre, sessão válida ou não (é SSR-safe de propósito, ver
+  // restaurant-admin.tsx). Sem este guard, todo F5 em qualquer página de
+  // `/admin` disparava logout — mesmo com sessão válida guardada (bug real,
+  // encontrado em produção). No servidor, só deixa passar; a checagem real
+  // continua a acontecer no cliente, tanto aqui (navegação client-side)
+  // quanto no efeito do `AdminShell` (que valida o token a sério contra
+  // `/auth/me`, não só a presença dele).
   beforeLoad: () => {
+    if (typeof window === "undefined") return;
     if (!getAdminToken()) throw redirect({ to: "/admin/entrar" });
   },
   component: AdminLayout,
