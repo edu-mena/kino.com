@@ -25,13 +25,16 @@ type ApiRestaurant = {
   id: string;
   name: string;
   description: string | null;
-  cuisine: string;
+  // Nunca preenchido em toda candidatura de parceiro — a API devolve `null`
+  // com frequência real, ao contrário do que o tipo antigo (`string`)
+  // prometia (ver mapApiRestaurant, onde isto é normalizado para "").
+  cuisine: string | null;
   priceLevel: number | null;
   rating: number | null;
   reviewCount: number;
   address: string | null;
-  neighborhood: string;
-  city: string;
+  neighborhood: string | null;
+  city: string | null;
   lat: number | null;
   lng: number | null;
   phone: string | null;
@@ -101,7 +104,17 @@ export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
     id: r.id,
     name: r.name,
     description: r.description ?? "",
-    cuisine: r.cuisine,
+    // `?? ""` — o tipo `Restaurant.cuisine`/`neighborhood`/`city` promete
+    // `string`, mas a API devolve `null` sempre que o restaurante nunca
+    // preencheu esse campo (comum: candidatura de parceiro não pede tipo de
+    // cozinha). Sem isto, `admin.perfil.tsx` semeava o formulário com
+    // `null` e `cuisine.trim()` ao gravar rebentava com TypeError — a
+    // exceção acontecia a meio da construção do pedido de PATCH, então
+    // ele nunca chegava a ser enviado (só o horário, chamado antes,
+    // salvava), e o admin via "não foi possível guardar" mesmo com o
+    // resto dos campos intactos (bug real, encontrado a testar em
+    // produção).
+    cuisine: r.cuisine ?? "",
     priceLevel: formatPriceLevel(r.priceLevel),
     rating: r.rating ?? 0,
     reviewCount: r.reviewCount,
@@ -109,9 +122,9 @@ export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
     // usa isto sempre recalcula a distância real a partir da morada/GPS do
     // cliente (ver personalizedRestaurantDistanceKm), este é só o fallback.
     distanceKm: 0,
-    address: r.address ?? `${r.neighborhood}, ${r.city}`,
-    neighborhood: r.neighborhood,
-    city: r.city,
+    address: r.address ?? `${r.neighborhood ?? ""}, ${r.city ?? ""}`,
+    neighborhood: r.neighborhood ?? "",
+    city: r.city ?? "",
     ...(r.lat != null ? { lat: r.lat } : {}),
     ...(r.lng != null ? { lng: r.lng } : {}),
     phone: r.phone ?? "",
