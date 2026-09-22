@@ -21,6 +21,12 @@ class StorePartnerApplicationRequest extends FormRequest
             'phone' => ['required', 'string', 'max:30'],
             'email' => ['required', 'email', 'max:150'],
             'province' => ['sometimes', 'nullable', 'string', 'max:100'],
+            // Localização exata escolhida no mapa (passo 3 do formulário,
+            // ver LocationPicker) — antes só havia província + morada em
+            // texto livre, sem coordenada nenhuma pro cálculo real de
+            // distância/entrega (ver ApprovePartnerApplication).
+            'lat' => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
+            'lng' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
             'message' => ['sometimes', 'nullable', 'string', 'max:1000'],
             // Foto do restaurante escolhida no passo 1 do formulário — vira
             // a imagem de capa do restaurante, se a candidatura for

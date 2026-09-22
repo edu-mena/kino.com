@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { LocationPicker } from "@/components/location-map";
 import {
   Select,
   SelectContent,
@@ -23,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { deriveRestaurantCoords } from "@/data/restaurant-coordinates";
 import { apiFetch, ApiError, hasRealBackend } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
@@ -79,8 +81,14 @@ type FormState = {
   phone: string;
   province: string;
   address: string;
+  lat: number;
+  lng: number;
   about: string;
 };
+
+// Luanda — mesmo fallback de LocationPicker/deriveRestaurantCoords noutras
+// páginas (admin.perfil.tsx), até o candidato escolher a província.
+const DEFAULT_COORDS = { lat: -8.839, lng: 13.2894 };
 
 const EMPTY_FORM: FormState = {
   restaurantName: "",
@@ -90,6 +98,8 @@ const EMPTY_FORM: FormState = {
   phone: "",
   province: "",
   address: "",
+  lat: DEFAULT_COORDS.lat,
+  lng: DEFAULT_COORDS.lng,
   about: "",
 };
 
@@ -118,9 +128,18 @@ function Parceiros() {
   const [showRequiredError, setShowRequiredError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // false até o candidato mexer no pino do mapa — enquanto isso, escolher a
+  // província recentra automaticamente para lá (conveniência); depois de
+  // mexido manualmente, a escolha do candidato nunca é sobrescrita sozinha.
+  const [locationTouched, setLocationTouched] = useState(false);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  const recenterToProvince = (province: string) => {
+    const coords = deriveRestaurantCoords(form.restaurantName || "novo-parceiro", province);
+    setForm((prev) => ({ ...prev, lat: coords.lat, lng: coords.lng }));
+  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -215,6 +234,8 @@ function Parceiros() {
         body.append("email", form.email);
         body.append("phone", form.phone);
         body.append("province", form.province);
+        body.append("lat", String(form.lat));
+        body.append("lng", String(form.lng));
         body.append("message", message);
         if (photoFile) body.append("photo", photoFile);
 
@@ -397,7 +418,10 @@ function Parceiros() {
               <div className="grid gap-4 animate-in fade-in slide-in-from-right-2 duration-200 sm:grid-cols-2">
                 <Select
                   {...(form.province ? { value: form.province } : {})}
-                  onValueChange={(v) => update("province", v)}
+                  onValueChange={(v) => {
+                    update("province", v);
+                    if (!locationTouched) recenterToProvince(v);
+                  }}
                 >
                   <SelectTrigger className="h-auto rounded-xl border-border bg-background px-4 py-3 text-sm text-foreground focus:ring-1 focus:ring-primary sm:col-span-2">
                     <SelectValue placeholder={t("parceiros.provincePlaceholder")} />
@@ -423,6 +447,37 @@ function Parceiros() {
                     placeholder={t("parceiros.addressPlaceholder")}
                     className={inputWithIconClass}
                   />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span className="text-sm font-semibold text-foreground">
+                      {t("adminPerfil.mapLabel")}
+                    </span>
+                    {form.province && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          recenterToProvince(form.province);
+                          setLocationTouched(false);
+                        }}
+                        className="text-xs font-semibold text-primary hover:underline"
+                      >
+                        {t("adminPerfil.useProvinceCenter")}
+                      </button>
+                    )}
+                  </div>
+                  <LocationPicker
+                    value={{ lat: form.lat, lng: form.lng }}
+                    onChange={(next) => {
+                      setForm((prev) => ({ ...prev, lat: next.lat, lng: next.lng }));
+                      setLocationTouched(true);
+                    }}
+                    height={240}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("adminPerfil.mapPickHint")} · {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
+                  </p>
                 </div>
 
                 <textarea
@@ -475,6 +530,9 @@ function Parceiros() {
                   </ReviewField>
                   <ReviewField icon={MapPin} label={t("parceiros.addressPlaceholder")}>
                     {form.address}
+                  </ReviewField>
+                  <ReviewField icon={MapPin} label={t("adminPerfil.mapLabel")}>
+                    {`${form.lat.toFixed(5)}, ${form.lng.toFixed(5)}`}
                   </ReviewField>
                 </dl>
 

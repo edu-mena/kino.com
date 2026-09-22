@@ -35,6 +35,44 @@ test('qualquer um pode candidatar-se, sem autenticação, e dispara os dois emai
     });
 });
 
+test('candidatura guarda a localização exata escolhida no mapa (lat/lng)', function () {
+    $response = $this->postJson('/api/v1/partner-applications', [
+        'restaurant_name' => 'Com Localização', 'owner_name' => 'X', 'phone' => '900',
+        'email' => 'com-local@example.com', 'province' => 'Luanda',
+        'lat' => -8.839, 'lng' => 13.2894,
+    ]);
+
+    $response->assertStatus(201);
+    $app = PartnerApplication::query()->where('email', 'com-local@example.com')->firstOrFail();
+    expect((float) $app->lat)->toBe(-8.839)->and((float) $app->lng)->toBe(13.2894);
+});
+
+test('candidatura sem lat/lng continua válida (localização nunca é obrigatória)', function () {
+    $this->postJson('/api/v1/partner-applications', [
+        'restaurant_name' => 'Sem Localização', 'owner_name' => 'X', 'phone' => '900',
+        'email' => 'sem-local@example.com',
+    ])->assertStatus(201);
+
+    expect(PartnerApplication::query()->where('email', 'sem-local@example.com')->firstOrFail()->lat)
+        ->toBeNull();
+});
+
+test('aprovar uma candidatura com localização passa lat/lng para o restaurante criado', function () {
+    $operator = User::factory()->systemOperator()->create();
+    $app = PartnerApplication::factory()->create([
+        'email' => 'com-lat-lng@example.com',
+        'lat' => -12.5763,
+        'lng' => 13.4055,
+    ]);
+
+    $response = $this->actingAs($operator, 'sanctum')
+        ->postJson("/api/v1/partner-applications/{$app->uuid}/approve");
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.lat', -12.5763)
+        ->assertJsonPath('data.lng', 13.4055);
+});
+
 test('candidatura com foto guarda o photo_url; sem foto fica null (nunca obrigatória)', function () {
     Storage::fake('r2', ['url' => 'https://cdn.luku.com']);
     $photo = UploadedFile::fake()->image('fachada.jpg', 800, 800);

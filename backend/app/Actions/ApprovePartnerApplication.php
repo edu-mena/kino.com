@@ -37,6 +37,8 @@ class ApprovePartnerApplication
                 'phone' => $application->phone,
                 'email' => $application->email,
                 'cover_image_url' => $application->photo_url,
+                'lat' => $application->lat,
+                'lng' => $application->lng,
             ]);
 
             RestaurantSubscription::query()->create([
