@@ -1563,10 +1563,12 @@ export const fr: Dictionary = {
     deliveryZonePlaceholder: "Ex : Luanda",
     deliveryZonesExplainer:
       "Les provinces hors de cette liste ne peuvent pas commander de livraison auprès de ce restaurant, même avec la livraison activée.",
-    cautionLabel: "Caution de réservation (Kz)",
+    cautionLabel: "Montant de la caution (Kz)",
     cautionExplainer:
-      "Facturée au client à la confirmation de la réservation — votre politique de remboursement (ci-dessous) lui est montrée avant le paiement.",
+      "Facturée au client à chaque réservation de table — votre politique de remboursement (ci-dessous) lui est montrée avant le paiement. Le même montant peut aussi être exigé sur des commandes spécifiques, plus bas.",
     cautionZeroHint: "0 = pas de caution.",
+    cautionReservationSectionTitle: "Caution de table (réservation)",
+    cautionOrdersSectionTitle: "Appliquer aussi aux commandes",
     cautionPolicyPlaceholder: "Ex : remboursée si la table est occupée.",
     galleryLabel: "Galerie photo",
     galleryPlaceholder: "https://...",
@@ -1603,10 +1605,12 @@ export const fr: Dictionary = {
     paymentDetailMissing: "Sans ces coordonnées, le client ne peut pas payer par ce moyen.",
     paymentDetailReadNone: "À définir — le client ne peut pas payer.",
     secCautionTitle: "Caution",
-    secCautionHint: "Garantie prélevée sur les réservations et, en option, sur les commandes.",
-    cautionModesLabel: "Exiger une caution pour",
-    cautionModesExplainer: "La caution ci-dessus sera exigée du client pour ces modes de commande.",
-    cautionModesNone: "Aucun mode de commande (réservations uniquement).",
+    secCautionHint:
+      "Garantie facturée au client — toujours sur les réservations de table, et aussi sur les commandes choisies ci-dessous.",
+    cautionModesLabel: "Exiger aussi pour ces types de commande",
+    cautionModesExplainer:
+      "Utilise le MÊME montant de caution de table ci-dessus, facturé en plus pour ces types de commande.",
+    cautionModesNone: "Aucun mode de commande (réservations de table uniquement).",
     secGalleryTitle: "Galerie photos",
     secGalleryHint: "Images supplémentaires affichées sur la page du restaurant.",
     secWallpaperTitle: "Fond d'écran",
@@ -1616,7 +1620,7 @@ export const fr: Dictionary = {
     wallpaperHelp:
       "Collez un lien ou importez une image depuis votre appareil. Laissé vide, pas de fond.",
     wallpaperEmpty: "Aucun fond d'écran défini pour l'instant.",
-    cautionChargedHint: "{value} prélevés au client à la confirmation de la réservation.",
+    cautionChargedHint: "{value} prélevés au client à la confirmation de la réservation de table.",
     cautionPolicyLabel: "Politique de remboursement",
     editProfile: "Modifier le profil",
     notProvided: "Non renseigné",

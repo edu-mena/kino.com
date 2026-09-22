@@ -987,28 +987,34 @@ function AdminPerfil() {
               title={t("adminPerfil.secCautionTitle")}
               hint={t("adminPerfil.secCautionHint")}
             >
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <p className="text-xs text-muted-foreground">{t("adminPerfil.cautionExplainer")}</p>
-                <div className="space-y-1.5">
-                  <Label htmlFor="rest-caution">{t("adminPerfil.cautionLabel")}</Label>
-                  <Input
-                    id="rest-caution"
-                    type="number"
-                    min={0}
-                    step={500}
-                    value={cautionAmount}
-                    onChange={(e) => setCautionAmount(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {Number(cautionAmount) > 0
-                      ? t("adminPerfil.cautionChargedHint", {
-                          value: formatKz(Number(cautionAmount) || 0),
-                        })
-                      : t("adminPerfil.cautionZeroHint")}
+
+                {/* Caução de mesa/reserva — sempre cobrada quando o valor é > 0,
+                    independente dos modos de pedido escolhidos no bloco abaixo. */}
+                <div className="space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-brand">
+                    {t("adminPerfil.cautionReservationSectionTitle")}
                   </p>
-                </div>
-                {Number(cautionAmount) > 0 && (
-                  <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="rest-caution">{t("adminPerfil.cautionLabel")}</Label>
+                    <Input
+                      id="rest-caution"
+                      type="number"
+                      min={0}
+                      step={500}
+                      value={cautionAmount}
+                      onChange={(e) => setCautionAmount(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {Number(cautionAmount) > 0
+                        ? t("adminPerfil.cautionChargedHint", {
+                            value: formatKz(Number(cautionAmount) || 0),
+                          })
+                        : t("adminPerfil.cautionZeroHint")}
+                    </p>
+                  </div>
+                  {Number(cautionAmount) > 0 && (
                     <div className="space-y-1.5">
                       <Label htmlFor="rest-caution-policy">
                         {t("adminPerfil.cautionPolicyLabel")}
@@ -1021,6 +1027,20 @@ function AdminPerfil() {
                         className="rounded-xl"
                       />
                     </div>
+                  )}
+                </div>
+
+                {/* Aplicar também a pedidos — usa o MESMO valor acima, cobrado
+                    adicionalmente nos modos de pedido escolhidos aqui. Bloco
+                    visualmente separado do de cima de propósito: antes os dois
+                    conceitos viviam misturados no mesmo card, sem indicar que
+                    era o mesmo valor a aplicar-se aos dois casos (bug real de
+                    UX, reportado em teste). */}
+                {Number(cautionAmount) > 0 && (
+                  <div className="space-y-2 border-t border-border pt-4">
+                    <p className="text-xs font-bold uppercase tracking-wide text-brand">
+                      {t("adminPerfil.cautionOrdersSectionTitle")}
+                    </p>
                     <div className="space-y-2">
                       <Label>{t("adminPerfil.cautionModesLabel")}</Label>
                       <div className="flex flex-wrap gap-2">
@@ -1051,7 +1071,7 @@ function AdminPerfil() {
                         {t("adminPerfil.cautionModesExplainer")}
                       </p>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             </Section>
@@ -1354,16 +1374,21 @@ function AdminPerfil() {
               hint={t("adminPerfil.secCautionHint")}
             >
               {restaurant.cautionAmount > 0 ? (
-                <div className="space-y-2">
-                  <p className="font-display text-2xl font-extrabold text-primary">
-                    {formatKz(restaurant.cautionAmount)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {restaurant.cautionPolicyNotice || t("adminPerfil.cautionNoPolicy")}
-                  </p>
-                  <div className="pt-1">
+                <div className="space-y-3">
+                  <div>
                     <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      {t("adminPerfil.cautionModesLabel")}
+                      {t("adminPerfil.cautionReservationSectionTitle")}
+                    </dt>
+                    <p className="mt-1 font-display text-2xl font-extrabold text-primary">
+                      {formatKz(restaurant.cautionAmount)}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {restaurant.cautionPolicyNotice || t("adminPerfil.cautionNoPolicy")}
+                    </p>
+                  </div>
+                  <div className="border-t border-border pt-3">
+                    <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      {t("adminPerfil.cautionOrdersSectionTitle")}
                     </dt>
                     <p className="mt-1 text-sm text-foreground">
                       {restaurant.cautionModesForOrders?.length
