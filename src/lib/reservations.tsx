@@ -11,6 +11,7 @@ import {
   updateApiReservationStatus,
 } from "@/data/api-reservations";
 import { INITIAL_RESERVATIONS } from "@/data/mockData";
+import { resolvePromoCode } from "@/data/offers-store";
 import type { Reservation, Restaurant } from "@/data/types";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { hasRealBackend } from "@/lib/api-client";
@@ -30,6 +31,11 @@ type NewReservationInput = {
   time: string;
   peopleCount: number;
   specialRequests?: string;
+  /** Só aplicável quando a promoção não tem prato/categoria alvo e não é
+   * "entrega grátis" — código que não resolve, ou não é aplicável aqui,
+   * não bloqueia a reserva, só não desconta nada (ver
+   * ReservationController::store, mesma tolerância dos pedidos). */
+  promoCode?: string;
 };
 
 type ReservationsValue = {
@@ -167,6 +173,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     time,
     peopleCount,
     specialRequests,
+    promoCode,
   }: NewReservationInput): Promise<boolean> => {
     if (hasRealBackend) {
       const token = getAuthToken();
@@ -181,6 +188,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
             ...(user?.name ? { customerName: user.name } : {}),
             ...(user?.phone ? { customerPhone: user.phone } : {}),
             ...(user?.email ? { customerEmail: user.email } : {}),
+            ...(promoCode ? { promoCode } : {}),
           },
           token,
         );
@@ -190,6 +198,18 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
         return false;
       }
     }
+    // Mesma regra do backend real: só promoções sem prato/categoria alvo e
+    // que não sejam "entrega grátis" descontam a caução — a caução não é
+    // itemizada (ver ReservationController::store).
+    const promo = promoCode ? resolvePromoCode(restaurant.id, promoCode) : null;
+    const applicable =
+      promo &&
+      !promo.freeDelivery &&
+      !promo.targetMenuItemIds.length &&
+      !promo.targetCategories.length;
+    const cautionAmount = applicable
+      ? Math.round(restaurant.cautionAmount * (1 - promo.percentOff / 100))
+      : restaurant.cautionAmount;
     const reservation: Reservation = {
       id: `res-custom-${Date.now()}`,
       restaurantId: restaurant.id,
@@ -202,12 +222,15 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
       date,
       time,
       peopleCount,
-      cautionAmount: restaurant.cautionAmount,
+      cautionAmount,
       cautionStatus: "Pendente",
       // A confirmação é sempre do restaurante — o pedido só fica "Confirmada"
       // depois de o restaurante aceitar (fluxo Pendente → Confirmada).
       status: "Pendente",
       ...(specialRequests ? { specialRequests } : {}),
+      ...(applicable
+        ? { promoCode: promo.code, promoLabel: promo.label, promoPercentOff: promo.percentOff }
+        : {}),
       createdAt: new Date().toISOString(),
     };
     setReservations((prev) => [reservation, ...prev]);

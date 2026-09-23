@@ -794,6 +794,11 @@ function AdminReservas() {
                               <span className="mt-0.5 block text-xs text-muted-foreground">
                                 {cautionStatusLabels[active.cautionStatus] ?? active.cautionStatus}
                               </span>
+                              {active.promoCode && (
+                                <span className="mt-0.5 block text-xs font-semibold text-primary">
+                                  {t("adminReservas.promoApplied", { code: active.promoCode })}
+                                </span>
+                              )}
                             </Field>
                           </dl>
 

@@ -32,6 +32,10 @@ class StoreReservationRequest extends FormRequest
             'time' => ['required', 'date_format:H:i'],
             'people_count' => ['required', 'integer', 'min:1', 'max:50'],
             'special_requests' => ['sometimes', 'nullable', 'string', 'max:500'],
+            // Igual ao lado dos pedidos: um código que não resolve não
+            // rejeita a reserva, só não aplica desconto nenhum (ver
+            // ReservationController::store).
+            'promo_code' => ['sometimes', 'nullable', 'string', 'max:40'],
         ];
     }
 

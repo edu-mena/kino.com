@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Offer;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\User;
@@ -487,4 +488,94 @@ test('staff de outro restaurante não confirma caução de reserva alheia', func
     $this->actingAs($otherOwner, 'sanctum')
         ->patchJson("/api/v1/reservations/{$reservation->uuid}/caution")
         ->assertForbidden();
+});
+
+// --- código promocional aplicado à caução (Fase K2) ---
+
+test('código promocional sem alvo desconta a caução da reserva', function () {
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+    Offer::query()->create([
+        'restaurant_id' => $restaurant->id, 'type' => 'discount', 'title' => '20% na reserva',
+        'code' => 'RES20', 'percent_off' => 20, 'starts_at' => now()->subDay(),
+    ]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 2,
+        'promo_code' => 'res20',
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.cautionAmount', 4000)
+        ->assertJsonPath('data.promoCode', 'RES20')
+        ->assertJsonPath('data.promoPercentOff', 20);
+});
+
+test('código promocional com prato/categoria alvo não se aplica à caução da reserva', function () {
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+    Offer::query()->create([
+        'restaurant_id' => $restaurant->id, 'type' => 'discount', 'title' => '20% num prato',
+        'code' => 'PRATO20', 'percent_off' => 20, 'starts_at' => now()->subDay(),
+        'target_categories' => ['Sobremesas'],
+    ]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 2,
+        'promo_code' => 'PRATO20',
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.cautionAmount', 5000)
+        ->assertJsonPath('data.promoCode', null);
+});
+
+test('código promocional de entrega grátis não se aplica à caução da reserva', function () {
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+    Offer::query()->create([
+        'restaurant_id' => $restaurant->id, 'type' => 'delivery', 'title' => 'Frete grátis',
+        'code' => 'FRETE', 'starts_at' => now()->subDay(),
+    ]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 2,
+        'promo_code' => 'FRETE',
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.cautionAmount', 5000)
+        ->assertJsonPath('data.promoCode', null);
+});
+
+test('código promocional inexistente não rejeita a reserva, só não desconta nada', function () {
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 2,
+        'promo_code' => 'NAOEXISTE',
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.cautionAmount', 5000)
+        ->assertJsonPath('data.promoCode', null);
+});
+
+test('caução descontada até zero fica "não exige caução"', function () {
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+    Offer::query()->create([
+        'restaurant_id' => $restaurant->id, 'type' => 'discount', 'title' => '100% na reserva',
+        'code' => 'GRATIS', 'percent_off' => 100, 'starts_at' => now()->subDay(),
+    ]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 2,
+        'promo_code' => 'GRATIS',
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.cautionAmount', 0)
+        ->assertJsonPath('data.cautionStatus', 'not_required');
 });

@@ -61,6 +61,9 @@ type ApiReservation = {
   paymentProofAt?: string | null;
   invoiceUrl?: string | null;
   invoiceAt?: string | null;
+  promoCode?: string | null;
+  promoLabel?: string | null;
+  promoPercentOff?: number | null;
   createdAt: string;
 };
 
@@ -87,6 +90,9 @@ function mapApiReservation(r: ApiReservation, ownerKey: string): Reservation {
     ...(r.paymentProofAt ? { paymentProofAt: r.paymentProofAt } : {}),
     ...(r.invoiceUrl ? { invoice: r.invoiceUrl } : {}),
     ...(r.invoiceAt ? { invoiceAt: r.invoiceAt } : {}),
+    ...(r.promoCode ? { promoCode: r.promoCode } : {}),
+    ...(r.promoLabel ? { promoLabel: r.promoLabel } : {}),
+    ...(r.promoPercentOff != null ? { promoPercentOff: r.promoPercentOff } : {}),
     createdAt: r.createdAt,
   };
 }
@@ -124,6 +130,10 @@ export async function createApiReservation(
     customerName?: string;
     customerPhone?: string;
     customerEmail?: string;
+    /** Só aplicável quando a promoção não tem prato/categoria alvo e não é
+     * "entrega grátis" — o backend ignora silenciosamente caso contrário
+     * (ver ReservationController::store). */
+    promoCode?: string;
   },
   token: string | null,
 ): Promise<Reservation> {
@@ -140,6 +150,7 @@ export async function createApiReservation(
         ...(input.customerName ? { customer_name: input.customerName } : {}),
         ...(input.customerPhone ? { customer_phone: input.customerPhone } : {}),
         ...(input.customerEmail ? { customer_email: input.customerEmail } : {}),
+        ...(input.promoCode ? { promo_code: input.promoCode } : {}),
       },
       headers: { "Idempotency-Key": crypto.randomUUID() },
     },

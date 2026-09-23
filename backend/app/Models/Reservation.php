@@ -22,6 +22,7 @@ class Reservation extends Model
         'table_id', 'special_requests',
         'payment_proof_url', 'payment_proof_at',
         'invoice_url', 'invoice_at',
+        'promo_code', 'promo_label', 'promo_percent_off',
     ];
 
     protected function casts(): array

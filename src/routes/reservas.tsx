@@ -279,6 +279,11 @@ function Reservas() {
                           <span className="mt-0.5 block text-xs text-muted-foreground">
                             {cautionStatusText(active.cautionStatus)}
                           </span>
+                          {active.promoCode && (
+                            <span className="mt-0.5 block text-xs font-semibold text-success">
+                              {t("reservas.promoApplied", { code: active.promoCode })}
+                            </span>
+                          )}
                         </Field>
                       )}
                     </dl>

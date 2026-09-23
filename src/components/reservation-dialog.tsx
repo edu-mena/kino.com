@@ -7,7 +7,9 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { resolvePromoCode, type PromoEffect } from "@/data/offers-store";
 import type { Restaurant } from "@/data/types";
+import { useOffers } from "@/data/use-offers";
 import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { useReservations } from "@/lib/reservations";
@@ -48,6 +50,37 @@ export function ReservationDialog({
   const [peopleCountInput, setPeopleCountInput] = useState("2");
   const peopleCount = Math.max(1, Math.min(30, Number(peopleCountInput) || 1));
   const [specialRequests, setSpecialRequests] = useState("");
+  const offers = useOffers();
+  const [promoInput, setPromoInput] = useState("");
+  const [promo, setPromo] = useState<PromoEffect | null>(null);
+  const [promoError, setPromoError] = useState(false);
+  const discountedCaution = promo
+    ? Math.round(restaurant.cautionAmount * (1 - promo.percentOff / 100))
+    : restaurant.cautionAmount;
+
+  const resetPromo = () => {
+    setPromoInput("");
+    setPromo(null);
+    setPromoError(false);
+  };
+  // Só promoções sem prato/categoria alvo e que não sejam "entrega grátis"
+  // descontam a caução — mesma regra do backend real (a caução não é
+  // itemizada, ver ReservationController::store).
+  const applyPromo = () => {
+    const trimmed = promoInput.trim();
+    if (!trimmed) {
+      resetPromo();
+      return;
+    }
+    const effect = resolvePromoCode(restaurant.id, trimmed, offers);
+    const applicable =
+      effect &&
+      !effect.freeDelivery &&
+      !effect.targetMenuItemIds.length &&
+      !effect.targetCategories.length;
+    setPromo(applicable ? effect : null);
+    setPromoError(!applicable);
+  };
 
   const paused = !status.available;
   const accepts = restaurant.acceptsReservations ?? true;
@@ -80,7 +113,14 @@ export function ReservationDialog({
     e.preventDefault();
     if (!canSubmit || submitting) return;
     setSubmitting(true);
-    const ok = await addReservation({ restaurant, date, time, peopleCount, specialRequests });
+    const ok = await addReservation({
+      restaurant,
+      date,
+      time,
+      peopleCount,
+      specialRequests,
+      ...(promo ? { promoCode: promo.code } : {}),
+    });
     setSubmitting(false);
     if (!ok) {
       toast.error(t("reservationDialog.sentErrorToast"));
@@ -92,6 +132,7 @@ export function ReservationDialog({
     setTime("");
     setPeopleCountInput("2");
     setSpecialRequests("");
+    resetPromo();
     navigate({ to: "/reservas" });
   };
 
@@ -184,11 +225,62 @@ export function ReservationDialog({
             </div>
 
             {restaurant.cautionAmount > 0 && (
+              <div className="space-y-1.5">
+                <Label htmlFor="res-promo">{t("reservationDialog.promoLabel")}</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="res-promo"
+                    value={promoInput}
+                    onChange={(e) => {
+                      setPromoInput(e.target.value.toUpperCase());
+                      setPromoError(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        applyPromo();
+                      }
+                    }}
+                    placeholder={t("reservationDialog.promoPlaceholder")}
+                    className="uppercase"
+                  />
+                  {promo ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={resetPromo}
+                      className="shrink-0 rounded-xl"
+                    >
+                      {t("reservationDialog.promoRemove")}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={applyPromo}
+                      className="shrink-0 rounded-xl"
+                    >
+                      {t("reservationDialog.promoApply")}
+                    </Button>
+                  )}
+                </div>
+                {promoError && (
+                  <p className="text-xs text-destructive">{t("reservationDialog.promoInvalid")}</p>
+                )}
+                {promo && (
+                  <p className="text-xs font-semibold text-success">
+                    {t("reservationDialog.promoApplied", { label: promo.label })}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {restaurant.cautionAmount > 0 && (
               <div className="flex items-start gap-2 rounded-xl border border-brand/30 bg-brand/5 p-3 text-xs text-foreground">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
                 <span>
                   {t("reservationDialog.cautionNotice", {
-                    amount: formatKz(restaurant.cautionAmount),
+                    amount: formatKz(discountedCaution),
                     policy: restaurant.cautionPolicyNotice,
                   })}
                 </span>

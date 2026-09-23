@@ -12,6 +12,7 @@ use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Services\MediaUploadService;
+use App\Services\OrderPricingService;
 use App\Services\ReservationOccupancyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -76,11 +77,26 @@ class ReservationController extends Controller
         return new ReservationResource($reservation);
     }
 
-    public function store(StoreReservationRequest $request, Restaurant $restaurant): JsonResponse
+    public function store(StoreReservationRequest $request, Restaurant $restaurant, OrderPricingService $pricing): JsonResponse
     {
         $data = $request->validated();
         // 'sanctum' explícito — rota aceita convidados sem token.
         $user = $request->user('sanctum');
+
+        // Mesmo código promocional dos pedidos, aplicado à caução — mas só
+        // quando o offer NÃO tem prato/categoria alvo (a caução não é
+        // itemizada) e não é "delivery" (entrega grátis não se aplica a uma
+        // reserva). Um código que não resolve, ou não é aplicável aqui, não
+        // rejeita a reserva — só não desconta nada (mesma tolerância do
+        // lado dos pedidos).
+        $promo = $request->filled('promo_code') ? $pricing->resolvePromoCode($restaurant, $data['promo_code']) : null;
+        $applicable = $promo && ! $promo['freeDelivery']
+            && empty($promo['targetMenuItemIds']) && empty($promo['targetCategories']);
+
+        $cautionAmount = (float) $restaurant->caution_amount;
+        if ($applicable) {
+            $cautionAmount = round($cautionAmount * (1 - $promo['percentOff'] / 100), 2);
+        }
 
         $reservation = $restaurant->reservations()->create([
             'user_id' => $user?->id,
@@ -90,14 +106,20 @@ class ReservationController extends Controller
             'date' => $data['date'],
             'time' => $data['time'],
             'people_count' => $data['people_count'],
-            // Sempre o valor configurado do restaurante — ao contrário dos
+            // Sempre o valor configurado do restaurante (com o desconto do
+            // código promocional já aplicado, se houver) — ao contrário dos
             // pedidos, a caução de reserva não depende de "modo" (só existe
             // um: presencial) — ver mock, `addReservation`.
-            'caution_amount' => $restaurant->caution_amount,
-            'caution_status' => (float) $restaurant->caution_amount > 0 ? 'pending' : 'not_required',
+            'caution_amount' => $cautionAmount,
+            'caution_status' => $cautionAmount > 0 ? 'pending' : 'not_required',
             'status' => 'pending',
             'status_updated_at' => now(),
             'special_requests' => $data['special_requests'] ?? null,
+            ...($applicable ? [
+                'promo_code' => $promo['code'],
+                'promo_label' => $promo['label'],
+                'promo_percent_off' => $promo['percentOff'],
+            ] : []),
         ]);
 
         return response()->json([

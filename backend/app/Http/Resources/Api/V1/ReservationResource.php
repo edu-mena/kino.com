@@ -36,6 +36,9 @@ class ReservationResource extends JsonResource
             'paymentProofAt' => $this->payment_proof_at?->toIso8601String(),
             'invoiceUrl' => $this->invoice_url,
             'invoiceAt' => $this->invoice_at?->toIso8601String(),
+            'promoCode' => $this->promo_code,
+            'promoLabel' => $this->promo_label,
+            'promoPercentOff' => $this->promo_percent_off,
             // Só presente quando o controller anexa (GET staff — ver
             // ReservationOccupancyService): sinal de sobreposição de mesa/
             // lotação na janela desta reserva, nunca bloqueia a criação.

@@ -228,6 +228,15 @@ export interface Reservation {
   invoice?: string;
   /** ISO — quando a fatura foi emitida. */
   invoiceAt?: string;
+  /** Código promocional aplicado à caução no momento da reserva — só
+   * promoções sem prato/categoria alvo (a caução não é itemizada) e que
+   * não sejam "entrega grátis" são aceites aqui. `cautionAmount` já vem
+   * com o desconto aplicado; estes campos são só para mostrar ao
+   * cliente/restaurante o que foi usado. */
+  promoCode?: string;
+  promoLabel?: string;
+  /** 0–100. */
+  promoPercentOff?: number;
   createdAt: string;
 }
 
