@@ -392,3 +392,60 @@ test('customer autenticado só vê os próprios pedidos, não os de outro user',
     $this->actingAs($intruder, 'sanctum')->getJson("/api/v1/orders/{$order->uuid}")->assertStatus(404);
     $this->actingAs($owner, 'sanctum')->getJson("/api/v1/orders/{$order->uuid}")->assertOk();
 });
+
+// --- comprovativo de pagamento em PDF (regressão: só imagem funcionava) ---
+
+test('cliente consegue anexar comprovativo de pagamento em PDF, não só imagem', function () {
+    Storage::fake('r2', ['url' => 'https://cdn.luku.com']);
+    $restaurant = createOrderableRestaurant();
+    $order = $restaurant->orders()->create([
+        'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900',
+        'pickup_asap' => true, 'status' => 'accepted', 'payment_method_code' => 'multicaixa_express',
+        'subtotal' => 1000, 'total' => 1000, 'guest_token' => Str::uuid(),
+    ]);
+
+    $file = UploadedFile::fake()->create('comprovativo.pdf', 200, 'application/pdf');
+
+    $this->withHeader('X-Guest-Token', (string) $order->guest_token)
+        ->postJson("/api/v1/orders/{$order->uuid}/payment-proof", ['proof' => $file])
+        ->assertOk()
+        ->assertJsonPath('data.paymentProofUrl', fn ($url) => str_contains($url, '.pdf'));
+
+    expect($order->fresh()->payment_proof_at)->not->toBeNull();
+});
+
+// --- destino do pagamento visível ao cliente (regressão: dados ficavam atrás de endpoint staff-only) ---
+
+test('cliente vê a conta/número do método de pagamento já exigido no seu pedido', function () {
+    $restaurant = createOrderableRestaurant();
+    $restaurant->paymentDetails()->create([
+        'payment_method_code' => 'multicaixa_express',
+        'details' => '923 000 111',
+    ]);
+    $order = $restaurant->orders()->create([
+        'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900',
+        'pickup_asap' => true, 'status' => 'accepted', 'payment_method_code' => 'multicaixa_express',
+        'subtotal' => 1000, 'total' => 1000, 'guest_token' => Str::uuid(),
+    ]);
+
+    $this->withHeader('X-Guest-Token', (string) $order->guest_token)
+        ->getJson("/api/v1/orders/{$order->uuid}")
+        ->assertOk()
+        ->assertJsonPath('data.paymentDestination', '923 000 111');
+});
+
+test('destino do pagamento nunca mistura com outro método configurado no mesmo restaurante', function () {
+    $restaurant = createOrderableRestaurant();
+    $restaurant->paymentDetails()->create(['payment_method_code' => 'multicaixa_express', 'details' => '923 000 111']);
+    $restaurant->paymentDetails()->create(['payment_method_code' => 'cash', 'details' => 'não deveria aparecer aqui']);
+    $order = $restaurant->orders()->create([
+        'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900',
+        'pickup_asap' => true, 'status' => 'accepted', 'payment_method_code' => 'multicaixa_express',
+        'subtotal' => 1000, 'total' => 1000, 'guest_token' => Str::uuid(),
+    ]);
+
+    $this->withHeader('X-Guest-Token', (string) $order->guest_token)
+        ->getJson("/api/v1/orders/{$order->uuid}")
+        ->assertOk()
+        ->assertJsonPath('data.paymentDestination', '923 000 111');
+});

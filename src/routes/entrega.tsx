@@ -193,9 +193,16 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
   const canReview =
     (order.status === "delivered" || order.status === "completed") && !isRefReviewed(reviewRef);
   const requiredPayment = getPaymentMethod(order.paymentMethod);
+  // Com backend real, `restaurant.paymentDetails` está sempre vazio para o
+  // cliente (esse endpoint é staff-only) — o servidor já manda o detalhe
+  // certo diretamente no pedido (`order.paymentDestination`, só o método já
+  // exigido, nunca a lista completa). Sem backend real, o mock continua a
+  // ter tudo no próprio `Restaurant`, como sempre.
   const payDestination =
     order.paymentMethod && requiredPayment?.digital
-      ? restaurant?.paymentDetails?.[order.paymentMethod]?.trim()
+      ? hasRealBackend
+        ? order.paymentDestination?.trim()
+        : restaurant?.paymentDetails?.[order.paymentMethod]?.trim()
       : undefined;
   // O pagamento é devido depois de o restaurante aceitar e fixar um método
   // digital, e enquanto o pedido não terminou/foi recusado.

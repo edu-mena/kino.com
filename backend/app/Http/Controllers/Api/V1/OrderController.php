@@ -32,7 +32,12 @@ class OrderController extends Controller
     public function mine(Request $request): AnonymousResourceCollection
     {
         $orders = $request->user()->orders()
-            ->with('lines.menuItem', 'restaurant', 'courier')
+            // `restaurant.paymentDetails` eager-load — sem isto, o
+            // `paymentDestination` do OrderResource dispararia uma query por
+            // pedido (N+1) para mostrar ao cliente a conta/número para onde
+            // pagar (ver OrderResource — nunca a lista completa, só o
+            // método já exigido neste pedido).
+            ->with('lines.menuItem', 'restaurant.paymentDetails', 'courier')
             ->latest()
             ->cursorPaginate($request->integer('per_page', 30));
 
@@ -60,7 +65,7 @@ class OrderController extends Controller
             $this->assertOwnerOrGuest($request, $order);
         }
 
-        return new OrderResource($order->load('lines.menuItem', 'restaurant', 'courier'));
+        return new OrderResource($order->load('lines.menuItem', 'restaurant.paymentDetails', 'courier'));
     }
 
     public function store(
@@ -214,9 +219,9 @@ class OrderController extends Controller
     public function storePaymentProof(Request $request, Order $order, MediaUploadService $uploads): OrderResource
     {
         $this->assertOwnerOrGuest($request, $order);
-        $request->validate(['proof' => ['required', 'file', 'image', 'max:8192']]);
+        $request->validate(['proof' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:8192']]);
 
-        $url = $uploads->storeImage($request->file('proof'), 'payment-proof', $order->uuid);
+        $url = $uploads->storeDocument($request->file('proof'), 'payment-proof', $order->uuid);
         $order->update(['payment_proof_url' => $url, 'payment_proof_at' => now()]);
 
         return new OrderResource($order);

@@ -56,6 +56,9 @@ type ApiOrder = {
   estimatedMinutes: number;
   deliveredAt: string | null;
   paymentMethod: string | null;
+  /** Conta/número para onde pagar o método já exigido neste pedido — nunca
+   * a lista completa de contas do restaurante (ver OrderResource.php). */
+  paymentDestination?: string | null;
   cautionRequired: number | null;
   note: string | null;
   promoCode: string | null;
@@ -117,6 +120,7 @@ function mapApiOrder(o: ApiOrder, ownerKey: string): CartOrder {
     estimatedMinutes: o.estimatedMinutes,
     ...(o.deliveredAt ? { deliveredAt: o.deliveredAt } : {}),
     ...(o.paymentMethod ? { paymentMethod: o.paymentMethod } : {}),
+    ...(o.paymentDestination ? { paymentDestination: o.paymentDestination } : {}),
     ...(o.cautionRequired != null ? { cautionRequired: o.cautionRequired } : {}),
     ...(o.note ? { note: o.note } : {}),
     ...(o.promoCode ? { promoCode: o.promoCode } : {}),
@@ -242,13 +246,20 @@ export async function updateApiOrderStatus(
   });
 }
 
+/** Comprovativo de pagamento anexado pelo cliente — imagem OU PDF (bancos/
+ * carteiras digitais muitas vezes geram o comprovativo como PDF, não
+ * imagem), daí `dataUrlToFile` receber a extensão certa em vez de assumir
+ * sempre `.jpg` (o `type` do Blob já ficava certo antes disto — só o nome
+ * do ficheiro estava errado). */
 export async function storeApiPaymentProof(
   id: string,
   dataUrl: string,
   token: string | null,
 ): Promise<void> {
+  const mime = dataUrl.match(/^data:([^;]+);base64/)?.[1] ?? "image/jpeg";
+  const ext = mime === "application/pdf" ? "pdf" : (mime.split("/")[1] ?? "jpg");
   const body = new FormData();
-  body.append("proof", dataUrlToFile(dataUrl, "proof.jpg"));
+  body.append("proof", dataUrlToFile(dataUrl, `proof.${ext}`));
   await apiFetch(`/orders/${id}/payment-proof`, {
     method: "POST",
     ...(token ? { token } : {}),
@@ -256,9 +267,7 @@ export async function storeApiPaymentProof(
   });
 }
 
-/** Fatura emitida pelo restaurante (`/admin/pedidos`) — imagem ou PDF, daí
- * `dataUrlToFile` receber a extensão certa em vez de assumir `.jpg` como
- * `storeApiPaymentProof` (o comprovativo do cliente é sempre foto). */
+/** Fatura emitida pelo restaurante (`/admin/pedidos`) — imagem ou PDF. */
 export async function storeApiInvoice(
   id: string,
   dataUrl: string,

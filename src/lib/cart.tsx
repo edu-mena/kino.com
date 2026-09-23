@@ -106,6 +106,12 @@ export type CartOrder = {
    * Id de `paymentMethods` (`@/lib/mock-data`). A Luku não processa o
    * pagamento; o cliente combina-o diretamente com o restaurante. */
   paymentMethod?: string;
+  /** Conta/número para onde pagar `paymentMethod` — só presente com backend
+   * real, calculado no servidor (ver `OrderResource.php`, `paymentDestination`)
+   * a partir do único método já exigido neste pedido; nunca a lista
+   * completa de contas do restaurante, que é staff-only. Sem mock
+   * equivalente — no modo demo o restaurante não tem contas configuradas. */
+  paymentDestination?: string;
   /** Caução (Kz) exigida como garantia para este pedido — anexada pelo
    * restaurante ao aceitar, quando o modo está em `cautionModesForOrders`. */
   cautionRequired?: number;

@@ -21,15 +21,15 @@ use RuntimeException;
 class MediaUploadService
 {
     // Os 5 presets já usados no crop client-side (ver plano) — "story" aqui
-    // é só a variante imagem (vídeo de story vai por storeRawVideo) — mais
-    // "payment-proof" (comprovativo de pagamento anexado pelo cliente a um
-    // pedido, Fase 3), que não passa por crop/preset nenhum no cliente, só
-    // validação de tipo/tamanho aqui.
-    private const IMAGE_PURPOSES = ['dish', 'cover', 'wallpaper', 'gallery', 'promo', 'story', 'payment-proof', 'partner'];
+    // é só a variante imagem (vídeo de story vai por storeRawVideo).
+    private const IMAGE_PURPOSES = ['dish', 'cover', 'wallpaper', 'gallery', 'promo', 'story', 'partner'];
 
-    /** Aceitam imagem OU PDF (ver storeDocument) — fatura emitida pelo
-     * restaurante, tal como no mock (`entrega.tsx`, `isPdfDataUrl`). */
-    private const DOCUMENT_PURPOSES = ['invoice'];
+    /** Aceitam imagem OU PDF (ver storeDocument). "invoice" = fatura emitida
+     * pelo restaurante; "payment-proof" = comprovativo de pagamento anexado
+     * pelo cliente a um pedido (Fase 3) — bancos/carteiras digitais em
+     * Angola muitas vezes geram o comprovativo como PDF, não imagem; sem
+     * isto, o upload rejeitava sempre PDF com 422, só imagem funcionava. */
+    private const DOCUMENT_PURPOSES = ['invoice', 'payment-proof'];
 
     /** Só os 2 media_type que aceitam vídeo no schema (ver migrations). */
     private const VIDEO_PURPOSES = ['story', 'promo'];

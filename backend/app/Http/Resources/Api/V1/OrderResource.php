@@ -37,6 +37,21 @@ class OrderResource extends JsonResource
             'estimatedMinutes' => $this->estimated_minutes,
             'deliveredAt' => $this->delivered_at?->toIso8601String(),
             'paymentMethod' => $this->payment_method_code,
+            // Só o detalhe (conta/número) do ÚNICO método já exigido NESTE
+            // pedido — nunca a lista completa de contas do restaurante, que
+            // fica atrás de um endpoint staff-only (RestaurantController::
+            // showPaymentDetails). Sem isto, o cliente não tinha como saber
+            // para onde pagar depois de o restaurante aceitar. `whenLoaded`
+            // evita disparar a relação — quem não carregou
+            // `restaurant.paymentDetails` (ex.: index() do painel do
+            // restaurante, que não precisa disto) recebe `null`, sem N+1.
+            'paymentDestination' => $this->when(
+                $this->payment_method_code && $this->relationLoaded('restaurant')
+                    && $this->restaurant->relationLoaded('paymentDetails'),
+                fn () => $this->restaurant->paymentDetails
+                    ->firstWhere('payment_method_code', $this->payment_method_code)
+                    ?->details,
+            ),
             'cautionRequired' => $this->caution_required === null ? null : (float) $this->caution_required,
             'note' => $this->note,
             'promoCode' => $this->promo_code,
