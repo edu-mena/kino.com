@@ -28,6 +28,7 @@ export const Route = createFileRoute("/admin/mesas")({
 });
 
 const SLOT_OPTIONS = [60, 90, 120, 150, 180];
+const CANCEL_WINDOW_OPTIONS = [0, 15, 30, 60, 120];
 
 type Draft = { name: string; seats: string; area: string };
 const emptyDraft: Draft = { name: "", seats: "4", area: "Interior" };
@@ -53,6 +54,7 @@ function AdminMesas() {
 
   const acceptsReservations = restaurant.acceptsReservations ?? true;
   const slotMinutes = restaurant.reservationSlotMinutes ?? 120;
+  const cancelWindowMinutes = restaurant.reservationCancellationWindowMinutes ?? 30;
 
   // Antes gravava sempre em `saveProfileEdits` (mock/localStorage), mesmo
   // com backend real — o toast de sucesso disparava sem nada ser de facto
@@ -60,7 +62,10 @@ function AdminMesas() {
   // `admin.perfil.tsx`: com backend real, PATCH de verdade + invalida a
   // query do restaurante; sem backend, mantém o mock de sempre.
   const saveReservationSetting = async (
-    patch: { acceptsReservations: boolean } | { reservationSlotMinutes: number },
+    patch:
+      | { acceptsReservations: boolean }
+      | { reservationSlotMinutes: number }
+      | { reservationCancellationWindowMinutes: number },
   ) => {
     if (hasRealBackend) {
       if (!adminToken) {
@@ -171,6 +176,30 @@ function AdminMesas() {
                   }`}
                 >
                   {t("adminMesas.slotValue", { min: m })}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <Label>{t("adminMesas.cancelWindowLabel")}</Label>
+            <p className="text-xs text-muted-foreground">{t("adminMesas.cancelWindowHint")}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CANCEL_WINDOW_OPTIONS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() =>
+                    void saveReservationSetting({ reservationCancellationWindowMinutes: m })
+                  }
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    cancelWindowMinutes === m
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:border-primary"
+                  }`}
+                >
+                  {m === 0
+                    ? t("adminMesas.cancelWindowOff")
+                    : t("adminMesas.slotValue", { min: m })}
                 </button>
               ))}
             </div>

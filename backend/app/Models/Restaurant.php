@@ -21,6 +21,7 @@ class Restaurant extends Model
         'caution_modes_for_orders', 'delivery_zones', 'delivery_fee',
         'estimated_delivery_minutes', 'caution_amount', 'caution_policy_notice',
         'is_featured', 'accepts_reservations', 'reservation_slot_minutes',
+        'reservation_cancellation_window_minutes',
         'orders_paused_manually',
     ];
 

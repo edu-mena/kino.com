@@ -51,6 +51,7 @@ type ApiRestaurant = {
   isFeatured: boolean;
   acceptsReservations: boolean;
   reservationSlotMinutes: number;
+  reservationCancellationWindowMinutes: number;
   ordersPausedManually: boolean;
   isSuspended: boolean;
   wallpaperUrl?: string | null;
@@ -137,6 +138,7 @@ export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
     isFeatured: r.isFeatured,
     acceptsReservations: r.acceptsReservations,
     reservationSlotMinutes: r.reservationSlotMinutes,
+    reservationCancellationWindowMinutes: r.reservationCancellationWindowMinutes,
     ordersPausedManually: r.ordersPausedManually,
     isSuspended: r.isSuspended,
   };
@@ -246,6 +248,7 @@ export type RestaurantPatchPayload = Partial<{
   ordersPausedManually: boolean;
   acceptsReservations: boolean;
   reservationSlotMinutes: number;
+  reservationCancellationWindowMinutes: number;
 }>;
 
 export async function updateApiRestaurant(
@@ -292,6 +295,9 @@ export async function updateApiRestaurant(
   }
   if (patch.reservationSlotMinutes !== undefined) {
     body["reservation_slot_minutes"] = patch.reservationSlotMinutes;
+  }
+  if (patch.reservationCancellationWindowMinutes !== undefined) {
+    body["reservation_cancellation_window_minutes"] = patch.reservationCancellationWindowMinutes;
   }
 
   const { data } = await apiFetch<{ data: ApiRestaurant }>(`/restaurants/${id}`, {

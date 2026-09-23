@@ -130,10 +130,29 @@ class ReservationController extends Controller
 
     /** Cliente/convidado cancela — só enquanto "pending" (ver mock,
      * reservas.tsx: botão de cancelar só aparece nesse estado). */
+    /**
+     * Pendente: sempre pode cancelar. Confirmada: só dentro da janela que o
+     * restaurante configurou (`reservation_cancellation_window_minutes`,
+     * contada a partir de `status_updated_at` — o momento da confirmação),
+     * `0`/sem janela mantém o comportamento de sempre (não pode cancelar
+     * depois de confirmada). Nunca mexe em `caution_status` — cancelar não
+     * é reembolsar; isso fica a cargo do restaurante, à parte.
+     */
     public function cancel(Request $request, Reservation $reservation): ReservationResource
     {
         $this->assertOwnerOrGuest($request, $reservation);
-        abort_unless($reservation->status === 'pending', 422, 'Só é possível cancelar uma reserva ainda pendente.');
+
+        if ($reservation->status !== 'pending') {
+            $window = $reservation->restaurant->reservation_cancellation_window_minutes;
+            $withinWindow = $reservation->status === 'confirmed'
+                && $window > 0
+                && $reservation->status_updated_at
+                && now()->lessThanOrEqualTo($reservation->status_updated_at->clone()->addMinutes($window));
+
+            abort_unless($withinWindow, 422, $reservation->status === 'confirmed'
+                ? 'O prazo para cancelar esta reserva já expirou.'
+                : 'Esta reserva já não pode ser cancelada.');
+        }
 
         $reservation->update(['status' => 'canceled', 'status_updated_at' => now()]);
 

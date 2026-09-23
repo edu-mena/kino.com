@@ -2214,6 +2214,10 @@ export const en: Dictionary = {
     slotLabel: "Average reservation length",
     slotHint: "Used to know which reservations occupy the room at the same time.",
     slotValue: "{min} min",
+    cancelWindowLabel: "Window for the customer to cancel after confirmation",
+    cancelWindowHint:
+      "After this time since confirmation, the customer can no longer cancel alone.",
+    cancelWindowOff: "Off",
     empty: "No tables yet. Add the first one.",
     seatsValue: "{count} seats",
     edit: "Edit",

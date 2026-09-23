@@ -41,6 +41,7 @@ export type RestaurantProfileEdit = Partial<
     | "cautionPolicyNotice"
     | "acceptsReservations"
     | "reservationSlotMinutes"
+    | "reservationCancellationWindowMinutes"
     | "hours"
     | "ordersPausedManually"
   >

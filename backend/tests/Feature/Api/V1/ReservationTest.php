@@ -229,3 +229,81 @@ test('staff de outro restaurante não gere reservas alheias', function () {
         ->patchJson("/api/v1/reservations/{$reservation->uuid}/status", ['status' => 'confirmed'])
         ->assertForbidden();
 });
+
+// --- cancelamento pós-confirmação, dentro de uma janela definida pelo restaurante ---
+
+test('cliente cancela reserva confirmada dentro da janela do restaurante', function () {
+    $restaurant = createReservableRestaurant(['reservation_cancellation_window_minutes' => 30]);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now()->subMinutes(10),
+        'guest_token' => Str::uuid(),
+    ]);
+
+    $this->withHeader('X-Guest-Token', (string) $reservation->guest_token)
+        ->postJson("/api/v1/reservations/{$reservation->uuid}/cancel")
+        ->assertOk()->assertJsonPath('data.status', 'canceled');
+});
+
+test('cliente não cancela reserva confirmada depois de expirar a janela', function () {
+    $restaurant = createReservableRestaurant(['reservation_cancellation_window_minutes' => 30]);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now()->subMinutes(31),
+        'guest_token' => Str::uuid(),
+    ]);
+
+    $this->withHeader('X-Guest-Token', (string) $reservation->guest_token)
+        ->postJson("/api/v1/reservations/{$reservation->uuid}/cancel")
+        ->assertStatus(422);
+});
+
+test('sem janela configurada (0), reserva confirmada não pode ser cancelada — comportamento de sempre', function () {
+    $restaurant = createReservableRestaurant(['reservation_cancellation_window_minutes' => 0]);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now(),
+        'guest_token' => Str::uuid(),
+    ]);
+
+    $this->withHeader('X-Guest-Token', (string) $reservation->guest_token)
+        ->postJson("/api/v1/reservations/{$reservation->uuid}/cancel")
+        ->assertStatus(422);
+});
+
+test('cancelar dentro da janela não mexe na caução — cancelamento não é reembolso', function () {
+    $restaurant = createReservableRestaurant([
+        'reservation_cancellation_window_minutes' => 30,
+        'caution_amount' => 5000,
+    ]);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now(),
+        'caution_amount' => 5000, 'caution_status' => 'paid',
+        'guest_token' => Str::uuid(),
+    ]);
+
+    $this->withHeader('X-Guest-Token', (string) $reservation->guest_token)
+        ->postJson("/api/v1/reservations/{$reservation->uuid}/cancel")
+        ->assertOk()
+        ->assertJsonPath('data.status', 'canceled')
+        ->assertJsonPath('data.cautionStatus', 'paid');
+});
+
+test('reserva pendente continua a poder ser cancelada sempre, independente da janela', function () {
+    $restaurant = createReservableRestaurant(['reservation_cancellation_window_minutes' => 0]);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'pending', 'status_updated_at' => now()->subDays(3),
+        'guest_token' => Str::uuid(),
+    ]);
+
+    $this->withHeader('X-Guest-Token', (string) $reservation->guest_token)
+        ->postJson("/api/v1/reservations/{$reservation->uuid}/cancel")
+        ->assertOk()->assertJsonPath('data.status', 'canceled');
+});

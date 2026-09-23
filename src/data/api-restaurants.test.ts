@@ -39,6 +39,7 @@ describe("mapApiRestaurant", () => {
     isFeatured: false,
     acceptsReservations: true,
     reservationSlotMinutes: 120,
+    reservationCancellationWindowMinutes: 30,
     ordersPausedManually: false,
     isSuspended: false,
   };

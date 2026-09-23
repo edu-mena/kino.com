@@ -43,6 +43,7 @@ class RestaurantResource extends JsonResource
             'isFeatured' => $this->is_featured,
             'acceptsReservations' => $this->accepts_reservations,
             'reservationSlotMinutes' => $this->reservation_slot_minutes,
+            'reservationCancellationWindowMinutes' => $this->reservation_cancellation_window_minutes,
             'ordersPausedManually' => $this->orders_paused_manually,
             // Só isto da subscrição é público — nunca plano/valores/datas de
             // pagamento (billing é interno, ver SubscriptionController). O

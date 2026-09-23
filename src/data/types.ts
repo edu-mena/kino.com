@@ -83,6 +83,10 @@ export interface Restaurant {
   /** Duração média de uma reserva, em minutos — base da janela de ocupação
    * usada para detetar sobre-reservas em `/admin/reservas`. Ausente = 120. */
   reservationSlotMinutes?: number;
+  /** Minutos após a CONFIRMAÇÃO em que o cliente ainda pode cancelar uma
+   * reserva sozinho (ver `/reservas`, `cancelReservation`) — `0` desliga o
+   * cancelamento pós-confirmação. Ausente = 30. */
+  reservationCancellationWindowMinutes?: number;
   /** Horário estruturado por dia da semana (índice 0 = segunda). Quando
    * ausente, `helpers.ts` sintetiza um a partir do id. `openingHours`
    * (string) passa a ser derivado deste. */

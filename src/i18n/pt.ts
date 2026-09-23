@@ -2221,6 +2221,10 @@ export const pt = {
     slotLabel: "Duração média de uma reserva",
     slotHint: "Usada para saber que reservas ocupam a sala ao mesmo tempo.",
     slotValue: "{min} min",
+    cancelWindowLabel: "Prazo para o cliente cancelar depois de confirmada",
+    cancelWindowHint:
+      "Passado este tempo desde a confirmação, o cliente já não pode cancelar sozinho.",
+    cancelWindowOff: "Desligado",
     empty: "Ainda não há mesas. Adicione a primeira.",
     seatsValue: "{count} lugares",
     edit: "Editar",

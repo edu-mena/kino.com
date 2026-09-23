@@ -64,6 +64,10 @@ class UpdateRestaurantRequest extends FormRequest
             'caution_policy_notice' => ['sometimes', 'nullable', 'string'],
             'accepts_reservations' => ['sometimes', 'boolean'],
             'reservation_slot_minutes' => ['sometimes', 'integer', 'min:15'],
+            // `0` desliga o cancelamento pós-confirmação de propósito (ver
+            // ReservationController::cancel) — por isso `min:0`, não `min:15`
+            // como o slot acima.
+            'reservation_cancellation_window_minutes' => ['sometimes', 'integer', 'min:0'],
             'orders_paused_manually' => ['sometimes', 'boolean'],
         ];
     }

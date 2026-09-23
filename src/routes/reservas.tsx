@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { isRefReviewed } from "@/data/reviews-store";
+import { useRestaurantDetail } from "@/data/use-restaurants-query";
 import { formatKz } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
@@ -87,6 +88,18 @@ function Reservas() {
   // é um ecrã de cada vez, no desktop fica lado a lado.
   const [activeId, setActiveId] = useState<string | null>(null);
   const active = reservations.find((r) => r.id === activeId) ?? null;
+  // Só para ler a janela de cancelamento pós-confirmação configurada pelo
+  // restaurante (`reservationCancellationWindowMinutes`) — as reservas em
+  // si já vêm com `restaurantName`/`restaurantImage` denormalizados, sem
+  // precisar do `Restaurant` completo para o resto do ecrã.
+  const { data: activeRestaurant } = useRestaurantDetail(active?.restaurantId);
+  const cancelWindowMinutes = activeRestaurant?.reservationCancellationWindowMinutes ?? 0;
+  const canCancelConfirmed =
+    !!active &&
+    active.status === "Confirmada" &&
+    cancelWindowMinutes > 0 &&
+    !!active.statusUpdatedAt &&
+    now - new Date(active.statusUpdatedAt).getTime() <= cancelWindowMinutes * 60_000;
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [review, setReview] = useState<{ id: string; restaurantId: string; name: string } | null>(
     null,
@@ -239,11 +252,12 @@ function Reservas() {
                     </div>
 
                     {(active.status === "Pendente" ||
+                      canCancelConfirmed ||
                       (active.status === "Confirmada" &&
                         active.date < todayStr &&
                         !isRefReviewed(`reservation:${active.id}`))) && (
                       <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-5">
-                        {active.status === "Pendente" && (
+                        {(active.status === "Pendente" || canCancelConfirmed) && (
                           <button
                             type="button"
                             onClick={() => setConfirmCancelId(active.id)}
