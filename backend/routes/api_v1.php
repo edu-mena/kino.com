@@ -163,7 +163,16 @@ Route::middleware(['auth:sanctum', 'throttle:uploads'])->group(function () {
     Route::post('restaurants/{restaurant}/stories', [StoryController::class, 'store']);
     Route::post('stories', [StoryController::class, 'storeGlobal']);
     Route::delete('stories/{story}', [StoryController::class, 'destroy']);
+});
 
+// Promoções — mesmo raciocínio de payment-proof/invoice (reservations/
+// orders): apesar de aceitarem um ficheiro (media), ficam em `writes`
+// (120/min), não `uploads` (10/min, partilhado com TODO upload de imagem
+// do restaurante — pratos, capa, galeria). Um admin a montar o cardápio
+// (várias fotos de prato) esgotava a quota antes de sequer chegar a criar
+// a promoção, que falhava sempre com 429 — indistinguível de um erro
+// genérico no frontend ("Não foi possível guardar a promoção").
+Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('restaurants/{restaurant}/offers', [OfferController::class, 'store']);
     Route::post('offers', [OfferController::class, 'storeGlobal']);
     // POST, não PATCH: este endpoint aceita multipart (troca de
