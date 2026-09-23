@@ -168,13 +168,17 @@ type CartValue = {
   /** Desconto (Kz) do código promocional deste pedido — 0 quando não há. */
   orderDiscount: (order: CartOrder) => number;
   orderTotal: (order: CartOrder) => number;
+  /** `ok: false` = a criação falhou (validação do backend ou erro de rede)
+   * — o pedido pode não ter sido gravado. Antes era `void`
+   * (fire-and-forget): quem chamava mostrava sempre "sucesso" mesmo quando
+   * a API rejeitava o pedido, e o pedido nunca aparecia em lado nenhum. */
   addOrder: (
     restaurantId: string,
     items: NewCartLine[],
     fulfillment: OrderFulfillment,
     note?: string,
     promo?: PromoEffect | null,
-  ) => void;
+  ) => Promise<boolean>;
   setQty: (orderId: string, lineKey: string, qty: number) => void;
   removeOrder: (orderId: string) => void;
   /** Cliente cancela o próprio pedido — só possível enquanto "pending" (o
@@ -558,21 +562,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // Sempre cria um pedido NOVO — cada "Solicitar delivery" é um
         // delivery à parte, mesmo que já haja um pedido pendente do mesmo
         // restaurante.
-        addOrder: (restaurantId, items, fulfillment, note, promo) => {
+        addOrder: async (restaurantId, items, fulfillment, note, promo) => {
           const token = getAuthToken();
-          void createApiOrder(
-            restaurantId,
-            items,
-            fulfillment,
-            note,
-            promo,
-            {
-              ...(user?.name ? { customerName: user.name } : {}),
-              ...(user?.phone ? { customerPhone: user.phone } : {}),
-              ...(user?.email ? { customerEmail: user.email } : {}),
-            },
-            token,
-          ).then(refetchApi);
+          try {
+            await createApiOrder(
+              restaurantId,
+              items,
+              fulfillment,
+              note,
+              promo,
+              {
+                ...(user?.name ? { customerName: user.name } : {}),
+                ...(user?.phone ? { customerPhone: user.phone } : {}),
+                ...(user?.email ? { customerEmail: user.email } : {}),
+              },
+              token,
+            );
+            refetchApi();
+            return true;
+          } catch {
+            return false;
+          }
         },
         // Editar quantidades de um pedido já submetido não é suportado
         // pela API real (sem consumidores ativos hoje — ver auditoria).
@@ -618,7 +628,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return {
       ...base,
       hydrated,
-      addOrder: (restaurantId, items, fulfillment, note, promo) =>
+      addOrder: (restaurantId, items, fulfillment, note, promo) => {
         setMockOrders((prev) => [
           ...prev,
           {
@@ -658,7 +668,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 }
               : {}),
           },
-        ]),
+        ]);
+        return Promise.resolve(true);
+      },
       setQty: (orderId, key, qty) =>
         setMockOrders((prev) =>
           prev

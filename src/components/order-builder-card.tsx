@@ -24,14 +24,13 @@ import {
   addressProvince,
   canDeliverToNeighborhood,
   getDeliveryZones,
-  getMenuItem,
-  getRestaurant,
   getRestaurantFulfillmentModes,
   orderModeRequiresCaution,
 } from "@/data/helpers";
 import { resolvePromoCode, type PromoEffect } from "@/data/offers-store";
 import { computeDeliveryFee } from "@/data/platform-settings-store";
 import { useOffers } from "@/data/use-offers";
+import { useRestaurantDetail, useRestaurantMenuItems } from "@/data/use-restaurants-query";
 import type { FulfillmentType } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { billLineUnitPrice, useBill } from "@/lib/bill";
@@ -89,6 +88,12 @@ export function OrderBuilderCard() {
   const { restaurantId, lines, updateQty, discard } = useBill();
   const { addOrder } = useCart();
   const status = useRestaurantStatus(restaurantId ?? "");
+  // Real-aware (`useRestaurantDetail`/`useRestaurantMenuItems`) em vez do
+  // `getRestaurant`/`getMenuItem` síncronos de `@/data/helpers` — esses só
+  // conhecem o mock local e devolviam sempre `undefined` para um restaurante
+  // real, escondendo este cartão inteiro em silêncio (`return null` abaixo).
+  const restaurantQuery = useRestaurantDetail(restaurantId ?? undefined);
+  const menuItemsQuery = useRestaurantMenuItems(restaurantId ?? undefined);
   const { allAddresses, selected: headerLocation } = useLocation();
   const deliveryPolicy = useDeliveryPolicy();
   const navigate = useNavigate();
@@ -106,10 +111,28 @@ export function OrderBuilderCard() {
   const [pickupChoice, setPickupChoice] = useState<"asap" | "scheduled">("asap");
   const [pickupTime, setPickupTime] = useState(defaultPickupTime);
   const [partySize, setPartySize] = useState(2);
+  const [submitting, setSubmitting] = useState(false);
 
   if (!restaurantId || lines.length === 0) return null;
-  const restaurant = getRestaurant(restaurantId);
-  if (!restaurant) return null;
+
+  const restaurant = restaurantQuery.data;
+  if (!restaurant) {
+    // Nunca esconder o cartão em silêncio enquanto há itens na lista — só
+    // `null` quando não há mesmo lista (acima). A carregar ou falhado, o
+    // cliente continua a ver que tem algo pendente.
+    return (
+      <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-[1.5rem] bg-neutral-900 p-4 text-primary-foreground shadow-xl">
+        <span className="flex items-center gap-2 font-display text-sm font-bold">
+          <Receipt className="h-4 w-4 shrink-0" />
+          {restaurantQuery.isError
+            ? t("orderBuilderCard.loadError")
+            : t("orderBuilderCard.loading")}
+        </span>
+      </div>
+    );
+  }
+
+  const menuItemsById = new Map((menuItemsQuery.data ?? []).map((item) => [item.id, item]));
 
   const paused = !status.available;
   const pausedMessage =
@@ -121,7 +144,10 @@ export function OrderBuilderCard() {
   const mode: FulfillmentType =
     modeOverride && availableModes.includes(modeOverride) ? modeOverride : availableModes[0]!;
 
-  const total = lines.reduce((sum, l) => sum + billLineUnitPrice(l) * l.qty, 0);
+  const total = lines.reduce(
+    (sum, l) => sum + billLineUnitPrice(l, menuItemsById.get(l.menuItemId)) * l.qty,
+    0,
+  );
   const cautionForMode = orderModeRequiresCaution(restaurant, mode);
   const promoDiscount = promo?.percentOff ? Math.round(total * (promo.percentOff / 100)) : 0;
 
@@ -164,9 +190,9 @@ export function OrderBuilderCard() {
     setStep("confirm");
   };
 
-  const submit = () => {
-    if (paused) {
-      toast.error(pausedMessage);
+  const submit = async () => {
+    if (paused || submitting) {
+      if (paused) toast.error(pausedMessage);
       return;
     }
 
@@ -192,7 +218,8 @@ export function OrderBuilderCard() {
       fulfillment = { type: "dinein", partySize };
     }
 
-    addOrder(
+    setSubmitting(true);
+    const ok = await addOrder(
       restaurantId,
       lines.map((line) => ({
         menuItemId: line.menuItemId,
@@ -203,6 +230,11 @@ export function OrderBuilderCard() {
       note,
       promo,
     );
+    setSubmitting(false);
+    if (!ok) {
+      toast.error(t("orderBuilderCard.orderCreatedError"));
+      return;
+    }
     discard();
     setStep("list");
     setNote("");
@@ -239,7 +271,7 @@ export function OrderBuilderCard() {
             <>
               <ul className="max-h-36 space-y-2 overflow-y-auto">
                 {lines.map((line) => {
-                  const item = getMenuItem(line.menuItemId);
+                  const item = menuItemsById.get(line.menuItemId);
                   if (!item) return null;
                   return (
                     <li key={line.key} className="flex items-center gap-2 text-sm">
@@ -262,7 +294,7 @@ export function OrderBuilderCard() {
                         <Plus className="h-3 w-3" />
                       </button>
                       <span className="w-16 shrink-0 text-right font-semibold">
-                        {formatKz(item.price * line.qty)}
+                        {formatKz(billLineUnitPrice(line, item) * line.qty)}
                       </span>
                       <button
                         type="button"
@@ -607,7 +639,7 @@ export function OrderBuilderCard() {
 
               <button
                 type="button"
-                disabled={mode === "delivery" && !chosenAddressId}
+                disabled={(mode === "delivery" && !chosenAddressId) || submitting}
                 onClick={submit}
                 className="mt-3 w-full rounded-xl bg-brand px-5 py-3 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { getMenuItem, getRestaurant } from "@/data/helpers";
-import type { SelectedIngredient } from "@/data/types";
+import { getRestaurant } from "@/data/helpers";
+import type { MenuItem, SelectedIngredient } from "@/data/types";
 import { useTranslation } from "@/i18n";
 
 const STORAGE_KEY = "luku_active_bill";
@@ -22,9 +22,12 @@ type ActiveBill = {
 
 const EMPTY_BILL: ActiveBill = { restaurantId: null, lines: [] };
 
-/** Preço unitário: base do prato + adicionais selecionados com custo. */
-export function billLineUnitPrice(line: BillLine): number {
-  const menuItem = getMenuItem(line.menuItemId);
+/** Preço unitário: base do prato + adicionais selecionados com custo. Recebe
+ * o prato já resolvido (não faz a busca aqui) — com backend real, o
+ * `menuItemId` é um UUID que só existe na API, nunca no mock local; quem
+ * chama é responsável por resolver o prato certo (ver `order-builder-card`,
+ * que usa `useRestaurantMenuItems`, real-aware, em vez do mock síncrono). */
+export function billLineUnitPrice(line: BillLine, menuItem: MenuItem | undefined): number {
   if (!menuItem) return 0;
   const extras = line.selectedIngredients
     .filter((s) => s.included)
@@ -33,10 +36,6 @@ export function billLineUnitPrice(line: BillLine): number {
       0,
     );
   return menuItem.price + extras;
-}
-
-function lineTotal(line: BillLine): number {
-  return billLineUnitPrice(line) * line.qty;
 }
 
 /** Chave que distingue "burger sem cebola" de "burger" e de "burger + bacon". */
@@ -56,7 +55,6 @@ type BillValue = ActiveBill & {
   ) => void;
   updateQty: (key: string, qty: number) => void;
   discard: () => void;
-  subtotalFor: (restaurantId: string) => number;
 };
 
 const BillContext = createContext<BillValue | null>(null);
@@ -112,8 +110,6 @@ export function BillProvider({ children }: { children: ReactNode }) {
     // Descarta a lista temporária inteira — ex: pedido de entrega já criado,
     // trocar de ideias, ou trocar de restaurante a meio da escolha.
     discard: () => persist(EMPTY_BILL),
-    subtotalFor: (restaurantId) =>
-      bill.restaurantId === restaurantId ? bill.lines.reduce((sum, l) => sum + lineTotal(l), 0) : 0,
   };
 
   return <BillContext.Provider value={value}>{children}</BillContext.Provider>;
