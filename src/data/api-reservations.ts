@@ -14,12 +14,15 @@ const STATUS_FROM_API: Record<string, string> = {
   declined: "Recusada",
   voided: "Anulada",
   canceled: "Cancelada",
+  no_show: "Não compareceu",
 };
 
 const STATUS_TO_API: Record<string, string> = {
+  Pendente: "pending",
   Confirmada: "confirmed",
   Recusada: "declined",
   Anulada: "voided",
+  "Não compareceu": "no_show",
 };
 
 /** `caution_status` do backend real (`pending`/`paid`/`not_required`/
@@ -56,6 +59,8 @@ type ApiReservation = {
   specialRequests: string | null;
   paymentProofUrl?: string | null;
   paymentProofAt?: string | null;
+  invoiceUrl?: string | null;
+  invoiceAt?: string | null;
   createdAt: string;
 };
 
@@ -80,6 +85,8 @@ function mapApiReservation(r: ApiReservation, ownerKey: string): Reservation {
     ...(r.specialRequests ? { specialRequests: r.specialRequests } : {}),
     ...(r.paymentProofUrl ? { paymentProof: r.paymentProofUrl } : {}),
     ...(r.paymentProofAt ? { paymentProofAt: r.paymentProofAt } : {}),
+    ...(r.invoiceUrl ? { invoice: r.invoiceUrl } : {}),
+    ...(r.invoiceAt ? { invoiceAt: r.invoiceAt } : {}),
     createdAt: r.createdAt,
   };
 }
@@ -192,6 +199,26 @@ export async function storeApiReservationPaymentProof(
   await apiFetch(`/reservations/${id}/payment-proof`, {
     method: "POST",
     ...(token ? { token } : {}),
+    body,
+  });
+}
+
+/** Fatura da reserva, emitida pelo restaurante (staff-only) — imagem ou
+ * PDF, mesmo cálculo de extensão de `storeApiReservationPaymentProof`. Ao
+ * contrário da fatura de pedidos, não tem `type` (normal/NIF): a reserva
+ * não tem esse conceito, é só o comprovativo final de consumo/caução. */
+export async function storeApiReservationInvoice(
+  id: string,
+  dataUrl: string,
+  token: string,
+): Promise<void> {
+  const mime = dataUrl.match(/^data:([^;]+);base64/)?.[1] ?? "image/jpeg";
+  const ext = mime === "application/pdf" ? "pdf" : (mime.split("/")[1] ?? "jpg");
+  const body = new FormData();
+  body.append("invoice", dataUrlToFile(dataUrl, `invoice.${ext}`));
+  await apiFetch(`/reservations/${id}/invoice`, {
+    method: "POST",
+    token,
     body,
   });
 }

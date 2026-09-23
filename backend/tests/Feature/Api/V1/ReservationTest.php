@@ -347,3 +347,95 @@ test('convidado sem token não consegue anexar comprovativo de outra reserva', f
     $this->postJson("/api/v1/reservations/{$reservation->uuid}/payment-proof", ['proof' => $image])
         ->assertStatus(404);
 });
+
+// --- "não compareceu" (no_show) e reabertura ---
+
+test('staff não marca "não compareceu" antes da hora da reserva passar', function () {
+    $restaurant = createReservableRestaurant();
+    $owner = ownerOf($restaurant);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00',
+        'people_count' => 2, 'status' => 'confirmed', 'status_updated_at' => now(),
+    ]);
+
+    $this->actingAs($owner, 'sanctum')
+        ->patchJson("/api/v1/reservations/{$reservation->uuid}/status", ['status' => 'no_show'])
+        ->assertStatus(422);
+});
+
+test('staff marca "não compareceu" depois da hora da reserva já ter passado', function () {
+    $restaurant = createReservableRestaurant();
+    $owner = ownerOf($restaurant);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->subDay()->toDateString(), 'time' => '19:00',
+        'people_count' => 2, 'status' => 'confirmed', 'status_updated_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($owner, 'sanctum')
+        ->patchJson("/api/v1/reservations/{$reservation->uuid}/status", ['status' => 'no_show'])
+        ->assertOk()->assertJsonPath('data.status', 'no_show');
+});
+
+test('staff reabre reserva recusada ou anulada, de volta para pendente', function () {
+    $restaurant = createReservableRestaurant();
+    $owner = ownerOf($restaurant);
+    $declined = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00',
+        'people_count' => 2, 'status' => 'declined', 'status_updated_at' => now(),
+    ]);
+    $voided = $restaurant->reservations()->create([
+        'customer_name' => 'B', 'customer_phone' => '901',
+        'date' => now()->addDay()->toDateString(), 'time' => '20:00',
+        'people_count' => 2, 'status' => 'voided', 'status_updated_at' => now(),
+    ]);
+
+    $this->actingAs($owner, 'sanctum')
+        ->patchJson("/api/v1/reservations/{$declined->uuid}/status", ['status' => 'pending'])
+        ->assertOk()->assertJsonPath('data.status', 'pending');
+
+    $this->actingAs($owner, 'sanctum')
+        ->patchJson("/api/v1/reservations/{$voided->uuid}/status", ['status' => 'pending'])
+        ->assertOk()->assertJsonPath('data.status', 'pending');
+});
+
+// --- fatura da reserva (staff) ---
+
+test('staff emite fatura da reserva, imagem ou PDF', function () {
+    Storage::fake('r2', ['url' => 'https://cdn.luku.com']);
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+    $owner = ownerOf($restaurant);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->subDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'no_show', 'status_updated_at' => now(),
+        'caution_amount' => 5000, 'caution_status' => 'paid',
+    ]);
+
+    $pdf = UploadedFile::fake()->create('fatura.pdf', 200, 'application/pdf');
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/reservations/{$reservation->uuid}/invoice", ['invoice' => $pdf])
+        ->assertOk()
+        ->assertJsonPath('data.invoiceUrl', fn ($url) => str_contains($url, '.pdf'));
+
+    expect($reservation->fresh()->invoice_at)->not->toBeNull();
+});
+
+test('staff de outro restaurante não emite fatura de reserva alheia', function () {
+    $restaurant = createReservableRestaurant();
+    $otherRestaurant = createReservableRestaurant();
+    $otherOwner = ownerOf($otherRestaurant);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->subDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'no_show', 'status_updated_at' => now(),
+    ]);
+    $image = UploadedFile::fake()->image('fatura.jpg');
+
+    $this->actingAs($otherOwner, 'sanctum')
+        ->postJson("/api/v1/reservations/{$reservation->uuid}/invoice", ['invoice' => $image])
+        ->assertForbidden();
+});

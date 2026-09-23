@@ -21,6 +21,7 @@ class Reservation extends Model
         'caution_amount', 'caution_status', 'status', 'status_updated_at',
         'table_id', 'special_requests',
         'payment_proof_url', 'payment_proof_at',
+        'invoice_url', 'invoice_at',
     ];
 
     protected function casts(): array
@@ -30,6 +31,7 @@ class Reservation extends Model
             'caution_amount' => 'decimal:2',
             'status_updated_at' => 'datetime',
             'payment_proof_at' => 'datetime',
+            'invoice_at' => 'datetime',
         ];
     }
 

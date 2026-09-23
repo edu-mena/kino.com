@@ -44,6 +44,7 @@ const STATUS_KEY: Record<string, string> = {
   Recusada: "statusRejected",
   Cancelada: "statusCanceled",
   Anulada: "statusAnnulled",
+  "Não compareceu": "statusNoShow",
 };
 
 const STATUS_TONE: Record<string, string> = {
@@ -51,6 +52,7 @@ const STATUS_TONE: Record<string, string> = {
   Recusada: "bg-destructive/15 text-destructive",
   Cancelada: "bg-muted-foreground/15 text-muted-foreground",
   Anulada: "bg-muted-foreground/15 text-muted-foreground",
+  "Não compareceu": "bg-destructive/15 text-destructive",
 };
 
 // `cautionStatus` já chega em português canónico (mock e API real — ver
@@ -146,6 +148,8 @@ function Reservas() {
   const [proofUploading, setProofUploading] = useState(false);
   const [proofLightboxOpen, setProofLightboxOpen] = useState(false);
   const proofIsPdf = isPdfDataUrl(active?.paymentProof);
+  const [invoiceLightboxOpen, setInvoiceLightboxOpen] = useState(false);
+  const invoiceIsPdf = isPdfDataUrl(active?.invoice);
 
   const onProofFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -349,6 +353,57 @@ function Reservas() {
                           )}
                         </div>
                       )}
+
+                    {/* Fatura emitida pelo restaurante — o cliente só vê, não carrega.
+                        Combina o consumo e a caução; numa reserva "não compareceu",
+                        é só a caução. */}
+                    {(active.invoice ||
+                      active.status === "Confirmada" ||
+                      active.status === "Não compareceu") && (
+                      <div className="mt-4 border-t border-border pt-4">
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                          {t("reservas.invoiceTitle")}
+                        </p>
+                        {active.invoice ? (
+                          <div className="mt-2 space-y-2">
+                            <button
+                              type="button"
+                              onClick={() => setInvoiceLightboxOpen(true)}
+                              aria-label={t("reservas.invoiceViewAria")}
+                              className="block w-full"
+                            >
+                              {invoiceIsPdf ? (
+                                <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                  <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                  {t("reservas.invoicePdfLabel")}
+                                </span>
+                              ) : (
+                                <img
+                                  src={active.invoice}
+                                  alt=""
+                                  className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                />
+                              )}
+                            </button>
+                            <span className="block text-xs font-semibold text-success">
+                              {t("reservas.invoiceIssued")}
+                            </span>
+                            <MediaLightbox
+                              open={invoiceLightboxOpen}
+                              onOpenChange={setInvoiceLightboxOpen}
+                              src={active.invoice}
+                              isPdf={invoiceIsPdf}
+                              title={t("reservas.invoiceTitle")}
+                            />
+                          </div>
+                        ) : (
+                          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <CalendarCheck className="h-3.5 w-3.5 shrink-0" />
+                            {t("reservas.invoicePending")}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     {(active.status === "Pendente" ||
                       canCancelConfirmed ||

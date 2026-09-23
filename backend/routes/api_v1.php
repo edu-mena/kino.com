@@ -141,6 +141,7 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::get('restaurants/{restaurant}/reservations', [ReservationController::class, 'index']);
     Route::patch('reservations/{reservation}/status', [ReservationController::class, 'updateStatus']);
     Route::patch('reservations/{reservation}/table', [ReservationController::class, 'assignTable']);
+    Route::post('reservations/{reservation}/invoice', [ReservationController::class, 'storeInvoice']);
 });
 
 /*

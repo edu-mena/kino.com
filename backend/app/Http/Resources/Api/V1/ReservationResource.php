@@ -34,6 +34,8 @@ class ReservationResource extends JsonResource
             'specialRequests' => $this->special_requests,
             'paymentProofUrl' => $this->payment_proof_url,
             'paymentProofAt' => $this->payment_proof_at?->toIso8601String(),
+            'invoiceUrl' => $this->invoice_url,
+            'invoiceAt' => $this->invoice_at?->toIso8601String(),
             // Só presente quando o controller anexa (GET staff — ver
             // ReservationOccupancyService): sinal de sobreposição de mesa/
             // lotação na janela desta reserva, nunca bloqueia a criação.

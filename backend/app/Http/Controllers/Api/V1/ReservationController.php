@@ -173,6 +173,22 @@ class ReservationController extends Controller
         return new ReservationResource($reservation);
     }
 
+    /** Fatura da reserva, emitida pelo restaurante — mirror exato de
+     * OrderController::storeInvoice. Usada sobretudo para cobrar a caução
+     * de uma reserva marcada "não compareceu" (ver
+     * UpdateReservationStatusRequest), mas também disponível numa reserva
+     * normal, já que a caução combina na fatura final de consumo. */
+    public function storeInvoice(Request $request, Reservation $reservation, MediaUploadService $uploads): ReservationResource
+    {
+        $this->authorize('manageOperations', $reservation->restaurant);
+        $request->validate(['invoice' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:8192']]);
+
+        $url = $uploads->storeDocument($request->file('invoice'), 'invoice', $reservation->uuid);
+        $reservation->update(['invoice_url' => $url, 'invoice_at' => now()]);
+
+        return new ReservationResource($reservation);
+    }
+
     /**
      * @param  Collection<int, Reservation>  $reservations
      */

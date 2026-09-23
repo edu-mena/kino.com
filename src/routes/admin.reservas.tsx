@@ -12,9 +12,11 @@ import {
   List,
   Mail,
   Phone,
+  Receipt,
   Search,
   TrendingUp,
   TriangleAlert,
+  Upload,
   Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -26,7 +28,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTranslation, type Locale } from "@/i18n";
 import { formatKz } from "@/lib/format";
-import { isPdfDataUrl } from "@/lib/image-upload";
+import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useTables } from "@/lib/tables";
@@ -65,6 +67,7 @@ const statusTone: Record<string, string> = {
   Cancelada: "bg-muted-foreground/15 text-muted-foreground",
   Anulada: "bg-muted-foreground/15 text-muted-foreground",
   Pendente: "bg-brand/15 text-brand",
+  "Não compareceu": "bg-destructive/15 text-destructive",
 };
 
 /** "2026-08-31 14:02" e ISO ("2026-08-31T14:02:00Z") entram os dois. */
@@ -81,7 +84,7 @@ function weekStart(d: Date) {
 
 function AdminReservas() {
   const { restaurant } = useRestaurantAdmin();
-  const { reservations, updateReservationStatus, assignTable } = useReservations();
+  const { reservations, updateReservationStatus, setInvoice, assignTable } = useReservations();
   const { tablesByRestaurant, totalSeats: totalSeatsOf, tableCount: tableCountOf } = useTables();
   const { t, locale } = useTranslation();
 
@@ -94,6 +97,8 @@ function AdminReservas() {
   const [conflictOpen, setConflictOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [proofLightboxOpen, setProofLightboxOpen] = useState(false);
+  const [invoiceLightboxOpen, setInvoiceLightboxOpen] = useState(false);
+  const [invoiceUploading, setInvoiceUploading] = useState(false);
   type NavTab = "reservas" | "dia" | "stats";
   const [navTab, setNavTab] = useState<NavTab>("reservas");
 
@@ -132,6 +137,7 @@ function AdminReservas() {
     Recusada: t("adminReservas.statusRejected"),
     Cancelada: t("adminReservas.statusCanceled"),
     Anulada: t("adminReservas.statusAnnulled"),
+    "Não compareceu": t("adminReservas.statusNoShow"),
   };
 
   // `cautionStatus` já chega em português canónico (mock e API real — ver
@@ -260,6 +266,11 @@ function AdminReservas() {
   }, [mine, statusCounts, todayStr, locale]);
 
   const isPast = (r: (typeof mine)[number]) => dayOf(r.date) < todayStr;
+
+  /** Data+hora já passou (ao contrário de `isPast`, que só olha à data) —
+   * mesma regra do backend para permitir marcar "não compareceu"
+   * (`UpdateReservationStatusRequest::withValidator`). */
+  const hasTimePassed = (r: (typeof mine)[number]) => toTime(`${r.date}T${r.time}`) < Date.now();
 
   /** Estado a mostrar: reservas com data já passada aparecem como "Inativa"
    * (cinza), independentemente do estado real. */
@@ -409,8 +420,12 @@ function AdminReservas() {
 
   if (!restaurant) return null;
 
-  const respond = (id: string, status: string, toastKey: string) => {
-    updateReservationStatus(id, status);
+  const respond = async (id: string, status: string, toastKey: string) => {
+    const ok = await updateReservationStatus(id, status);
+    if (!ok) {
+      toast.error(t("adminReservas.statusErrorToast"));
+      return;
+    }
     toast.success(t(`adminReservas.${toastKey}`));
   };
 
@@ -700,12 +715,26 @@ function AdminReservas() {
                           </div>
 
                           {/* Ações no topo — o passo mais importante sem obrigar a scroll */}
-                          {isPast(active) || active.status === "Cancelada" ? (
+                          {active.status === "Confirmada" && hasTimePassed(active) ? (
+                            <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-5">
+                              <button
+                                type="button"
+                                onClick={() => respond(active.id, "Não compareceu", "noShowToast")}
+                                className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                              >
+                                {t("adminReservas.markNoShow")}
+                              </button>
+                            </div>
+                          ) : isPast(active) ||
+                            active.status === "Cancelada" ||
+                            active.status === "Não compareceu" ? (
                             <p className="mt-5 flex items-center gap-1.5 border-t border-border pt-5 text-xs text-muted-foreground">
                               <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
                               {active.status === "Cancelada"
                                 ? t("adminReservas.canceledNote")
-                                : t("adminReservas.inactiveNote")}
+                                : active.status === "Não compareceu"
+                                  ? t("adminReservas.noShowNote")
+                                  : t("adminReservas.inactiveNote")}
                             </p>
                           ) : (
                             <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-5">
@@ -822,6 +851,127 @@ function AdminReservas() {
                                   <Clock className="h-3.5 w-3.5 shrink-0" />
                                   {t("adminReservas.proofPending")}
                                 </p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Fatura da reserva, emitida pelo restaurante — a caução combina
+                              na fatura final de consumo; numa reserva "não compareceu", é
+                              só a caução. Ao contrário do comprovativo (cliente carrega,
+                              restaurante vê), aqui é o inverso. */}
+                          {(active.status === "Confirmada" ||
+                            active.status === "Não compareceu") && (
+                            <div className="mt-4 border-t border-border pt-4">
+                              <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                <Receipt className="h-3.5 w-3.5" />
+                                {t("adminReservas.invoiceTitle")}
+                              </p>
+                              {active.invoice ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => setInvoiceLightboxOpen(true)}
+                                    aria-label={t("adminReservas.invoiceViewAria")}
+                                    className="mt-2 block w-full"
+                                  >
+                                    {isPdfDataUrl(active.invoice) ? (
+                                      <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                        <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                        {t("adminReservas.invoicePdfLabel")}
+                                      </span>
+                                    ) : (
+                                      <img
+                                        src={active.invoice}
+                                        alt=""
+                                        className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                      />
+                                    )}
+                                  </button>
+                                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                                    <p className="text-xs text-success">
+                                      {active.invoiceAt
+                                        ? t("adminReservas.invoiceIssuedAt", {
+                                            when: fmtDateTime(active.invoiceAt),
+                                          })
+                                        : t("adminReservas.invoiceIssued")}
+                                    </p>
+                                    <label className="shrink-0 cursor-pointer text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive">
+                                      {t("adminReservas.invoiceReplace")}
+                                      <input
+                                        type="file"
+                                        accept="image/*,application/pdf"
+                                        className="hidden"
+                                        disabled={invoiceUploading}
+                                        onChange={async (e) => {
+                                          const file = e.target.files?.[0];
+                                          e.target.value = "";
+                                          if (!file) return;
+                                          setInvoiceUploading(true);
+                                          try {
+                                            const dataUrl = await fileToDocumentDataUrl(file);
+                                            const ok = await setInvoice(active.id, dataUrl);
+                                            if (!ok)
+                                              throw new Error(t("adminReservas.invoiceError"));
+                                            toast.success(t("adminReservas.invoiceSentToast"));
+                                          } catch (err) {
+                                            toast.error(
+                                              err instanceof Error
+                                                ? err.message
+                                                : t("adminReservas.invoiceError"),
+                                            );
+                                          } finally {
+                                            setInvoiceUploading(false);
+                                          }
+                                        }}
+                                      />
+                                    </label>
+                                  </div>
+                                  <MediaLightbox
+                                    open={invoiceLightboxOpen}
+                                    onOpenChange={setInvoiceLightboxOpen}
+                                    src={active.invoice}
+                                    isPdf={isPdfDataUrl(active.invoice)}
+                                    title={t("adminReservas.invoiceTitle")}
+                                  />
+                                </>
+                              ) : (
+                                <>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {t("adminReservas.invoiceHint")}
+                                  </p>
+                                  <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 px-4 py-3 text-xs font-bold text-primary transition-colors hover:bg-primary/5">
+                                    <Upload className="h-4 w-4" />
+                                    {invoiceUploading
+                                      ? t("adminReservas.invoiceUploading")
+                                      : t("adminReservas.invoiceUpload")}
+                                    <input
+                                      type="file"
+                                      accept="image/*,application/pdf"
+                                      className="hidden"
+                                      disabled={invoiceUploading}
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        e.target.value = "";
+                                        if (!file) return;
+                                        setInvoiceUploading(true);
+                                        try {
+                                          const dataUrl = await fileToDocumentDataUrl(file);
+                                          const ok = await setInvoice(active.id, dataUrl);
+                                          if (!ok) throw new Error(t("adminReservas.invoiceError"));
+                                          toast.success(t("adminReservas.invoiceSentToast"));
+                                        } catch (err) {
+                                          toast.error(
+                                            err instanceof Error
+                                              ? err.message
+                                              : t("adminReservas.invoiceError"),
+                                          );
+                                        } finally {
+                                          setInvoiceUploading(false);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </>
                               )}
                             </div>
                           )}

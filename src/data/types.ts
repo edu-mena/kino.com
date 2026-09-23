@@ -221,6 +221,13 @@ export interface Reservation {
   paymentProof?: string;
   /** ISO — quando o comprovativo foi carregado. */
   paymentProofAt?: string;
+  /** Fatura emitida pelo restaurante (data URL de imagem ou PDF) — usada
+   * sobretudo para cobrar a caução de uma reserva "Não compareceu", mas
+   * disponível em qualquer reserva já que a caução combina na fatura final
+   * de consumo. Visível de imediato ao cliente em `/reservas`. */
+  invoice?: string;
+  /** ISO — quando a fatura foi emitida. */
+  invoiceAt?: string;
   createdAt: string;
 }
 

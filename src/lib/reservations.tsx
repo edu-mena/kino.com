@@ -5,6 +5,7 @@ import {
   createApiReservation,
   fetchApiReservationsForRestaurant,
   fetchMyApiReservations,
+  storeApiReservationInvoice,
   storeApiReservationPaymentProof,
   updateApiReservationStatus,
 } from "@/data/api-reservations";
@@ -42,8 +43,12 @@ type ReservationsValue = {
    * a API rejeitava o pedido, e a reserva nunca aparecia em lado nenhum. */
   addReservation: (input: NewReservationInput) => Promise<boolean>;
   /** Usado pelo painel do restaurante (`/admin/reservas`) — Pendente →
-   * Confirmada/Recusada/Cancelada. */
-  updateReservationStatus: (id: string, status: string) => void;
+   * Confirmada/Recusada, Confirmada → Anulada/Não compareceu, e reabertura
+   * (Recusada/Anulada → Pendente). `ok: false` = falha real (transição
+   * inválida, 422 do backend, etc.) — antes era fire-and-forget, sem
+   * `.catch()`, e o chamador mostrava sempre um toast de sucesso mesmo
+   * quando a API rejeitava a mudança. */
+  updateReservationStatus: (id: string, status: string) => Promise<boolean>;
   /** Cliente cancela a própria reserva "Pendente" (`/reservas`) — distinto
    * de `updateReservationStatus`: esse é staff-only (token de admin) e nem
    * tem "Cancelada" mapeada para a API; este usa o token do CLIENTE e a
@@ -53,6 +58,10 @@ type ReservationsValue = {
    * URL de imagem ou PDF. `ok: false` = falha real (upload rejeitado,
    * tamanho excedido, etc.). */
   setPaymentProof: (id: string, dataUrl: string) => Promise<boolean>;
+  /** Restaurante emite (ou substitui) a fatura da reserva — data URL de
+   * imagem ou PDF. Visível de imediato ao cliente em `/reservas`. `ok:
+   * false` = falha real. */
+  setInvoice: (id: string, dataUrl: string) => Promise<boolean>;
   /** Mesa atribuída pelo restaurante (opcional; `undefined` limpa). */
   assignTable: (id: string, tableId?: string) => void;
 };
@@ -197,18 +206,24 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  const updateReservationStatus = (id: string, status: string) => {
+  const updateReservationStatus = async (id: string, status: string): Promise<boolean> => {
     if (hasRealBackend) {
       const token = getAdminToken();
-      if (!token) return;
-      void updateApiReservationStatus(id, status, token).then(refetchApi);
-      return;
+      if (!token) return false;
+      try {
+        await updateApiReservationStatus(id, status, token);
+        refetchApi();
+        return true;
+      } catch {
+        return false;
+      }
     }
     setReservations((prev) =>
       prev.map((r) =>
         r.id === id ? { ...r, status, statusUpdatedAt: new Date().toISOString() } : r,
       ),
     );
+    return true;
   };
 
   const cancelReservation = async (id: string): Promise<boolean> => {
@@ -249,6 +264,26 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  const setInvoice = async (id: string, dataUrl: string): Promise<boolean> => {
+    if (hasRealBackend) {
+      const token = getAdminToken();
+      if (!token) return false;
+      try {
+        await storeApiReservationInvoice(id, dataUrl, token);
+        refetchApi();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    setReservations((prev) =>
+      prev.map((r) =>
+        r.id === id ? { ...r, invoice: dataUrl, invoiceAt: new Date().toISOString() } : r,
+      ),
+    );
+    return true;
+  };
+
   const assignTable = (id: string, tableId?: string) => {
     if (hasRealBackend) {
       const token = getAdminToken();
@@ -277,6 +312,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
         updateReservationStatus,
         cancelReservation,
         setPaymentProof,
+        setInvoice,
         assignTable,
       }}
     >
