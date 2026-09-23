@@ -68,6 +68,11 @@ class User extends Authenticatable
         return $this->hasMany(SavedAddress::class);
     }
 
+    public function companies(): HasMany
+    {
+        return $this->hasMany(Company::class);
+    }
+
     public function favoriteRestaurants(): BelongsToMany
     {
         return $this->belongsToMany(Restaurant::class, 'user_favorites');

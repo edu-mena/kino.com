@@ -26,6 +26,7 @@ class Order extends Model
         'promo_code', 'promo_label', 'promo_percent_off', 'promo_free_delivery',
         'payment_proof_url', 'payment_proof_at',
         'invoice_url', 'invoice_type', 'invoice_at',
+        'wants_nif_invoice', 'invoice_company_snapshot',
         'subtotal', 'delivery_fee', 'total',
     ];
 
@@ -40,6 +41,8 @@ class Order extends Model
             'promo_free_delivery' => 'boolean',
             'payment_proof_at' => 'datetime',
             'invoice_at' => 'datetime',
+            'wants_nif_invoice' => 'boolean',
+            'invoice_company_snapshot' => 'array',
             'subtotal' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
             'total' => 'decimal:2',

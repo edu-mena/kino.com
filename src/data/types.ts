@@ -316,6 +316,15 @@ export interface SavedAddress {
   lng?: number;
 }
 
+/** Empresa do cliente (nome/NIF/email) — para pedir fatura com NIF no
+ * momento do pedido (ver `order-builder-card.tsx`, `useCompanies`). */
+export interface Company {
+  id: string;
+  name: string;
+  nif: string;
+  email: string;
+}
+
 /**
  * Story de um restaurante (imagem ou vídeo curto). Stories criados no painel
  * auto-expiram 24h depois de `createdAt` — igual WhatsApp/Instagram (ver

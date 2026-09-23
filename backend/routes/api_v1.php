@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\ContactMessageController;
 use App\Http\Controllers\Api\V1\CourierController;
 use App\Http\Controllers\Api\V1\CustomerNoteController;
@@ -253,6 +254,13 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('saved-addresses', [SavedAddressController::class, 'store']);
     Route::patch('saved-addresses/{savedAddress}', [SavedAddressController::class, 'update']);
     Route::delete('saved-addresses/{savedAddress}', [SavedAddressController::class, 'destroy']);
+
+    // Empresas do cliente (nome/NIF/email) — para pedir fatura com NIF no
+    // momento do pedido (ver StoreOrderRequest, OrderController::store).
+    Route::get('companies', [CompanyController::class, 'index']);
+    Route::post('companies', [CompanyController::class, 'store']);
+    Route::patch('companies/{company}', [CompanyController::class, 'update']);
+    Route::delete('companies/{company}', [CompanyController::class, 'destroy']);
 
     Route::get('preferences', [UserPreferenceController::class, 'show']);
     Route::put('preferences', [UserPreferenceController::class, 'update']);

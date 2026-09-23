@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Bell,
+  Building2,
   CalendarCheck,
   ChevronRight,
   Heart,
@@ -13,6 +14,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
+import { CompanyFormDialog } from "@/components/company-form-dialog";
 import { PageShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +38,7 @@ import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { useAddresses } from "@/lib/addresses";
 import { hasRealBackend } from "@/lib/api-client";
 import { getAuthToken, useAuth } from "@/lib/auth";
+import { useCompanies } from "@/lib/companies";
 import { usePreferences } from "@/lib/preferences";
 import { usePushSubscription } from "@/lib/push-notifications";
 import { useTranslation } from "@/i18n";
@@ -114,6 +117,8 @@ function Perfil() {
   const { language, setLanguage, notificationSettings, setNotificationSetting } = usePreferences();
   const pushSubscription = usePushSubscription(getAuthToken());
   const { customAddresses, addAddress } = useAddresses();
+  const { companies } = useCompanies();
+  const [addCompanyOpen, setAddCompanyOpen] = useState(false);
   const [addAddressOpen, setAddAddressOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [newAlias, setNewAlias] = useState("");
@@ -373,6 +378,40 @@ function Perfil() {
                   </form>
                 </DialogContent>
               </Dialog>
+            </section>
+
+            <section className="card-soft p-6">
+              <h2 className="font-display text-lg font-bold text-primary">
+                {t("perfil.savedCompanies")}
+              </h2>
+              <div className="mt-4 space-y-2">
+                {companies.map((c) => (
+                  <div
+                    key={c.id}
+                    className="group grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:border-primary hover:bg-surface"
+                  >
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface text-primary transition-transform group-hover:scale-110">
+                      <Building2 className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold">{c.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        NIF {c.nif} · {c.email}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setAddCompanyOpen(true)}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-sm font-semibold text-primary transition-colors hover:border-primary hover:bg-primary/5"
+              >
+                <Plus className="h-4 w-4" />
+                {t("perfil.addCompany")}
+              </button>
+              <CompanyFormDialog open={addCompanyOpen} onOpenChange={setAddCompanyOpen} />
             </section>
           </div>
         </div>

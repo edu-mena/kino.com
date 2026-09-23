@@ -135,12 +135,21 @@ export type CartOrder = {
   /** Fatura carregada pelo restaurante (data URL — imagem ou PDF), visível
    * ao cliente em `/entrega`. Ausente até o restaurante a emitir. */
   invoice?: string;
-  /** `"nif"` = fatura com o NIF da empresa do cliente (pedida por ele);
-   * ausente/`"normal"` = fatura simples de consumidor final. Só metadados
-   * para exibição — não há campos de NIF nesta fase. */
+  /** `"nif"` = fatura com o NIF da empresa do cliente; ausente/`"normal"` =
+   * fatura simples de consumidor final. Escolhido pelo RESTAURANTE ao
+   * emitir a fatura (`admin.pedidos.tsx`) — pré-selecionado como "nif"
+   * quando `wantsNifInvoice` for `true`, mas continua editável por ele. */
   invoiceType?: "normal" | "nif";
   /** ISO — quando a fatura foi carregada. */
   invoiceAt?: string;
+  /** Cliente pediu fatura com NIF no momento do pedido (checkbox em
+   * `order-builder-card.tsx`) — só presente com backend real. */
+  wantsNifInvoice?: boolean;
+  /** Snapshot (nome/nif/email) da empresa escolhida no momento do pedido —
+   * mesmo raciocínio de `deliveryAddress` (não muda se a empresa for
+   * editada depois). Visível ao restaurante para saber o que pôr na
+   * fatura que emitir. */
+  invoiceCompany?: { name: string; nif: string; email: string };
   /** Estafeta a caminho — só presente com backend real enquanto o pedido
    * está "on_the_way" (ver `OrderResource::courier`, carregado em
    * `OrderController::show`/`mine`). No mock, ver `@/lib/couriers`
@@ -184,6 +193,9 @@ type CartValue = {
     fulfillment: OrderFulfillment,
     note?: string,
     promo?: PromoEffect | null,
+    /** Fatura com NIF pedida pelo cliente (ver plano) — exige conta,
+     * `companyId` de uma empresa já guardada (`useCompanies`). */
+    invoice?: { wantsNifInvoice: boolean; companyId?: string },
   ) => Promise<boolean>;
   setQty: (orderId: string, lineKey: string, qty: number) => void;
   removeOrder: (orderId: string) => void;
@@ -586,7 +598,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // Sempre cria um pedido NOVO — cada "Solicitar delivery" é um
         // delivery à parte, mesmo que já haja um pedido pendente do mesmo
         // restaurante.
-        addOrder: async (restaurantId, items, fulfillment, note, promo) => {
+        addOrder: async (restaurantId, items, fulfillment, note, promo, invoice) => {
           const token = getAuthToken();
           try {
             await createApiOrder(
@@ -601,6 +613,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 ...(user?.email ? { customerEmail: user.email } : {}),
               },
               token,
+              invoice,
             );
             refetchApi();
             return true;

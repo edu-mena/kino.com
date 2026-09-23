@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\Orders\DispatchOrderRequest;
 use App\Http\Requests\Api\V1\Orders\StoreOrderRequest;
 use App\Http\Requests\Api\V1\Orders\UpdateOrderStatusRequest;
 use App\Http\Resources\Api\V1\OrderResource;
+use App\Models\Company;
 use App\Models\Courier;
 use App\Models\MenuItem;
 use App\Models\Order;
@@ -109,6 +110,19 @@ class OrderController extends Controller
             }
         }
 
+        // Snapshot (nome/nif/email) TAL COMO ESTAVAM no momento do pedido —
+        // mesmo raciocínio da morada: a empresa pode ser editada/apagada
+        // depois sem afetar o que já foi pedido.
+        $companySnapshot = null;
+        if (! empty($data['wants_nif_invoice']) && ! empty($data['company_id'])) {
+            $company = Company::query()->where('uuid', $data['company_id'])->first();
+            $companySnapshot = $company ? [
+                'name' => $company->name,
+                'nif' => $company->nif,
+                'email' => $company->email,
+            ] : null;
+        }
+
         $priced = $pricing->price(
             $lineInputs,
             $restaurant,
@@ -117,7 +131,7 @@ class OrderController extends Controller
             $data['promo_code'] ?? null,
         );
 
-        $order = DB::transaction(function () use ($restaurant, $data, $user, $deliverySnapshot, $priced) {
+        $order = DB::transaction(function () use ($restaurant, $data, $user, $deliverySnapshot, $companySnapshot, $priced) {
             $order = $restaurant->orders()->create([
                 'user_id' => $user?->id,
                 'fulfillment_type' => $data['fulfillment_type'],
@@ -135,6 +149,8 @@ class OrderController extends Controller
                 'promo_label' => $priced['promo']['label'] ?? null,
                 'promo_percent_off' => $priced['promo']['percentOff'] ?? null,
                 'promo_free_delivery' => $priced['promo']['freeDelivery'] ?? false,
+                'wants_nif_invoice' => $data['wants_nif_invoice'] ?? false,
+                'invoice_company_snapshot' => $companySnapshot,
                 'subtotal' => $priced['subtotal'],
                 'delivery_fee' => $priced['deliveryFee'],
                 'total' => $priced['total'],

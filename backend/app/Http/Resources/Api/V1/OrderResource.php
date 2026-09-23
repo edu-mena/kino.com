@@ -63,6 +63,12 @@ class OrderResource extends JsonResource
             'invoiceUrl' => $this->invoice_url,
             'invoiceType' => $this->invoice_type,
             'invoiceAt' => $this->invoice_at?->toIso8601String(),
+            // Pedido do cliente por fatura com NIF (ver StoreOrderRequest) +
+            // snapshot da empresa no momento do pedido — visível ao
+            // restaurante para saber o que pôr na fatura que emitir
+            // (`invoiceType`/`invoiceUrl` acima, continuam a ser dele).
+            'wantsNifInvoice' => $this->wants_nif_invoice,
+            'invoiceCompany' => $this->invoice_company_snapshot,
             // Só quando `courier` foi carregado (ver OrderController::show/
             // mine) — nome/telefone/veículo do estafeta a caminho, visível
             // ao cliente enquanto o pedido está "on_the_way".

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Company;
 use App\Models\Courier;
 use App\Models\DeliveryPolicy;
 use App\Models\MenuItem;
@@ -448,4 +449,68 @@ test('destino do pagamento nunca mistura com outro método configurado no mesmo 
         ->getJson("/api/v1/orders/{$order->uuid}")
         ->assertOk()
         ->assertJsonPath('data.paymentDestination', '923 000 111');
+});
+
+// --- fatura com NIF pedida pelo cliente no momento do pedido ---
+
+test('cliente autenticado pede fatura com NIF, o pedido grava o snapshot da empresa', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 1000]);
+    $user = User::factory()->create();
+    $company = Company::factory()->for($user)->create([
+        'name' => 'Luku Lda', 'nif' => '5417123456', 'email' => 'financeiro@luku.ao',
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+            'fulfillment_type' => 'takeaway', 'pickup_asap' => true,
+            'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
+            'wants_nif_invoice' => true,
+            'company_id' => $company->uuid,
+        ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.wantsNifInvoice', true)
+        ->assertJsonPath('data.invoiceCompany.name', 'Luku Lda')
+        ->assertJsonPath('data.invoiceCompany.nif', '5417123456')
+        ->assertJsonPath('data.invoiceCompany.email', 'financeiro@luku.ao');
+
+    // Editar a empresa depois não deve mudar o que já foi pedido (snapshot).
+    $company->update(['name' => 'Nome Novo']);
+    $this->actingAs($user, 'sanctum')
+        ->getJson("/api/v1/orders/{$response->json('data.id')}")
+        ->assertJsonPath('data.invoiceCompany.name', 'Luku Lda');
+});
+
+test('convidado não consegue pedir fatura com NIF (exige conta)', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 1000]);
+
+    $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+        'fulfillment_type' => 'takeaway',
+        'customer_name' => 'X', 'customer_phone' => '900', 'pickup_asap' => true,
+        'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
+        'wants_nif_invoice' => true,
+    ], ['Idempotency-Key' => Str::uuid()->toString()])
+        ->assertStatus(422);
+});
+
+test('cliente não consegue usar empresa de outra conta no pedido', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 1000]);
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $othersCompany = Company::factory()->for($otherUser)->create();
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+            'fulfillment_type' => 'takeaway', 'pickup_asap' => true,
+            'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
+            'wants_nif_invoice' => true,
+            'company_id' => $othersCompany->uuid,
+        ], ['Idempotency-Key' => Str::uuid()->toString()])
+        ->assertStatus(422);
 });

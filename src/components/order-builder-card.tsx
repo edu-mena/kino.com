@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Bike,
+  Building2,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -19,7 +20,9 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CompanyFormDialog } from "@/components/company-form-dialog";
 import { RestaurantRecommendationsDialog } from "@/components/restaurant-recommendations-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   addressProvince,
   canDeliverToNeighborhood,
@@ -33,8 +36,10 @@ import { useOffers } from "@/data/use-offers";
 import { useRestaurantDetail, useRestaurantMenuItems } from "@/data/use-restaurants-query";
 import type { FulfillmentType } from "@/data/types";
 import { useTranslation } from "@/i18n";
+import { useAuth } from "@/lib/auth";
 import { billLineUnitPrice, useBill } from "@/lib/bill";
 import { useCart, type OrderFulfillment } from "@/lib/cart";
+import { useCompanies } from "@/lib/companies";
 import { addressDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
 import { useLocation } from "@/lib/location";
@@ -87,6 +92,8 @@ export function OrderBuilderCard() {
   const { t } = useTranslation();
   const { restaurantId, lines, updateQty, discard } = useBill();
   const { addOrder } = useCart();
+  const { user } = useAuth();
+  const { companies } = useCompanies();
   const status = useRestaurantStatus(restaurantId ?? "");
   // Real-aware (`useRestaurantDetail`/`useRestaurantMenuItems`) em vez do
   // `getRestaurant`/`getMenuItem` síncronos de `@/data/helpers` — esses só
@@ -111,6 +118,9 @@ export function OrderBuilderCard() {
   const [pickupChoice, setPickupChoice] = useState<"asap" | "scheduled">("asap");
   const [pickupTime, setPickupTime] = useState(defaultPickupTime);
   const [partySize, setPartySize] = useState(2);
+  const [wantsNifInvoice, setWantsNifInvoice] = useState(false);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   if (!restaurantId || lines.length === 0) return null;
@@ -218,6 +228,11 @@ export function OrderBuilderCard() {
       fulfillment = { type: "dinein", partySize };
     }
 
+    if (wantsNifInvoice && !companyId) {
+      toast.error(t("orderBuilderCard.needCompany"));
+      return;
+    }
+
     setSubmitting(true);
     const ok = await addOrder(
       restaurantId,
@@ -229,6 +244,7 @@ export function OrderBuilderCard() {
       fulfillment,
       note,
       promo,
+      wantsNifInvoice ? { wantsNifInvoice: true, ...(companyId ? { companyId } : {}) } : undefined,
     );
     setSubmitting(false);
     if (!ok) {
@@ -239,6 +255,8 @@ export function OrderBuilderCard() {
     setStep("list");
     setNote("");
     resetPromo();
+    setWantsNifInvoice(false);
+    setCompanyId(null);
     toast.success(t("orderBuilderCard.orderCreatedToast"));
     navigate({ to: "/entrega" });
   };
@@ -633,18 +651,88 @@ export function OrderBuilderCard() {
                 )}
               </div>
 
+              {/* Fatura com NIF — exige conta (empresas são só do cliente
+                  autenticado, ver Company/CompanyController no backend). */}
+              {user && (
+                <div className="mt-3 space-y-2">
+                  <label className="flex items-center gap-2 text-xs font-semibold">
+                    <Checkbox
+                      checked={wantsNifInvoice}
+                      onCheckedChange={(checked) => {
+                        setWantsNifInvoice(checked === true);
+                        if (checked !== true) setCompanyId(null);
+                      }}
+                      className="border-primary-foreground/40 data-[state=checked]:bg-brand data-[state=checked]:text-brand-foreground"
+                    />
+                    {t("orderBuilderCard.wantsNifInvoice")}
+                  </label>
+
+                  {wantsNifInvoice && (
+                    <div className="space-y-1.5 rounded-xl bg-white/5 p-2.5">
+                      {companies.length === 0 ? (
+                        <p className="px-0.5 text-xs text-primary-foreground/60">
+                          {t("orderBuilderCard.noCompanies")}
+                        </p>
+                      ) : (
+                        companies.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setCompanyId(c.id)}
+                            className={`flex w-full items-center gap-2.5 rounded-lg border p-2 text-left ${
+                              companyId === c.id
+                                ? "border-brand bg-brand/15"
+                                : "border-primary-foreground/20"
+                            }`}
+                          >
+                            <Building2 className="h-3.5 w-3.5 shrink-0 text-brand" />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-xs font-bold">{c.name}</span>
+                              <span className="block truncate text-[11px] text-primary-foreground/60">
+                                NIF {c.nif}
+                              </span>
+                            </span>
+                            {companyId === c.id && (
+                              <Check className="h-3.5 w-3.5 shrink-0 text-brand" />
+                            )}
+                          </button>
+                        ))
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setCompanyDialogOpen(true)}
+                        className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary-foreground/30 py-2 text-xs font-semibold text-primary-foreground/80 hover:border-primary-foreground"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        {t("orderBuilderCard.newCompany")}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <p className="mt-3 text-center text-[11px] text-primary-foreground/50">
                 {t("orderBuilderCard.paymentAfterAccept")}
               </p>
 
               <button
                 type="button"
-                disabled={(mode === "delivery" && !chosenAddressId) || submitting}
+                disabled={
+                  (mode === "delivery" && !chosenAddressId) ||
+                  (wantsNifInvoice && !companyId) ||
+                  submitting
+                }
                 onClick={submit}
                 className="mt-3 w-full rounded-xl bg-brand px-5 py-3 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {t("orderBuilderCard.sendOrder")}
               </button>
+
+              <CompanyFormDialog
+                open={companyDialogOpen}
+                onOpenChange={setCompanyDialogOpen}
+                onCreated={(company) => setCompanyId(company.id)}
+              />
             </>
           )}
         </div>

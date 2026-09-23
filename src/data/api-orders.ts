@@ -70,6 +70,8 @@ type ApiOrder = {
   invoiceUrl: string | null;
   invoiceType: "normal" | "nif" | null;
   invoiceAt: string | null;
+  wantsNifInvoice?: boolean;
+  invoiceCompany?: { name: string; nif: string; email: string } | null;
   courier?: { name: string; phone: string; vehicle: string } | null;
   subtotal: number;
   deliveryFee: number;
@@ -132,6 +134,8 @@ function mapApiOrder(o: ApiOrder, ownerKey: string): CartOrder {
     ...(o.invoiceUrl ? { invoice: o.invoiceUrl } : {}),
     ...(o.invoiceType ? { invoiceType: o.invoiceType } : {}),
     ...(o.invoiceAt ? { invoiceAt: o.invoiceAt } : {}),
+    ...(o.wantsNifInvoice ? { wantsNifInvoice: true } : {}),
+    ...(o.invoiceCompany ? { invoiceCompany: o.invoiceCompany } : {}),
     ...(o.courier ? { courier: o.courier } : {}),
   };
 }
@@ -159,6 +163,7 @@ export async function createApiOrder(
   promo: PromoEffect | null | undefined,
   extra: { customerName?: string; customerPhone?: string; customerEmail?: string },
   token: string | null,
+  invoice?: { wantsNifInvoice: boolean; companyId?: string },
 ): Promise<CartOrder> {
   const body: Record<string, unknown> = {
     fulfillment_type: fulfillment.type,
@@ -179,6 +184,7 @@ export async function createApiOrder(
     ...(extra.customerName ? { customer_name: extra.customerName } : {}),
     ...(extra.customerPhone ? { customer_phone: extra.customerPhone } : {}),
     ...(extra.customerEmail ? { customer_email: extra.customerEmail } : {}),
+    ...(invoice?.wantsNifInvoice ? { wants_nif_invoice: true, company_id: invoice.companyId } : {}),
   };
   if (fulfillment.type === "delivery") {
     body["delivery_address"] = {

@@ -78,12 +78,24 @@ class StoreOrderRequest extends FormRequest
 
             'note' => ['sometimes', 'nullable', 'string', 'max:500'],
             'promo_code' => ['sometimes', 'nullable', 'string', 'max:40'],
+
+            // Fatura com NIF — exige conta (empresas são só do cliente
+            // autenticado, ver Company/CompanyController); `company_id`
+            // valida pelo `uuid` exposto (CompanyResource), filtrado ao
+            // dono, mesmo padrão de `saved_address_id`.
+            'wants_nif_invoice' => ['sometimes', 'boolean'],
+            'company_id' => ['required_if:wants_nif_invoice,true', 'nullable', 'string',
+                Rule::exists('companies', 'uuid')->where('user_id', $user?->id ?? 0)],
         ];
     }
 
     public function withValidator(ValidatorContract $validator): void
     {
         $validator->after(function (ValidatorContract $validator) {
+            if ($this->boolean('wants_nif_invoice') && ! $this->authUser()) {
+                $validator->errors()->add('wants_nif_invoice', 'É preciso ter sessão iniciada para pedir fatura com NIF.');
+            }
+
             /** @var Restaurant $restaurant */
             $restaurant = $this->route('restaurant');
 

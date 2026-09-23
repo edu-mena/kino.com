@@ -13,6 +13,7 @@ import { PendingShareDialog } from "../components/pending-share-dialog";
 import { AddressesProvider } from "../lib/addresses";
 import { BillProvider } from "../lib/bill";
 import { CartProvider } from "../lib/cart";
+import { CompaniesProvider } from "../lib/companies";
 import { LocationProvider } from "../lib/location";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { MenuAdminProvider } from "../lib/menu-admin";
@@ -147,30 +148,32 @@ function RootComponent() {
           <PreferencesProvider>
             <StoriesProvider>
               <AddressesProvider>
-                <LocationProvider>
-                  <ReservationsProvider>
-                    <BillProvider>
-                      <MenuAdminProvider>
-                        <CartProvider>
-                          <PendingShareProvider>
-                            <TablesProvider>
-                              <NotificationsProvider>
-                                <TutorialProvider>
-                                  <AuthGate>
-                                    {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-                                    <Outlet />
-                                  </AuthGate>
-                                  <PendingShareDialog />
-                                  <Toaster />
-                                </TutorialProvider>
-                              </NotificationsProvider>
-                            </TablesProvider>
-                          </PendingShareProvider>
-                        </CartProvider>
-                      </MenuAdminProvider>
-                    </BillProvider>
-                  </ReservationsProvider>
-                </LocationProvider>
+                <CompaniesProvider>
+                  <LocationProvider>
+                    <ReservationsProvider>
+                      <BillProvider>
+                        <MenuAdminProvider>
+                          <CartProvider>
+                            <PendingShareProvider>
+                              <TablesProvider>
+                                <NotificationsProvider>
+                                  <TutorialProvider>
+                                    <AuthGate>
+                                      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                                      <Outlet />
+                                    </AuthGate>
+                                    <PendingShareDialog />
+                                    <Toaster />
+                                  </TutorialProvider>
+                                </NotificationsProvider>
+                              </TablesProvider>
+                            </PendingShareProvider>
+                          </CartProvider>
+                        </MenuAdminProvider>
+                      </BillProvider>
+                    </ReservationsProvider>
+                  </LocationProvider>
+                </CompaniesProvider>
               </AddressesProvider>
             </StoriesProvider>
           </PreferencesProvider>

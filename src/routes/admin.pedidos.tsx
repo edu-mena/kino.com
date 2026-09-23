@@ -357,6 +357,13 @@ function AdminPedidos() {
     [activeId, mine],
   );
 
+  // Cliente pediu fatura com NIF ao fazer o pedido (ver order-builder-card,
+  // OrderResource::wantsNifInvoice) — pré-seleciona o tipo certo, sem isto
+  // o restaurante continuava a escolher às cegas mesmo já sabendo o pedido.
+  useEffect(() => {
+    if (active?.wantsNifInvoice) setInvoiceTypeChoice("nif");
+  }, [active?.id, active?.wantsNifInvoice]);
+
   const insights = useMemo(() => {
     const now = new Date();
     const anchor = weekStart(now);
@@ -1168,6 +1175,19 @@ function AdminPedidos() {
                                     <p className="mt-1 text-xs text-muted-foreground">
                                       {t("adminPedidos.invoiceHint")}
                                     </p>
+                                    {active.invoiceCompany && (
+                                      <div className="mt-2 rounded-xl border border-brand/40 bg-brand/5 p-3 text-xs">
+                                        <p className="font-bold text-foreground">
+                                          {t("adminPedidos.invoiceCompanyTitle")}
+                                        </p>
+                                        <p className="mt-1 text-muted-foreground">
+                                          {active.invoiceCompany.name} · NIF{" "}
+                                          {active.invoiceCompany.nif}
+                                          <br />
+                                          {active.invoiceCompany.email}
+                                        </p>
+                                      </div>
+                                    )}
                                     <div className="mt-2 flex gap-1.5">
                                       {(["normal", "nif"] as const).map((ty) => (
                                         <button
