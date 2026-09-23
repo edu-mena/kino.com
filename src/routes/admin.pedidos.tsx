@@ -1399,6 +1399,12 @@ function AdminPedidos() {
                                 <span>{t("adminPedidos.subtotal")}</span>
                                 <span>{formatKz(orderSubtotal(active))}</span>
                               </div>
+                              {!!active.reservationCredit && (
+                                <div className="flex justify-between font-semibold text-success">
+                                  <span>{t("adminPedidos.reservationCreditLine")}</span>
+                                  <span>− {formatKz(active.reservationCredit)}</span>
+                                </div>
+                              )}
                               {active.promoCode && (
                                 <div className="flex justify-between text-success">
                                   <span>
@@ -1437,7 +1443,8 @@ function AdminPedidos() {
                                   {formatKz(
                                     orderTotal(active) -
                                       orderSubtotal(active) +
-                                      orderDiscount(active),
+                                      orderDiscount(active) +
+                                      (active.reservationCredit ?? 0),
                                   )}
                                 </span>
                               </div>

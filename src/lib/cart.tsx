@@ -19,6 +19,7 @@ import { getAuthToken, useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
 import { orderDistanceKm } from "@/lib/delivery-eval";
 import { getAdminToken, useManagedRestaurantId } from "@/lib/restaurant-admin";
+import { useReservations } from "@/lib/reservations";
 import type { FulfillmentType, SavedAddress, SelectedIngredient } from "@/data/types";
 
 // Sufixo de versão: subir quando `seedOrders()` mudar de forma relevante —
@@ -155,6 +156,12 @@ export type CartOrder = {
    * `OrderController::show`/`mine`). No mock, ver `@/lib/couriers`
    * (`readCourierForOrder`) em vez disto. */
   courier?: { name: string; phone: string; vehicle: string };
+  /** Desconto (Kz) da caução já paga de uma reserva confirmada, aplicado
+   * automaticamente a um pedido dine-in ligado a ela (ver
+   * `order-builder-card.tsx`, passo dine-in). Já vem subtraído de `total` —
+   * isto é só para mostrar a linha "Caução da reserva aplicada" ao
+   * cliente/restaurante, nunca escondida quando presente. */
+  reservationCredit?: number;
 };
 
 export type NewCartLine = {
@@ -196,6 +203,10 @@ type CartValue = {
     /** Fatura com NIF pedida pelo cliente (ver plano) — exige conta,
      * `companyId` de uma empresa já guardada (`useCompanies`). */
     invoice?: { wantsNifInvoice: boolean; companyId?: string },
+    /** Reserva confirmada, com caução já paga, deste restaurante — o pedido
+     * dine-in liga-se a ela e a caução desconta automaticamente do consumo
+     * (ver `order-builder-card.tsx`, passo dine-in). */
+    reservationId?: string,
   ) => Promise<boolean>;
   setQty: (orderId: string, lineKey: string, qty: number) => void;
   removeOrder: (orderId: string) => void;
@@ -319,7 +330,11 @@ function orderDeliveryFee(order: CartOrder): number {
 
 function orderTotal(order: CartOrder): number {
   if (order.total != null) return order.total;
-  return orderSubtotal(order) - orderDiscount(order) + orderDeliveryFee(order);
+  const credit = order.reservationCredit ?? 0;
+  return Math.max(
+    0,
+    orderSubtotal(order) - orderDiscount(order) + orderDeliveryFee(order) - credit,
+  );
 }
 
 /** Clientes fictícios para os pedidos seed. Alguns nomes coincidem de
@@ -482,6 +497,7 @@ function normalizeOrder(o: CartOrder): CartOrder {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { reservations } = useReservations();
   // `null` em páginas de cliente (fora do painel) — ver `useManagedRestaurantId`
   // (@/lib/restaurant-admin) para porque não dá para usar
   // `useRestaurantAdminOptional` aqui (CartProvider vive no `__root`,
@@ -598,7 +614,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // Sempre cria um pedido NOVO — cada "Solicitar delivery" é um
         // delivery à parte, mesmo que já haja um pedido pendente do mesmo
         // restaurante.
-        addOrder: async (restaurantId, items, fulfillment, note, promo, invoice) => {
+        addOrder: async (restaurantId, items, fulfillment, note, promo, invoice, reservationId) => {
           const token = getAuthToken();
           try {
             await createApiOrder(
@@ -614,6 +630,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               },
               token,
               invoice,
+              reservationId,
             );
             refetchApi();
             return true;
@@ -701,7 +718,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return {
       ...base,
       hydrated,
-      addOrder: (restaurantId, items, fulfillment, note, promo) => {
+      addOrder: (restaurantId, items, fulfillment, note, promo, _invoice, reservationId) => {
+        // Reserva confirmada, com caução paga, escolhida no passo dine-in —
+        // mesmo raciocínio do backend real (OrderPricingService::price):
+        // a caução nunca desconta mais do que o próprio consumo.
+        const reservation = reservationId
+          ? reservations.find((r) => r.id === reservationId)
+          : undefined;
+        const itemsSubtotal = reservation
+          ? items.reduce((sum, item) => {
+              const menuItem = getMenuItem(item.menuItemId);
+              if (!menuItem) return sum;
+              const extras = (item.selectedIngredients ?? [])
+                .filter((s) => s.included)
+                .reduce((s, sel) => {
+                  const def = menuItem.ingredients.find((i) => i.id === sel.id);
+                  return s + (def?.extraPrice ?? 0);
+                }, 0);
+              return sum + (menuItem.price + extras) * item.qty;
+            }, 0)
+          : 0;
+
         setMockOrders((prev) => [
           ...prev,
           {
@@ -739,6 +776,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
                   ...(promo.percentOff ? { promoPercentOff: promo.percentOff } : {}),
                   ...(promo.freeDelivery ? { promoFreeDelivery: true } : {}),
                 }
+              : {}),
+            ...(reservation
+              ? { reservationCredit: Math.min(reservation.cautionAmount, itemsSubtotal) }
               : {}),
           },
         ]);
@@ -846,7 +886,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       clear: () => setMockOrders([]),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orders, hydrated, user]);
+  }, [orders, hydrated, user, reservations]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

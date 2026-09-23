@@ -75,6 +75,7 @@ type ApiOrder = {
   courier?: { name: string; phone: string; vehicle: string } | null;
   subtotal: number;
   deliveryFee: number;
+  reservationCredit?: number | null;
   total: number;
   lines: { menuItemId: string; qty: number; ingredients: unknown[] }[];
   createdAt: string;
@@ -96,6 +97,7 @@ function mapApiOrder(o: ApiOrder, ownerKey: string): CartOrder {
     ...(o.restaurantImage ? { restaurantImage: o.restaurantImage } : {}),
     subtotal: o.subtotal,
     deliveryFee: o.deliveryFee,
+    ...(o.reservationCredit != null ? { reservationCredit: o.reservationCredit } : {}),
     total: o.total,
     lines,
     createdAt: o.createdAt,
@@ -164,6 +166,7 @@ export async function createApiOrder(
   extra: { customerName?: string; customerPhone?: string; customerEmail?: string },
   token: string | null,
   invoice?: { wantsNifInvoice: boolean; companyId?: string },
+  reservationId?: string,
 ): Promise<CartOrder> {
   const body: Record<string, unknown> = {
     fulfillment_type: fulfillment.type,
@@ -185,6 +188,7 @@ export async function createApiOrder(
     ...(extra.customerPhone ? { customer_phone: extra.customerPhone } : {}),
     ...(extra.customerEmail ? { customer_email: extra.customerEmail } : {}),
     ...(invoice?.wantsNifInvoice ? { wants_nif_invoice: true, company_id: invoice.companyId } : {}),
+    ...(reservationId ? { reservation_id: reservationId } : {}),
   };
   if (fulfillment.type === "delivery") {
     body["delivery_address"] = {

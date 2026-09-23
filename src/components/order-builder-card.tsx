@@ -45,6 +45,7 @@ import { useCompanies } from "@/lib/companies";
 import { addressDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
 import { useLocation } from "@/lib/location";
+import { useReservations } from "@/lib/reservations";
 import { useRestaurantStatus } from "@/lib/restaurant-status";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 
@@ -96,6 +97,7 @@ export function OrderBuilderCard() {
   const { addOrder } = useCart();
   const { user } = useAuth();
   const { companies } = useCompanies();
+  const { reservations } = useReservations();
   const status = useRestaurantStatus(restaurantId ?? "");
   // Real-aware (`useRestaurantDetail`/`useRestaurantMenuItems`) em vez do
   // `getRestaurant`/`getMenuItem` síncronos de `@/data/helpers` — esses só
@@ -125,7 +127,26 @@ export function OrderBuilderCard() {
   const [wantsNifInvoice, setWantsNifInvoice] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
+  // Reserva escolhida para descontar a caução do consumo (passo dine-in) —
+  // `undefined` = ainda não mexido pelo cliente, usa o padrão (a única
+  // reserva elegível, se só houver uma); `null` = desligado explicitamente.
+  const [reservationChoice, setReservationChoice] = useState<string | null | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
+
+  // Reservas de hoje, confirmadas e com caução já paga, NESTE restaurante —
+  // elegíveis para descontar automaticamente do consumo de um pedido
+  // dine-in (ver plano, Fase J3).
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const eligibleReservations = reservations.filter(
+    (r) =>
+      r.restaurantId === restaurantId &&
+      r.status === "Confirmada" &&
+      r.cautionStatus === "Paga" &&
+      r.date === todayStr,
+  );
+  const autoReservationId = eligibleReservations.length === 1 ? eligibleReservations[0]!.id : null;
+  const selectedReservationId =
+    reservationChoice !== undefined ? reservationChoice : autoReservationId;
 
   if (!restaurantId || lines.length === 0) return null;
 
@@ -249,6 +270,7 @@ export function OrderBuilderCard() {
       note,
       promo,
       wantsNifInvoice ? { wantsNifInvoice: true, ...(companyId ? { companyId } : {}) } : undefined,
+      mode === "dinein" && selectedReservationId ? selectedReservationId : undefined,
     );
     setSubmitting(false);
     if (!ok) {
@@ -261,6 +283,7 @@ export function OrderBuilderCard() {
     resetPromo();
     setWantsNifInvoice(false);
     setCompanyId(null);
+    setReservationChoice(undefined);
     toast.success(t("orderBuilderCard.orderCreatedToast"));
     navigate({ to: "/entrega" });
   };
@@ -591,6 +614,51 @@ export function OrderBuilderCard() {
                       <Plus className="h-4 w-4" />
                     </button>
                   </div>
+
+                  {/* Caução já paga de uma reserva de hoje, desconta do consumo —
+                      ver plano, Fase J3. */}
+                  {eligibleReservations.length > 0 && (
+                    <div className="mt-3 space-y-2 rounded-xl border border-brand/40 bg-brand/10 p-3">
+                      <label className="flex items-center gap-2 text-xs font-semibold">
+                        <Checkbox
+                          checked={selectedReservationId !== null}
+                          onCheckedChange={(checked) => {
+                            setReservationChoice(
+                              checked === true
+                                ? (autoReservationId ?? eligibleReservations[0]!.id)
+                                : null,
+                            );
+                          }}
+                          className="border-brand/40 data-[state=checked]:bg-brand data-[state=checked]:text-brand-foreground"
+                        />
+                        {eligibleReservations.length === 1
+                          ? t("orderBuilderCard.useReservationCredit", {
+                              amount: formatKz(eligibleReservations[0]!.cautionAmount),
+                            })
+                          : t("orderBuilderCard.useReservationCreditGeneric")}
+                      </label>
+
+                      {selectedReservationId !== null && eligibleReservations.length > 1 && (
+                        <div className="space-y-1.5">
+                          {eligibleReservations.map((r) => (
+                            <button
+                              key={r.id}
+                              type="button"
+                              onClick={() => setReservationChoice(r.id)}
+                              className={`flex w-full items-center justify-between gap-2 rounded-lg border p-2 text-left text-xs ${
+                                selectedReservationId === r.id
+                                  ? "border-brand bg-brand/15"
+                                  : "border-primary-foreground/20"
+                              }`}
+                            >
+                              <span>{r.time}</span>
+                              <span className="font-bold">{formatKz(r.cautionAmount)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

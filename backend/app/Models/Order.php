@@ -27,6 +27,7 @@ class Order extends Model
         'payment_proof_url', 'payment_proof_at',
         'invoice_url', 'invoice_type', 'invoice_at',
         'wants_nif_invoice', 'invoice_company_snapshot',
+        'reservation_id', 'reservation_credit',
         'subtotal', 'delivery_fee', 'total',
     ];
 
@@ -43,6 +44,7 @@ class Order extends Model
             'invoice_at' => 'datetime',
             'wants_nif_invoice' => 'boolean',
             'invoice_company_snapshot' => 'array',
+            'reservation_credit' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
             'total' => 'decimal:2',
@@ -66,6 +68,14 @@ class Order extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** Reserva de mesa que originou este pedido dine-in — a caução já paga
+     * desconta automaticamente do consumo (ver OrderPricingService::price,
+     * StoreOrderRequest). */
+    public function reservation(): BelongsTo
+    {
+        return $this->belongsTo(Reservation::class);
     }
 
     /** Estafeta a caminho com este pedido — inverso de

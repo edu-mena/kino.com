@@ -13,6 +13,7 @@ use App\Models\Company;
 use App\Models\Courier;
 use App\Models\MenuItem;
 use App\Models\Order;
+use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\Models\SavedAddress;
 use App\Services\MediaUploadService;
@@ -123,17 +124,23 @@ class OrderController extends Controller
             ] : null;
         }
 
+        $reservation = ! empty($data['reservation_id'])
+            ? Reservation::query()->where('uuid', $data['reservation_id'])->first()
+            : null;
+
         $priced = $pricing->price(
             $lineInputs,
             $restaurant,
             $data['fulfillment_type'],
             $deliveryAddress,
             $data['promo_code'] ?? null,
+            $reservation,
         );
 
-        $order = DB::transaction(function () use ($restaurant, $data, $user, $deliverySnapshot, $companySnapshot, $priced) {
+        $order = DB::transaction(function () use ($restaurant, $data, $user, $deliverySnapshot, $companySnapshot, $priced, $reservation) {
             $order = $restaurant->orders()->create([
                 'user_id' => $user?->id,
+                'reservation_id' => $reservation?->id,
                 'fulfillment_type' => $data['fulfillment_type'],
                 'customer_name' => $data['customer_name'] ?? $user?->name ?? 'Cliente Luku',
                 'customer_phone' => $data['customer_phone'] ?? $user?->phone ?? '',
@@ -153,6 +160,7 @@ class OrderController extends Controller
                 'invoice_company_snapshot' => $companySnapshot,
                 'subtotal' => $priced['subtotal'],
                 'delivery_fee' => $priced['deliveryFee'],
+                'reservation_credit' => $priced['reservationCredit'] > 0 ? $priced['reservationCredit'] : null,
                 'total' => $priced['total'],
             ]);
 

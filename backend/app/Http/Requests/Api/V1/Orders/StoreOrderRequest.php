@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Api\V1\Orders;
 
+use App\Models\Order;
+use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
@@ -86,6 +88,19 @@ class StoreOrderRequest extends FormRequest
             'wants_nif_invoice' => ['sometimes', 'boolean'],
             'company_id' => ['required_if:wants_nif_invoice,true', 'nullable', 'string',
                 Rule::exists('companies', 'uuid')->where('user_id', $user?->id ?? 0)],
+
+            // Liga o pedido dine-in a uma reserva confirmada e com caução já
+            // paga, DESTE restaurante e deste cliente — a caução desconta
+            // automaticamente do consumo (ver OrderPricingService::price).
+            // Filtrado ao `user_id`: só conta autenticada consegue listar
+            // "as minhas reservas" para escolher (ver reservations.tsx),
+            // convidado nunca tem esta opção no checkout.
+            'reservation_id' => ['sometimes', 'nullable', 'string', 'prohibited_unless:fulfillment_type,dinein',
+                Rule::exists('reservations', 'uuid')
+                    ->where('restaurant_id', $restaurant->id)
+                    ->where('status', 'confirmed')
+                    ->where('caution_status', 'paid')
+                    ->where('user_id', $user?->id ?? 0)],
         ];
     }
 
@@ -118,6 +133,13 @@ class StoreOrderRequest extends FormRequest
             // enviada inline (convidado, ou conta sem querer guardar).
             if ($mode === 'delivery' && ! $this->filled('saved_address_id') && ! $this->filled('delivery_address')) {
                 $validator->errors()->add('delivery_address', 'É preciso indicar a morada de entrega.');
+            }
+
+            if ($this->filled('reservation_id')) {
+                $reservation = Reservation::query()->where('uuid', $this->input('reservation_id'))->first();
+                if ($reservation && Order::where('reservation_id', $reservation->id)->exists()) {
+                    $validator->errors()->add('reservation_id', 'Esta reserva já foi usada noutro pedido.');
+                }
             }
         });
     }

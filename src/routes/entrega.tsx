@@ -515,12 +515,18 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         </ul>
       </div>
 
-      {(order.promoCode || isDelivery) && (
+      {(order.promoCode || isDelivery || order.reservationCredit) && (
         <div className="mt-4 space-y-1 border-t border-border pt-4 text-sm">
           <div className="flex items-center justify-between text-muted-foreground">
             <span>{t("entrega.subtotal")}</span>
             <span>{formatKz(subtotal)}</span>
           </div>
+          {!!order.reservationCredit && (
+            <div className="flex items-center justify-between font-semibold text-success">
+              <span>{t("entrega.reservationCreditLine")}</span>
+              <span>− {formatKz(order.reservationCredit)}</span>
+            </div>
+          )}
           {order.promoCode && (
             <div className="flex items-center justify-between text-success">
               <span>

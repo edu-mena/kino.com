@@ -79,6 +79,7 @@ class OrderResource extends JsonResource
             ] : null),
             'subtotal' => (float) $this->subtotal,
             'deliveryFee' => (float) $this->delivery_fee,
+            'reservationCredit' => $this->reservation_credit === null ? null : (float) $this->reservation_credit,
             'total' => (float) $this->total,
             'lines' => $this->whenLoaded('lines', fn () => $this->lines->map(fn ($l) => [
                 'menuItemId' => $l->menuItem?->uuid,

@@ -514,3 +514,149 @@ test('cliente não consegue usar empresa de outra conta no pedido', function () 
         ], ['Idempotency-Key' => Str::uuid()->toString()])
         ->assertStatus(422);
 });
+
+// --- reserva ligada ao pedido dine-in: caução desconta do consumo ---
+
+test('pedido dine-in com reserva confirmada e caução paga desconta a caução do total', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 5000]);
+    $user = User::factory()->create();
+    $reservation = $restaurant->reservations()->create([
+        'user_id' => $user->id, 'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now(),
+        'caution_amount' => 3000, 'caution_status' => 'paid',
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+            'fulfillment_type' => 'dinein', 'party_size' => 2,
+            'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
+            'reservation_id' => $reservation->uuid,
+        ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.subtotal', 5000)
+        ->assertJsonPath('data.reservationCredit', 3000)
+        ->assertJsonPath('data.total', 2000);
+
+    expect($reservation->fresh())->not->toBeNull();
+});
+
+test('caução da reserva nunca deixa o total do pedido negativo', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 2000]);
+    $user = User::factory()->create();
+    $reservation = $restaurant->reservations()->create([
+        'user_id' => $user->id, 'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now(),
+        'caution_amount' => 10000, 'caution_status' => 'paid',
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+            'fulfillment_type' => 'dinein', 'party_size' => 2,
+            'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
+            'reservation_id' => $reservation->uuid,
+        ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.reservationCredit', 2000)
+        ->assertJsonPath('data.total', 0);
+});
+
+test('a mesma reserva não pode ser usada em dois pedidos', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 1000]);
+    $user = User::factory()->create();
+    $reservation = $restaurant->reservations()->create([
+        'user_id' => $user->id, 'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now(),
+        'caution_amount' => 3000, 'caution_status' => 'paid',
+    ]);
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+            'fulfillment_type' => 'dinein', 'party_size' => 2,
+            'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
+            'reservation_id' => $reservation->uuid,
+        ], ['Idempotency-Key' => Str::uuid()->toString()])
+        ->assertStatus(201);
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+            'fulfillment_type' => 'dinein', 'party_size' => 2,
+            'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
+            'reservation_id' => $reservation->uuid,
+        ], ['Idempotency-Key' => Str::uuid()->toString()])
+        ->assertStatus(422);
+});
+
+test('reservation_id só é aceite em pedidos dine-in', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 1000]);
+    $user = User::factory()->create();
+    $reservation = $restaurant->reservations()->create([
+        'user_id' => $user->id, 'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now(),
+        'caution_amount' => 3000, 'caution_status' => 'paid',
+    ]);
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+            'fulfillment_type' => 'takeaway', 'pickup_asap' => true,
+            'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
+            'reservation_id' => $reservation->uuid,
+        ], ['Idempotency-Key' => Str::uuid()->toString()])
+        ->assertStatus(422);
+});
+
+test('reserva não confirmada ou sem caução paga é rejeitada no pedido', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 1000]);
+    $user = User::factory()->create();
+    $pending = $restaurant->reservations()->create([
+        'user_id' => $user->id, 'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'pending', 'status_updated_at' => now(),
+        'caution_amount' => 3000, 'caution_status' => 'pending',
+    ]);
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+            'fulfillment_type' => 'dinein', 'party_size' => 2,
+            'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
+            'reservation_id' => $pending->uuid,
+        ], ['Idempotency-Key' => Str::uuid()->toString()])
+        ->assertStatus(422);
+});
+
+test('cliente não consegue usar reserva de outra conta no pedido', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 1000]);
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $othersReservation = $restaurant->reservations()->create([
+        'user_id' => $otherUser->id, 'customer_name' => 'B', 'customer_phone' => '901',
+        'date' => now()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now(),
+        'caution_amount' => 3000, 'caution_status' => 'paid',
+    ]);
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+            'fulfillment_type' => 'dinein', 'party_size' => 2,
+            'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
+            'reservation_id' => $othersReservation->uuid,
+        ], ['Idempotency-Key' => Str::uuid()->toString()])
+        ->assertStatus(422);
+});

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\MenuItem;
 use App\Models\Offer;
+use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\Models\SavedAddress;
 
@@ -26,7 +27,8 @@ class OrderPricingService
      * @return array{
      *   lines: array<int, array{menu_item_id: int, item_name_snapshot: string, unit_price_snapshot: float, qty: int, line_ingredients: array, line_total: float}>,
      *   subtotal: float, discount: float, deliveryFee: float, total: float,
-     *   promo: ?array{code: string, label: string, percentOff: int, freeDelivery: bool}
+     *   promo: ?array{code: string, label: string, percentOff: int, freeDelivery: bool},
+     *   reservationCredit: float,
      * }
      */
     public function price(
@@ -35,6 +37,7 @@ class OrderPricingService
         string $fulfillmentType,
         ?SavedAddress $deliveryAddress,
         ?string $promoCode,
+        ?Reservation $reservation = null,
     ): array {
         $promo = $promoCode ? $this->resolvePromoCode($restaurant, $promoCode) : null;
 
@@ -93,13 +96,22 @@ class OrderPricingService
             }
         }
 
+        // Caução já paga de uma reserva confirmada desconta do consumo —
+        // nunca mais do que o consumo em si (subtotal + entrega), e nunca
+        // deixa o total negativo.
+        $reservationCredit = $reservation
+            ? min((float) $reservation->caution_amount, $subtotal + $deliveryFee)
+            : 0.0;
+        $total = max(0.0, $subtotal - $discount + $deliveryFee - $reservationCredit);
+
         return [
             'lines' => $lines,
             'subtotal' => $subtotal,
             'discount' => $discount,
             'deliveryFee' => $deliveryFee,
-            'total' => $subtotal - $discount + $deliveryFee,
+            'total' => $total,
             'promo' => $promo,
+            'reservationCredit' => $reservationCredit,
         ];
     }
 
