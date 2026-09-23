@@ -20,6 +20,15 @@ export const pt = {
     location: "Localização",
     sortLabel: "Ordenar",
   },
+  useLocation: {
+    cta: "Usar a minha localização atual",
+    loading: "A obter a sua localização...",
+    denied: "Sem permissão de localização — ative-a no telemóvel e tente de novo.",
+    unsupported: "Este aparelho não suporta localização.",
+    geocoding: "A calcular a morada...",
+    noAddress: "Não foi possível identificar a morada — ajuste o pino ou escreva manualmente.",
+    confirm: "Usar esta localização",
+  },
   routeError: {
     title: "Esta página não carregou",
     description: "Algo correu mal do nosso lado. Tente recarregar ou volte ao início.",
@@ -1959,6 +1968,7 @@ export const pt = {
       "Escolha para onde vai o pedido — a mesma do topo ou outra guardada no perfil.",
     coveredZones: "Entrega em: {zones}",
     noSavedAddresses: "Ainda não tem endereços guardados.",
+    currentLocationLabel: "Localização atual",
     addNewAddress: "Adicionar novo endereço",
     backToList: "Voltar à lista",
     closedNow: "Fechado agora — abre às {opensAt}.",

@@ -13,6 +13,15 @@ export const en: Dictionary = {
     location: "Location",
     sortLabel: "Sort by",
   },
+  useLocation: {
+    cta: "Use my current location",
+    loading: "Getting your location...",
+    denied: "Location permission denied — enable it on your phone and try again.",
+    unsupported: "This device doesn't support location.",
+    geocoding: "Working out the address...",
+    noAddress: "Couldn't identify the address — adjust the pin or type it manually.",
+    confirm: "Use this location",
+  },
   routeError: {
     title: "This page didn't load",
     description: "Something went wrong on our end. Try refreshing or head back home.",
@@ -1951,6 +1960,7 @@ export const en: Dictionary = {
       "Choose where the order goes — the one at the top or another saved in your profile.",
     coveredZones: "Delivers to: {zones}",
     noSavedAddresses: "No saved addresses yet.",
+    currentLocationLabel: "Current location",
     addNewAddress: "Add new address",
     backToList: "Back to list",
     closedNow: "Closed now — opens at {opensAt}.",

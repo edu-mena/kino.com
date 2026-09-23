@@ -13,6 +13,16 @@ export const fr: Dictionary = {
     location: "Emplacement",
     sortLabel: "Trier",
   },
+  useLocation: {
+    cta: "Utiliser ma position actuelle",
+    loading: "Récupération de votre position...",
+    denied: "Autorisation de localisation refusée — activez-la sur votre téléphone et réessayez.",
+    unsupported: "Cet appareil ne prend pas en charge la localisation.",
+    geocoding: "Calcul de l'adresse...",
+    noAddress:
+      "Impossible d'identifier l'adresse — ajustez le repère ou saisissez-la manuellement.",
+    confirm: "Utiliser cette position",
+  },
   routeError: {
     title: "Cette page ne s'est pas chargée",
     description: "Un problème est survenu de notre côté. Réessayez ou revenez à l'accueil.",
@@ -1977,6 +1987,7 @@ export const fr: Dictionary = {
       "Choisissez où va la commande — celle du haut ou une autre enregistrée dans votre profil.",
     coveredZones: "Livre à : {zones}",
     noSavedAddresses: "Vous n'avez pas encore d'adresses enregistrées.",
+    currentLocationLabel: "Position actuelle",
     addNewAddress: "Ajouter une nouvelle adresse",
     backToList: "Retour à la liste",
     closedNow: "Fermé maintenant — ouvre à {opensAt}.",

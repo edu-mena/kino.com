@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { CompanyFormDialog } from "@/components/company-form-dialog";
 import { RestaurantRecommendationsDialog } from "@/components/restaurant-recommendations-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { UseCurrentLocationField } from "@/components/use-current-location-field";
 import {
   addressProvince,
   canDeliverToNeighborhood,
@@ -36,6 +37,7 @@ import { useOffers } from "@/data/use-offers";
 import { useRestaurantDetail, useRestaurantMenuItems } from "@/data/use-restaurants-query";
 import type { FulfillmentType } from "@/data/types";
 import { useTranslation } from "@/i18n";
+import { useAddresses } from "@/lib/addresses";
 import { useAuth } from "@/lib/auth";
 import { billLineUnitPrice, useBill } from "@/lib/bill";
 import { useCart, type OrderFulfillment } from "@/lib/cart";
@@ -102,6 +104,7 @@ export function OrderBuilderCard() {
   const restaurantQuery = useRestaurantDetail(restaurantId ?? undefined);
   const menuItemsQuery = useRestaurantMenuItems(restaurantId ?? undefined);
   const { allAddresses, selected: headerLocation } = useLocation();
+  const { addAddress } = useAddresses();
   const deliveryPolicy = useDeliveryPolicy();
   const navigate = useNavigate();
 
@@ -110,6 +113,7 @@ export function OrderBuilderCard() {
   const [step, setStep] = useState<"list" | "confirm">("list");
   const [modeOverride, setModeOverride] = useState<FulfillmentType | null>(null);
   const [chosenAddressId, setChosenAddressId] = useState<string | null>(null);
+  const [useLocationOpen, setUseLocationOpen] = useState(false);
   const [note, setNote] = useState("");
   const [promoInput, setPromoInput] = useState("");
   const [promo, setPromo] = useState<PromoEffect | null>(null);
@@ -463,6 +467,34 @@ export function OrderBuilderCard() {
                       </p>
                     )}
                   </div>
+
+                  {useLocationOpen ? (
+                    <div className="mt-3">
+                      <UseCurrentLocationField
+                        onConfirm={({ lat, lng, line1 }) => {
+                          const address = addAddress(
+                            t("orderBuilderCard.currentLocationLabel"),
+                            line1 || t("orderBuilderCard.currentLocationLabel"),
+                            undefined,
+                            { lat, lng },
+                          );
+                          setChosenAddressId(address.id);
+                          setUseLocationOpen(false);
+                        }}
+                        onCancel={() => setUseLocationOpen(false)}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setUseLocationOpen(true)}
+                      className="mt-3 flex w-full items-center gap-2 text-xs font-semibold text-brand hover:underline"
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                      {t("useLocation.cta")}
+                    </button>
+                  )}
+
                   <Link
                     to="/perfil"
                     onClick={() => setExpanded(false)}

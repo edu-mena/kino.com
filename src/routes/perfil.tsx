@@ -5,6 +5,7 @@ import {
   CalendarCheck,
   ChevronRight,
   Heart,
+  LocateFixed,
   LogOut,
   MapPin,
   Plus,
@@ -17,6 +18,7 @@ import icon from "@/assets/icon.png";
 import { CompanyFormDialog } from "@/components/company-form-dialog";
 import { PageShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
+import { UseCurrentLocationField } from "@/components/use-current-location-field";
 import {
   Dialog,
   DialogContent,
@@ -123,6 +125,8 @@ function Perfil() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [newAlias, setNewAlias] = useState("");
   const [newAddress, setNewAddress] = useState("");
+  const [newCoords, setNewCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [useLocationOpen, setUseLocationOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -150,10 +154,12 @@ function Perfil() {
   const handleAddAddress = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAlias.trim() || !newAddress.trim()) return;
-    addAddress(newAlias.trim(), newAddress.trim());
+    addAddress(newAlias.trim(), newAddress.trim(), undefined, newCoords ?? undefined);
     toast.success(t("perfil.addressAdded"));
     setNewAlias("");
     setNewAddress("");
+    setNewCoords(null);
+    setUseLocationOpen(false);
     setAddAddressOpen(false);
   };
 
@@ -336,7 +342,16 @@ function Perfil() {
                 ))}
               </div>
 
-              <Dialog open={addAddressOpen} onOpenChange={setAddAddressOpen}>
+              <Dialog
+                open={addAddressOpen}
+                onOpenChange={(open) => {
+                  setAddAddressOpen(open);
+                  if (!open) {
+                    setNewCoords(null);
+                    setUseLocationOpen(false);
+                  }
+                }}
+              >
                 <DialogTrigger asChild>
                   <button
                     type="button"
@@ -372,6 +387,27 @@ function Perfil() {
                         required
                       />
                     </div>
+                    {useLocationOpen ? (
+                      <UseCurrentLocationField
+                        onConfirm={({ lat, lng, line1 }) => {
+                          setNewCoords({ lat, lng });
+                          if (line1) setNewAddress(line1);
+                          setUseLocationOpen(false);
+                        }}
+                        onCancel={() => setUseLocationOpen(false)}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setUseLocationOpen(true)}
+                        className="flex w-full items-center gap-2.5 rounded-xl border border-dashed border-brand/40 bg-brand/5 px-4 py-3 text-left transition-colors hover:border-brand"
+                      >
+                        <LocateFixed className="h-4 w-4 shrink-0 text-brand" />
+                        <span className="min-w-0 flex-1 text-xs font-semibold text-brand">
+                          {t("useLocation.cta")}
+                        </span>
+                      </button>
+                    )}
                     <Button type="submit" className="w-full rounded-xl">
                       {t("perfil.saveAddress")}
                     </Button>
