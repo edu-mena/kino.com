@@ -509,6 +509,8 @@ export const fr: Dictionary = {
     payDetailsMissing:
       "Aucune coordonnée {method} définie dans le profil — le client ne pourra pas payer.",
     payDetailsMissingCta: "Définir maintenant",
+    noPaymentMethodsConfigured:
+      "Vous n'avez encore configuré aucun mode de paiement accepté. Il en faut au moins un pour accepter des commandes.",
     proofTitle: "Justificatif de paiement",
     proofReceived: "Justificatif reçu.",
     proofReceivedAt: "Justificatif reçu le {when}.",

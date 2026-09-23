@@ -508,6 +508,8 @@ export const pt = {
     payDetailsMissing:
       "Sem dados de {method} definidos no perfil — o cliente não vai conseguir pagar.",
     payDetailsMissingCta: "Definir agora",
+    noPaymentMethodsConfigured:
+      "Ainda não configurou nenhum método de pagamento aceite. Aceitar pedidos só é possível depois de escolher pelo menos um.",
     proofTitle: "Comprovativo de pagamento",
     proofReceived: "Comprovativo recebido.",
     proofReceivedAt: "Comprovativo recebido a {when}.",

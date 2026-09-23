@@ -423,6 +423,18 @@ function AdminPedidos() {
   const myCouriers = couriersByRestaurant(restaurant.id);
   const available = availableByRestaurant(restaurant.id);
 
+  // `getRestaurantPaymentMethodIds` devolve TODOS os métodos quando a lista
+  // do restaurante está vazia — correto como valor inicial do formulário de
+  // configuração em admin.perfil.tsx (ainda por gravar), mas errado aqui:
+  // o backend real valida `payment_method_code` contra a lista REAL
+  // (accepted_payment_methods, sem fallback nenhum) — mostrar "todos"
+  // como se fossem aceites, quando na verdade a lista está vazia, fazia o
+  // diálogo oferecer opções que o servidor rejeitava sempre com 422
+  // (confirmado ao vivo: aceitar pedido dizia sucesso mas nunca gravava).
+  const acceptablePaymentMethodIds = hasRealBackend
+    ? (restaurant.acceptedPaymentMethods ?? [])
+    : getRestaurantPaymentMethodIds(restaurant);
+
   const openCourierCreate = () => {
     setEditingCourier(null);
     setCourierDraft(emptyCourierDraft);
@@ -473,7 +485,7 @@ function AdminPedidos() {
       return;
     }
     setConfirmFarId(null);
-    setPayChoice(getRestaurantPaymentMethodIds(restaurant)[0] ?? "");
+    setPayChoice(acceptablePaymentMethodIds[0] ?? "");
     setAcceptFor(order);
   };
 
@@ -1468,8 +1480,19 @@ function AdminPedidos() {
           <p className="mt-4 text-xs font-bold uppercase tracking-wide text-muted-foreground">
             {t("adminPedidos.requiredPaymentLabel")}
           </p>
+          {acceptablePaymentMethodIds.length === 0 && (
+            <div className="mt-2 flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs">
+              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <p className="text-muted-foreground">
+                {t("adminPedidos.noPaymentMethodsConfigured")}{" "}
+                <Link to="/admin/perfil" className="font-semibold text-primary hover:underline">
+                  {t("adminPedidos.payDetailsMissingCta")}
+                </Link>
+              </p>
+            </div>
+          )}
           <div className="mt-2 space-y-2">
-            {getRestaurantPaymentMethodIds(restaurant).map((id) => {
+            {acceptablePaymentMethodIds.map((id) => {
               const m = getPaymentMethod(id);
               if (!m) return null;
               return (

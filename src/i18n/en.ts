@@ -504,6 +504,8 @@ export const en: Dictionary = {
     payDetailsMissing:
       "No {method} details set in the profile — the customer won't be able to pay.",
     payDetailsMissingCta: "Set them now",
+    noPaymentMethodsConfigured:
+      "You haven't set up any accepted payment methods yet. Accepting orders requires at least one.",
     proofTitle: "Payment proof",
     proofReceived: "Proof received.",
     proofReceivedAt: "Proof received on {when}.",
