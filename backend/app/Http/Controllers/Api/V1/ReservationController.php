@@ -173,6 +173,22 @@ class ReservationController extends Controller
         return new ReservationResource($reservation);
     }
 
+    /** Staff confirma o pagamento da caução (depois de conferir o
+     * comprovativo, ou por outra via) — `caution_status` NUNCA muda
+     * sozinho ao carregar o comprovativo (ver `storePaymentProof`), é
+     * sempre uma confirmação manual do restaurante. Sem isto, uma reserva
+     * nunca chega a "Paga" — bloqueava silenciosamente o KPI de depósitos
+     * cobrados e a ligação da caução a um pedido dine-in (Fase J3). */
+    public function confirmCaution(Request $request, Reservation $reservation): ReservationResource
+    {
+        $this->authorize('manageOperations', $reservation->restaurant);
+        abort_unless($reservation->caution_status === 'pending', 422, 'A caução desta reserva não está pendente.');
+
+        $reservation->update(['caution_status' => 'paid']);
+
+        return new ReservationResource($reservation);
+    }
+
     /** Fatura da reserva, emitida pelo restaurante — mirror exato de
      * OrderController::storeInvoice. Usada sobretudo para cobrar a caução
      * de uma reserva marcada "não compareceu" (ver

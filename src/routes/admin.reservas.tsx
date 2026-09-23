@@ -84,7 +84,8 @@ function weekStart(d: Date) {
 
 function AdminReservas() {
   const { restaurant } = useRestaurantAdmin();
-  const { reservations, updateReservationStatus, setInvoice, assignTable } = useReservations();
+  const { reservations, updateReservationStatus, setInvoice, confirmCaution, assignTable } =
+    useReservations();
   const { tablesByRestaurant, totalSeats: totalSeatsOf, tableCount: tableCountOf } = useTables();
   const { t, locale } = useTranslation();
 
@@ -99,6 +100,7 @@ function AdminReservas() {
   const [proofLightboxOpen, setProofLightboxOpen] = useState(false);
   const [invoiceLightboxOpen, setInvoiceLightboxOpen] = useState(false);
   const [invoiceUploading, setInvoiceUploading] = useState(false);
+  const [confirmingCaution, setConfirmingCaution] = useState(false);
   type NavTab = "reservas" | "dia" | "stats";
   const [navTab, setNavTab] = useState<NavTab>("reservas");
 
@@ -851,6 +853,29 @@ function AdminReservas() {
                                   <Clock className="h-3.5 w-3.5 shrink-0" />
                                   {t("adminReservas.proofPending")}
                                 </p>
+                              )}
+                              {active.cautionStatus === "Pendente" && (
+                                <button
+                                  type="button"
+                                  disabled={confirmingCaution}
+                                  onClick={async () => {
+                                    setConfirmingCaution(true);
+                                    const ok = await confirmCaution(active.id);
+                                    setConfirmingCaution(false);
+                                    toast[ok ? "success" : "error"](
+                                      t(
+                                        ok
+                                          ? "adminReservas.cautionConfirmedToast"
+                                          : "adminReservas.cautionConfirmErrorToast",
+                                      ),
+                                    );
+                                  }}
+                                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                                >
+                                  {confirmingCaution
+                                    ? t("adminReservas.cautionConfirming")
+                                    : t("adminReservas.cautionConfirm")}
+                                </button>
                               )}
                             </div>
                           )}

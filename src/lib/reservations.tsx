@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import {
   assignApiReservationTable,
   cancelApiReservation,
+  confirmApiReservationCaution,
   createApiReservation,
   fetchApiReservationsForRestaurant,
   fetchMyApiReservations,
@@ -62,6 +63,13 @@ type ReservationsValue = {
    * imagem ou PDF. Visível de imediato ao cliente em `/reservas`. `ok:
    * false` = falha real. */
   setInvoice: (id: string, dataUrl: string) => Promise<boolean>;
+  /** Staff confirma o pagamento da caução, depois de conferir o
+   * comprovativo — só então `cautionStatus` passa a "Paga" (nunca sozinho
+   * ao carregar o comprovativo). Sem isto a caução fica presa em
+   * "Pendente" para sempre, mesmo já paga — bloqueava o KPI de depósitos
+   * cobrados e a ligação a um pedido dine-in (Fase J3). `ok: false` =
+   * falha real. */
+  confirmCaution: (id: string) => Promise<boolean>;
   /** Mesa atribuída pelo restaurante (opcional; `undefined` limpa). */
   assignTable: (id: string, tableId?: string) => void;
 };
@@ -284,6 +292,22 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  const confirmCaution = async (id: string): Promise<boolean> => {
+    if (hasRealBackend) {
+      const token = getAdminToken();
+      if (!token) return false;
+      try {
+        await confirmApiReservationCaution(id, token);
+        refetchApi();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, cautionStatus: "Paga" } : r)));
+    return true;
+  };
+
   const assignTable = (id: string, tableId?: string) => {
     if (hasRealBackend) {
       const token = getAdminToken();
@@ -313,6 +337,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
         cancelReservation,
         setPaymentProof,
         setInvoice,
+        confirmCaution,
         assignTable,
       }}
     >

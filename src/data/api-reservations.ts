@@ -147,6 +147,14 @@ export async function createApiReservation(
   return mapApiReservation({ ...data, restaurantId }, "");
 }
 
+/** Staff confirma o pagamento da caução — só então `cautionStatus` chega a
+ * "Paga" (nunca sozinho ao carregar o comprovativo, ver
+ * `storeApiReservationPaymentProof`). Sem isto, uma reserva nunca fica
+ * elegível para o desconto automático num pedido dine-in (Fase J3). */
+export async function confirmApiReservationCaution(id: string, token: string): Promise<void> {
+  await apiFetch(`/reservations/${id}/caution`, { method: "PATCH", token });
+}
+
 export async function updateApiReservationStatus(
   id: string,
   status: string,

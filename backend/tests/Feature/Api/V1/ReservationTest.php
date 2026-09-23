@@ -439,3 +439,52 @@ test('staff de outro restaurante não emite fatura de reserva alheia', function 
         ->postJson("/api/v1/reservations/{$reservation->uuid}/invoice", ['invoice' => $image])
         ->assertForbidden();
 });
+
+// --- staff confirma o pagamento da caução ---
+
+test('staff confirma a caução pendente, passa a "paid"', function () {
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+    $owner = ownerOf($restaurant);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now(),
+        'caution_amount' => 5000, 'caution_status' => 'pending',
+    ]);
+
+    $this->actingAs($owner, 'sanctum')
+        ->patchJson("/api/v1/reservations/{$reservation->uuid}/caution")
+        ->assertOk()
+        ->assertJsonPath('data.cautionStatus', 'paid');
+});
+
+test('staff não consegue confirmar caução que já não está pendente', function () {
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+    $owner = ownerOf($restaurant);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now(),
+        'caution_amount' => 5000, 'caution_status' => 'paid',
+    ]);
+
+    $this->actingAs($owner, 'sanctum')
+        ->patchJson("/api/v1/reservations/{$reservation->uuid}/caution")
+        ->assertStatus(422);
+});
+
+test('staff de outro restaurante não confirma caução de reserva alheia', function () {
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+    $otherRestaurant = createReservableRestaurant();
+    $otherOwner = ownerOf($otherRestaurant);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'confirmed', 'status_updated_at' => now(),
+        'caution_amount' => 5000, 'caution_status' => 'pending',
+    ]);
+
+    $this->actingAs($otherOwner, 'sanctum')
+        ->patchJson("/api/v1/reservations/{$reservation->uuid}/caution")
+        ->assertForbidden();
+});
