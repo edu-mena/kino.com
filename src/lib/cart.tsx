@@ -183,31 +183,49 @@ type CartValue = {
   removeOrder: (orderId: string) => void;
   /** Cliente cancela o próprio pedido — só possível enquanto "pending" (o
    * restaurante ainda não aceitou). Vira estado "canceled", não é apagado,
-   * para o restaurante continuar a ver o que aconteceu. */
-  cancelOrder: (orderId: string) => void;
+   * para o restaurante continuar a ver o que aconteceu. `ok: false` = falha
+   * real (antes fire-and-forget: o pedido continuava "pending" em silêncio
+   * e o botão de cancelar continuava disponível, como se nada tivesse sido
+   * tentado). */
+  cancelOrder: (orderId: string) => Promise<boolean>;
   /** Restaurante aceita o pedido (`/admin/pedidos`): fixa o método de
    * pagamento exigido e, se aplicável, a caução — e passa a "accepted". É o
-   * que o cliente vê depois como exigência na confirmação. */
-  acceptOrder: (orderId: string, paymentMethod: string, cautionRequired?: number) => void;
+   * que o cliente vê depois como exigência na confirmação. `ok: false` =
+   * falha real — mesmo problema do `cancelOrder`, confirmado ao vivo: o
+   * toast de sucesso disparava sempre e o botão "Aceitar pedido" continuava
+   * disponível porque o pedido nunca saía de "pending" no servidor. */
+  acceptOrder: (
+    orderId: string,
+    paymentMethod: string,
+    cautionRequired?: number,
+  ) => Promise<boolean>;
   /** Cliente anexa (ou substitui) o comprovativo de pagamento — data URL de
-   * imagem. `null` remove. Visível de imediato no painel do restaurante. */
-  setPaymentProof: (orderId: string, dataUrl: string | null) => void;
+   * imagem. `null` remove. Visível de imediato no painel do restaurante.
+   * `ok: false` = falha real (upload rejeitado, tamanho excedido, etc.). */
+  setPaymentProof: (orderId: string, dataUrl: string | null) => Promise<boolean>;
   /** Restaurante emite (ou substitui) a fatura — data URL de imagem ou PDF.
-   * `null` remove. Visível de imediato ao cliente em `/entrega`. */
-  setInvoice: (orderId: string, dataUrl: string | null, type?: "normal" | "nif") => void;
+   * `null` remove. Visível de imediato ao cliente em `/entrega`. `ok: false`
+   * = falha real. */
+  setInvoice: (
+    orderId: string,
+    dataUrl: string | null,
+    type?: "normal" | "nif",
+  ) => Promise<boolean>;
   /** @deprecated Passo antigo do checkout do cliente — substituído por
    * `acceptOrder` (o restaurante é que fixa o pagamento). Mantido até o
    * fluxo do cliente ser migrado. */
   confirmOrder: (orderId: string, paymentMethod: string, note?: string) => void;
   /** Usado pelo painel do restaurante (`/admin/pedidos`) pra avançar o
    * pedido. Delivery: accepted → onTheWay → delivered. Takeaway/dinein:
-   * accepted → ready → completed. Ou pending → rejected. */
-  updateOrderStatus: (orderId: string, status: CartOrderStatus) => void;
+   * accepted → ready → completed. Ou pending → rejected. `ok: false` =
+   * falha real. */
+  updateOrderStatus: (orderId: string, status: CartOrderStatus) => Promise<boolean>;
   /** "Aceite" → "A caminho": atribui o estafeta e avança o estado numa só
    * chamada com backend real (ver OrderController::dispatch — atómico no
    * servidor). Sem backend, quem chama continua a usar `assign` (courier)
-   * + `updateOrderStatus("onTheWay")` em separado, como sempre. */
-  dispatchOrder: (orderId: string, courierId: string) => void;
+   * + `updateOrderStatus("onTheWay")` em separado, como sempre. `ok: false`
+   * = falha real. */
+  dispatchOrder: (orderId: string, courierId: string) => Promise<boolean>;
   clear: () => void;
 };
 
@@ -588,38 +606,74 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // pela API real (sem consumidores ativos hoje — ver auditoria).
         setQty: () => {},
         removeOrder: () => {},
-        cancelOrder: (orderId) => {
+        cancelOrder: async (orderId) => {
           const token = getAuthToken();
-          void cancelApiOrder(orderId, token).then(refetchApi);
+          try {
+            await cancelApiOrder(orderId, token);
+            refetchApi();
+            return true;
+          } catch {
+            return false;
+          }
         },
-        acceptOrder: (orderId, paymentMethod) => {
+        acceptOrder: async (orderId, paymentMethod) => {
           const token = getAdminToken();
-          if (!token) return;
-          void acceptApiOrder(orderId, paymentMethod, token).then(refetchApi);
+          if (!token) return false;
+          try {
+            await acceptApiOrder(orderId, paymentMethod, token);
+            refetchApi();
+            return true;
+          } catch {
+            return false;
+          }
         },
         // @deprecated no mock também — nunca chamado, mantido só pela
         // interface.
         confirmOrder: () => {},
-        setPaymentProof: (orderId, dataUrl) => {
-          if (!dataUrl) return; // sem suporte a remover na API real
+        setPaymentProof: async (orderId, dataUrl) => {
+          if (!dataUrl) return false; // sem suporte a remover na API real
           const token = getAuthToken();
-          void storeApiPaymentProof(orderId, dataUrl, token).then(refetchApi);
+          try {
+            await storeApiPaymentProof(orderId, dataUrl, token);
+            refetchApi();
+            return true;
+          } catch {
+            return false;
+          }
         },
-        setInvoice: (orderId, dataUrl, type) => {
-          if (!dataUrl) return; // sem suporte a remover na API real
+        setInvoice: async (orderId, dataUrl, type) => {
+          if (!dataUrl) return false; // sem suporte a remover na API real
           const token = getAdminToken();
-          if (!token) return;
-          void storeApiInvoice(orderId, dataUrl, token, type).then(refetchApi);
+          if (!token) return false;
+          try {
+            await storeApiInvoice(orderId, dataUrl, token, type);
+            refetchApi();
+            return true;
+          } catch {
+            return false;
+          }
         },
-        updateOrderStatus: (orderId, status) => {
+        updateOrderStatus: async (orderId, status) => {
           const token = getAdminToken();
-          if (!token) return;
-          void updateApiOrderStatus(orderId, status, token).then(refetchApi);
+          if (!token) return false;
+          try {
+            await updateApiOrderStatus(orderId, status, token);
+            refetchApi();
+            return true;
+          } catch {
+            return false;
+          }
         },
-        dispatchOrder: (orderId, courierId) => {
+        dispatchOrder: async (orderId, courierId) => {
           const token = getAdminToken();
-          if (!token) return;
-          void dispatchApiOrder(orderId, courierId, token).then(refetchApi);
+          if (!token) return false;
+          try {
+            await dispatchApiOrder(orderId, courierId, token);
+            refetchApi();
+            return true;
+          } catch {
+            return false;
+          }
         },
         clear: () => {},
       };
@@ -688,13 +742,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
             .filter((o) => o.lines.length > 0),
         ),
       removeOrder: (orderId) => setMockOrders((prev) => prev.filter((o) => o.id !== orderId)),
-      cancelOrder: (orderId) =>
+      cancelOrder: (orderId) => {
         setMockOrders((prev) =>
           prev.map((o) =>
             o.id === orderId && o.status === "pending" ? { ...o, status: "canceled" } : o,
           ),
-        ),
-      acceptOrder: (orderId, paymentMethod, cautionRequired) =>
+        );
+        return Promise.resolve(true);
+      },
+      acceptOrder: (orderId, paymentMethod, cautionRequired) => {
         setMockOrders((prev) =>
           prev.map((o) =>
             o.id === orderId
@@ -706,7 +762,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 }
               : o,
           ),
-        ),
+        );
+        return Promise.resolve(true);
+      },
       confirmOrder: (orderId, paymentMethod, note) =>
         setMockOrders((prev) =>
           prev.map((o) =>
@@ -715,7 +773,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               : o,
           ),
         ),
-      setPaymentProof: (orderId, dataUrl) =>
+      setPaymentProof: (orderId, dataUrl) => {
         setMockOrders((prev) =>
           prev.map((o) => {
             if (o.id !== orderId) return o;
@@ -725,8 +783,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
             }
             return { ...o, paymentProof: dataUrl, paymentProofAt: new Date().toISOString() };
           }),
-        ),
-      setInvoice: (orderId, dataUrl, type) =>
+        );
+        return Promise.resolve(true);
+      },
+      setInvoice: (orderId, dataUrl, type) => {
         setMockOrders((prev) =>
           prev.map((o) => {
             if (o.id !== orderId) return o;
@@ -741,8 +801,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
               ...(type ? { invoiceType: type } : {}),
             };
           }),
-        ),
-      updateOrderStatus: (orderId, status) =>
+        );
+        return Promise.resolve(true);
+      },
+      updateOrderStatus: (orderId, status) => {
         setMockOrders((prev) =>
           prev.map((o) =>
             o.id === orderId
@@ -755,11 +817,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 }
               : o,
           ),
-        ),
+        );
+        return Promise.resolve(true);
+      },
       // Sem backend real, o mock não separa dispatch de update genérico —
       // quem chama continua a fazer `assign` (courier) + `updateOrderStatus`
       // em dois passos (ver admin.pedidos.tsx `dispatch()`).
-      dispatchOrder: () => {},
+      dispatchOrder: () => Promise.resolve(true),
       clear: () => setMockOrders([]),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

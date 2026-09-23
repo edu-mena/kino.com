@@ -222,7 +222,8 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
     setProofUploading(true);
     try {
       const dataUrl = await fileToDocumentDataUrl(file);
-      setPaymentProof(order.id, dataUrl);
+      const ok = await setPaymentProof(order.id, dataUrl);
+      if (!ok) throw new Error(t("entrega.proofError"));
       toast.success(t("entrega.proofSentToast"));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("entrega.proofError"));
@@ -576,9 +577,10 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
       {canCancel ? (
         <button
           type="button"
-          onClick={() => {
-            cancelOrder(order.id);
-            toast.success(t("entrega.canceledToast"));
+          onClick={async () => {
+            const ok = await cancelOrder(order.id);
+            if (ok) toast.success(t("entrega.canceledToast"));
+            else toast.error(t("entrega.cancelErrorToast"));
           }}
           className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
         >

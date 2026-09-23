@@ -479,18 +479,22 @@ function AdminPedidos() {
 
   // Confirma a aceitação: fixa o método de pagamento exigido e, se o modo
   // estiver marcado para caução, anexa o valor configurado no perfil.
-  const confirmAccept = () => {
+  const confirmAccept = async () => {
     if (!acceptFor || !payChoice) return;
     const caution = orderModeRequiresCaution(restaurant, acceptFor.fulfillmentType)
       ? restaurant.cautionAmount
       : undefined;
-    acceptOrder(acceptFor.id, payChoice, caution);
+    const ok = await acceptOrder(acceptFor.id, payChoice, caution);
+    if (!ok) {
+      toast.error(t("adminPedidos.updateErrorToast"));
+      return;
+    }
     toast.success(t("adminPedidos.updatedToast", { status: statusLabels.accepted }));
     setAcceptFor(null);
   };
 
   // "Aceite" → "A caminho" (delivery): obriga a atribuir um estafeta livre.
-  const dispatch = (order: CartOrder) => {
+  const dispatch = async (order: CartOrder) => {
     const courier = myCouriers.find((c) => c.id === courierPick && c.status === "disponivel");
     if (!courier) {
       toast.error(t("adminPedidos.courierRequired"));
@@ -499,34 +503,58 @@ function AdminPedidos() {
     if (hasRealBackend) {
       // Atómico no backend real (OrderController::dispatch) — atribui e
       // avança o estado numa só chamada.
-      dispatchOrder(order.id, courier.id);
+      const ok = await dispatchOrder(order.id, courier.id);
+      if (!ok) {
+        toast.error(t("adminPedidos.updateErrorToast"));
+        return;
+      }
     } else {
       assign(courier.id, order.id);
-      updateOrderStatus(order.id, "onTheWay");
+      const ok = await updateOrderStatus(order.id, "onTheWay");
+      if (!ok) {
+        toast.error(t("adminPedidos.updateErrorToast"));
+        return;
+      }
     }
     toast.success(t("adminPedidos.dispatchedToast", { name: courier.name }));
   };
 
   // "A caminho" → "Entregue": liberta o estafeta.
-  const markDelivered = (order: CartOrder) => {
+  const markDelivered = async (order: CartOrder) => {
+    const ok = await updateOrderStatus(order.id, "delivered");
+    if (!ok) {
+      toast.error(t("adminPedidos.updateErrorToast"));
+      return;
+    }
     releaseOrder(order.id);
-    updateOrderStatus(order.id, "delivered");
     toast.success(t("adminPedidos.updatedToast", { status: statusLabels.delivered }));
   };
 
   // Take away / no local: "Aceite" → "Pronto" → "Concluído" (sem estafeta).
-  const markReady = (order: CartOrder) => {
-    updateOrderStatus(order.id, "ready");
+  const markReady = async (order: CartOrder) => {
+    const ok = await updateOrderStatus(order.id, "ready");
+    if (!ok) {
+      toast.error(t("adminPedidos.updateErrorToast"));
+      return;
+    }
     toast.success(t("adminPedidos.updatedToast", { status: statusLabels.ready }));
   };
-  const markCompleted = (order: CartOrder) => {
-    updateOrderStatus(order.id, "completed");
+  const markCompleted = async (order: CartOrder) => {
+    const ok = await updateOrderStatus(order.id, "completed");
+    if (!ok) {
+      toast.error(t("adminPedidos.updateErrorToast"));
+      return;
+    }
     toast.success(t("adminPedidos.updatedToast", { status: statusLabels.completed }));
   };
 
-  const reject = (order: CartOrder) => {
+  const reject = async (order: CartOrder) => {
+    const ok = await updateOrderStatus(order.id, "rejected");
+    if (!ok) {
+      toast.error(t("adminPedidos.updateErrorToast"));
+      return;
+    }
     releaseOrder(order.id);
-    updateOrderStatus(order.id, "rejected");
     toast.success(t("adminPedidos.rejectedToast"));
   };
 
@@ -1166,7 +1194,13 @@ function AdminPedidos() {
                                           setInvoiceUploading(true);
                                           try {
                                             const dataUrl = await fileToDocumentDataUrl(file);
-                                            setInvoice(active.id, dataUrl, invoiceTypeChoice);
+                                            const ok = await setInvoice(
+                                              active.id,
+                                              dataUrl,
+                                              invoiceTypeChoice,
+                                            );
+                                            if (!ok)
+                                              throw new Error(t("adminPedidos.invoiceError"));
                                             toast.success(t("adminPedidos.invoiceSentToast"));
                                           } catch (err) {
                                             toast.error(

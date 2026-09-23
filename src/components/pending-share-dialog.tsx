@@ -110,14 +110,18 @@ export function PendingShareDialog() {
       ? restaurantOrders
       : clientOrders.filter((o) => o.restaurantId === restaurantId);
 
-  const attachToOrder = (orderId: string) => {
-    if (purpose === "invoice") {
-      setInvoice(orderId, pendingShare.dataUrl, invoiceType);
-      toast.success(t("adminPedidos.invoiceSentToast"));
-    } else {
-      setPaymentProof(orderId, pendingShare.dataUrl);
-      toast.success(t("entrega.proofSentToast"));
+  const attachToOrder = async (orderId: string) => {
+    const ok =
+      purpose === "invoice"
+        ? await setInvoice(orderId, pendingShare.dataUrl, invoiceType)
+        : await setPaymentProof(orderId, pendingShare.dataUrl);
+    if (!ok) {
+      toast.error(purpose === "invoice" ? t("adminPedidos.invoiceError") : t("entrega.proofError"));
+      return;
     }
+    toast.success(
+      purpose === "invoice" ? t("adminPedidos.invoiceSentToast") : t("entrega.proofSentToast"),
+    );
     clearPendingShare();
   };
 
