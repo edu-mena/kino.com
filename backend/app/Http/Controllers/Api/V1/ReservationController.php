@@ -11,6 +11,7 @@ use App\Http\Resources\Api\V1\ReservationResource;
 use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
+use App\Services\MediaUploadService;
 use App\Services\ReservationOccupancyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -128,8 +129,6 @@ class ReservationController extends Controller
         return new ReservationResource($reservation->load('table'));
     }
 
-    /** Cliente/convidado cancela — só enquanto "pending" (ver mock,
-     * reservas.tsx: botão de cancelar só aparece nesse estado). */
     /**
      * Pendente: sempre pode cancelar. Confirmada: só dentro da janela que o
      * restaurante configurou (`reservation_cancellation_window_minutes`,
@@ -155,6 +154,21 @@ class ReservationController extends Controller
         }
 
         $reservation->update(['status' => 'canceled', 'status_updated_at' => now()]);
+
+        return new ReservationResource($reservation);
+    }
+
+    /** Comprovativo de pagamento da caução, carregado pelo cliente/convidado
+     * — mirror exato de OrderController::storePaymentProof (imagem OU PDF,
+     * bancos/carteiras digitais muitas vezes geram o comprovativo como
+     * PDF). */
+    public function storePaymentProof(Request $request, Reservation $reservation, MediaUploadService $uploads): ReservationResource
+    {
+        $this->assertOwnerOrGuest($request, $reservation);
+        $request->validate(['proof' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:8192']]);
+
+        $url = $uploads->storeDocument($request->file('proof'), 'payment-proof', $reservation->uuid);
+        $reservation->update(['payment_proof_url' => $url, 'payment_proof_at' => now()]);
 
         return new ReservationResource($reservation);
     }

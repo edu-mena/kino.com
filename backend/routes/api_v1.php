@@ -127,6 +127,7 @@ Route::middleware('throttle:writes')->group(function () {
         ->middleware('idempotent');
     Route::get('reservations/{reservation}', [ReservationController::class, 'show']);
     Route::post('reservations/{reservation}/cancel', [ReservationController::class, 'cancel']);
+    Route::post('reservations/{reservation}/payment-proof', [ReservationController::class, 'storePaymentProof']);
 });
 
 // Gestão do restaurante — qualquer staff (manageOperations), não só owner.

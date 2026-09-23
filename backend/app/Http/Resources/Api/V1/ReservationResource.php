@@ -32,6 +32,8 @@ class ReservationResource extends JsonResource
             'statusUpdatedAt' => $this->status_updated_at?->toIso8601String(),
             'tableId' => $this->whenLoaded('table', fn () => $this->table?->uuid),
             'specialRequests' => $this->special_requests,
+            'paymentProofUrl' => $this->payment_proof_url,
+            'paymentProofAt' => $this->payment_proof_at?->toIso8601String(),
             // Só presente quando o controller anexa (GET staff — ver
             // ReservationOccupancyService): sinal de sobreposição de mesa/
             // lotação na janela desta reserva, nunca bloqueia a criação.

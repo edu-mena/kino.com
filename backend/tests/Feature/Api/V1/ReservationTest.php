@@ -3,6 +3,8 @@
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 function createReservableRestaurant(array $attrs = []): Restaurant
@@ -306,4 +308,42 @@ test('reserva pendente continua a poder ser cancelada sempre, independente da ja
     $this->withHeader('X-Guest-Token', (string) $reservation->guest_token)
         ->postJson("/api/v1/reservations/{$reservation->uuid}/cancel")
         ->assertOk()->assertJsonPath('data.status', 'canceled');
+});
+
+// --- comprovativo de pagamento da caução (imagem ou PDF) ---
+
+test('cliente anexa comprovativo de pagamento da caução, imagem ou PDF', function () {
+    Storage::fake('r2', ['url' => 'https://cdn.luku.com']);
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'pending', 'status_updated_at' => now(),
+        'caution_amount' => 5000, 'caution_status' => 'pending',
+        'guest_token' => Str::uuid(),
+    ]);
+
+    $pdf = UploadedFile::fake()->create('comprovativo.pdf', 200, 'application/pdf');
+
+    $this->withHeader('X-Guest-Token', (string) $reservation->guest_token)
+        ->postJson("/api/v1/reservations/{$reservation->uuid}/payment-proof", ['proof' => $pdf])
+        ->assertOk()
+        ->assertJsonPath('data.paymentProofUrl', fn ($url) => str_contains($url, '.pdf'));
+
+    expect($reservation->fresh()->payment_proof_at)->not->toBeNull();
+});
+
+test('convidado sem token não consegue anexar comprovativo de outra reserva', function () {
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+    $reservation = $restaurant->reservations()->create([
+        'customer_name' => 'A', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:00', 'people_count' => 2,
+        'status' => 'pending', 'status_updated_at' => now(),
+        'caution_amount' => 5000, 'caution_status' => 'pending',
+        'guest_token' => Str::uuid(),
+    ]);
+    $image = UploadedFile::fake()->image('comprovativo.jpg');
+
+    $this->postJson("/api/v1/reservations/{$reservation->uuid}/payment-proof", ['proof' => $image])
+        ->assertStatus(404);
 });

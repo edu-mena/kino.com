@@ -20,6 +20,7 @@ class Reservation extends Model
         'customer_phone', 'customer_email', 'date', 'time', 'people_count',
         'caution_amount', 'caution_status', 'status', 'status_updated_at',
         'table_id', 'special_requests',
+        'payment_proof_url', 'payment_proof_at',
     ];
 
     protected function casts(): array
@@ -28,6 +29,7 @@ class Reservation extends Model
             'date' => 'date',
             'caution_amount' => 'decimal:2',
             'status_updated_at' => 'datetime',
+            'payment_proof_at' => 'datetime',
         ];
     }
 

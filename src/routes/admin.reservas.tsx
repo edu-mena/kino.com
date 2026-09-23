@@ -129,6 +129,18 @@ function AdminReservas() {
     Anulada: t("adminReservas.statusAnnulled"),
   };
 
+  // `cautionStatus` já chega em português canónico (mock e API real — ver
+  // `CAUTION_STATUS_FROM_API` em `api-reservations.ts`), por isso
+  // comparações no código (ex. KPI abaixo) usam sempre "Paga" diretamente;
+  // isto só traduz para o idioma da interface na exibição, mesmo padrão de
+  // `statusLabels` acima.
+  const cautionStatusLabels: Record<string, string> = {
+    Pendente: t("adminReservas.cautionPending"),
+    Paga: t("adminReservas.cautionPaid"),
+    "Sem caução": t("adminReservas.cautionNotRequired"),
+    Reembolsada: t("adminReservas.cautionRefunded"),
+  };
+
   const mine = useMemo(
     () => (restaurant ? reservations.filter((r) => r.restaurantId === restaurant.id) : []),
     [reservations, restaurant],
@@ -736,7 +748,7 @@ function AdminReservas() {
                             <Field label={t("adminReservas.detailDeposit")}>
                               {active.cautionAmount > 0 ? formatKz(active.cautionAmount) : "—"}
                               <span className="mt-0.5 block text-xs text-muted-foreground">
-                                {active.cautionStatus}
+                                {cautionStatusLabels[active.cautionStatus] ?? active.cautionStatus}
                               </span>
                             </Field>
                           </dl>

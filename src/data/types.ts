@@ -215,6 +215,12 @@ export interface Reservation {
   /** Mesa atribuída pelo restaurante ao confirmar (ver `@/data/tables-store`). */
   tableId?: string;
   specialRequests?: string;
+  /** Comprovativo de pagamento da caução, carregado pelo cliente (data URL
+   * de imagem ou PDF) — visível de imediato ao restaurante em
+   * `/admin/reservas`. */
+  paymentProof?: string;
+  /** ISO — quando o comprovativo foi carregado. */
+  paymentProofAt?: string;
   createdAt: string;
 }
 

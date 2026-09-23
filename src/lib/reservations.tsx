@@ -5,6 +5,7 @@ import {
   createApiReservation,
   fetchApiReservationsForRestaurant,
   fetchMyApiReservations,
+  storeApiReservationPaymentProof,
   updateApiReservationStatus,
 } from "@/data/api-reservations";
 import { INITIAL_RESERVATIONS } from "@/data/mockData";
@@ -48,6 +49,10 @@ type ReservationsValue = {
    * tem "Cancelada" mapeada para a API; este usa o token do CLIENTE e a
    * rota pública dedicada (`ReservationController::cancel`). */
   cancelReservation: (id: string) => Promise<boolean>;
+  /** Cliente/convidado anexa o comprovativo de pagamento da caução — data
+   * URL de imagem ou PDF. `ok: false` = falha real (upload rejeitado,
+   * tamanho excedido, etc.). */
+  setPaymentProof: (id: string, dataUrl: string) => Promise<boolean>;
   /** Mesa atribuída pelo restaurante (opcional; `undefined` limpa). */
   assignTable: (id: string, tableId?: string) => void;
 };
@@ -225,6 +230,25 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  const setPaymentProof = async (id: string, dataUrl: string): Promise<boolean> => {
+    if (hasRealBackend) {
+      const token = getAuthToken();
+      try {
+        await storeApiReservationPaymentProof(id, dataUrl, token);
+        refetchApi();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    setReservations((prev) =>
+      prev.map((r) =>
+        r.id === id ? { ...r, paymentProof: dataUrl, paymentProofAt: new Date().toISOString() } : r,
+      ),
+    );
+    return true;
+  };
+
   const assignTable = (id: string, tableId?: string) => {
     if (hasRealBackend) {
       const token = getAdminToken();
@@ -252,6 +276,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
         addReservation,
         updateReservationStatus,
         cancelReservation,
+        setPaymentProof,
         assignTable,
       }}
     >

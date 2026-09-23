@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api-client";
+import { dataUrlToFile } from "@/lib/api-upload";
 import type { Reservation } from "./types";
 
 /** Reservas reais (backend/app/Http/Controllers/Api/V1/ReservationController.php)
@@ -21,6 +22,21 @@ const STATUS_TO_API: Record<string, string> = {
   Anulada: "voided",
 };
 
+/** `caution_status` do backend real (`pending`/`paid`/`not_required`/
+ * `refunded`) traduzido aqui, na origem — mesmo padrão do `status`
+ * principal acima. Sem isto, comparações como
+ * `cautionStatus.startsWith("Paga")` (`admin.reservas.tsx`, KPI de
+ * depósitos cobrados) só funcionavam com o mock (que já usa strings em
+ * português, ex. "Paga (Garantia)") e ficavam sempre falsas com o backend
+ * real — e o valor cru em inglês chegava a ser mostrado ao cliente sem
+ * tradução nenhuma. */
+const CAUTION_STATUS_FROM_API: Record<string, string> = {
+  pending: "Pendente",
+  paid: "Paga",
+  not_required: "Sem caução",
+  refunded: "Reembolsada",
+};
+
 type ApiReservation = {
   id: string;
   restaurantId?: string;
@@ -38,6 +54,8 @@ type ApiReservation = {
   statusUpdatedAt: string | null;
   tableId?: string | null;
   specialRequests: string | null;
+  paymentProofUrl?: string | null;
+  paymentProofAt?: string | null;
   createdAt: string;
 };
 
@@ -55,11 +73,13 @@ function mapApiReservation(r: ApiReservation, ownerKey: string): Reservation {
     time: r.time,
     peopleCount: r.peopleCount,
     cautionAmount: r.cautionAmount,
-    cautionStatus: r.cautionStatus,
+    cautionStatus: CAUTION_STATUS_FROM_API[r.cautionStatus] ?? r.cautionStatus,
     status: STATUS_FROM_API[r.status] ?? r.status,
     ...(r.statusUpdatedAt ? { statusUpdatedAt: r.statusUpdatedAt } : {}),
     ...(r.tableId ? { tableId: r.tableId } : {}),
     ...(r.specialRequests ? { specialRequests: r.specialRequests } : {}),
+    ...(r.paymentProofUrl ? { paymentProof: r.paymentProofUrl } : {}),
+    ...(r.paymentProofAt ? { paymentProofAt: r.paymentProofAt } : {}),
     createdAt: r.createdAt,
   };
 }
@@ -153,5 +173,25 @@ export async function cancelApiReservation(id: string, token: string | null): Pr
   await apiFetch(`/reservations/${id}/cancel`, {
     method: "POST",
     ...(token ? { token } : {}),
+  });
+}
+
+/** Comprovativo de pagamento da caução — imagem OU PDF (bancos/carteiras
+ * digitais muitas vezes geram o comprovativo como PDF, não imagem), daí
+ * `dataUrlToFile` receber a extensão certa em vez de assumir sempre `.jpg`
+ * (mesmo padrão já corrigido em `storeApiPaymentProof`, `api-orders.ts`). */
+export async function storeApiReservationPaymentProof(
+  id: string,
+  dataUrl: string,
+  token: string | null,
+): Promise<void> {
+  const mime = dataUrl.match(/^data:([^;]+);base64/)?.[1] ?? "image/jpeg";
+  const ext = mime === "application/pdf" ? "pdf" : (mime.split("/")[1] ?? "jpg");
+  const body = new FormData();
+  body.append("proof", dataUrlToFile(dataUrl, `proof.${ext}`));
+  await apiFetch(`/reservations/${id}/payment-proof`, {
+    method: "POST",
+    ...(token ? { token } : {}),
+    body,
   });
 }

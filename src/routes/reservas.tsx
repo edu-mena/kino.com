@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarCheck, ChevronLeft, Star, X } from "lucide-react";
+import { CalendarCheck, ChevronLeft, FileText, Star, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { MediaLightbox } from "@/components/media-lightbox";
 import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { isRefReviewed } from "@/data/reviews-store";
@@ -21,6 +22,7 @@ import { useRestaurantDetail } from "@/data/use-restaurants-query";
 import { formatKz } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
+import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
 import { useReservations } from "@/lib/reservations";
 import { useTranslation } from "@/i18n";
 
@@ -51,13 +53,25 @@ const STATUS_TONE: Record<string, string> = {
   Anulada: "bg-muted-foreground/15 text-muted-foreground",
 };
 
+// `cautionStatus` já chega em português canónico (mock e API real — ver
+// `CAUTION_STATUS_FROM_API` em `api-reservations.ts`, mesmo padrão do
+// `status` acima), por isso comparações no código usam sempre
+// "Pendente"/"Paga"/etc diretamente. Isto só traduz para o idioma da
+// interface na exibição.
+const CAUTION_STATUS_KEY: Record<string, string> = {
+  Pendente: "cautionPending",
+  Paga: "cautionPaid",
+  "Sem caução": "cautionNotRequired",
+  Reembolsada: "cautionRefunded",
+};
+
 // Quanto tempo uma reserva "Cancelada" continua visível pro cliente depois
 // de cancelada — passado isso, some daqui (o painel do restaurante, em
 // `/admin/reservas`, continua a mostrar tudo, sem este limite).
 const CANCELED_VISIBLE_MS = 60_000;
 
 function Reservas() {
-  const { reservations: allReservations, cancelReservation } = useReservations();
+  const { reservations: allReservations, cancelReservation, setPaymentProof } = useReservations();
   const { user } = useAuth();
   // Reavalia o filtro periodicamente pra reservas "Cancelada" sumirem
   // sozinhas ao completar 1 minuto, sem precisar de um refresh da página.
@@ -82,6 +96,8 @@ function Reservas() {
   const { t } = useTranslation();
   const statusText = (s: string) => (STATUS_KEY[s] ? t(`reservas.${STATUS_KEY[s]}`) : s);
   const statusTone = (s: string) => STATUS_TONE[s] ?? "bg-brand/15 text-brand";
+  const cautionStatusText = (s: string) =>
+    CAUTION_STATUS_KEY[s] ? t(`reservas.${CAUTION_STATUS_KEY[s]}`) : s;
   const todayStr = new Date().toISOString().slice(0, 10);
 
   // Mesma lógica de lista ↔ detalhe do Centro de ajuda (`/ajuda`): no mobile
@@ -124,6 +140,27 @@ function Reservas() {
       toast.success(t("reservas.canceledToast"));
     } else {
       toast.error(t("reservas.cancelErrorToast"));
+    }
+  };
+
+  const [proofUploading, setProofUploading] = useState(false);
+  const [proofLightboxOpen, setProofLightboxOpen] = useState(false);
+  const proofIsPdf = isPdfDataUrl(active?.paymentProof);
+
+  const onProofFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !active) return;
+    setProofUploading(true);
+    try {
+      const dataUrl = await fileToDocumentDataUrl(file);
+      const ok = await setPaymentProof(active.id, dataUrl);
+      if (!ok) throw new Error(t("reservas.proofError"));
+      toast.success(t("reservas.proofSentToast"));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("reservas.proofError"));
+    } finally {
+      setProofUploading(false);
     }
   };
 
@@ -236,7 +273,7 @@ function Reservas() {
                         <Field label={t("reservas.detailDeposit")}>
                           {formatKz(active.cautionAmount)}
                           <span className="mt-0.5 block text-xs text-muted-foreground">
-                            {active.cautionStatus}
+                            {cautionStatusText(active.cautionStatus)}
                           </span>
                         </Field>
                       )}
@@ -250,6 +287,68 @@ function Reservas() {
                         {active.specialRequests || t("reservas.noRequests")}
                       </p>
                     </div>
+
+                    {/* Comprovativo de pagamento da caução */}
+                    {active.cautionAmount > 0 &&
+                      (active.paymentProof || active.cautionStatus === "Pendente") && (
+                        <div className="mt-4 border-t border-border pt-4">
+                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                            {t("reservas.proofTitle")}
+                          </p>
+                          {active.paymentProof ? (
+                            <div className="mt-2 space-y-2">
+                              <button
+                                type="button"
+                                onClick={() => setProofLightboxOpen(true)}
+                                aria-label={t("reservas.proofViewAria")}
+                                className="block w-full"
+                              >
+                                {proofIsPdf ? (
+                                  <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                    <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                    {t("reservas.proofPdfLabel")}
+                                  </span>
+                                ) : (
+                                  <img
+                                    src={active.paymentProof}
+                                    alt=""
+                                    className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                  />
+                                )}
+                              </button>
+                              <span className="block text-xs font-semibold text-success">
+                                {t("reservas.proofSent")}
+                              </span>
+                              <MediaLightbox
+                                open={proofLightboxOpen}
+                                onOpenChange={setProofLightboxOpen}
+                                src={active.paymentProof}
+                                isPdf={proofIsPdf}
+                                title={t("reservas.proofTitle")}
+                              />
+                            </div>
+                          ) : (
+                            <>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {t("reservas.proofHint")}
+                              </p>
+                              <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 px-4 py-3 text-xs font-bold text-primary transition-colors hover:bg-primary/5">
+                                <Upload className="h-4 w-4" />
+                                {proofUploading
+                                  ? t("reservas.proofUploading")
+                                  : t("reservas.proofUpload")}
+                                <input
+                                  type="file"
+                                  accept="image/*,application/pdf"
+                                  className="hidden"
+                                  disabled={proofUploading}
+                                  onChange={onProofFile}
+                                />
+                              </label>
+                            </>
+                          )}
+                        </div>
+                      )}
 
                     {(active.status === "Pendente" ||
                       canCancelConfirmed ||
