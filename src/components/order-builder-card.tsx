@@ -31,7 +31,7 @@ import {
   getRestaurantFulfillmentModes,
   orderModeRequiresCaution,
 } from "@/data/helpers";
-import { resolvePromoCode, type PromoEffect } from "@/data/offers-store";
+import { discountableSubtotal, resolvePromoCode, type PromoEffect } from "@/data/offers-store";
 import { computeDeliveryFee } from "@/data/platform-settings-store";
 import { useOffers } from "@/data/use-offers";
 import { useRestaurantDetail, useRestaurantMenuItems } from "@/data/use-restaurants-query";
@@ -184,7 +184,22 @@ export function OrderBuilderCard() {
     0,
   );
   const cautionForMode = orderModeRequiresCaution(restaurant, mode);
-  const promoDiscount = promo?.percentOff ? Math.round(total * (promo.percentOff / 100)) : 0;
+  // Sem alvo (prato/categoria) na promoção, desconta o pedido inteiro (`total`
+  // acima) — com alvo, só o subtotal dos itens visados entra no cálculo
+  // (mesma regra do backend real, ver OrderPricingService::price).
+  const promoDiscount = promo?.percentOff
+    ? Math.round(
+        discountableSubtotal(
+          lines.map((l) => ({
+            menuItemId: l.menuItemId,
+            category: menuItemsById.get(l.menuItemId)?.category,
+            lineTotal: billLineUnitPrice(l, menuItemsById.get(l.menuItemId)) * l.qty,
+          })),
+          promo,
+        ) *
+          (promo.percentOff / 100),
+      )
+    : 0;
 
   // Estimativa da taxa de entrega para a morada escolhida — taxa única do
   // restaurante + acréscimo por km acima do raio da política da plataforma.

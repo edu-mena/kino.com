@@ -11,7 +11,7 @@ import {
   updateApiOrderStatus,
 } from "@/data/api-orders";
 import { getMenuItem, getRestaurant } from "@/data/helpers";
-import type { PromoEffect } from "@/data/offers-store";
+import { discountableSubtotal, type PromoEffect } from "@/data/offers-store";
 import { computeDeliveryFee } from "@/data/platform-settings-store";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { hasRealBackend } from "@/lib/api-client";
@@ -128,6 +128,12 @@ export type CartOrder = {
   /** 0–100, desconto sobre o subtotal de produtos. */
   promoPercentOff?: number;
   promoFreeDelivery?: boolean;
+  /** Pratos/categorias aos quais o desconto se restringia no momento do
+   * pedido (mock — no backend real isto só existe do lado do servidor,
+   * `total` já vem com o desconto certo aplicado). Ambos vazios/ausentes =
+   * desconto do pedido inteiro. Ver `discountableSubtotal`, `@/data/offers-store`. */
+  promoTargetMenuItemIds?: string[];
+  promoTargetCategories?: string[];
   /** Comprovativo de pagamento carregado pelo cliente (data URL de imagem),
    * depois de o restaurante aceitar e fixar o método exigido. */
   paymentProof?: string;
@@ -310,11 +316,36 @@ function orderSubtotal(order: CartOrder): number {
 }
 
 /** Desconto do código promocional — percentagem sobre o subtotal de
- * produtos, arredondada. 0 quando o pedido não tem código ou o código só
- * dá entrega grátis. */
+ * produtos (ou só do subtotal dos pratos/categorias alvo, ver Fase K1),
+ * arredondada. 0 quando o pedido não tem código ou o código só dá entrega
+ * grátis. */
 function orderDiscount(order: CartOrder): number {
   if (!order.promoPercentOff) return 0;
-  return Math.round(orderSubtotal(order) * (order.promoPercentOff / 100));
+  if (order.total != null) {
+    // Pedido real — `total` já veio do servidor com o desconto certo
+    // aplicado (com ou sem alvo, ver OrderPricingService::price). Deriva o
+    // valor do desconto a partir daí em vez de recalcular sobre o subtotal
+    // inteiro, que ficaria errado numa promoção com alvo.
+    return Math.max(
+      0,
+      orderSubtotal(order) + orderDeliveryFee(order) - (order.reservationCredit ?? 0) - order.total,
+    );
+  }
+  const hasTarget = !!(order.promoTargetMenuItemIds?.length || order.promoTargetCategories?.length);
+  const base = hasTarget
+    ? discountableSubtotal(
+        order.lines.map((line) => ({
+          menuItemId: line.menuItemId,
+          category: getMenuItem(line.menuItemId)?.category,
+          lineTotal: lineUnitPrice(line) * line.qty,
+        })),
+        {
+          targetMenuItemIds: order.promoTargetMenuItemIds ?? [],
+          targetCategories: order.promoTargetCategories ?? [],
+        },
+      )
+    : orderSubtotal(order);
+  return Math.round(base * (order.promoPercentOff / 100));
 }
 
 /** Taxa de entrega: taxa única do restaurante (cobre até ao raio da
@@ -775,6 +806,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
                   promoLabel: promo.label,
                   ...(promo.percentOff ? { promoPercentOff: promo.percentOff } : {}),
                   ...(promo.freeDelivery ? { promoFreeDelivery: true } : {}),
+                  ...(promo.targetMenuItemIds.length
+                    ? { promoTargetMenuItemIds: promo.targetMenuItemIds }
+                    : {}),
+                  ...(promo.targetCategories.length
+                    ? { promoTargetCategories: promo.targetCategories }
+                    : {}),
                 }
               : {}),
             ...(reservation

@@ -317,6 +317,14 @@ export interface Offer {
   /** Formato de exibição no carrossel da home. Ausente = alterna
    * automaticamente (`split`/`cover`) pela posição. */
   layout?: "split" | "cover";
+  /** Pratos específicos aos quais o desconto se restringe (`id` de
+   * `MenuItem`). Junto com `targetCategories`, vazio/ausente nos dois =
+   * desconta o pedido inteiro (comportamento de sempre); presente numa das
+   * duas = só o subtotal desses itens é descontado, o resto paga cheio. */
+  targetMenuItemIds?: string[];
+  /** Categorias (`MenuItem.category`, texto livre) às quais o desconto se
+   * restringe — mesma regra de `targetMenuItemIds`. */
+  targetCategories?: string[];
 }
 
 export interface SavedAddress {

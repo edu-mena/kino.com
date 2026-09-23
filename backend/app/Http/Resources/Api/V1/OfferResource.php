@@ -23,6 +23,11 @@ class OfferResource extends JsonResource
             'mediaType' => $this->media_type,
             'thumbnailUrl' => $this->thumbnail_url,
             'layout' => $this->layout,
+            // Ambos vazios = promoção do pedido inteiro (ver
+            // OrderPricingService::price). Nunca `null` — `[]` é mais fácil
+            // de consumir no frontend (`.length`/`.includes` sem guarda).
+            'targetMenuItemIds' => $this->target_menu_item_ids ?? [],
+            'targetCategories' => $this->target_categories ?? [],
             'processingStatus' => $this->processing_status,
             'startsAt' => $this->starts_at?->toIso8601String(),
             'endsAt' => $this->ends_at?->toIso8601String(),

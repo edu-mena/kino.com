@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Bike,
+  Check,
   ChevronLeft,
   ChevronRight,
   Pencil,
@@ -47,6 +48,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { FirstUseHint } from "@/components/first-use-hint";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { useRestaurantMenuItems } from "@/data/use-restaurants-query";
 import type { Offer } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { useFirstUseHint } from "@/lib/first-use-hints";
@@ -73,6 +75,12 @@ function AdminPromocoes() {
   const { offersByRestaurant, createOffer, updateOffer, deleteOffer } = useOffersAdmin();
   const { t } = useTranslation();
   const promoHint = useFirstUseHint("promo");
+  const menuItemsQuery = useRestaurantMenuItems(restaurant?.id);
+  const menuItems = menuItemsQuery.data ?? [];
+  const menuCategories = useMemo(
+    () => [...new Set((menuItemsQuery.data ?? []).map((i) => i.category))],
+    [menuItemsQuery.data],
+  );
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Offer | null>(null);
@@ -92,6 +100,8 @@ function AdminPromocoes() {
   const [thumbnail, setThumbnail] = useState("");
   const [layout, setLayout] = useState<NonNullable<Offer["layout"]>>("split");
   const [percentOff, setPercentOff] = useState("");
+  const [targetMenuItemIds, setTargetMenuItemIds] = useState<string[]>([]);
+  const [targetCategories, setTargetCategories] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const typeLabels = useMemo<Record<Offer["type"], string>>(
@@ -114,6 +124,8 @@ function AdminPromocoes() {
     setThumbnail(editing?.thumbnail ?? "");
     setLayout(editing?.layout ?? "split");
     setPercentOff(editing?.percentOff ? String(editing.percentOff) : "");
+    setTargetMenuItemIds(editing?.targetMenuItemIds ?? []);
+    setTargetCategories(editing?.targetCategories ?? []);
   }, [formOpen, editing]);
 
   const offers = useMemo(
@@ -196,6 +208,8 @@ function AdminPromocoes() {
       ...(media && mediaType === "video" && thumbnail ? { thumbnail } : {}),
       ...(code.trim() ? { code: code.trim() } : {}),
       ...(type !== "delivery" ? { percentOff: Math.min(100, pct) } : {}),
+      targetMenuItemIds,
+      targetCategories,
     };
     const ok = editing
       ? await updateOffer(editing.id, input)
@@ -561,6 +575,74 @@ function AdminPromocoes() {
                 <p className="text-xs text-muted-foreground">
                   {t("adminPromocoes.percentOffHint")}
                 </p>
+              </div>
+            )}
+
+            {type !== "delivery" && (
+              <div className="col-span-2 space-y-1.5">
+                <Label>{t("adminPromocoes.targetLabel")}</Label>
+                <p className="text-xs text-muted-foreground">{t("adminPromocoes.targetHint")}</p>
+
+                {menuCategories.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {menuCategories.map((cat) => {
+                      const selected = targetCategories.includes(cat);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() =>
+                            setTargetCategories((prev) =>
+                              selected ? prev.filter((c) => c !== cat) : [...prev, cat],
+                            )
+                          }
+                          className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                            selected
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border text-muted-foreground hover:border-primary/40"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {menuItems.length > 0 && (
+                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-border p-1.5">
+                    {menuItems.map((item) => {
+                      const selected = targetMenuItemIds.includes(item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() =>
+                            setTargetMenuItemIds((prev) =>
+                              selected ? prev.filter((id) => id !== item.id) : [...prev, item.id],
+                            )
+                          }
+                          className={`flex w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-left text-xs transition-colors ${
+                            selected
+                              ? "border-primary bg-primary/5 text-foreground"
+                              : "border-transparent text-muted-foreground hover:border-border"
+                          }`}
+                        >
+                          <span className="truncate">{item.name}</span>
+                          {selected && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {(targetMenuItemIds.length > 0 || targetCategories.length > 0) && (
+                  <p className="text-xs font-semibold text-primary">
+                    {t("adminPromocoes.targetActiveNote")}
+                  </p>
+                )}
               </div>
             )}
 

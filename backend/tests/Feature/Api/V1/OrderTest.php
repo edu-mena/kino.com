@@ -168,6 +168,87 @@ test('código promocional de 20% aplica desconto sobre o subtotal', function () 
         ->assertJsonPath('data.promoPercentOff', 20);
 });
 
+// --- promoção com prato/categoria alvo: desconto só nesse subtotal (Fase K1) ---
+
+test('promoção visando um prato específico só desconta esse prato, não o resto do pedido', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $targeted = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 1000]);
+    $other = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 2000]);
+    Offer::query()->create([
+        'restaurant_id' => $restaurant->id, 'type' => 'discount', 'title' => '20% num prato',
+        'code' => 'PRATO20', 'percent_off' => 20, 'starts_at' => now()->subDay(),
+        'target_menu_item_ids' => [$targeted->uuid],
+    ]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+        'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900', 'pickup_asap' => true,
+        'items' => [
+            ['menu_item_id' => $targeted->uuid, 'qty' => 1],
+            ['menu_item_id' => $other->uuid, 'qty' => 1],
+        ],
+        'promo_code' => 'PRATO20',
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    // subtotal 3000, só os 1000 do prato visado entram no desconto (20% = 200).
+    $response->assertStatus(201)
+        ->assertJsonPath('data.subtotal', 3000)
+        ->assertJsonPath('data.total', 2800);
+});
+
+test('promoção visando uma categoria só desconta os pratos dessa categoria', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $dessert = MenuItem::factory()->for($restaurant)
+        ->create(['menu_id' => $menu->id, 'price' => 1000, 'category' => 'Sobremesas']);
+    $main = MenuItem::factory()->for($restaurant)
+        ->create(['menu_id' => $menu->id, 'price' => 2000, 'category' => 'Pratos principais']);
+    Offer::query()->create([
+        'restaurant_id' => $restaurant->id, 'type' => 'discount', 'title' => '50% em sobremesas',
+        'code' => 'DOCE50', 'percent_off' => 50, 'starts_at' => now()->subDay(),
+        'target_categories' => ['Sobremesas'],
+    ]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+        'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900', 'pickup_asap' => true,
+        'items' => [
+            ['menu_item_id' => $dessert->uuid, 'qty' => 1],
+            ['menu_item_id' => $main->uuid, 'qty' => 1],
+        ],
+        'promo_code' => 'DOCE50',
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    // subtotal 3000, só os 1000 da sobremesa entram no desconto (50% = 500).
+    $response->assertStatus(201)
+        ->assertJsonPath('data.subtotal', 3000)
+        ->assertJsonPath('data.total', 2500);
+});
+
+test('promoção sem alvo nenhum continua a descontar o pedido inteiro (regressão)', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 1000]);
+    $other = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 2000]);
+    Offer::query()->create([
+        'restaurant_id' => $restaurant->id, 'type' => 'discount', 'title' => '10% geral',
+        'code' => 'GERAL10', 'percent_off' => 10, 'starts_at' => now()->subDay(),
+    ]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+        'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900', 'pickup_asap' => true,
+        'items' => [
+            ['menu_item_id' => $item->uuid, 'qty' => 1],
+            ['menu_item_id' => $other->uuid, 'qty' => 1],
+        ],
+        'promo_code' => 'GERAL10',
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    // subtotal 3000, 10% do pedido inteiro = 300.
+    $response->assertStatus(201)
+        ->assertJsonPath('data.subtotal', 3000)
+        ->assertJsonPath('data.total', 2700);
+});
+
 test('Idempotency-Key repetido devolve a MESMA resposta sem criar 2 pedidos', function () {
     $restaurant = createOrderableRestaurant();
     $menu = RestaurantMenu::factory()->for($restaurant)->create();

@@ -1419,6 +1419,10 @@ export const pt = {
     percentOffLabel: "Percentagem de desconto",
     percentOffHint: "Aplicada ao subtotal quando o cliente usa o código no pedido.",
     percentOffNone: "Sem desconto (código só informativo)",
+    targetLabel: "Restringir a pratos ou categorias (opcional)",
+    targetHint:
+      "Sem nada selecionado, o desconto aplica-se ao pedido inteiro. Selecionando, só esses itens são descontados.",
+    targetActiveNote: "O desconto só se aplica aos itens selecionados.",
     imageLabel: "Imagem ou vídeo da promoção",
     imageHelp:
       "Cole um link, ou carregue uma imagem ou um vídeo (até 10 s) do dispositivo. Em branco, usa uma imagem genérica.",

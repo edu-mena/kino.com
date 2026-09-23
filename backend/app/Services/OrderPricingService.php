@@ -27,7 +27,7 @@ class OrderPricingService
      * @return array{
      *   lines: array<int, array{menu_item_id: int, item_name_snapshot: string, unit_price_snapshot: float, qty: int, line_ingredients: array, line_total: float}>,
      *   subtotal: float, discount: float, deliveryFee: float, total: float,
-     *   promo: ?array{code: string, label: string, percentOff: int, freeDelivery: bool},
+     *   promo: ?array{code: string, label: string, percentOff: int, freeDelivery: bool, targetMenuItemIds: array, targetCategories: array},
      *   reservationCredit: float,
      * }
      */
@@ -40,9 +40,14 @@ class OrderPricingService
         ?Reservation $reservation = null,
     ): array {
         $promo = $promoCode ? $this->resolvePromoCode($restaurant, $promoCode) : null;
+        // Sem alvo nenhum, a promoção desconta o pedido inteiro (comportamento
+        // de sempre) — com alvo, só as linhas cujo prato/categoria bate é que
+        // entram no `$discountableSubtotal` usado para calcular o desconto.
+        $hasTarget = $promo && (! empty($promo['targetMenuItemIds']) || ! empty($promo['targetCategories']));
 
         $lines = [];
         $subtotal = 0.0;
+        $discountableSubtotal = 0.0;
 
         foreach ($lineInputs as $input) {
             /** @var MenuItem $menuItem */
@@ -72,6 +77,12 @@ class OrderPricingService
             $unitPrice = (float) $menuItem->price + $extras;
             $lineTotal = $unitPrice * $qty;
             $subtotal += $lineTotal;
+            if ($hasTarget && (
+                in_array($menuItem->uuid, $promo['targetMenuItemIds'], true)
+                || in_array($menuItem->category, $promo['targetCategories'], true)
+            )) {
+                $discountableSubtotal += $lineTotal;
+            }
 
             $lines[] = [
                 'menu_item_id' => $menuItem->id,
@@ -84,7 +95,7 @@ class OrderPricingService
         }
 
         $discount = $promo && ! $promo['freeDelivery']
-            ? round($subtotal * ($promo['percentOff'] / 100))
+            ? round(($hasTarget ? $discountableSubtotal : $subtotal) * ($promo['percentOff'] / 100))
             : 0.0;
 
         $deliveryFee = 0.0;
@@ -116,9 +127,15 @@ class OrderPricingService
     }
 
     /**
-     * @return ?array{code: string, label: string, percentOff: int, freeDelivery: bool}
+     * Público — também usado por `ReservationController::store` para
+     * descontar a caução da reserva com o mesmo código (ver Fase K2; uma
+     * promoção com alvo, prato/categoria específica, não é aplicável lá,
+     * a caução não é itemizada — quem chama filtra por `targetMenuItemIds`/
+     * `targetCategories` vazios).
+     *
+     * @return ?array{code: string, label: string, percentOff: int, freeDelivery: bool, targetMenuItemIds: array, targetCategories: array}
      */
-    private function resolvePromoCode(Restaurant $restaurant, string $rawCode): ?array
+    public function resolvePromoCode(Restaurant $restaurant, string $rawCode): ?array
     {
         $code = mb_strtoupper(trim($rawCode));
         if ($code === '') {
@@ -147,6 +164,8 @@ class OrderPricingService
             'label' => $offer->title,
             'percentOff' => $percentOff,
             'freeDelivery' => $freeDelivery,
+            'targetMenuItemIds' => $offer->target_menu_item_ids ?? [],
+            'targetCategories' => $offer->target_categories ?? [],
         ];
     }
 

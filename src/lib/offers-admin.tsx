@@ -43,6 +43,12 @@ function toApiInput(input: OfferInput) {
     ...(input.code ? { code: input.code } : {}),
     ...(input.percentOff != null ? { percentOff: input.percentOff } : {}),
     ...(input.layout ? { layout: input.layout } : {}),
+    // Sempre enviados (mesmo `[]`) — o backend aceita `[]` mesmo numa
+    // promoção global (passa a validação `prohibited`, que só rejeita um
+    // valor preenchido) e uma edição precisa de conseguir LIMPAR a seleção
+    // anterior de um restaurante, não só adicionar.
+    menuItemIds: input.targetMenuItemIds ?? [],
+    categories: input.targetCategories ?? [],
     ...(input.image
       ? { media: { dataUrl: input.image, mediaType: input.mediaType ?? ("image" as const) } }
       : {}),

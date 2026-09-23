@@ -1416,6 +1416,10 @@ export const en: Dictionary = {
     percentOffLabel: "Discount percentage",
     percentOffHint: "Applied to the subtotal when the customer uses the code on an order.",
     percentOffNone: "No discount (code is informational only)",
+    targetLabel: "Restrict to dishes or categories (optional)",
+    targetHint:
+      "With nothing selected, the discount applies to the whole order. Select some, and only those items get discounted.",
+    targetActiveNote: "The discount only applies to the selected items.",
     imageLabel: "Promo image or video",
     imageHelp:
       "Paste a link, or upload an image or a video (up to 10s) from your device. Leave blank for a generic image.",

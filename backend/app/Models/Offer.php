@@ -15,7 +15,7 @@ class Offer extends Model
     protected $fillable = [
         'restaurant_id', 'type', 'title', 'description', 'code', 'percent_off',
         'image_url', 'media_type', 'thumbnail_url', 'layout', 'starts_at', 'ends_at',
-        'processing_status',
+        'processing_status', 'target_menu_item_ids', 'target_categories',
     ];
 
     protected function casts(): array
@@ -23,6 +23,8 @@ class Offer extends Model
         return [
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'target_menu_item_ids' => 'array',
+            'target_categories' => 'array',
         ];
     }
 

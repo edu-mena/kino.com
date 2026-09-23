@@ -57,6 +57,7 @@ class OfferController extends Controller
         $data = $request->validated();
         $media = $request->file('media');
         unset($data['media']);
+        $data = $this->mapTargeting($data);
 
         if ($media) {
             $ownerSegment = $offer->restaurant?->uuid ?? 'global';
@@ -115,6 +116,7 @@ class OfferController extends Controller
         $data = $request->validated();
         $media = $request->file('media');
         unset($data['media']);
+        $data = $this->mapTargeting($data);
 
         $isVideo = $media && str_starts_with((string) $media->getMimeType(), 'video/');
 
@@ -135,5 +137,23 @@ class OfferController extends Controller
         }
 
         return (new OfferResource($offer))->response()->setStatusCode(201);
+    }
+
+    /** `menu_item_ids`/`categories` (nomes do pedido, mais claros para quem
+     * consome a API) → `target_menu_item_ids`/`target_categories` (colunas
+     * da BD) — sem isto, `Offer::create`/`update` ignora-os em silêncio
+     * (não são `$fillable` com o nome do pedido). */
+    private function mapTargeting(array $data): array
+    {
+        if (array_key_exists('menu_item_ids', $data)) {
+            $data['target_menu_item_ids'] = $data['menu_item_ids'];
+            unset($data['menu_item_ids']);
+        }
+        if (array_key_exists('categories', $data)) {
+            $data['target_categories'] = $data['categories'];
+            unset($data['categories']);
+        }
+
+        return $data;
     }
 }

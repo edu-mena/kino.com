@@ -96,6 +96,10 @@ export type PromoEffect = {
   percentOff: number;
   /** Isenta a taxa de entrega. */
   freeDelivery: boolean;
+  /** Pratos/categorias alvo — ver `Offer.targetMenuItemIds`/`targetCategories`.
+   * Ambos vazios = desconta o pedido inteiro (ver `discountableSubtotal`). */
+  targetMenuItemIds: string[];
+  targetCategories: string[];
 };
 
 /**
@@ -120,5 +124,36 @@ export function resolvePromoCode(
   const percentOff =
     offer.type === "delivery" ? 0 : Math.max(0, Math.min(100, Math.round(offer.percentOff ?? 0)));
   if (!freeDelivery && percentOff === 0) return null;
-  return { code, offerId: offer.id, label: offer.title, percentOff, freeDelivery };
+  return {
+    code,
+    offerId: offer.id,
+    label: offer.title,
+    percentOff,
+    freeDelivery,
+    targetMenuItemIds: offer.targetMenuItemIds ?? [],
+    targetCategories: offer.targetCategories ?? [],
+  };
+}
+
+/**
+ * Subtotal sobre o qual `percentOff` deve ser calculado — sem alvo nenhum
+ * (`targetMenuItemIds`/`targetCategories` vazios), é o pedido inteiro (como
+ * sempre); com alvo, só as linhas cujo prato/categoria bate entram na soma.
+ * Mesma regra usada no backend real (`OrderPricingService::price`) — quem
+ * chama já resolveu `lineTotal`/`category` por linha (preço muda conforme o
+ * modo/personalização, não é responsabilidade desta função recalcular).
+ */
+export function discountableSubtotal(
+  lines: { menuItemId: string; category: string | undefined; lineTotal: number }[],
+  promo: Pick<PromoEffect, "targetMenuItemIds" | "targetCategories">,
+): number {
+  const hasTarget = promo.targetMenuItemIds.length > 0 || promo.targetCategories.length > 0;
+  if (!hasTarget) return lines.reduce((sum, l) => sum + l.lineTotal, 0);
+  return lines
+    .filter(
+      (l) =>
+        promo.targetMenuItemIds.includes(l.menuItemId) ||
+        (l.category != null && promo.targetCategories.includes(l.category)),
+    )
+    .reduce((sum, l) => sum + l.lineTotal, 0);
 }

@@ -21,11 +21,21 @@ class StoreOfferRequest extends FormRequest
         if ($this->filled('code')) {
             $this->merge(['code' => mb_strtoupper(trim((string) $this->input('code')))]);
         }
+        // `menu_item_ids`/`categories` chegam como um campo JSON só (não
+        // `campo[]` repetido) — multipart não tem forma de representar um
+        // array VAZIO, e uma edição precisa de conseguir LIMPAR uma seleção
+        // anterior (ver `buildFormData`, api-offers.ts).
+        foreach (['menu_item_ids', 'categories'] as $field) {
+            if ($this->has($field) && is_string($this->input($field))) {
+                $decoded = json_decode((string) $this->input($field), true);
+                $this->merge([$field => is_array($decoded) ? $decoded : []]);
+            }
+        }
     }
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'type' => ['required', Rule::in(['discount', 'delivery', 'happy-hour'])],
             'title' => ['required', 'string', 'max:150'],
             'description' => ['sometimes', 'nullable', 'string', 'max:500'],
@@ -36,5 +46,23 @@ class StoreOfferRequest extends FormRequest
             'ends_at' => ['sometimes', 'nullable', 'date', 'after:starts_at'],
             'media' => ['sometimes', 'nullable', 'file', 'mimes:jpg,jpeg,png,webp,mp4,mov,webm', 'max:102400'],
         ];
+
+        // Visar pratos/categorias só faz sentido numa promoção do
+        // restaurante — uma promoção institucional da Luku (storeGlobal,
+        // sem {restaurant} na rota) não tem como restringir-se a um prato
+        // de um restaurante específico.
+        $restaurant = $this->route('restaurant');
+        if ($restaurant) {
+            $rules['menu_item_ids'] = ['sometimes', 'array'];
+            $rules['menu_item_ids.*'] = ['string',
+                Rule::exists('menu_items', 'uuid')->where('restaurant_id', $restaurant->id)];
+            $rules['categories'] = ['sometimes', 'array'];
+            $rules['categories.*'] = ['string', 'max:80'];
+        } else {
+            $rules['menu_item_ids'] = ['prohibited'];
+            $rules['categories'] = ['prohibited'];
+        }
+
+        return $rules;
     }
 }

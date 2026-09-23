@@ -21,6 +21,8 @@ type ApiOffer = {
   mediaType: "image" | "video";
   thumbnailUrl: string | null;
   layout: "split" | "cover" | null;
+  targetMenuItemIds: string[];
+  targetCategories: string[];
   processingStatus: string;
   startsAt: string | null;
   endsAt: string | null;
@@ -39,6 +41,8 @@ function mapApiOffer(o: ApiOffer): Offer {
     ...(o.mediaType === "video" ? { mediaType: "video" as const } : {}),
     ...(o.thumbnailUrl ? { thumbnail: o.thumbnailUrl } : {}),
     ...(o.layout ? { layout: o.layout } : {}),
+    ...(o.targetMenuItemIds.length ? { targetMenuItemIds: o.targetMenuItemIds } : {}),
+    ...(o.targetCategories.length ? { targetCategories: o.targetCategories } : {}),
   };
 }
 
@@ -55,6 +59,11 @@ type OfferInput = {
   code?: string;
   percentOff?: number;
   layout?: "split" | "cover";
+  /** Pratos/categorias alvo — ver `Offer.targetMenuItemIds`/`targetCategories`
+   * (`@/data/types`). Sempre enviados (mesmo `[]`) quando a promoção é do
+   * restaurante, para uma edição conseguir LIMPAR uma seleção anterior. */
+  menuItemIds?: string[];
+  categories?: string[];
   /** Data URL (imagem ou vídeo) — só enviada se tiver mudado desde o
    * carregamento (evita reenviar/reprocessar o mesmo ficheiro a cada
    * edição de texto). */
@@ -69,6 +78,12 @@ function buildFormData(input: OfferInput): FormData {
   if (input.code) body.append("code", input.code);
   if (input.percentOff != null) body.append("percent_off", String(input.percentOff));
   if (input.layout) body.append("layout", input.layout);
+  // Um campo JSON só, em vez de `menu_item_ids[]` repetido — multipart não
+  // tem forma de representar um array VAZIO (zero entradas = nenhuma chave
+  // chega ao PHP), e uma edição precisa de conseguir LIMPAR uma seleção
+  // anterior, não só adicionar (ver StoreOfferRequest::prepareForValidation).
+  if (input.menuItemIds) body.append("menu_item_ids", JSON.stringify(input.menuItemIds));
+  if (input.categories) body.append("categories", JSON.stringify(input.categories));
   if (input.media) {
     const ext = input.media.mediaType === "video" ? "mp4" : "jpg";
     body.append("media", dataUrlToFile(input.media.dataUrl, `promo.${ext}`));

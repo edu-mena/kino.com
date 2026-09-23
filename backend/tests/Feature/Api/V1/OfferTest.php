@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\ProcessUploadedVideoJob;
+use App\Models\MenuItem;
 use App\Models\Offer;
 use App\Models\Restaurant;
 use App\Models\User;
@@ -143,4 +144,91 @@ test('atualizar imagem de uma oferta apaga a anterior do storage', function () {
     $this->actingAs($owner, 'sanctum')->postJson("/api/v1/offers/{$offerUuid}", ['media' => $second])->assertOk();
 
     Storage::disk('r2')->assertMissing($oldPath);
+});
+
+// --- promoção com pratos/categorias alvo (Fase K1) ---
+
+test('staff cria promoção visando pratos específicos', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+    $dish = MenuItem::factory()->for($restaurant)->create();
+
+    $response = $this->actingAs($owner, 'sanctum')->postJson("/api/v1/restaurants/{$restaurant->uuid}/offers", [
+        'type' => 'discount', 'title' => '20% num prato', 'percent_off' => 20,
+        'menu_item_ids' => [$dish->uuid],
+    ]);
+
+    $response->assertStatus(201)->assertJsonPath('data.targetMenuItemIds', [$dish->uuid]);
+});
+
+test('staff cria promoção visando categorias', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+
+    $response = $this->actingAs($owner, 'sanctum')->postJson("/api/v1/restaurants/{$restaurant->uuid}/offers", [
+        'type' => 'discount', 'title' => '10% em sobremesas', 'percent_off' => 10,
+        'categories' => ['Sobremesas'],
+    ]);
+
+    $response->assertStatus(201)->assertJsonPath('data.targetCategories', ['Sobremesas']);
+});
+
+test('não pode visar um prato de outro restaurante', function () {
+    $restaurant = Restaurant::factory()->create();
+    $otherRestaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+    $foreignDish = MenuItem::factory()->for($otherRestaurant)->create();
+
+    $this->actingAs($owner, 'sanctum')->postJson("/api/v1/restaurants/{$restaurant->uuid}/offers", [
+        'type' => 'discount', 'title' => 'X', 'percent_off' => 10,
+        'menu_item_ids' => [$foreignDish->uuid],
+    ])->assertStatus(422)->assertJsonValidationErrors('menu_item_ids.0');
+});
+
+test('menu_item_ids/categories chegam como JSON num campo só (multipart), não array repetido', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+    $dish = MenuItem::factory()->for($restaurant)->create();
+
+    // Simula o que `buildFormData` (api-offers.ts) realmente envia — um
+    // POST multipart com o campo como string JSON, não `postJson`.
+    $response = $this->actingAs($owner, 'sanctum')->post("/api/v1/restaurants/{$restaurant->uuid}/offers", [
+        'type' => 'discount', 'title' => 'X', 'percent_off' => 10,
+        'menu_item_ids' => json_encode([$dish->uuid]),
+        'categories' => json_encode(['Sobremesas']),
+    ], ['Accept' => 'application/json']);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.targetMenuItemIds', [$dish->uuid])
+        ->assertJsonPath('data.targetCategories', ['Sobremesas']);
+});
+
+test('editar a promoção com seleção vazia limpa o alvo anterior', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+    $dish = MenuItem::factory()->for($restaurant)->create();
+    $offer = Offer::query()->create([
+        'restaurant_id' => $restaurant->id, 'type' => 'discount', 'title' => 'X', 'percent_off' => 10,
+        'starts_at' => now(), 'target_menu_item_ids' => [$dish->uuid], 'target_categories' => ['Sobremesas'],
+    ]);
+
+    $response = $this->actingAs($owner, 'sanctum')->post("/api/v1/offers/{$offer->uuid}", [
+        'menu_item_ids' => json_encode([]),
+        'categories' => json_encode([]),
+    ], ['Accept' => 'application/json']);
+
+    $response->assertOk()
+        ->assertJsonPath('data.targetMenuItemIds', [])
+        ->assertJsonPath('data.targetCategories', []);
+});
+
+test('promoção global Luku não pode visar pratos/categorias', function () {
+    $operator = User::factory()->systemOperator()->create();
+    $restaurant = Restaurant::factory()->create();
+    $dish = MenuItem::factory()->for($restaurant)->create();
+
+    $this->actingAs($operator, 'sanctum')->postJson('/api/v1/offers', [
+        'type' => 'discount', 'title' => 'Luku 10%', 'percent_off' => 10,
+        'menu_item_ids' => [$dish->uuid],
+    ])->assertStatus(422)->assertJsonValidationErrors('menu_item_ids');
 });
