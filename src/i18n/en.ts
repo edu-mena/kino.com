@@ -522,6 +522,7 @@ export const en: Dictionary = {
     itemsCount: "{count} item(s)",
     itemsTitle: "Items",
     detailDelivery: "Delivery",
+    deliveryMapTitle: "Delivery location",
     detailFulfillment: "Mode",
     detailPayment: "Payment",
     noPayment: "Not specified",

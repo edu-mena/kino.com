@@ -37,6 +37,7 @@ import {
   TrendBadge,
 } from "@/components/admin-stats";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
+import { LocationMap } from "@/components/location-map";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1050,6 +1051,36 @@ function AdminPedidos() {
                               </AdminField>
                             ) : null}
                           </dl>
+
+                          {/* Mapa da morada de entrega — antes só texto; o
+                              restaurante/estafeta não tinha como ver a
+                              localização exata sem colar o endereço noutra
+                              app. Só quando a morada tem lat/lng (sempre com
+                              "usar a minha localização atual", ver Fase G —
+                              nem toda morada antiga tem coordenadas). */}
+                          {active.fulfillmentType === "delivery" &&
+                            active.deliveryAddress?.lat != null &&
+                            active.deliveryAddress?.lng != null && (
+                              <div className="mt-4 border-t border-border pt-4">
+                                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                  {t("adminPedidos.deliveryMapTitle")}
+                                </p>
+                                <LocationMap
+                                  className="mt-2"
+                                  height={220}
+                                  enableLocate
+                                  scrollWheelZoom
+                                  points={[
+                                    {
+                                      id: active.id,
+                                      lat: active.deliveryAddress.lat,
+                                      lng: active.deliveryAddress.lng,
+                                      label: active.deliveryAddress.label,
+                                    },
+                                  ]}
+                                />
+                              </div>
+                            )}
 
                           {/* Comprovativo de pagamento carregado pelo cliente */}
                           {(() => {

@@ -526,6 +526,7 @@ export const pt = {
     itemsCount: "{count} artigo(s)",
     itemsTitle: "Itens",
     detailDelivery: "Entrega",
+    deliveryMapTitle: "Localização de entrega",
     detailFulfillment: "Modo",
     detailPayment: "Pagamento",
     noPayment: "Não indicado",
