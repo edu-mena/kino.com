@@ -114,6 +114,7 @@ export async function createApiReservation(
         ...(input.customerPhone ? { customer_phone: input.customerPhone } : {}),
         ...(input.customerEmail ? { customer_email: input.customerEmail } : {}),
       },
+      headers: { "Idempotency-Key": crypto.randomUUID() },
     },
   );
   return mapApiReservation({ ...data, restaurantId }, "");
@@ -142,5 +143,15 @@ export async function assignApiReservationTable(
     method: "PATCH",
     token,
     body: { table_id: tableId ?? null },
+  });
+}
+
+/** Cliente/convidado cancela a própria reserva (`ReservationController::cancel`)
+ * — só enquanto "Pendente". Distinto de `updateApiReservationStatus`: esse é
+ * staff-only (exige `manageOperations`) e nem tem "Cancelada" mapeada. */
+export async function cancelApiReservation(id: string, token: string | null): Promise<void> {
+  await apiFetch(`/reservations/${id}/cancel`, {
+    method: "POST",
+    ...(token ? { token } : {}),
   });
 }

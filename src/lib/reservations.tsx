@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import {
   assignApiReservationTable,
+  cancelApiReservation,
   createApiReservation,
   fetchApiReservationsForRestaurant,
   fetchMyApiReservations,
@@ -34,10 +35,19 @@ type ReservationsValue = {
    * quem faz diffs sobre `reservations` (ex.: notificações) para não
    * confundir a troca seed → dados persistidos com reservas "novas". */
   hydrated: boolean;
-  addReservation: (input: NewReservationInput) => void;
+  /** `ok: false` = a criação falhou (validação do backend ou erro de rede)
+   * — a reserva pode não ter sido gravada. Antes era `void`
+   * (fire-and-forget): quem chamava mostrava sempre "sucesso" mesmo quando
+   * a API rejeitava o pedido, e a reserva nunca aparecia em lado nenhum. */
+  addReservation: (input: NewReservationInput) => Promise<boolean>;
   /** Usado pelo painel do restaurante (`/admin/reservas`) — Pendente →
    * Confirmada/Recusada/Cancelada. */
   updateReservationStatus: (id: string, status: string) => void;
+  /** Cliente cancela a própria reserva "Pendente" (`/reservas`) — distinto
+   * de `updateReservationStatus`: esse é staff-only (token de admin) e nem
+   * tem "Cancelada" mapeada para a API; este usa o token do CLIENTE e a
+   * rota pública dedicada (`ReservationController::cancel`). */
+  cancelReservation: (id: string) => Promise<boolean>;
   /** Mesa atribuída pelo restaurante (opcional; `undefined` limpa). */
   assignTable: (id: string, tableId?: string) => void;
 };
@@ -129,29 +139,34 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const addReservation = ({
+  const addReservation = async ({
     restaurant,
     date,
     time,
     peopleCount,
     specialRequests,
-  }: NewReservationInput) => {
+  }: NewReservationInput): Promise<boolean> => {
     if (hasRealBackend) {
       const token = getAuthToken();
-      void createApiReservation(
-        restaurant.id,
-        {
-          date,
-          time,
-          peopleCount,
-          ...(specialRequests ? { specialRequests } : {}),
-          ...(user?.name ? { customerName: user.name } : {}),
-          ...(user?.phone ? { customerPhone: user.phone } : {}),
-          ...(user?.email ? { customerEmail: user.email } : {}),
-        },
-        token,
-      ).then(refetchApi);
-      return;
+      try {
+        await createApiReservation(
+          restaurant.id,
+          {
+            date,
+            time,
+            peopleCount,
+            ...(specialRequests ? { specialRequests } : {}),
+            ...(user?.name ? { customerName: user.name } : {}),
+            ...(user?.phone ? { customerPhone: user.phone } : {}),
+            ...(user?.email ? { customerEmail: user.email } : {}),
+          },
+          token,
+        );
+        refetchApi();
+        return true;
+      } catch {
+        return false;
+      }
     }
     const reservation: Reservation = {
       id: `res-custom-${Date.now()}`,
@@ -174,6 +189,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString(),
     };
     setReservations((prev) => [reservation, ...prev]);
+    return true;
   };
 
   const updateReservationStatus = (id: string, status: string) => {
@@ -188,6 +204,25 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
         r.id === id ? { ...r, status, statusUpdatedAt: new Date().toISOString() } : r,
       ),
     );
+  };
+
+  const cancelReservation = async (id: string): Promise<boolean> => {
+    if (hasRealBackend) {
+      const token = getAuthToken();
+      try {
+        await cancelApiReservation(id, token);
+        refetchApi();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    setReservations((prev) =>
+      prev.map((r) =>
+        r.id === id ? { ...r, status: "Cancelada", statusUpdatedAt: new Date().toISOString() } : r,
+      ),
+    );
+    return true;
   };
 
   const assignTable = (id: string, tableId?: string) => {
@@ -216,6 +251,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
         hydrated: hasRealBackend ? true : hydrated,
         addReservation,
         updateReservationStatus,
+        cancelReservation,
         assignTable,
       }}
     >

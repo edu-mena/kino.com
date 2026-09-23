@@ -56,7 +56,7 @@ const STATUS_TONE: Record<string, string> = {
 const CANCELED_VISIBLE_MS = 60_000;
 
 function Reservas() {
-  const { reservations: allReservations, updateReservationStatus } = useReservations();
+  const { reservations: allReservations, cancelReservation } = useReservations();
   const { user } = useAuth();
   // Reavalia o filtro periodicamente pra reservas "Cancelada" sumirem
   // sozinhas ao completar 1 minuto, sem precisar de um refresh da página.
@@ -99,12 +99,19 @@ function Reservas() {
     if (activeId && !reservations.some((r) => r.id === activeId)) setActiveId(null);
   }, [activeId, reservations]);
 
-  const cancelReservation = () => {
-    if (confirmCancelId) {
-      updateReservationStatus(confirmCancelId, "Cancelada");
-      toast.success(t("reservas.canceledToast"));
-    }
+  const [canceling, setCanceling] = useState(false);
+
+  const handleCancelReservation = async () => {
+    if (!confirmCancelId || canceling) return;
+    setCanceling(true);
+    const ok = await cancelReservation(confirmCancelId);
+    setCanceling(false);
     setConfirmCancelId(null);
+    if (ok) {
+      toast.success(t("reservas.canceledToast"));
+    } else {
+      toast.error(t("reservas.cancelErrorToast"));
+    }
   };
 
   return (
@@ -292,7 +299,7 @@ function Reservas() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={cancelReservation}>
+            <AlertDialogAction onClick={handleCancelReservation}>
               {t("reservas.confirmCancelAction")}
             </AlertDialogAction>
           </AlertDialogFooter>

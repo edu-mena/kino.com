@@ -74,10 +74,18 @@ export function ReservationDialog({
   const fits = peopleCount <= remaining;
   const canSubmit = accepts && !paused && date !== "" && time !== "" && fits;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
-    addReservation({ restaurant, date, time, peopleCount, specialRequests });
+    if (!canSubmit || submitting) return;
+    setSubmitting(true);
+    const ok = await addReservation({ restaurant, date, time, peopleCount, specialRequests });
+    setSubmitting(false);
+    if (!ok) {
+      toast.error(t("reservationDialog.sentErrorToast"));
+      return;
+    }
     toast.success(t("reservationDialog.sentToast"));
     onOpenChange(false);
     setDate("");
@@ -187,7 +195,7 @@ export function ReservationDialog({
               </div>
             )}
 
-            <Button type="submit" disabled={!canSubmit} className="w-full rounded-xl">
+            <Button type="submit" disabled={!canSubmit || submitting} className="w-full rounded-xl">
               {t("reservationDialog.submit")}
             </Button>
           </form>
