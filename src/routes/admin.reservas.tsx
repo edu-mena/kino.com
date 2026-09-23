@@ -7,6 +7,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
+  Clock,
+  FileText,
   List,
   Mail,
   Phone,
@@ -18,11 +20,13 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
+import { MediaLightbox } from "@/components/media-lightbox";
 import { ReservationFloorPlan } from "@/components/reservation-floor-plan";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTranslation, type Locale } from "@/i18n";
 import { formatKz } from "@/lib/format";
+import { isPdfDataUrl } from "@/lib/image-upload";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useTables } from "@/lib/tables";
@@ -89,6 +93,7 @@ function AdminReservas() {
   const [onlyConflicts, setOnlyConflicts] = useState(false);
   const [conflictOpen, setConflictOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [proofLightboxOpen, setProofLightboxOpen] = useState(false);
   type NavTab = "reservas" | "dia" | "stats";
   const [navTab, setNavTab] = useState<NavTab>("reservas");
 
@@ -164,6 +169,14 @@ function AdminReservas() {
       weekday: "short",
       day: "2-digit",
       month: "short",
+    });
+
+  const fmtDateTime = (raw: string) =>
+    new Date(raw).toLocaleString(BCP47[locale], {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
     });
 
   const statusCounts = useMemo(() => {
@@ -761,6 +774,57 @@ function AdminReservas() {
                               {active.specialRequests || t("adminReservas.noRequests")}
                             </p>
                           </div>
+
+                          {/* Comprovativo de pagamento da caução, carregado pelo cliente */}
+                          {(active.cautionAmount > 0 || active.paymentProof) && (
+                            <div className="mt-4 border-t border-border pt-4">
+                              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                {t("adminReservas.proofTitle")}
+                              </p>
+                              {active.paymentProof ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => setProofLightboxOpen(true)}
+                                    aria-label={t("adminReservas.proofViewAria")}
+                                    className="mt-2 block w-full"
+                                  >
+                                    {isPdfDataUrl(active.paymentProof) ? (
+                                      <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                        <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                        {t("adminReservas.proofPdfLabel")}
+                                      </span>
+                                    ) : (
+                                      <img
+                                        src={active.paymentProof}
+                                        alt=""
+                                        className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                      />
+                                    )}
+                                  </button>
+                                  <p className="mt-1.5 text-xs text-success">
+                                    {active.paymentProofAt
+                                      ? t("adminReservas.proofReceivedAt", {
+                                          when: fmtDateTime(active.paymentProofAt),
+                                        })
+                                      : t("adminReservas.proofReceived")}
+                                  </p>
+                                  <MediaLightbox
+                                    open={proofLightboxOpen}
+                                    onOpenChange={setProofLightboxOpen}
+                                    src={active.paymentProof}
+                                    isPdf={isPdfDataUrl(active.paymentProof)}
+                                    title={t("adminReservas.proofTitle")}
+                                  />
+                                </>
+                              ) : (
+                                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                  <Clock className="h-3.5 w-3.5 shrink-0" />
+                                  {t("adminReservas.proofPending")}
+                                </p>
+                              )}
+                            </div>
+                          )}
 
                           {/* Histórico do cliente */}
                           <div className="mt-4 border-t border-border pt-4">
