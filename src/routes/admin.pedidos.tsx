@@ -63,10 +63,11 @@ import {
   PENDING_SLA_MIN,
   type DeliveryLevel,
 } from "@/lib/delivery-eval";
+import { fetchApiRestaurantPaymentDetails } from "@/data/api-restaurants";
 import { formatKz } from "@/lib/format";
 import { hasRealBackend } from "@/lib/api-client";
 import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
-import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
@@ -186,6 +187,22 @@ function AdminPedidos() {
     removeCourier,
   } = useCouriers();
   const { t, locale } = useTranslation();
+
+  // Detalhes de pagamento (IBAN/carteira por método digital) vêm de um
+  // endpoint à parte no backend real, fora do `Restaurant` devolvido por
+  // `useRestaurantAdmin` — sem isto, o diálogo "Aceitar pedido" via
+  // `restaurant.paymentDetails` (sempre vazio) achava sempre que nenhum
+  // método digital estava configurado, mesmo já estando (mesmo padrão já
+  // corrigido em `admin.perfil.tsx`, ver `readPaymentDetails` lá).
+  const [paymentDetails, setPaymentDetails] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!hasRealBackend || !restaurant) return;
+    const token = getAdminToken();
+    if (!token) return;
+    fetchApiRestaurantPaymentDetails(restaurant.id, token)
+      .then(setPaymentDetails)
+      .catch(() => setPaymentDetails({}));
+  }, [restaurant]);
 
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query);
@@ -1464,7 +1481,10 @@ function AdminPedidos() {
 
           {(() => {
             const chosen = getPaymentMethod(payChoice);
-            const missing = !!chosen?.digital && !restaurant.paymentDetails?.[payChoice]?.trim();
+            const effectivePaymentDetails = hasRealBackend
+              ? paymentDetails
+              : restaurant.paymentDetails;
+            const missing = !!chosen?.digital && !effectivePaymentDetails?.[payChoice]?.trim();
             if (!missing) return null;
             return (
               <div className="mt-3 flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs">
@@ -1484,7 +1504,7 @@ function AdminPedidos() {
             disabled={
               !payChoice ||
               (!!getPaymentMethod(payChoice)?.digital &&
-                !restaurant.paymentDetails?.[payChoice]?.trim())
+                !(hasRealBackend ? paymentDetails : restaurant.paymentDetails)?.[payChoice]?.trim())
             }
             onClick={confirmAccept}
             className="mt-5 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
