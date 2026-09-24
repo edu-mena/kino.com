@@ -191,6 +191,28 @@ export const DISH_CATEGORY_OPTIONS = [
   "Snacks",
 ] as const;
 
+/**
+ * Categorias de bebida pré-definidas para o seletor do formulário quando
+ * `kind === "drink"` (ver `DishFormDialog`) — lista própria, nunca a de
+ * `DISH_CATEGORY_OPTIONS`. "Bebidas" (a entrada genérica acima) fica de fora
+ * daqui de propósito: um prato já cadastrado com essa categoria, antes desta
+ * lista existir, continua reconhecido como bebida por `admin.cardapio.tsx`
+ * (união com esta lista), sem precisar de migração de dados nem aparecer
+ * como opção nova aqui.
+ */
+export const DRINK_CATEGORY_OPTIONS = [
+  "Água",
+  "Refrigerante",
+  "Sumo Natural",
+  "Cerveja",
+  "Vinho",
+  "Destilados",
+  "Cocktails",
+  "Café e Chá",
+  "Energéticos",
+  "Outras Bebidas",
+] as const;
+
 export type MenuItemInput = {
   menuId: string;
   name: string;

@@ -14,6 +14,7 @@ import { FirstUseHint } from "@/components/first-use-hint";
 import { INGREDIENT_CATALOG } from "@/data/ingredient-catalog";
 import {
   DISH_CATEGORY_OPTIONS,
+  DRINK_CATEGORY_OPTIONS,
   getEffectiveMenuItems,
   normalizeIngredients,
   type MenuItemInput,
@@ -48,7 +49,13 @@ const INGREDIENT_OPTIONS = INGREDIENT_CATALOG.map((name) => ({ value: name, labe
 
 /** Valor do `<select>` de categoria que revela o campo de texto livre. */
 const CUSTOM_CATEGORY = "__custom__";
-const isPresetCategory = (c: string) => (DISH_CATEGORY_OPTIONS as readonly string[]).includes(c);
+/** Bate certo com qualquer categoria predefinida, de comida OU bebida —
+ * usado para decidir "isto é uma preset ou é texto livre?", independente do
+ * `kind` atual (uma sugestão de nome, por ex., pode vir de um prato do
+ * "outro" kind). */
+const isPresetCategory = (c: string) =>
+  (DISH_CATEGORY_OPTIONS as readonly string[]).includes(c) ||
+  (DRINK_CATEGORY_OPTIONS as readonly string[]).includes(c);
 
 // Um prato por nome (o mais recente) — base para a sugestão de nome e o
 // preenchimento automático ao escolher uma sugestão. Inclui pratos de
@@ -124,7 +131,7 @@ export function DishFormDialog({
   useEffect(() => {
     if (!open) return;
     setName(dish?.name ?? "");
-    const initialCategory = dish?.category ?? (kind === "drink" ? "Bebidas" : "");
+    const initialCategory = dish?.category ?? (kind === "drink" ? DRINK_CATEGORY_OPTIONS[0] : "");
     setCategory(initialCategory);
     setCategoryChoice(
       initialCategory && !isPresetCategory(initialCategory) ? CUSTOM_CATEGORY : initialCategory,
@@ -305,7 +312,7 @@ export function DishFormDialog({
                 <option value="" disabled>
                   {t("dishFormDialog.categoryPlaceholder")}
                 </option>
-                {DISH_CATEGORY_OPTIONS.map((c) => (
+                {(kind === "drink" ? DRINK_CATEGORY_OPTIONS : DISH_CATEGORY_OPTIONS).map((c) => (
                   <option key={c} value={c}>
                     {translateMenuCategory(c, locale)}
                   </option>

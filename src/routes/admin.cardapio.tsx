@@ -40,7 +40,11 @@ import { MenuQrDialog } from "@/components/menu-qr-dialog";
 import { fetchApiMenus } from "@/data/api-menus";
 import { INGREDIENT_CATALOG } from "@/data/ingredient-catalog";
 import { defaultMenuId } from "@/data/menus-store";
-import { normalizeIngredients, type MenuItemInput } from "@/data/menu-store";
+import {
+  DRINK_CATEGORY_OPTIONS,
+  normalizeIngredients,
+  type MenuItemInput,
+} from "@/data/menu-store";
 import type { MenuItem } from "@/data/types";
 import { translateMenuCategory, useTranslation } from "@/i18n";
 import { hasRealBackend } from "@/lib/api-client";
@@ -588,7 +592,13 @@ function AdminCardapio() {
                           type="button"
                           onClick={() => {
                             setEditingDish(active);
-                            setFormKind(active.category === "Bebidas" ? "drink" : "dish");
+                            setFormKind(
+                              (DRINK_CATEGORY_OPTIONS as readonly string[]).includes(
+                                active.category,
+                              ) || active.category === "Bebidas"
+                                ? "drink"
+                                : "dish",
+                            );
                             setFormOpen(true);
                           }}
                           className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
