@@ -32,6 +32,21 @@ export type CartLine = {
   menuItemId: string;
   qty: number;
   selectedIngredients: SelectedIngredient[];
+  /** Snapshot vindo do backend real (`OrderResource`) — nome/preço/
+   * ingredientes TAL COMO ESTAVAM no momento do pedido, não recalculado do
+   * catálogo local (mock), que pode nem conhecer este prato para um
+   * restaurante real. Ausentes em pedidos do modo demo, que continuam a
+   * resolver via `getMenuItem()` (ver `lineName`/`lineUnitPrice`/
+   * `lineCustomizations`). */
+  name?: string;
+  unitPrice?: number;
+  lineTotal?: number;
+  ingredientsSnapshot?: {
+    id: string;
+    name: string;
+    included: boolean;
+    extraPrice: number | null;
+  }[];
 };
 
 /**
@@ -268,6 +283,7 @@ const CartContext = createContext<CartValue | null>(null);
 
 /** Preço unitário de uma linha: preço base do prato + extras selecionados com custo. */
 export function lineUnitPrice(line: CartLine): number {
+  if (line.unitPrice != null) return line.unitPrice;
   const menuItem = getMenuItem(line.menuItemId);
   if (!menuItem) return 0;
   const extras = line.selectedIngredients
@@ -279,6 +295,13 @@ export function lineUnitPrice(line: CartLine): number {
   return menuItem.price + extras;
 }
 
+/** Nome do prato desta linha — prefere o snapshot do pedido real (nunca
+ * muda, mesmo que o prato seja renomeado/apagado depois), cai no catálogo
+ * local só para pedidos do modo demo. */
+export function lineName(line: CartLine): string {
+  return line.name ?? getMenuItem(line.menuItemId)?.name ?? "";
+}
+
 /** Rótulos das personalizações de uma linha — ex: ["sem Cebola", "+ Bacon"].
  * `t` fornece os prefixos traduzidos ("sem" / "+"). */
 export function lineCustomizations(
@@ -286,6 +309,17 @@ export function lineCustomizations(
   removedLabel: string,
   addedLabel: string,
 ): string[] {
+  if (line.ingredientsSnapshot) {
+    const out: string[] = [];
+    for (const ing of line.ingredientsSnapshot) {
+      if (ing.extraPrice != null) {
+        if (ing.included) out.push(`${addedLabel} ${ing.name}`);
+      } else if (!ing.included) {
+        out.push(`${removedLabel} ${ing.name}`);
+      }
+    }
+    return out;
+  }
   const menuItem = getMenuItem(line.menuItemId);
   if (!menuItem) return [];
   const out: string[] = [];

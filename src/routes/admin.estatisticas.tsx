@@ -25,7 +25,7 @@ import {
 import { AdminPageHeading } from "@/components/admin-shell";
 import { getMenuItem, getReviewsForRestaurant } from "@/data/helpers";
 import { useTranslation } from "@/i18n";
-import { lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
+import { lineName, lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
 import { customerKey } from "@/lib/customer";
 import { formatKz } from "@/lib/format";
 import { useReservations } from "@/lib/reservations";
@@ -235,24 +235,40 @@ function AdminEstatisticas() {
       };
     });
 
-    // Menu — top pratos por receita + receita por categoria
-    const dishAgg = new Map<string, { qty: number; revenue: number }>();
+    // Menu — top pratos por receita + receita por categoria. Nome/imagem
+    // preferem o snapshot da linha (`lineName`) — um pedido de um
+    // restaurante real não tem como resolver via `getMenuItem()` (só
+    // conhece o catálogo mock), o que escondia esses pratos da lista
+    // inteira (Fase D). `category` continua via `getMenuItem()`: o
+    // backend não guarda categoria no snapshot da linha, só degrada para
+    // "—" num pedido real.
+    const dishAgg = new Map<
+      string,
+      { name: string; image?: string; qty: number; revenue: number }
+    >();
     const catAgg = new Map<string, number>();
     for (const o of nonRejected) {
       for (const line of o.lines) {
         const rev = lineUnitPrice(line) * line.qty;
-        const cur = dishAgg.get(line.menuItemId) ?? { qty: 0, revenue: 0 };
-        dishAgg.set(line.menuItemId, { qty: cur.qty + line.qty, revenue: cur.revenue + rev });
-        const cat = getMenuItem(line.menuItemId)?.category ?? "—";
+        const liveItem = getMenuItem(line.menuItemId);
+        const cur = dishAgg.get(line.menuItemId) ?? {
+          name: lineName(line),
+          ...(liveItem?.image ? { image: liveItem.image } : {}),
+          qty: 0,
+          revenue: 0,
+        };
+        dishAgg.set(line.menuItemId, {
+          ...cur,
+          qty: cur.qty + line.qty,
+          revenue: cur.revenue + rev,
+        });
+        const cat = liveItem?.category ?? "—";
         catAgg.set(cat, (catAgg.get(cat) ?? 0) + rev);
       }
     }
     const goodsAll = [...dishAgg.values()].reduce((s, d) => s + d.revenue, 0);
     const topDishes = [...dishAgg.entries()]
-      .map(([id, d]) => ({ item: getMenuItem(id), ...d }))
-      .filter(
-        (d): d is { item: NonNullable<typeof d.item>; qty: number; revenue: number } => !!d.item,
-      )
+      .map(([id, d]) => ({ id, ...d }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
     const categoryRevenue: StatBarRow[] = [...catAgg.entries()]
@@ -630,19 +646,21 @@ function AdminEstatisticas() {
               ) : (
                 <div className="space-y-3">
                   {stats.topDishes.map((d, i) => (
-                    <div key={d.item.id} className="flex items-center gap-3">
+                    <div key={d.id} className="flex items-center gap-3">
                       <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-surface text-xs font-bold text-muted-foreground">
                         {i + 1}
                       </span>
-                      <img
-                        src={d.item.image}
-                        alt=""
-                        className="h-9 w-9 shrink-0 rounded-lg bg-surface object-contain"
-                      />
+                      {d.image ? (
+                        <img
+                          src={d.image}
+                          alt=""
+                          className="h-9 w-9 shrink-0 rounded-lg bg-surface object-contain"
+                        />
+                      ) : (
+                        <span className="h-9 w-9 shrink-0 rounded-lg bg-surface" />
+                      )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {d.item.name}
-                        </p>
+                        <p className="truncate text-sm font-semibold text-foreground">{d.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {t("adminEstatisticas.menu.sold", { qty: d.qty })} ·{" "}
                           {pct(d.revenue, stats.goodsAll)}%

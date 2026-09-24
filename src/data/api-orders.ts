@@ -77,7 +77,14 @@ type ApiOrder = {
   deliveryFee: number;
   reservationCredit?: number | null;
   total: number;
-  lines: { menuItemId: string; qty: number; ingredients: unknown[] }[];
+  lines: {
+    menuItemId: string;
+    name: string;
+    unitPrice: number;
+    qty: number;
+    lineTotal: number;
+    ingredients: { id: number; name: string; included: boolean; extraPrice: number | null }[];
+  }[];
   createdAt: string;
   guestToken?: string;
 };
@@ -87,7 +94,24 @@ function mapApiOrder(o: ApiOrder, ownerKey: string): CartOrder {
     key: `${l.menuItemId}|`,
     menuItemId: l.menuItemId,
     qty: l.qty,
-    selectedIngredients: [],
+    // Reconstruída do snapshot — o backend só devolve os ingredientes que
+    // o cliente escolheu (incl./excl.), não uma lista fixa por prato.
+    selectedIngredients: l.ingredients.map((ing) => ({
+      id: String(ing.id),
+      name: ing.name,
+      included: ing.included,
+    })),
+    // Snapshot TAL COMO ESTAVA no momento do pedido — nunca recalculado do
+    // catálogo local (que pode nem conhecer este prato, ver Fase D).
+    name: l.name,
+    unitPrice: l.unitPrice,
+    lineTotal: l.lineTotal,
+    ingredientsSnapshot: l.ingredients.map((ing) => ({
+      id: String(ing.id),
+      name: ing.name,
+      included: ing.included,
+      extraPrice: ing.extraPrice,
+    })),
   }));
   return {
     id: o.id,

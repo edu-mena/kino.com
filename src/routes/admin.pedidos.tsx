@@ -41,14 +41,11 @@ import { LocationMap } from "@/components/location-map";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  getMenuItem,
-  getRestaurantPaymentMethodIds,
-  orderModeRequiresCaution,
-} from "@/data/helpers";
+import { getRestaurantPaymentMethodIds, orderModeRequiresCaution } from "@/data/helpers";
 import { useTranslation, type Locale } from "@/i18n";
 import {
   lineCustomizations,
+  lineName,
   lineUnitPrice,
   useCart,
   type CartOrder,
@@ -328,7 +325,7 @@ function AdminPedidos() {
           o.deliveryAddress?.label ?? "",
           o.deliveryAddress?.line1 ?? "",
           o.deliveryAddress?.line2 ?? "",
-          ...o.lines.map((l) => getMenuItem(l.menuItemId)?.name ?? ""),
+          ...o.lines.map((l) => lineName(l)),
         ]
           .join(" ")
           .toLowerCase();
@@ -1365,8 +1362,8 @@ function AdminPedidos() {
                             </p>
                             <ul className="mt-2 space-y-1.5">
                               {active.lines.map((line) => {
-                                const item = getMenuItem(line.menuItemId);
-                                if (!item) return null;
+                                const name = lineName(line);
+                                if (!name) return null;
                                 const custom = lineCustomizations(
                                   line,
                                   t("adminPedidos.customRemoved"),
@@ -1379,7 +1376,7 @@ function AdminPedidos() {
                                   >
                                     <span className="min-w-0">
                                       <span className="block truncate text-muted-foreground">
-                                        {line.qty}× {item.name}
+                                        {line.qty}× {name}
                                       </span>
                                       {custom.length > 0 && (
                                         <span className="block truncate text-xs text-brand">

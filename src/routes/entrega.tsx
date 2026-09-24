@@ -20,13 +20,13 @@ import icon from "@/assets/icon.png";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { getMenuItem, getRestaurant } from "@/data/helpers";
+import { getRestaurant } from "@/data/helpers";
 import { isRefReviewed } from "@/data/reviews-store";
 import { useRestaurantDetail } from "@/data/use-restaurants-query";
 import type { FulfillmentType } from "@/data/types";
 import { hasRealBackend } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth";
-import { lineCustomizations, lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
+import { lineCustomizations, lineName, lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
 import { readCourierForOrder } from "@/lib/couriers";
 import { viewerKey } from "@/lib/customer";
 import { orderDistanceKm } from "@/lib/delivery-eval";
@@ -487,8 +487,8 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         </p>
         <ul className="mt-2 space-y-2">
           {order.lines.map((line) => {
-            const item = getMenuItem(line.menuItemId);
-            if (!item) return null;
+            const name = lineName(line);
+            if (!name) return null;
             const custom = lineCustomizations(
               line,
               t("entrega.customRemoved"),
@@ -498,7 +498,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
               <li key={line.key} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm">
                 <span className="min-w-0">
                   <span className="block truncate text-muted-foreground">
-                    {line.qty}× {item.name}
+                    {line.qty}× {name}
                   </span>
                   {custom.length > 0 && (
                     <span className="block truncate text-xs text-muted-foreground/80">

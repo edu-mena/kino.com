@@ -12,10 +12,10 @@ import {
   type StatBarRow,
 } from "@/components/admin-stats";
 import { SystemPageHeading } from "@/components/system-shell";
-import { getAllRestaurants, getMenuItem } from "@/data/helpers";
+import { getAllRestaurants } from "@/data/helpers";
 import { setDeliveryPolicy } from "@/data/platform-settings-store";
 import { useTranslation } from "@/i18n";
-import { useCart, type CartOrderStatus } from "@/lib/cart";
+import { lineName, useCart, type CartOrderStatus } from "@/lib/cart";
 import { formatKz } from "@/lib/format";
 import { useReservations } from "@/lib/reservations";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
@@ -186,7 +186,7 @@ function SistemaOperacao() {
         if (q) {
           const hay =
             `${nameOf(o.restaurantId)} ${o.customerName} ${o.deliveryAddress?.line1 ?? ""} ${o.lines
-              .map((l) => getMenuItem(l.menuItemId)?.name ?? "")
+              .map((l) => lineName(l))
               .join(" ")}`.toLowerCase();
           if (!hay.includes(q)) return false;
         }
