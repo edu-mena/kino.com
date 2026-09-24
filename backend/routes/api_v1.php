@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\PartnerApplicationController;
 use App\Http\Controllers\Api\V1\ReservationController;
 use App\Http\Controllers\Api\V1\RestaurantController;
 use App\Http\Controllers\Api\V1\RestaurantMenuController;
+use App\Http\Controllers\Api\V1\RestaurantPackageController;
 use App\Http\Controllers\Api\V1\RestaurantStaffController;
 use App\Http\Controllers\Api\V1\RestaurantTableController;
 use App\Http\Controllers\Api\V1\ReviewController;
@@ -268,6 +269,13 @@ Route::get('delivery-policy', [DeliveryPolicyController::class, 'show']);
 // descobrir por tipo em /pacotes (Fase L3d) sem sessão nenhuma.
 Route::get('package-types', [PackageTypeController::class, 'index']);
 
+// Pacotes que UM restaurante oferece (ver PackageTypeController acima para
+// o catálogo de tipos) — público, só ativos exceto para o próprio staff do
+// restaurante (ver RestaurantPackageController::index), usado tanto na
+// gestão de sala (/admin/mesas) quanto na descoberta do cliente por tipo de
+// pacote (/pacotes, Fase L3d).
+Route::get('restaurants/{restaurant}/packages', [RestaurantPackageController::class, 'index']);
+
 Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::get('saved-addresses', [SavedAddressController::class, 'index']);
     Route::post('saved-addresses', [SavedAddressController::class, 'store']);
@@ -291,6 +299,10 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('restaurants/{restaurant}/tables', [RestaurantTableController::class, 'store']);
     Route::patch('tables/{table}', [RestaurantTableController::class, 'update']);
     Route::delete('tables/{table}', [RestaurantTableController::class, 'destroy']);
+
+    Route::post('restaurants/{restaurant}/packages', [RestaurantPackageController::class, 'store']);
+    Route::patch('restaurant-packages/{restaurantPackage}', [RestaurantPackageController::class, 'update']);
+    Route::delete('restaurant-packages/{restaurantPackage}', [RestaurantPackageController::class, 'destroy']);
 
     Route::get('restaurants/{restaurant}/staff', [RestaurantStaffController::class, 'index']);
     Route::post('restaurants/{restaurant}/staff', [RestaurantStaffController::class, 'store']);

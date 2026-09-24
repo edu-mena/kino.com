@@ -361,6 +361,31 @@ export interface PackageType {
   isActive: boolean;
 }
 
+/** Pacote de consumo que UM restaurante oferece — o restaurante escolhe um
+ * `PackageType` do catálogo Luku e define preço/detalhes próprios, geridos
+ * em "gestão de sala" (`/admin/mesas`). O cliente descobre por tipo em
+ * `/pacotes` e reserva através do fluxo normal de reserva (Fases L3c/L3d),
+ * não um mecanismo novo. */
+export interface RestaurantPackage {
+  id: string;
+  restaurantId: string;
+  packageType: { id: string; name: string; icon?: string };
+  /** Nome próprio do restaurante para o pacote — ausente usa
+   * `packageType.name` (ex: um restaurante pode ter "Aniversário Infantil"
+   * em vez de só "Aniversário"). */
+  title?: string;
+  description?: string;
+  price: number;
+  maxPeople?: number;
+  /** Itens curtos do que está incluído (ex: "Bolo incluído",
+   * "Decoração incluída"). */
+  characteristics: string[];
+  /** Inativo = escondido da descoberta do cliente e da escolha de novo
+   * pacote (`ReservationDialog`), mas mantido para não perder o histórico
+   * de reservas já feitas com ele. */
+  isActive: boolean;
+}
+
 export interface SavedAddress {
   id: string;
   label: string;

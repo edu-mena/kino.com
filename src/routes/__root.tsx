@@ -20,6 +20,7 @@ import { MenuAdminProvider } from "../lib/menu-admin";
 import { PendingShareProvider } from "../lib/pending-share";
 import { PreferencesProvider } from "../lib/preferences";
 import { ReservationsProvider } from "../lib/reservations";
+import { RestaurantPackagesProvider } from "../lib/restaurant-packages";
 import { StoriesProvider } from "../lib/stories";
 import { SubscriptionsProvider } from "../lib/subscriptions";
 import { NotificationsProvider } from "../lib/notifications";
@@ -156,16 +157,18 @@ function RootComponent() {
                           <CartProvider>
                             <PendingShareProvider>
                               <TablesProvider>
-                                <NotificationsProvider>
-                                  <TutorialProvider>
-                                    <AuthGate>
-                                      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-                                      <Outlet />
-                                    </AuthGate>
-                                    <PendingShareDialog />
-                                    <Toaster />
-                                  </TutorialProvider>
-                                </NotificationsProvider>
+                                <RestaurantPackagesProvider>
+                                  <NotificationsProvider>
+                                    <TutorialProvider>
+                                      <AuthGate>
+                                        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                                        <Outlet />
+                                      </AuthGate>
+                                      <PendingShareDialog />
+                                      <Toaster />
+                                    </TutorialProvider>
+                                  </NotificationsProvider>
+                                </RestaurantPackagesProvider>
                               </TablesProvider>
                             </PendingShareProvider>
                           </CartProvider>
