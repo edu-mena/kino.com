@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import icon from "@/assets/icon.png";
 import { FirstUseHint } from "@/components/first-use-hint";
 import { INGREDIENT_CATALOG } from "@/data/ingredient-catalog";
+import { fetchApiAllMenuItems } from "@/data/api-restaurants";
 import {
   DISH_CATEGORY_OPTIONS,
   DRINK_CATEGORY_OPTIONS,
@@ -21,6 +22,7 @@ import {
 } from "@/data/menu-store";
 import type { MenuItem, MenuItemIngredient } from "@/data/types";
 import { translateMenuCategory, useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
 import { useFirstUseHint } from "@/lib/first-use-hints";
 import { getAdminToken } from "@/lib/restaurant-admin";
 import { cn } from "@/lib/utils";
@@ -62,15 +64,30 @@ const isPresetCategory = (c: string) =>
 // qualquer restaurante/cardápio: o objetivo é poupar trabalho de digitação
 // a qualquer restaurante que sirva o "mesmo" prato (ex: "Muamba de
 // Galinha"), não só repetir os pratos já criados por este restaurante.
-function useDishSuggestions() {
+// Com backend real, busca todos os pratos de todos os restaurantes — só
+// quando o diálogo abre (`open`), não a cada carregamento de
+// `/admin/cardapio`: sem isto, a sugestão nunca via os pratos de verdade já
+// cadastrados na base de dados (só o catálogo de demonstração), mas buscar
+// isto sem precisar (dialogo fechado) custaria um pedido pesado (todos os
+// restaurantes + todos os cardápios) em toda visita ao painel.
+function useDishSuggestions(open: boolean) {
+  const [remoteItems, setRemoteItems] = useState<MenuItem[]>([]);
+
+  useEffect(() => {
+    if (!open || !hasRealBackend) return;
+    fetchApiAllMenuItems()
+      .then(setRemoteItems)
+      .catch(() => setRemoteItems([]));
+  }, [open]);
+
   return useMemo(() => {
-    const items = getEffectiveMenuItems({ activeMenusOnly: false });
+    const items = hasRealBackend ? remoteItems : getEffectiveMenuItems({ activeMenusOnly: false });
     const byName = new Map<string, MenuItem>();
     for (const item of items) {
       if (!byName.has(item.name.toLowerCase())) byName.set(item.name.toLowerCase(), item);
     }
     return [...byName.values()];
-  }, []);
+  }, [remoteItems]);
 }
 
 /**
@@ -106,7 +123,7 @@ export function DishFormDialog({
     editingId?: string,
   ) => boolean | Promise<boolean>;
 }) {
-  const suggestions = useDishSuggestions();
+  const suggestions = useDishSuggestions(open);
   const { t, locale } = useTranslation();
   const dishHint = useFirstUseHint("dish");
 
