@@ -2170,7 +2170,7 @@ export const en: Dictionary = {
     saveFavorite: "Save dish to favorites",
     removeFavorite: "Remove dish from favorites",
     addAria: "Add {name} to the order",
-    buffetIncluded: "Included in the buffet",
+    buffetIncluded: "Buffet",
   },
   dishDetail: {
     addToOrder: "Add to order",

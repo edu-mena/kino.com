@@ -2200,7 +2200,7 @@ export const fr: Dictionary = {
     saveFavorite: "Enregistrer le plat en favori",
     removeFavorite: "Retirer le plat des favoris",
     addAria: "Ajouter {name} à la commande",
-    buffetIncluded: "Inclus dans le buffet",
+    buffetIncluded: "Buffet",
   },
   dishDetail: {
     addToOrder: "Ajouter à la commande",

@@ -2179,7 +2179,7 @@ export const pt = {
     saveFavorite: "Guardar prato nos favoritos",
     removeFavorite: "Remover prato dos favoritos",
     addAria: "Adicionar {name} ao pedido",
-    buffetIncluded: "Incluído no buffet",
+    buffetIncluded: "Buffet",
   },
   dishDetail: {
     addToOrder: "Adicionar ao pedido",
