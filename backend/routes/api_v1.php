@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\MenuItemController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OfferController;
 use App\Http\Controllers\Api\V1\OrderController;
+use App\Http\Controllers\Api\V1\PackageTypeController;
 use App\Http\Controllers\Api\V1\PartnerApplicationController;
 use App\Http\Controllers\Api\V1\ReservationController;
 use App\Http\Controllers\Api\V1\RestaurantController;
@@ -261,6 +262,12 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
 */
 Route::get('delivery-policy', [DeliveryPolicyController::class, 'show']);
 
+// Tipos de pacote (Aniversário, Reunião de Negócios...) — catálogo da
+// plataforma, gerido em /sistema/pacotes. Público (mostra só ativos a quem
+// não é operador — ver PackageTypeController::index), permite ao cliente
+// descobrir por tipo em /pacotes (Fase L3d) sem sessão nenhuma.
+Route::get('package-types', [PackageTypeController::class, 'index']);
+
 Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::get('saved-addresses', [SavedAddressController::class, 'index']);
     Route::post('saved-addresses', [SavedAddressController::class, 'store']);
@@ -291,6 +298,10 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::delete('restaurants/{restaurant}/staff/{user}', [RestaurantStaffController::class, 'destroy']);
 
     Route::patch('delivery-policy', [DeliveryPolicyController::class, 'update']);
+
+    Route::post('package-types', [PackageTypeController::class, 'store']);
+    Route::patch('package-types/{packageType}', [PackageTypeController::class, 'update']);
+    Route::delete('package-types/{packageType}', [PackageTypeController::class, 'destroy']);
 });
 
 /*

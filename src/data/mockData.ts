@@ -10,6 +10,7 @@ import {
   UserProfile,
   SavedAddress,
   Offer,
+  PackageType,
   RestaurantStory,
 } from "./types";
 
@@ -5383,6 +5384,19 @@ export const INITIAL_OFFERS: Offer[] = [
     code: "HAPPY15",
     percentOff: 15,
   },
+];
+
+export const INITIAL_PACKAGE_TYPES: PackageType[] = [
+  { id: "package-type-1", name: "Aniversário", icon: "cake", position: 1, isActive: true },
+  {
+    id: "package-type-2",
+    name: "Reunião de Negócios",
+    icon: "briefcase",
+    position: 2,
+    isActive: true,
+  },
+  { id: "package-type-3", name: "Amigos", icon: "users", position: 3, isActive: true },
+  { id: "package-type-4", name: "Feriados", icon: "party-popper", position: 4, isActive: true },
 ];
 
 export const INITIAL_STORIES: RestaurantStory[] = [

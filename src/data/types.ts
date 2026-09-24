@@ -342,6 +342,25 @@ export interface Offer {
   targetCategories?: string[];
 }
 
+/** Tipo de pacote de consumo (Aniversário, Reunião de Negócios...) —
+ * catálogo gerido pela equipa Luku em `/sistema/pacotes`, nunca pelo
+ * restaurante (esse só escolhe quais oferece, ver `RestaurantPackage`,
+ * Fase L3b). O cliente descobre por tipo em `/pacotes` (Fase L3d). */
+export interface PackageType {
+  id: string;
+  name: string;
+  description?: string;
+  /** Nome de ícone lucide-react (ex: "cake", "briefcase"). Ausente = ícone
+   * genérico. */
+  icon?: string;
+  /** Ordem de exibição — menor primeiro. */
+  position: number;
+  /** Inativo = escondido de tudo público (descoberta do cliente,
+   * "escolha um tipo" na gestão de sala do restaurante); a equipa Luku
+   * continua a vê-lo em `/sistema/pacotes` para poder reativar. */
+  isActive: boolean;
+}
+
 export interface SavedAddress {
   id: string;
   label: string;

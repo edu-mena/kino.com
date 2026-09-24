@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { CouriersProvider } from "./couriers";
 import { OffersAdminProvider } from "./offers-admin";
+import { PackageTypesAdminProvider } from "./package-types";
 import { PartnerAppsProvider } from "./partner-apps";
 import { RestaurantAdminProvider } from "./restaurant-admin";
 import { StoriesAdminProvider } from "./stories-admin";
@@ -33,9 +34,11 @@ export function OperatorProviders({ children }: { children: ReactNode }) {
       <SystemAdminProvider>
         <StoriesAdminProvider>
           <OffersAdminProvider>
-            <CouriersProvider>
-              <PartnerAppsProvider>{children}</PartnerAppsProvider>
-            </CouriersProvider>
+            <PackageTypesAdminProvider>
+              <CouriersProvider>
+                <PartnerAppsProvider>{children}</PartnerAppsProvider>
+              </CouriersProvider>
+            </PackageTypesAdminProvider>
           </OffersAdminProvider>
         </StoriesAdminProvider>
       </SystemAdminProvider>

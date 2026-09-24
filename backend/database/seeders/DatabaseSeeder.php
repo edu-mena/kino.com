@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             DeliveryPolicySeeder::class,
             OperatorSeeder::class,
             LukuInstitutionalSeeder::class,
+            PackageTypeSeeder::class,
         ]);
     }
 }

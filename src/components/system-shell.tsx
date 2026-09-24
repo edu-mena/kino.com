@@ -8,6 +8,7 @@ import {
   LogOut,
   Megaphone,
   Menu,
+  PartyPopper,
   ShieldCheck,
   Store,
   X,
@@ -24,6 +25,7 @@ const navItems = [
   { to: "/sistema/subscricoes", labelKey: "subscriptions", icon: CreditCard },
   { to: "/sistema/parceiros", labelKey: "partners", icon: Inbox },
   { to: "/sistema/promocoes", labelKey: "promotions", icon: Megaphone },
+  { to: "/sistema/pacotes", labelKey: "packages", icon: PartyPopper },
   { to: "/sistema/suporte", labelKey: "support", icon: LifeBuoy },
 ] as const;
 
