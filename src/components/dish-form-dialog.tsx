@@ -218,7 +218,7 @@ export function DishFormDialog({
     }
     toast.success(
       dish
-        ? t("dishFormDialog.updatedToast")
+        ? t(kind === "drink" ? "dishFormDialog.updatedDrinkToast" : "dishFormDialog.updatedToast")
         : t(kind === "drink" ? "dishFormDialog.createdDrinkToast" : "dishFormDialog.createdToast"),
     );
     if (!dish) dishHint.dismiss();
@@ -244,12 +244,19 @@ export function DishFormDialog({
         </DialogDescription>
 
         {!dish && dishHint.shouldShow && (
-          <FirstUseHint text={t("dishFormDialog.firstUseHint")} onDismiss={dishHint.dismiss} />
+          <FirstUseHint
+            text={t(
+              kind === "drink" ? "dishFormDialog.firstUseDrinkHint" : "dishFormDialog.firstUseHint",
+            )}
+            onDismiss={dishHint.dismiss}
+          />
         )}
 
         <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <div className="relative space-y-1.5">
-            <Label htmlFor="dish-name">{t("dishFormDialog.nameLabel")}</Label>
+            <Label htmlFor="dish-name">
+              {t(kind === "drink" ? "dishFormDialog.nameDrinkLabel" : "dishFormDialog.nameLabel")}
+            </Label>
             <Input
               id="dish-name"
               value={name}
@@ -259,7 +266,11 @@ export function DishFormDialog({
               }}
               onFocus={() => setNameSuggestionsOpen(true)}
               onBlur={() => setTimeout(() => setNameSuggestionsOpen(false), 150)}
-              placeholder={t("dishFormDialog.namePlaceholder")}
+              placeholder={t(
+                kind === "drink"
+                  ? "dishFormDialog.nameDrinkPlaceholder"
+                  : "dishFormDialog.namePlaceholder",
+              )}
               autoComplete="off"
               required
             />
@@ -350,7 +361,11 @@ export function DishFormDialog({
                 id="dish-portion"
                 value={portionInfo}
                 onChange={(e) => setPortionInfo(e.target.value)}
-                placeholder={t("dishFormDialog.portionPlaceholder")}
+                placeholder={t(
+                  kind === "drink"
+                    ? "dishFormDialog.portionDrinkPlaceholder"
+                    : "dishFormDialog.portionPlaceholder",
+                )}
               />
             </div>
             <div className="space-y-1.5">
@@ -372,7 +387,11 @@ export function DishFormDialog({
               id="dish-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={t("dishFormDialog.descriptionPlaceholder")}
+              placeholder={t(
+                kind === "drink"
+                  ? "dishFormDialog.descriptionDrinkPlaceholder"
+                  : "dishFormDialog.descriptionPlaceholder",
+              )}
               className="rounded-xl"
             />
           </div>
@@ -419,7 +438,11 @@ export function DishFormDialog({
 
             {ingredientRows.length === 0 && (
               <p className="text-xs text-muted-foreground">
-                {t("dishFormDialog.noIngredientsHint")}
+                {t(
+                  kind === "drink"
+                    ? "dishFormDialog.noIngredientsDrinkHint"
+                    : "dishFormDialog.noIngredientsHint",
+                )}
               </p>
             )}
 
@@ -479,7 +502,11 @@ export function DishFormDialog({
             </div>
             <p className="text-xs text-muted-foreground">
               <span className="font-semibold">{t("dishFormDialog.kindMain")}</span>:{" "}
-              {t("dishFormDialog.ingredientsHintMain")}{" "}
+              {t(
+                kind === "drink"
+                  ? "dishFormDialog.ingredientsDrinkHintMain"
+                  : "dishFormDialog.ingredientsHintMain",
+              )}{" "}
               <span className="font-semibold">{t("dishFormDialog.kindExtra")}</span>:{" "}
               {t("dishFormDialog.ingredientsHintExtra")}
             </p>

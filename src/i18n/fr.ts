@@ -1579,7 +1579,9 @@ export const fr: Dictionary = {
     createDrink: "Créer la boisson",
     createdDrinkToast: "Boisson créée.",
     nameLabel: "Nom du plat",
+    nameDrinkLabel: "Nom de la boisson",
     namePlaceholder: "Ex : Muamba de poulet",
+    nameDrinkPlaceholder: "Ex : Bière Cuca",
     suggestionsHint: "Déjà sur Luku.com — l'utiliser comme base ?",
     categoryLabel: "Catégorie",
     categoryPlaceholder: "Choisir une catégorie…",
@@ -1588,9 +1590,11 @@ export const fr: Dictionary = {
     priceLabel: "Prix (Kz)",
     portionLabel: "Portion",
     portionPlaceholder: "Ex : 1 personne",
+    portionDrinkPlaceholder: "Ex : 350ml",
     prepTimeLabel: "Temps de préparation (min)",
     descriptionLabel: "Description",
     descriptionPlaceholder: "Ingrédients principaux et mode de préparation...",
+    descriptionDrinkPlaceholder: "Marque, volume, type de boisson...",
     promotedLabel: "Mettre en avant sur l'accueil",
     promotedHint: "Apparaît dans le carrousel des mises en avant de la page d'accueil.",
     promotionTagLabel: "Étiquette de mise en avant",
@@ -1599,6 +1603,8 @@ export const fr: Dictionary = {
     addIngredient: "Ajouter",
     noIngredientsHint:
       "Aucun ingrédient répertorié — le plat n'aura pas d'options de personnalisation.",
+    noIngredientsDrinkHint:
+      "Aucun ingrédient répertorié — la boisson n'aura pas d'options de personnalisation.",
     ingredientNamePlaceholder: "Nom de l'ingrédient",
     ingredientSearchPlaceholder: "Rechercher ou saisir un ingrédient...",
     ingredientEmptyText: "Aucun ingrédient trouvé.",
@@ -1608,6 +1614,7 @@ export const fr: Dictionary = {
     extraPricePlaceholder: "Prix",
     removeIngredientAria: "Supprimer l'ingrédient",
     ingredientsHintMain: "vient déjà avec le plat, le client peut le retirer.",
+    ingredientsDrinkHintMain: "vient déjà avec la boisson, le client peut le retirer.",
     ingredientsHintExtra: "facultatif, avec un coût supplémentaire.",
     saveChanges: "Enregistrer les modifications",
     createDish: "Créer le plat",
@@ -1616,9 +1623,12 @@ export const fr: Dictionary = {
       "Impossible d'enregistrer — le stockage du navigateur est plein. Essayez une image plus légère ou libérez de l'espace.",
     suggestionAppliedToast: "Données de « {name} » remplies — vérifiez le prix.",
     updatedToast: "Plat mis à jour.",
+    updatedDrinkToast: "Boisson mise à jour.",
     createdToast: "Plat créé.",
     firstUseHint:
       "Astuce : commencez par le nom — si un plat identique existe déjà sur Luku, nous remplissons les détails pour vous (sauf le prix).",
+    firstUseDrinkHint:
+      "Astuce : commencez par le nom — si une boisson identique existe déjà sur Luku, nous remplissons les détails pour vous (sauf le prix).",
   },
   textListField: {
     add: "Ajouter",
