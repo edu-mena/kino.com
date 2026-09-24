@@ -49,14 +49,16 @@ export function DishListRow({
       </button>
       <button
         type="button"
-        disabled={!available}
+        disabled={!available || item.isBuffetOnly}
         onClick={() => addToBill(item.restaurantId, item.id, item.name)}
         aria-label={t("dishCard.addAria", { name: item.name })}
         className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-foreground transition-colors hover:text-primary disabled:pointer-events-none disabled:opacity-50"
       >
         {item.name}
       </button>
-      <span className="shrink-0 text-sm font-bold text-primary">{formatKz(item.price)}</span>
+      <span className="shrink-0 text-sm font-bold text-primary">
+        {item.isBuffetOnly ? t("dishCard.buffetIncluded") : formatKz(item.price ?? 0)}
+      </span>
     </div>
   );
 }

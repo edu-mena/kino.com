@@ -3,16 +3,20 @@ import { ChevronRight, Store } from "lucide-react";
 import { LazyImage } from "@/components/lazy-image";
 import type { DishGroup } from "@/lib/group-dishes-by-name";
 import { formatKz } from "@/lib/format";
+import { useTranslation } from "@/i18n";
 
 /** Card de resultado de pesquisa agrupado por nome de prato — mesmo
  * visual do `DishCard`, mas sem ações de restaurante específico (favorito,
  * adicionar ao pedido, disponibilidade), já que ainda não se escolheu em
  * qual restaurante pedir. Leva pra `/pratos/$dishName` (visão geral). */
 export function DishGroupCard({ group }: { group: DishGroup }) {
+  const { t } = useTranslation();
   const firstItem = group.items[0]!;
-  const prices = group.items.map((i) => i.price);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
+  // Pratos de buffet não têm preço — ficam fora do intervalo mostrado; só se
+  // TODAS as ofertas forem de buffet é que não há nenhum preço pra mostrar.
+  const prices = group.items.map((i) => i.price).filter((p): p is number => p != null);
+  const minPrice = prices.length ? Math.min(...prices) : null;
+  const maxPrice = prices.length ? Math.max(...prices) : null;
 
   return (
     <Link
@@ -46,7 +50,11 @@ export function DishGroupCard({ group }: { group: DishGroup }) {
 
         <div className="mt-3 flex items-end justify-between gap-2">
           <p className="truncate text-sm font-bold text-primary">
-            {minPrice === maxPrice ? formatKz(minPrice) : `Desde ${formatKz(minPrice)}`}
+            {minPrice == null
+              ? t("dishCard.buffetIncluded")
+              : minPrice === maxPrice
+                ? formatKz(minPrice)
+                : `Desde ${formatKz(minPrice)}`}
           </p>
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-muted-foreground transition-colors group-hover:text-brand">
             <ChevronRight className="h-4 w-4" />

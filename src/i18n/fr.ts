@@ -1515,6 +1515,7 @@ export const fr: Dictionary = {
     chooseHint: "Choisissez un plat dans la liste pour voir et modifier les détails.",
     availabilityLabel: "Disponible pour les clients",
     promotedBadge: "En avant",
+    buffetBadge: "Buffet",
     savePrice: "Enregistrer",
     ingredientsTitle: "Ingrédients",
     ingredientAddedToast: "Ingrédient ajouté.",
@@ -1597,6 +1598,9 @@ export const fr: Dictionary = {
     descriptionDrinkPlaceholder: "Marque, volume, type de boisson...",
     promotedLabel: "Mettre en avant sur l'accueil",
     promotedHint: "Apparaît dans le carrousel des mises en avant de la page d'accueil.",
+    buffetLabel: "Plat de buffet/self-service",
+    buffetHint:
+      "Sans prix individuel — fait partie d'un forfait buffet, ne peut pas être commandé seul.",
     promotionTagLabel: "Étiquette de mise en avant",
     promotionTagPlaceholder: "Ex : −20% ou Nouveau",
     ingredientsLabel: "Ingrédients",
@@ -2196,6 +2200,7 @@ export const fr: Dictionary = {
     saveFavorite: "Enregistrer le plat en favori",
     removeFavorite: "Retirer le plat des favoris",
     addAria: "Ajouter {name} à la commande",
+    buffetIncluded: "Inclus dans le buffet",
   },
   dishDetail: {
     addToOrder: "Ajouter à la commande",

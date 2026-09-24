@@ -72,7 +72,7 @@ type ApiMenuItem = {
   menuId?: string | null;
   name: string;
   description: string | null;
-  price: number | string;
+  price: number | string | null;
   category: string;
   imageUrl: string | null;
   isAvailable: boolean;
@@ -80,6 +80,7 @@ type ApiMenuItem = {
   prepTimeMinutes: number | null;
   isPromoted: boolean;
   promotionLabel: string | null;
+  isBuffetOnly?: boolean;
   ingredients: { id: string; name: string; removable: boolean; extraPrice?: number }[];
 };
 
@@ -160,7 +161,9 @@ export function mapApiMenuItem(m: ApiMenuItem, restaurantId: string): MenuItem {
     ...(m.menuId ? { menuId: m.menuId } : {}),
     name: m.name,
     description: m.description ?? "",
-    price: Number(m.price),
+    // `Number(null)` é 0, não null — esconderia um prato de buffet como se
+    // fosse um prato normal a Kz 0.
+    price: m.price == null ? null : Number(m.price),
     category: m.category,
     image: m.imageUrl ?? FALLBACK_DISH_IMAGE,
     isAvailable: m.isAvailable,
@@ -168,6 +171,7 @@ export function mapApiMenuItem(m: ApiMenuItem, restaurantId: string): MenuItem {
     prepTimeMinutes: m.prepTimeMinutes ?? 0,
     isPromoted: m.isPromoted,
     ...(m.promotionLabel ? { promotionLabel: m.promotionLabel } : {}),
+    ...(m.isBuffetOnly ? { isBuffetOnly: true } : {}),
     ingredients: m.ingredients.map(mapIngredient),
   };
 }

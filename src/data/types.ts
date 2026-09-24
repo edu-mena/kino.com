@@ -153,7 +153,9 @@ export interface MenuItem {
   menuId?: string;
   name: string;
   description: string;
-  price: number;
+  /** `null` só quando `isBuffetOnly` — prato de buffet/self-service não tem
+   * preço individual, faz parte de uma taxa fixa. */
+  price: number | null;
   category: string;
   image: string;
   isAvailable: boolean;
@@ -161,6 +163,10 @@ export interface MenuItem {
   prepTimeMinutes: number;
   isPromoted?: boolean;
   promotionLabel?: string;
+  /** Prato listado no cardápio de buffet/self-service — sem preço próprio,
+   * nunca pode ser adicionado avulso ao pedido (ver StoreOrderRequest no
+   * backend, que rejeita isto na criação de um pedido). */
+  isBuffetOnly?: boolean;
   ingredients: MenuItemIngredient[];
   /** Sinal para a secção de "Tendências" — quantas vezes foi pedido recentemente. */
   orderCount?: number;

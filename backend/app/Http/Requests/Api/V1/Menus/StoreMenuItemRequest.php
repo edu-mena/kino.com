@@ -27,7 +27,15 @@ class StoreMenuItemRequest extends FormRequest
             ],
             'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string'],
-            'price' => ['required', 'numeric', 'min:0'],
+            // Sem preço só quando é um prato de buffet/self-service — não faz
+            // parte de nenhuma linha de pedido, é só listado (ver
+            // StoreOrderRequest, que rejeita is_buffet_only na criação de um
+            // pedido). required_unless, não required_if: quando o campo nem
+            // é enviado (prato normal, forma antiga), tem de continuar
+            // obrigatório — required_if:is_buffet_only,false só dispara se
+            // is_buffet_only estiver PRESENTE no pedido igual a false.
+            'price' => ['required_unless:is_buffet_only,true', 'nullable', 'numeric', 'min:0'],
+            'is_buffet_only' => ['sometimes', 'boolean'],
             'category' => ['required', 'string', 'max:80'],
             'image_url' => ['nullable', 'string', 'max:2048'],
             'is_available' => ['sometimes', 'boolean'],

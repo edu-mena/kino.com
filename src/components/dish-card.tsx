@@ -87,21 +87,25 @@ export function DishCard({ item }: { item: MenuItem }) {
 
         <div className="mt-3 flex items-end justify-between gap-2">
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-primary">{formatKz(item.price)}</p>
+            <p className="truncate text-sm font-bold text-primary">
+              {item.isBuffetOnly ? t("dishCard.buffetIncluded") : formatKz(item.price ?? 0)}
+            </p>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
               {restaurant?.rating ?? "—"}
               <Star className="h-3 w-3 fill-star text-star" />
             </p>
           </div>
-          <button
-            type="button"
-            disabled={!available}
-            aria-label={t("dishCard.addAria", { name: item.name })}
-            onClick={() => addToBill(item.restaurantId, item.id, item.name)}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
+          {!item.isBuffetOnly && (
+            <button
+              type="button"
+              disabled={!available}
+              aria-label={t("dishCard.addAria", { name: item.name })}
+              onClick={() => addToBill(item.restaurantId, item.id, item.name)}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>

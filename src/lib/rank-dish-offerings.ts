@@ -28,6 +28,6 @@ export function rankDishOfferings(
     if (a.restaurant.distanceKm !== b.restaurant.distanceKm) {
       return a.restaurant.distanceKm - b.restaurant.distanceKm;
     }
-    return a.item.price - b.item.price;
+    return (a.item.price ?? 0) - (b.item.price ?? 0);
   });
 }

@@ -35,7 +35,7 @@ export function billLineUnitPrice(line: BillLine, menuItem: MenuItem | undefined
       (sum, s) => sum + (menuItem.ingredients.find((i) => i.id === s.id)?.extraPrice ?? 0),
       0,
     );
-  return menuItem.price + extras;
+  return (menuItem.price ?? 0) + extras;
 }
 
 /** Chave que distingue "burger sem cebola" de "burger" e de "burger + bacon". */

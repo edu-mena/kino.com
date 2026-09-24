@@ -40,7 +40,7 @@ describe("billLineUnitPrice", () => {
       item,
     );
 
-    expect(withExtra).toBe(item.price + extra.extraPrice!);
+    expect(withExtra).toBe((item.price ?? 0) + extra.extraPrice!);
   });
 
   it("ignores an extra ingredient that isn't marked as included", () => {

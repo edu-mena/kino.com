@@ -85,7 +85,9 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
                   {item.name}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">{restaurant?.name}</p>
-                <p className="mt-2 text-sm font-bold text-primary">{formatKz(item.price)}</p>
+                <p className="mt-2 text-sm font-bold text-primary">
+                  {item.isBuffetOnly ? t("dishCard.buffetIncluded") : formatKz(item.price ?? 0)}
+                </p>
               </div>
             </button>
           );
@@ -112,7 +114,9 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
                 {getRestaurant(active.restaurantId)?.name}
               </p>
               <p className="mt-2 text-sm text-muted-foreground">{active.description}</p>
-              <p className="mt-3 text-lg font-bold text-primary">{formatKz(active.price)}</p>
+              <p className="mt-3 text-lg font-bold text-primary">
+                {active.isBuffetOnly ? t("dishCard.buffetIncluded") : formatKz(active.price ?? 0)}
+              </p>
 
               {activeConflicts.length > 0 && (
                 <div className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-foreground">
@@ -185,17 +189,19 @@ export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
                 >
                   {t("home.seeDish")}
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    addToBill(active.restaurantId, active.id, active.name);
-                    setActive(null);
-                  }}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                >
-                  <Plus className="h-4 w-4" />
-                  {t("common.add")}
-                </button>
+                {!active.isBuffetOnly && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      addToBill(active.restaurantId, active.id, active.name);
+                      setActive(null);
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t("common.add")}
+                  </button>
+                )}
               </div>
             </>
           )}

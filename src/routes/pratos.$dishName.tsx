@@ -44,9 +44,9 @@ function DishOverview() {
 
   const dishName = items[0]!.name;
   const commonIngredients = getCommonIngredients(dishName);
-  const prices = items.map((i) => i.price);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
+  const prices = items.map((i) => i.price).filter((p): p is number => p != null);
+  const minPrice = prices.length ? Math.min(...prices) : null;
+  const maxPrice = prices.length ? Math.max(...prices) : null;
 
   const offerings: DishOffering[] = items
     .map((item) => {
@@ -90,9 +90,11 @@ function DishOverview() {
           <div>
             <h1 className="text-3xl font-extrabold text-primary sm:text-4xl">{dishName}</h1>
             <p className="mt-2 text-lg font-bold text-primary">
-              {minPrice === maxPrice
-                ? formatKz(minPrice)
-                : `${formatKz(minPrice)} – ${formatKz(maxPrice)}`}
+              {minPrice == null
+                ? t("dishCard.buffetIncluded")
+                : minPrice === maxPrice
+                  ? formatKz(minPrice)
+                  : `${formatKz(minPrice)} – ${formatKz(maxPrice ?? 0)}`}
             </p>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{heroDescription}</p>
 
@@ -171,7 +173,9 @@ function DishOverview() {
                 </div>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
-                <span className="text-sm font-bold text-primary">{formatKz(item.price)}</span>
+                <span className="text-sm font-bold text-primary">
+                  {item.isBuffetOnly ? t("dishCard.buffetIncluded") : formatKz(item.price ?? 0)}
+                </span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>
             </Link>

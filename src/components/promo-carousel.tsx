@@ -112,13 +112,14 @@ function buildSlides(
   promotedDishes.forEach((item, i) => {
     if (slides.length >= MAX_SLIDES) return;
     const restaurant = getRestaurant(item.restaurantId);
+    const priceLabel = item.isBuffetOnly ? t("dishCard.buffetIncluded") : formatKz(item.price ?? 0);
     slides.push({
       id: item.id,
       kind: i % 2 === 0 ? "cover" : "split",
       title: item.name,
       description: restaurant
-        ? `${restaurant.name} — ${item.promotionLabel ?? formatKz(item.price)}`
-        : (item.promotionLabel ?? formatKz(item.price)),
+        ? `${restaurant.name} — ${item.promotionLabel ?? priceLabel}`
+        : (item.promotionLabel ?? priceLabel),
       cta: t("home.promoSeeInMenu"),
       image: item.image,
       target: { to: "/cardapio", search: { restaurante: item.restaurantId } },

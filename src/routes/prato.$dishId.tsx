@@ -73,7 +73,7 @@ function DishDetail() {
     const isOn = selected.find((s) => s.id === i.id)?.included;
     return isOn ? sum + (i.extraPrice ?? 0) : sum;
   }, 0);
-  const unit = item.price + extraTotal;
+  const unit = (item.price ?? 0) + extraTotal;
 
   const otherRestaurants = getRestaurantsOfferingDish(item.name, item.restaurantId);
   const { items: menuItems } = useMenuItems();
@@ -198,42 +198,48 @@ function DishDetail() {
               </div>
             )}
 
-            <div className="mt-8 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4">
-              <div className="flex shrink-0 items-center gap-3 rounded-xl border border-border bg-card p-2">
+            {item.isBuffetOnly ? (
+              <div className="mt-8 rounded-xl border border-dashed border-border bg-surface p-4 text-sm font-semibold text-foreground">
+                {t("dishCard.buffetIncluded")}
+              </div>
+            ) : (
+              <div className="mt-8 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4">
+                <div className="flex shrink-0 items-center gap-3 rounded-xl border border-border bg-card p-2">
+                  <button
+                    type="button"
+                    aria-label="Diminuir quantidade"
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    className="grid h-8 w-8 place-items-center rounded-lg bg-surface"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="w-6 text-center font-bold">{qty}</span>
+                  <button
+                    type="button"
+                    aria-label="Aumentar quantidade"
+                    onClick={() => setQty((q) => q + 1)}
+                    className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
                 <button
                   type="button"
-                  aria-label="Diminuir quantidade"
-                  onClick={() => setQty((q) => Math.max(1, q - 1))}
-                  className="grid h-8 w-8 place-items-center rounded-lg bg-surface"
+                  disabled={!available}
+                  onClick={() => {
+                    for (let i = 0; i < qty; i++)
+                      addToBill(item.restaurantId, item.id, item.name, selected);
+                  }}
+                  className="min-w-0 truncate rounded-xl bg-brand px-5 py-3.5 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
                 >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <span className="w-6 text-center font-bold">{qty}</span>
-                <button
-                  type="button"
-                  aria-label="Aumentar quantidade"
-                  onClick={() => setQty((q) => q + 1)}
-                  className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground"
-                >
-                  <Plus className="h-4 w-4" />
+                  {restaurantPaused
+                    ? t("dishDetail.restaurantPaused")
+                    : available
+                      ? `${t("dishDetail.addToOrder")} · ${formatKz(unit * qty)}`
+                      : t("dishDetail.unavailable")}
                 </button>
               </div>
-              <button
-                type="button"
-                disabled={!available}
-                onClick={() => {
-                  for (let i = 0; i < qty; i++)
-                    addToBill(item.restaurantId, item.id, item.name, selected);
-                }}
-                className="min-w-0 truncate rounded-xl bg-brand px-5 py-3.5 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
-              >
-                {restaurantPaused
-                  ? t("dishDetail.restaurantPaused")
-                  : available
-                    ? `${t("dishDetail.addToOrder")} · ${formatKz(unit * qty)}`
-                    : t("dishDetail.unavailable")}
-              </button>
-            </div>
+            )}
 
             {otherRestaurants.length > 0 && (
               <div className="mt-8 rounded-xl border border-border bg-surface p-4">

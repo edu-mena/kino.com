@@ -16,7 +16,7 @@ class MenuItem extends Model
     protected $fillable = [
         'restaurant_id', 'menu_id', 'name', 'description', 'price', 'category',
         'image_url', 'is_available', 'portion_info', 'prep_time_minutes',
-        'is_promoted', 'promotion_label',
+        'is_promoted', 'promotion_label', 'is_buffet_only',
     ];
 
     protected function casts(): array
@@ -25,6 +25,7 @@ class MenuItem extends Model
             'price' => 'decimal:2',
             'is_available' => 'boolean',
             'is_promoted' => 'boolean',
+            'is_buffet_only' => 'boolean',
         ];
     }
 

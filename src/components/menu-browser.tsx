@@ -72,7 +72,7 @@ export function MenuBrowser({
   const { selected: selectedAddress } = useLocation();
   const addToBill = useAddToBill();
   const overallMaxPrice = useMemo(
-    () => (items.length ? Math.max(...items.map((m) => m.price)) : 0),
+    () => (items.length ? Math.max(...items.map((m) => m.price ?? 0)) : 0),
     [items],
   );
 
@@ -139,7 +139,7 @@ export function MenuBrowser({
   ]);
 
   const maxAvailablePrice = filteredExceptPrice.length
-    ? Math.max(...filteredExceptPrice.map((m) => m.price))
+    ? Math.max(...filteredExceptPrice.map((m) => m.price ?? 0))
     : overallMaxPrice;
 
   useEffect(() => {
@@ -163,9 +163,24 @@ export function MenuBrowser({
   }, [categories, active]);
 
   const filtered = useMemo(() => {
-    const byPrice = filteredExceptPrice.filter((item) => item.price <= maxPrice);
-    if (sort === "preco-asc") return [...byPrice].sort((a, b) => a.price - b.price);
-    if (sort === "preco-desc") return [...byPrice].sort((a, b) => b.price - a.price);
+    // Prato de buffet não tem preço — nunca é excluído pelo filtro de preço
+    // máximo, e fica sempre no fim ao ordenar por preço (não faz sentido
+    // competir com pratos com preço real nesse critério).
+    const byPrice = filteredExceptPrice.filter(
+      (item) => item.isBuffetOnly || (item.price ?? 0) <= maxPrice,
+    );
+    if (sort === "preco-asc") {
+      return [...byPrice].sort((a, b) => {
+        if (!!a.isBuffetOnly !== !!b.isBuffetOnly) return a.isBuffetOnly ? 1 : -1;
+        return (a.price ?? 0) - (b.price ?? 0);
+      });
+    }
+    if (sort === "preco-desc") {
+      return [...byPrice].sort((a, b) => {
+        if (!!a.isBuffetOnly !== !!b.isBuffetOnly) return a.isBuffetOnly ? 1 : -1;
+        return (b.price ?? 0) - (a.price ?? 0);
+      });
+    }
     if (sort === "populares") {
       return [...byPrice].sort((a, b) => (b.orderCount ?? 0) - (a.orderCount ?? 0));
     }
@@ -431,18 +446,24 @@ export function MenuBrowser({
                 {detailItem.name}
               </DialogTitle>
               <p className="mt-2 text-sm text-muted-foreground">{detailItem.description}</p>
-              <p className="mt-3 text-lg font-bold text-primary">{formatKz(detailItem.price)}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  addToBill(detailItem.restaurantId, detailItem.id, detailItem.name);
-                  setDetailItem(null);
-                }}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-              >
-                <Plus className="h-4 w-4" />
-                {t("common.add")}
-              </button>
+              <p className="mt-3 text-lg font-bold text-primary">
+                {detailItem.isBuffetOnly
+                  ? t("dishCard.buffetIncluded")
+                  : formatKz(detailItem.price ?? 0)}
+              </p>
+              {!detailItem.isBuffetOnly && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    addToBill(detailItem.restaurantId, detailItem.id, detailItem.name);
+                    setDetailItem(null);
+                  }}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4" />
+                  {t("common.add")}
+                </button>
+              )}
             </>
           )}
         </DialogContent>

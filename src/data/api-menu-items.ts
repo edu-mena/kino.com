@@ -22,6 +22,7 @@ function toPayload(input: MenuItemInput) {
     prep_time_minutes: input.prepTimeMinutes || null,
     is_promoted: input.isPromoted ?? false,
     promotion_label: input.promotionLabel ?? null,
+    is_buffet_only: input.isBuffetOnly ?? false,
     ingredients: input.ingredients.map((i) => ({
       name: i.name,
       removable: i.removable,

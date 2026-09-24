@@ -112,7 +112,9 @@ export function MenuDocument({
                             </span>
                             <span className="mx-1 flex-1 translate-y-[-3px] border-b border-dotted border-neutral-300" />
                             <span className="shrink-0 font-bold text-neutral-900">
-                              {formatKz(d.price)}
+                              {d.isBuffetOnly
+                                ? t("dishCard.buffetIncluded")
+                                : formatKz(d.price ?? 0)}
                             </span>
                           </div>
                           {d.description && (

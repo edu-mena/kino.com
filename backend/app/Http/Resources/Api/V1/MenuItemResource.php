@@ -17,7 +17,10 @@ class MenuItemResource extends JsonResource
             'menuId' => $this->whenLoaded('menu', fn () => $this->menu->uuid),
             'name' => $this->name,
             'description' => $this->description,
-            'price' => (float) $this->price,
+            // `(float) null` vira 0.0 silenciosamente — um prato de buffet
+            // (sem preço) ficaria indistinguível de um prato a Kz 0 real.
+            'price' => $this->price === null ? null : (float) $this->price,
+            'isBuffetOnly' => $this->is_buffet_only,
             'category' => $this->category,
             'imageUrl' => $this->image_url,
             'isAvailable' => $this->is_available,

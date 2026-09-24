@@ -1503,6 +1503,7 @@ export const pt = {
     chooseHint: "Escolha um prato na lista para ver e editar os detalhes.",
     availabilityLabel: "Disponível para clientes",
     promotedBadge: "Em destaque",
+    buffetBadge: "Buffet",
     savePrice: "Guardar",
     ingredientsTitle: "Ingredientes",
     ingredientAddedToast: "Ingrediente adicionado.",
@@ -1584,6 +1585,9 @@ export const pt = {
     descriptionDrinkPlaceholder: "Marca, volume, tipo de bebida...",
     promotedLabel: "Destacar na home",
     promotedHint: "Aparece no carrossel de destaques da página inicial.",
+    buffetLabel: "Prato de buffet/self-service",
+    buffetHint:
+      "Sem preço individual — faz parte de uma taxa fixa de buffet, não pode ser pedido avulso.",
     promotionTagLabel: "Rótulo do destaque",
     promotionTagPlaceholder: "Ex: −20% ou Novo",
     ingredientsLabel: "Ingredientes",
@@ -2175,6 +2179,7 @@ export const pt = {
     saveFavorite: "Guardar prato nos favoritos",
     removeFavorite: "Remover prato dos favoritos",
     addAria: "Adicionar {name} ao pedido",
+    buffetIncluded: "Incluído no buffet",
   },
   dishDetail: {
     addToOrder: "Adicionar ao pedido",

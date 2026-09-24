@@ -75,3 +75,63 @@ test('listagem de pratos devolve o menuId — sem isto o PDF/QR do cardápio nã
 
     $response->assertOk()->assertJsonPath('data.0.menuId', $menu->uuid);
 });
+
+test('prato de buffet/self-service não exige preço', function () {
+    $restaurant = Restaurant::factory()->create();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $owner = ownerOf($restaurant);
+
+    $response = $this->actingAs($owner, 'sanctum')->postJson("/api/v1/restaurants/{$restaurant->uuid}/menu-items", [
+        'menu_id' => $menu->uuid,
+        'name' => 'Mesa de Saladas',
+        'category' => 'Buffet',
+        'is_buffet_only' => true,
+    ]);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.price', null)
+        ->assertJsonPath('data.isBuffetOnly', true);
+});
+
+test('prato normal continua a exigir preço (regressão)', function () {
+    $restaurant = Restaurant::factory()->create();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $owner = ownerOf($restaurant);
+
+    $response = $this->actingAs($owner, 'sanctum')->postJson("/api/v1/restaurants/{$restaurant->uuid}/menu-items", [
+        'menu_id' => $menu->uuid,
+        'name' => 'Prato Sem Preço',
+        'category' => 'Pratos principais',
+    ]);
+
+    $response->assertStatus(422)->assertJsonValidationErrors('price');
+});
+
+test('editar só o nome de um prato normal não obriga a reenviar o preço (regressão)', function () {
+    $restaurant = Restaurant::factory()->create();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $owner = ownerOf($restaurant);
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 2500]);
+
+    $response = $this->actingAs($owner, 'sanctum')->patchJson("/api/v1/menu-items/{$item->uuid}", [
+        'name' => 'Nome Novo',
+    ]);
+
+    $response->assertStatus(200)->assertJsonPath('data.name', 'Nome Novo');
+});
+
+test('marcar um prato existente como buffet ao editar não exige preço', function () {
+    $restaurant = Restaurant::factory()->create();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $owner = ownerOf($restaurant);
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'price' => 2500]);
+
+    $response = $this->actingAs($owner, 'sanctum')->patchJson("/api/v1/menu-items/{$item->uuid}", [
+        'is_buffet_only' => true,
+        'price' => null,
+    ]);
+
+    $response->assertStatus(200)
+        ->assertJsonPath('data.price', null)
+        ->assertJsonPath('data.isBuffetOnly', true);
+});

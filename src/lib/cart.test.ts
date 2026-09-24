@@ -29,7 +29,7 @@ describe("lineUnitPrice", () => {
       selectedIngredients: [{ id: extra.id, name: extra.name, included: true }],
     });
 
-    expect(withExtra).toBe(item.price + extra.extraPrice!);
+    expect(withExtra).toBe((item.price ?? 0) + extra.extraPrice!);
   });
 
   it("ignores an ingredient that isn't marked as included", () => {

@@ -125,6 +125,7 @@ export function DishFormDialog({
   const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([]);
   const [isPromoted, setIsPromoted] = useState(false);
   const [promotionLabel, setPromotionLabel] = useState("");
+  const [isBuffetOnly, setIsBuffetOnly] = useState(false);
 
   // Reabastece o formulário sempre que o diálogo abre — quer para um prato
   // novo (tudo vazio) quer para editar um existente (campos preenchidos).
@@ -136,7 +137,7 @@ export function DishFormDialog({
     setCategoryChoice(
       initialCategory && !isPresetCategory(initialCategory) ? CUSTOM_CATEGORY : initialCategory,
     );
-    setPrice(dish ? String(dish.price) : "");
+    setPrice(dish?.price != null ? String(dish.price) : "");
     setPortionInfo(dish?.portionInfo ?? "");
     setPrepTimeMinutes(dish ? String(dish.prepTimeMinutes) : "");
     setDescription(dish?.description ?? "");
@@ -144,6 +145,7 @@ export function DishFormDialog({
     setIngredientRows(dish ? toRows(dish.ingredients) : []);
     setIsPromoted(dish?.isPromoted ?? false);
     setPromotionLabel(dish?.promotionLabel ?? "");
+    setIsBuffetOnly(dish?.isBuffetOnly ?? false);
   }, [open, dish, kind]);
 
   const nameSuggestions =
@@ -183,7 +185,7 @@ export function DishFormDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const priceNum = Number(price);
-    if (!name.trim() || !category.trim() || !priceNum || priceNum <= 0) {
+    if (!name.trim() || !category.trim() || (!isBuffetOnly && (!priceNum || priceNum <= 0))) {
       toast.error(t("dishFormDialog.missingFieldsError"));
       return;
     }
@@ -192,7 +194,7 @@ export function DishFormDialog({
       menuId,
       name: name.trim(),
       description: description.trim(),
-      price: priceNum,
+      price: isBuffetOnly ? null : priceNum,
       category: category.trim(),
       image: image.trim() || icon,
       portionInfo: portionInfo.trim() || "1 pessoa",
@@ -207,6 +209,7 @@ export function DishFormDialog({
       ),
       isPromoted,
       ...(isPromoted && promotionLabel.trim() ? { promotionLabel: promotionLabel.trim() } : {}),
+      isBuffetOnly,
     };
 
     setSaving(true);
@@ -304,6 +307,16 @@ export function DishFormDialog({
             )}
           </div>
 
+          <div className="space-y-2 rounded-xl border border-border p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label htmlFor="dish-buffet">{t("dishFormDialog.buffetLabel")}</Label>
+                <p className="text-xs text-muted-foreground">{t("dishFormDialog.buffetHint")}</p>
+              </div>
+              <Switch id="dish-buffet" checked={isBuffetOnly} onCheckedChange={setIsBuffetOnly} />
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="dish-category">{t("dishFormDialog.categoryLabel")}</Label>
@@ -340,18 +353,20 @@ export function DishFormDialog({
                 />
               )}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="dish-price">{t("dishFormDialog.priceLabel")}</Label>
-              <Input
-                id="dish-price"
-                type="number"
-                min={1}
-                step="any"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                required
-              />
-            </div>
+            {!isBuffetOnly && (
+              <div className="space-y-1.5">
+                <Label htmlFor="dish-price">{t("dishFormDialog.priceLabel")}</Label>
+                <Input
+                  id="dish-price"
+                  type="number"
+                  min={1}
+                  step="any"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  required
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

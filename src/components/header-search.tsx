@@ -55,7 +55,7 @@ export function HeaderSearch() {
   const myProvince = userAddress ? addressProvince(userAddress.line2) : undefined;
 
   const overallMaxPrice = useMemo(
-    () => (items.length ? Math.max(...items.map((m) => m.price)) : 0),
+    () => (items.length ? Math.max(...items.map((m) => m.price ?? 0)) : 0),
     [items],
   );
   const [maxPrice, setMaxPrice] = useState(overallMaxPrice);
@@ -77,7 +77,7 @@ export function HeaderSearch() {
   }, [items, debouncedQuery, category, neighborhood, myProvince]);
 
   const maxAvailablePrice = filteredExceptPrice.length
-    ? Math.max(...filteredExceptPrice.map((m) => m.price))
+    ? Math.max(...filteredExceptPrice.map((m) => m.price ?? 0))
     : overallMaxPrice;
 
   // Sem toque manual, a faixa de preço segue o mais caro entre os
@@ -88,7 +88,7 @@ export function HeaderSearch() {
   }, [maxAvailablePrice, priceTouched]);
 
   const filtered = useMemo(
-    () => filteredExceptPrice.filter((item) => item.price <= maxPrice),
+    () => filteredExceptPrice.filter((item) => item.isBuffetOnly || (item.price ?? 0) <= maxPrice),
     [filteredExceptPrice, maxPrice],
   );
 
@@ -311,6 +311,7 @@ export function HeaderSearch() {
 }
 
 function SearchResultRow({ item, onSelect }: { item: MenuItem; onSelect: () => void }) {
+  const { t } = useTranslation();
   const restaurant = getRestaurant(item.restaurantId);
   return (
     <Link
@@ -328,15 +329,18 @@ function SearchResultRow({ item, onSelect }: { item: MenuItem; onSelect: () => v
         <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
         <p className="truncate text-xs text-muted-foreground">{restaurant?.name}</p>
       </div>
-      <span className="shrink-0 text-sm font-bold text-primary">{formatKz(item.price)}</span>
+      <span className="shrink-0 text-sm font-bold text-primary">
+        {item.isBuffetOnly ? t("dishCard.buffetIncluded") : formatKz(item.price ?? 0)}
+      </span>
     </Link>
   );
 }
 
 function DishGroupResultRow({ group, onSelect }: { group: DishGroup; onSelect: () => void }) {
-  const prices = group.items.map((i) => i.price);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
+  const { t } = useTranslation();
+  const prices = group.items.map((i) => i.price).filter((p): p is number => p != null);
+  const minPrice = prices.length ? Math.min(...prices) : null;
+  const maxPrice = prices.length ? Math.max(...prices) : null;
   const firstItem = group.items[0]!;
 
   return (
@@ -360,7 +364,11 @@ function DishGroupResultRow({ group, onSelect }: { group: DishGroup; onSelect: (
         </p>
       </div>
       <span className="shrink-0 text-sm font-bold text-primary">
-        {minPrice === maxPrice ? formatKz(minPrice) : `Desde ${formatKz(minPrice)}`}
+        {minPrice == null
+          ? t("dishCard.buffetIncluded")
+          : minPrice === maxPrice
+            ? formatKz(minPrice)
+            : `Desde ${formatKz(minPrice)}`}
       </span>
     </Link>
   );

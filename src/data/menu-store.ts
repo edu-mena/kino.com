@@ -217,7 +217,7 @@ export type MenuItemInput = {
   menuId: string;
   name: string;
   description: string;
-  price: number;
+  price: number | null;
   category: string;
   image: string;
   portionInfo: string;
@@ -227,6 +227,8 @@ export type MenuItemInput = {
   isPromoted?: boolean;
   /** Rótulo curto mostrado no destaque, ex: "−20%" ou "Novo". */
   promotionLabel?: string;
+  /** Ver MenuItem.isBuffetOnly — sem preço individual quando marcado. */
+  isBuffetOnly?: boolean;
 };
 
 function nextIngredientId() {

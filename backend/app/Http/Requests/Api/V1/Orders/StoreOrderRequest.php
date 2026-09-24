@@ -52,7 +52,13 @@ class StoreOrderRequest extends FormRequest
                 'required', 'string',
                 Rule::exists('menu_items', 'uuid')
                     ->where('restaurant_id', $restaurant->id)
-                    ->where('is_available', true),
+                    ->where('is_available', true)
+                    // Prato de buffet/self-service não tem preço individual
+                    // — nunca pode virar uma linha de pedido avulsa. '0', não
+                    // `false`: o where() desta rule serializa o valor numa
+                    // string internamente e `false` vira "" (Postgres rejeita
+                    // "" como boolean); '0' sobrevive à volta-e-meia intacto.
+                    ->where('is_buffet_only', '0'),
             ],
             'items.*.qty' => ['required', 'integer', 'min:1', 'max:50'],
             'items.*.selected_ingredients' => ['sometimes', 'array'],

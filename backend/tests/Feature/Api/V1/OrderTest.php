@@ -84,6 +84,26 @@ test('convidado cria um pedido takeaway sem autenticação e recebe guest_token 
     expect($response->json('data.guestToken'))->not->toBeNull();
 });
 
+test('prato de buffet nunca pode virar linha de pedido avulsa', function () {
+    $restaurant = createOrderableRestaurant();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create([
+        'menu_id' => $menu->id,
+        'price' => null,
+        'is_buffet_only' => true,
+    ]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/orders", [
+        'fulfillment_type' => 'takeaway',
+        'customer_name' => 'Ana Convidada',
+        'customer_phone' => '923000000',
+        'pickup_asap' => true,
+        'items' => [['menu_item_id' => $item->uuid, 'qty' => 1]],
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(422)->assertJsonValidationErrors('items.0.menu_item_id');
+});
+
 test('pedido não escolhe payment_method_code/caution no checkout — só o restaurante define ao aceitar', function () {
     $restaurant = createOrderableRestaurant();
     $menu = RestaurantMenu::factory()->for($restaurant)->create();

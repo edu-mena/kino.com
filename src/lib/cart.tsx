@@ -292,7 +292,7 @@ export function lineUnitPrice(line: CartLine): number {
       const def = menuItem.ingredients.find((i) => i.id === s.id);
       return sum + (def?.extraPrice ?? 0);
     }, 0);
-  return menuItem.price + extras;
+  return (menuItem.price ?? 0) + extras;
 }
 
 /** Nome do prato desta linha — prefere o snapshot do pedido real (nunca
@@ -800,7 +800,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                   const def = menuItem.ingredients.find((i) => i.id === sel.id);
                   return s + (def?.extraPrice ?? 0);
                 }, 0);
-              return sum + (menuItem.price + extras) * item.qty;
+              return sum + ((menuItem.price ?? 0) + extras) * item.qty;
             }, 0)
           : 0;
 

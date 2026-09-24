@@ -129,8 +129,14 @@ function AdminCardapio() {
       return true;
     });
     return rows.sort((a, b) => {
-      if (sortKey === "preco-asc") return a.price - b.price;
-      if (sortKey === "preco-desc") return b.price - a.price;
+      // Prato de buffet não tem preço — fica sempre no fim ao ordenar por
+      // preço, não faz sentido competir nesse critério.
+      if (sortKey === "preco-asc" || sortKey === "preco-desc") {
+        if (!!a.isBuffetOnly !== !!b.isBuffetOnly) return a.isBuffetOnly ? 1 : -1;
+        return sortKey === "preco-asc"
+          ? (a.price ?? 0) - (b.price ?? 0)
+          : (b.price ?? 0) - (a.price ?? 0);
+      }
       if (sortKey === "categoria")
         return a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
       return a.name.localeCompare(b.name);
@@ -146,7 +152,7 @@ function AdminCardapio() {
   // (ou os dados dele, ex: depois de guardar). `active` é memoizado, por isso
   // isto NÃO corre a cada tecla no campo de novo ingrediente.
   useEffect(() => {
-    setPriceDraft(active ? String(active.price) : "");
+    setPriceDraft(active?.price != null ? String(active.price) : "");
     setIngName("");
     setIngExtra("");
     setIngKind("main");
@@ -155,7 +161,8 @@ function AdminCardapio() {
   const metrics = useMemo(() => {
     const total = dishes.length || 1;
     const availableCount = dishes.filter((d) => d.isAvailable).length;
-    const prices = dishes.map((d) => d.price);
+    // Buffet não entra nas estatísticas de preço — não tem preço próprio.
+    const prices = dishes.filter((d) => !d.isBuffetOnly).map((d) => d.price ?? 0);
     const catCounts = [...new Set(dishes.map((d) => d.category))]
       .map((c) => ({
         label: translateMenuCategory(c, locale),
@@ -214,6 +221,7 @@ function AdminCardapio() {
       ingredients: dish.ingredients,
       ...(dish.isPromoted ? { isPromoted: true } : {}),
       ...(dish.promotionLabel ? { promotionLabel: dish.promotionLabel } : {}),
+      ...(dish.isBuffetOnly ? { isBuffetOnly: true } : {}),
       ...patch,
     });
     if (!ok) toast.error(t("dishFormDialog.saveFailedError"));
@@ -409,7 +417,13 @@ function AdminCardapio() {
                           </span>
                         </span>
                         <span className="text-right text-xs font-semibold text-foreground">
-                          {formatKz(d.price)}
+                          {d.isBuffetOnly ? (
+                            <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand">
+                              {t("adminCardapio.buffetBadge")}
+                            </span>
+                          ) : (
+                            formatKz(d.price ?? 0)
+                          )}
                         </span>
                         <span className="flex items-center gap-1 pl-3">
                           <span
@@ -483,27 +497,35 @@ function AdminCardapio() {
                         />
                       </div>
 
-                      {/* Preço */}
-                      <div className="mt-4 border-t border-border pt-4">
-                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                          {t("dishFormDialog.priceLabel")}
-                        </p>
-                        <div className="mt-1.5 flex items-center gap-2">
-                          <input
-                            type="number"
-                            min={1}
-                            step="any"
-                            value={priceDraft}
-                            onChange={(e) => setPriceDraft(e.target.value)}
-                            className="w-32 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
-                          />
-                          {Number(priceDraft) !== active.price && (
-                            <Button size="sm" onClick={savePrice} className="rounded-lg">
-                              {t("adminCardapio.savePrice")}
-                            </Button>
-                          )}
+                      {/* Preço — pratos de buffet não têm preço próprio, nada a editar aqui. */}
+                      {active.isBuffetOnly ? (
+                        <div className="mt-4 border-t border-border pt-4">
+                          <span className="inline-block rounded-full bg-brand/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-brand">
+                            {t("adminCardapio.buffetBadge")}
+                          </span>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="mt-4 border-t border-border pt-4">
+                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                            {t("dishFormDialog.priceLabel")}
+                          </p>
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={1}
+                              step="any"
+                              value={priceDraft}
+                              onChange={(e) => setPriceDraft(e.target.value)}
+                              className="w-32 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
+                            />
+                            {Number(priceDraft) !== active.price && (
+                              <Button size="sm" onClick={savePrice} className="rounded-lg">
+                                {t("adminCardapio.savePrice")}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Ingredientes */}
                       <div className="mt-4 border-t border-border pt-4">
