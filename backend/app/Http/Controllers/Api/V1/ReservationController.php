@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\Reservations\UpdateReservationStatusRequest;
 use App\Http\Resources\Api\V1\ReservationResource;
 use App\Models\Reservation;
 use App\Models\Restaurant;
+use App\Models\RestaurantPackage;
 use App\Models\RestaurantTable;
 use App\Services\MediaUploadService;
 use App\Services\OrderPricingService;
@@ -30,7 +31,7 @@ class ReservationController extends Controller
     public function mine(Request $request): AnonymousResourceCollection
     {
         $reservations = $request->user()->reservations()
-            ->with('restaurant', 'table')
+            ->with('restaurant', 'table', 'restaurantPackage.packageType')
             ->latest()
             ->get();
 
@@ -45,7 +46,7 @@ class ReservationController extends Controller
         $this->authorize('manageOperations', $restaurant);
 
         $reservations = $restaurant->reservations()
-            ->with('table')
+            ->with('table', 'restaurantPackage.packageType')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('date'), fn ($q) => $q->whereDate('date', $request->string('date')))
             ->orderBy('date')
@@ -68,7 +69,7 @@ class ReservationController extends Controller
             $this->assertOwnerOrGuest($request, $reservation);
         }
 
-        $reservation->load(['table', 'restaurant']);
+        $reservation->load(['table', 'restaurant', 'restaurantPackage.packageType']);
 
         if ($isStaff) {
             $this->attachOccupancy(collect([$reservation]), $reservation->restaurant, $occupancy);
@@ -83,6 +84,14 @@ class ReservationController extends Controller
         // 'sanctum' explícito — rota aceita convidados sem token.
         $user = $request->user('sanctum');
 
+        // Reserva de pacote (Fase L3c) — já validado (restaurante certo,
+        // ativo) em StoreReservationRequest. A caução passa a ser o preço
+        // do pacote, não o valor genérico do restaurante; o resto do
+        // mecanismo (promo, comprovativo, confirmação, fatura) é o mesmo.
+        $package = isset($data['package_id'])
+            ? RestaurantPackage::where('uuid', $data['package_id'])->first()
+            : null;
+
         // Mesmo código promocional dos pedidos, aplicado à caução — mas só
         // quando o offer NÃO tem prato/categoria alvo (a caução não é
         // itemizada) e não é "delivery" (entrega grátis não se aplica a uma
@@ -93,7 +102,7 @@ class ReservationController extends Controller
         $applicable = $promo && ! $promo['freeDelivery']
             && empty($promo['targetMenuItemIds']) && empty($promo['targetCategories']);
 
-        $cautionAmount = (float) $restaurant->caution_amount;
+        $cautionAmount = $package ? (float) $package->price : (float) $restaurant->caution_amount;
         if ($applicable) {
             $cautionAmount = round($cautionAmount * (1 - $promo['percentOff'] / 100), 2);
         }
@@ -106,8 +115,11 @@ class ReservationController extends Controller
             'date' => $data['date'],
             'time' => $data['time'],
             'people_count' => $data['people_count'],
-            // Sempre o valor configurado do restaurante (com o desconto do
-            // código promocional já aplicado, se houver) — ao contrário dos
+            'reservation_kind' => $package ? 'package' : 'table',
+            'restaurant_package_id' => $package?->id,
+            // Sempre o valor configurado do restaurante (ou o preço do
+            // pacote, se for uma reserva de pacote), com o desconto do
+            // código promocional já aplicado, se houver — ao contrário dos
             // pedidos, a caução de reserva não depende de "modo" (só existe
             // um: presencial) — ver mock, `addReservation`.
             'caution_amount' => $cautionAmount,
@@ -124,7 +136,7 @@ class ReservationController extends Controller
 
         return response()->json([
             'data' => [
-                ...(new ReservationResource($reservation))->resolve($request),
+                ...(new ReservationResource($reservation->load('restaurantPackage.packageType')))->resolve($request),
                 'guestToken' => $reservation->guest_token,
             ],
         ], 201);
@@ -137,7 +149,7 @@ class ReservationController extends Controller
             'status_updated_at' => now(),
         ]);
 
-        return new ReservationResource($reservation->load('table'));
+        return new ReservationResource($reservation->load('table', 'restaurantPackage.packageType'));
     }
 
     /** Nunca bloqueado por sobreposição — só sinalizado (ver `index`/`show`
@@ -148,7 +160,7 @@ class ReservationController extends Controller
         $tableId = $uuid ? RestaurantTable::where('uuid', $uuid)->value('id') : null;
         $reservation->update(['table_id' => $tableId]);
 
-        return new ReservationResource($reservation->load('table'));
+        return new ReservationResource($reservation->load('table', 'restaurantPackage.packageType'));
     }
 
     /**

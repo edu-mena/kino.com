@@ -12,6 +12,7 @@ import {
 } from "@/data/api-reservations";
 import { INITIAL_RESERVATIONS } from "@/data/mockData";
 import { resolvePromoCode } from "@/data/offers-store";
+import { getRestaurantPackages } from "@/data/restaurant-packages-store";
 import type { Reservation, Restaurant } from "@/data/types";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { hasRealBackend } from "@/lib/api-client";
@@ -36,6 +37,10 @@ type NewReservationInput = {
    * não bloqueia a reserva, só não desconta nada (ver
    * ReservationController::store, mesma tolerância dos pedidos). */
   promoCode?: string;
+  /** Reserva de um pacote (Fase L3c) — `id` de `RestaurantPackage`, do
+   * mesmo restaurante e ativo. A caução passa a ser o preço do pacote, não
+   * o valor genérico do restaurante. */
+  packageId?: string;
 };
 
 type ReservationsValue = {
@@ -174,6 +179,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     peopleCount,
     specialRequests,
     promoCode,
+    packageId,
   }: NewReservationInput): Promise<boolean> => {
     if (hasRealBackend) {
       const token = getAuthToken();
@@ -189,6 +195,7 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
             ...(user?.phone ? { customerPhone: user.phone } : {}),
             ...(user?.email ? { customerEmail: user.email } : {}),
             ...(promoCode ? { promoCode } : {}),
+            ...(packageId ? { packageId } : {}),
           },
           token,
         );
@@ -198,6 +205,14 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
         return false;
       }
     }
+    // Reserva de pacote (Fase L3c): a caução passa a ser o preço do
+    // pacote, não o valor genérico do restaurante — mesma regra do
+    // backend real (ver ReservationController::store). Um `packageId` que
+    // já não existe (apagado entretanto) cai para uma reserva normal, em
+    // vez de rejeitar — mesma tolerância de um código promocional inválido.
+    const pkg = packageId
+      ? getRestaurantPackages().find((p) => p.id === packageId && p.restaurantId === restaurant.id)
+      : undefined;
     // Mesma regra do backend real: só promoções sem prato/categoria alvo e
     // que não sejam "entrega grátis" descontam a caução — a caução não é
     // itemizada (ver ReservationController::store).
@@ -207,9 +222,10 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
       !promo.freeDelivery &&
       !promo.targetMenuItemIds.length &&
       !promo.targetCategories.length;
+    const baseAmount = pkg ? pkg.price : restaurant.cautionAmount;
     const cautionAmount = applicable
-      ? Math.round(restaurant.cautionAmount * (1 - promo.percentOff / 100))
-      : restaurant.cautionAmount;
+      ? Math.round(baseAmount * (1 - promo.percentOff / 100))
+      : baseAmount;
     const reservation: Reservation = {
       id: `res-custom-${Date.now()}`,
       restaurantId: restaurant.id,
@@ -230,6 +246,17 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
       ...(specialRequests ? { specialRequests } : {}),
       ...(applicable
         ? { promoCode: promo.code, promoLabel: promo.label, promoPercentOff: promo.percentOff }
+        : {}),
+      ...(pkg
+        ? {
+            reservationKind: "package" as const,
+            package: {
+              id: pkg.id,
+              ...(pkg.title ? { title: pkg.title } : {}),
+              packageTypeName: pkg.packageType.name,
+              price: pkg.price,
+            },
+          }
         : {}),
       createdAt: new Date().toISOString(),
     };

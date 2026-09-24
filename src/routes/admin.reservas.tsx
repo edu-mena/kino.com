@@ -789,8 +789,21 @@ function AdminReservas() {
                             <Field label={t("adminReservas.detailPeople")}>
                               {active.peopleCount} {t("adminReservas.people")}
                             </Field>
-                            <Field label={t("adminReservas.detailDeposit")}>
-                              {active.cautionAmount > 0 ? formatKz(active.cautionAmount) : "—"}
+                            <Field
+                              label={
+                                active.package
+                                  ? t("adminReservas.detailPackageLabel", {
+                                      title: active.package.title ?? active.package.packageTypeName,
+                                      price: formatKz(active.package.price),
+                                    })
+                                  : t("adminReservas.detailDeposit")
+                              }
+                            >
+                              {!active.package && (
+                                <>
+                                  {active.cautionAmount > 0 ? formatKz(active.cautionAmount) : "—"}
+                                </>
+                              )}
                               <span className="mt-0.5 block text-xs text-muted-foreground">
                                 {cautionStatusLabels[active.cautionStatus] ?? active.cautionStatus}
                               </span>

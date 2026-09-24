@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { resolvePromoCode, type PromoEffect } from "@/data/offers-store";
-import type { Restaurant } from "@/data/types";
+import type { Restaurant, RestaurantPackage } from "@/data/types";
 import { useOffers } from "@/data/use-offers";
 import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
@@ -31,10 +31,16 @@ export function ReservationDialog({
   restaurant,
   open,
   onOpenChange,
+  restaurantPackage,
 }: {
   restaurant: Restaurant;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Reserva de um pacote específico (Fase L3d: aberto a partir da página
+   * de um pacote) — a caução deixa de ser o valor genérico do restaurante e
+   * passa a ser o preço do pacote; o resto do fluxo (promo, disponibilidade
+   * de lugares) é o mesmo. */
+  restaurantPackage?: RestaurantPackage;
 }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -54,9 +60,10 @@ export function ReservationDialog({
   const [promoInput, setPromoInput] = useState("");
   const [promo, setPromo] = useState<PromoEffect | null>(null);
   const [promoError, setPromoError] = useState(false);
+  const cautionBase = restaurantPackage ? restaurantPackage.price : restaurant.cautionAmount;
   const discountedCaution = promo
-    ? Math.round(restaurant.cautionAmount * (1 - promo.percentOff / 100))
-    : restaurant.cautionAmount;
+    ? Math.round(cautionBase * (1 - promo.percentOff / 100))
+    : cautionBase;
 
   const resetPromo = () => {
     setPromoInput("");
@@ -120,6 +127,7 @@ export function ReservationDialog({
       peopleCount,
       specialRequests,
       ...(promo ? { promoCode: promo.code } : {}),
+      ...(restaurantPackage ? { packageId: restaurantPackage.id } : {}),
     });
     setSubmitting(false);
     if (!ok) {
@@ -224,7 +232,7 @@ export function ReservationDialog({
               />
             </div>
 
-            {restaurant.cautionAmount > 0 && (
+            {cautionBase > 0 && (
               <div className="space-y-1.5">
                 <Label htmlFor="res-promo">{t("reservationDialog.promoLabel")}</Label>
                 <div className="flex gap-2">
@@ -275,14 +283,19 @@ export function ReservationDialog({
               </div>
             )}
 
-            {restaurant.cautionAmount > 0 && (
+            {cautionBase > 0 && (
               <div className="flex items-start gap-2 rounded-xl border border-brand/30 bg-brand/5 p-3 text-xs text-foreground">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
                 <span>
-                  {t("reservationDialog.cautionNotice", {
-                    amount: formatKz(discountedCaution),
-                    policy: restaurant.cautionPolicyNotice,
-                  })}
+                  {restaurantPackage
+                    ? t("reservationDialog.packageNotice", {
+                        title: restaurantPackage.title ?? restaurantPackage.packageType.name,
+                        amount: formatKz(discountedCaution),
+                      })
+                    : t("reservationDialog.cautionNotice", {
+                        amount: formatKz(discountedCaution),
+                        policy: restaurant.cautionPolicyNotice,
+                      })}
                 </span>
               </div>
             )}

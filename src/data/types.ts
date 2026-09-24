@@ -243,6 +243,19 @@ export interface Reservation {
   promoLabel?: string;
   /** 0–100. */
   promoPercentOff?: number;
+  /** "table" (padrão) | "package" — reserva normal de mesa ou de um pacote
+   * de consumo (Aniversário, Reunião...). `package` só presente quando
+   * "package"; `cautionAmount` já é o preço do pacote nesse caso (mesmo
+   * mecanismo de caução, reaproveitado — ver `ReservationController::store`). */
+  reservationKind?: "table" | "package";
+  package?: {
+    id: string;
+    /** Nome próprio do restaurante para o pacote — ausente usa
+     * `packageTypeName` (ver `RestaurantPackage.title`, mesma regra). */
+    title?: string;
+    packageTypeName: string;
+    price: number;
+  };
   createdAt: string;
 }
 

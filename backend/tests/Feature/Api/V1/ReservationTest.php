@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\Offer;
+use App\Models\PackageType;
 use App\Models\Restaurant;
+use App\Models\RestaurantPackage;
 use App\Models\RestaurantTable;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -578,4 +580,90 @@ test('caução descontada até zero fica "não exige caução"', function () {
     $response->assertStatus(201)
         ->assertJsonPath('data.cautionAmount', 0)
         ->assertJsonPath('data.cautionStatus', 'not_required');
+});
+
+// --- reserva de pacote (Fase L3c) ---
+
+test('reserva de pacote usa o preço do pacote como caução, não a caução genérica do restaurante', function () {
+    $restaurant = createReservableRestaurant(['caution_amount' => 5000]);
+    $type = PackageType::factory()->create(['name' => 'Aniversário']);
+    $package = RestaurantPackage::factory()->for($restaurant)->create([
+        'package_type_id' => $type->id, 'title' => 'Aniversário Infantil', 'price' => 45000,
+    ]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'Ana', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 10,
+        'package_id' => $package->uuid,
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.reservationKind', 'package')
+        ->assertJsonPath('data.cautionAmount', 45000)
+        ->assertJsonPath('data.cautionStatus', 'pending')
+        ->assertJsonPath('data.package.title', 'Aniversário Infantil')
+        ->assertJsonPath('data.package.packageTypeName', 'Aniversário')
+        ->assertJsonPath('data.package.price', 45000);
+});
+
+test('reserva normal (sem package_id) continua "table", sem package no resource', function () {
+    $restaurant = createReservableRestaurant(['caution_amount' => 3000]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'Ana', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 2,
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(201)
+        ->assertJsonPath('data.reservationKind', 'table')
+        ->assertJsonPath('data.package', null)
+        ->assertJsonPath('data.cautionAmount', 3000);
+});
+
+test('pacote de outro restaurante é rejeitado', function () {
+    $restaurant = createReservableRestaurant();
+    $otherRestaurant = createReservableRestaurant();
+    $type = PackageType::factory()->create();
+    $foreignPackage = RestaurantPackage::factory()->for($otherRestaurant)->create(['package_type_id' => $type->id]);
+
+    $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'Ana', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 2,
+        'package_id' => $foreignPackage->uuid,
+    ], ['Idempotency-Key' => Str::uuid()->toString()])
+        ->assertStatus(422)->assertJsonValidationErrors('package_id');
+});
+
+test('pacote inativo é rejeitado', function () {
+    $restaurant = createReservableRestaurant();
+    $type = PackageType::factory()->create();
+    $inactivePackage = RestaurantPackage::factory()->for($restaurant)->create([
+        'package_type_id' => $type->id, 'is_active' => false,
+    ]);
+
+    $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'Ana', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 2,
+        'package_id' => $inactivePackage->uuid,
+    ], ['Idempotency-Key' => Str::uuid()->toString()])
+        ->assertStatus(422)->assertJsonValidationErrors('package_id');
+});
+
+test('código promocional aplicável desconta também a caução de uma reserva de pacote', function () {
+    $restaurant = createReservableRestaurant();
+    $type = PackageType::factory()->create();
+    $package = RestaurantPackage::factory()->for($restaurant)->create(['package_type_id' => $type->id, 'price' => 40000]);
+    Offer::query()->create([
+        'restaurant_id' => $restaurant->id, 'type' => 'discount', 'title' => '10% no pacote',
+        'code' => 'PACOTE10', 'percent_off' => 10, 'starts_at' => now()->subDay(),
+    ]);
+
+    $response = $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'Ana', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 2,
+        'package_id' => $package->uuid,
+        'promo_code' => 'PACOTE10',
+    ], ['Idempotency-Key' => Str::uuid()->toString()]);
+
+    $response->assertStatus(201)->assertJsonPath('data.cautionAmount', 36000);
 });

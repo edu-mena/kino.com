@@ -64,6 +64,8 @@ type ApiReservation = {
   promoCode?: string | null;
   promoLabel?: string | null;
   promoPercentOff?: number | null;
+  reservationKind?: string;
+  package?: { id: string; title: string | null; packageTypeName: string; price: number } | null;
   createdAt: string;
 };
 
@@ -93,6 +95,17 @@ function mapApiReservation(r: ApiReservation, ownerKey: string): Reservation {
     ...(r.promoCode ? { promoCode: r.promoCode } : {}),
     ...(r.promoLabel ? { promoLabel: r.promoLabel } : {}),
     ...(r.promoPercentOff != null ? { promoPercentOff: r.promoPercentOff } : {}),
+    ...(r.reservationKind === "package" ? { reservationKind: "package" as const } : {}),
+    ...(r.package
+      ? {
+          package: {
+            id: r.package.id,
+            ...(r.package.title ? { title: r.package.title } : {}),
+            packageTypeName: r.package.packageTypeName,
+            price: r.package.price,
+          },
+        }
+      : {}),
     createdAt: r.createdAt,
   };
 }
@@ -134,6 +147,11 @@ export async function createApiReservation(
      * "entrega grátis" — o backend ignora silenciosamente caso contrário
      * (ver ReservationController::store). */
     promoCode?: string;
+    /** Reserva de um pacote (Fase L3c) — `id` de `RestaurantPackage`, do
+     * MESMO restaurante e ativo (o backend rejeita caso contrário). A
+     * caução passa a ser o preço do pacote, não o valor genérico do
+     * restaurante. */
+    packageId?: string;
   },
   token: string | null,
 ): Promise<Reservation> {
@@ -151,6 +169,7 @@ export async function createApiReservation(
         ...(input.customerPhone ? { customer_phone: input.customerPhone } : {}),
         ...(input.customerEmail ? { customer_email: input.customerEmail } : {}),
         ...(input.promoCode ? { promo_code: input.promoCode } : {}),
+        ...(input.packageId ? { package_id: input.packageId } : {}),
       },
       headers: { "Idempotency-Key": crypto.randomUUID() },
     },

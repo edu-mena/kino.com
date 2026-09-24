@@ -26,6 +26,16 @@ class ReservationResource extends JsonResource
             'date' => $this->date?->toDateString(),
             'time' => is_string($this->time) ? substr($this->time, 0, 5) : $this->time,
             'peopleCount' => $this->people_count,
+            'reservationKind' => $this->reservation_kind,
+            // Só presente numa reserva de pacote (Fase L3c) — `title`
+            // nulo usa o nome do tipo, decisão que fica ao frontend (ver
+            // RestaurantPackageResource, mesma regra).
+            'package' => $this->whenLoaded('restaurantPackage', fn () => $this->restaurantPackage ? [
+                'id' => $this->restaurantPackage->uuid,
+                'title' => $this->restaurantPackage->title,
+                'packageTypeName' => $this->restaurantPackage->packageType->name,
+                'price' => (float) $this->restaurantPackage->price,
+            ] : null),
             'cautionAmount' => (float) $this->caution_amount,
             'cautionStatus' => $this->caution_status,
             'status' => $this->status,

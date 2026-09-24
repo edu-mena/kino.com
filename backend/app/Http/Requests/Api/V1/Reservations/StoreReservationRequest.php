@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api\V1\Reservations;
 use App\Models\Restaurant;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Público — cliente autenticado OU convidado. Sem `table_id`: atribuir mesa
@@ -23,6 +24,7 @@ class StoreReservationRequest extends FormRequest
     {
         // 'sanctum' explícito — rota aceita convidados sem token.
         $user = $this->user('sanctum');
+        $restaurant = $this->route('restaurant');
 
         return [
             'customer_name' => [$user ? 'sometimes' : 'required', 'string', 'max:150'],
@@ -36,6 +38,16 @@ class StoreReservationRequest extends FormRequest
             // rejeita a reserva, só não aplica desconto nenhum (ver
             // ReservationController::store).
             'promo_code' => ['sometimes', 'nullable', 'string', 'max:40'],
+            // Valida pelo `uuid` — o único id que a API expõe
+            // (RestaurantPackageResource); o controller resolve para o id
+            // interno. Filtrado a ESTE restaurante + ativo: um pacote de
+            // outro restaurante, ou já desativado, nunca é aceite aqui.
+            'package_id' => [
+                'sometimes', 'string',
+                Rule::exists('restaurant_packages', 'uuid')
+                    ->where('restaurant_id', $restaurant->id)
+                    ->where('is_active', true),
+            ],
         ];
     }
 

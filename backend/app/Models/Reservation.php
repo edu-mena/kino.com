@@ -18,6 +18,7 @@ class Reservation extends Model
     protected $fillable = [
         'restaurant_id', 'user_id', 'guest_token', 'customer_name',
         'customer_phone', 'customer_email', 'date', 'time', 'people_count',
+        'reservation_kind', 'restaurant_package_id',
         'caution_amount', 'caution_status', 'status', 'status_updated_at',
         'table_id', 'special_requests',
         'payment_proof_url', 'payment_proof_at',
@@ -58,5 +59,10 @@ class Reservation extends Model
     public function table(): BelongsTo
     {
         return $this->belongsTo(RestaurantTable::class, 'table_id');
+    }
+
+    public function restaurantPackage(): BelongsTo
+    {
+        return $this->belongsTo(RestaurantPackage::class);
     }
 }
