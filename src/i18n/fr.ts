@@ -108,6 +108,16 @@ export const fr: Dictionary = {
     locateDenied:
       "Permission de localisation refusée — activez-la dans les réglages du navigateur.",
   },
+  pacotes: {
+    title: "Forfaits",
+    description:
+      "Anniversaire, réunion d'affaires, amis, fêtes — trouvez un restaurant qui propose le forfait idéal pour votre occasion.",
+    empty: "Aucun forfait disponible pour l'instant.",
+    backToTypes: "Retour aux forfaits",
+    noRestaurants: "Aucun restaurant ne propose encore ce forfait.",
+    maxPeopleValue: "Jusqu'à {count} personnes",
+    reserve: "Réserver",
+  },
   entrega: {
     eyebrow: "Livraison",
     title: "Vos commandes",

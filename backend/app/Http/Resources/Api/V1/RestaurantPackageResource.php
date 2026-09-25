@@ -14,6 +14,18 @@ class RestaurantPackageResource extends JsonResource
         return [
             'id' => $this->uuid,
             'restaurantId' => $this->whenLoaded('restaurant', fn () => $this->restaurant->uuid),
+            // Resumo do restaurante (nome/imagem/lat/lng) — só usado pela
+            // descoberta pública por tipo de pacote (Fase L3d), pra o
+            // frontend ordenar por distância como já faz em /restaurantes.
+            // `restaurantId` acima chega sempre que só o id interessa (ex:
+            // /admin/mesas, que nunca carrega esses campos extra).
+            'restaurant' => $this->whenLoaded('restaurant', fn () => [
+                'id' => $this->restaurant->uuid,
+                'name' => $this->restaurant->name,
+                'image' => $this->restaurant->cover_image_url,
+                'lat' => $this->restaurant->lat === null ? null : (float) $this->restaurant->lat,
+                'lng' => $this->restaurant->lng === null ? null : (float) $this->restaurant->lng,
+            ]),
             'packageType' => $this->whenLoaded('packageType', fn () => [
                 'id' => $this->packageType->uuid,
                 'name' => $this->packageType->name,

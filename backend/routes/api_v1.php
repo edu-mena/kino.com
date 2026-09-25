@@ -268,6 +268,7 @@ Route::get('delivery-policy', [DeliveryPolicyController::class, 'show']);
 // não é operador — ver PackageTypeController::index), permite ao cliente
 // descobrir por tipo em /pacotes (Fase L3d) sem sessão nenhuma.
 Route::get('package-types', [PackageTypeController::class, 'index']);
+Route::get('package-types/{packageType}/restaurants', [PackageTypeController::class, 'restaurants']);
 
 // Pacotes que UM restaurante oferece (ver PackageTypeController acima para
 // o catálogo de tipos) — público, só ativos exceto para o próprio staff do

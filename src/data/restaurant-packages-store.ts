@@ -1,3 +1,4 @@
+import { getRestaurant } from "./helpers";
 import { getEffectivePackageTypes } from "./package-types-store";
 import { safeLocalStorageSet } from "./safe-storage";
 import type { RestaurantPackage } from "./types";
@@ -71,6 +72,32 @@ export function getRestaurantPackages(): RestaurantPackage[] {
 
 export function getRestaurantPackagesByRestaurant(restaurantId: string): RestaurantPackage[] {
   return getRestaurantPackages().filter((p) => p.restaurantId === restaurantId);
+}
+
+/** Pacotes ativos de UM tipo, de qualquer restaurante, com o resumo do
+ * restaurante embutido (nome/imagem/lat/lng) — descoberta pública por tipo
+ * (`/pacotes/$packageTypeId`, Fase L3d), mesmo shape do backend real (ver
+ * `mapApiRestaurantPackageWithRestaurant`). Um restaurante entretanto
+ * apagado (`getRestaurant` devolve `undefined`) fica de fora, em vez de
+ * mostrar um pacote sem dono. */
+export function getRestaurantPackagesByType(packageTypeId: string): RestaurantPackage[] {
+  return getRestaurantPackages()
+    .filter((p) => p.isActive && p.packageType.id === packageTypeId)
+    .map((p): RestaurantPackage | null => {
+      const restaurant = getRestaurant(p.restaurantId);
+      if (!restaurant) return null;
+      return {
+        ...p,
+        restaurant: {
+          id: restaurant.id,
+          name: restaurant.name,
+          image: restaurant.coverImage,
+          ...(restaurant.lat != null ? { lat: restaurant.lat } : {}),
+          ...(restaurant.lng != null ? { lng: restaurant.lng } : {}),
+        },
+      };
+    })
+    .filter((p): p is RestaurantPackage => p !== null);
 }
 
 export function addRestaurantPackage(input: RestaurantPackageInput) {

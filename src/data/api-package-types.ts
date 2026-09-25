@@ -1,5 +1,9 @@
+import {
+  mapApiRestaurantPackageWithRestaurant,
+  type ApiRestaurantPackage,
+} from "./api-restaurant-packages";
 import { apiFetch } from "@/lib/api-client";
-import type { PackageType } from "./types";
+import type { PackageType, RestaurantPackage } from "./types";
 
 /** CRUD real de tipos de pacote
  * (backend/app/Http/Controllers/Api/V1/PackageTypeController.php) — só
@@ -28,11 +32,31 @@ function mapApiPackageType(p: ApiPackageType): PackageType {
   };
 }
 
-export async function fetchApiPackageTypes(token?: string | null): Promise<PackageType[]> {
-  const { data } = await apiFetch<{ data: ApiPackageType[] }>("/package-types", {
-    token: token ?? null,
-  });
+/** `withOffers`: só tipos com pelo menos um pacote de restaurante ativo —
+ * usado pela listagem pública de `/pacotes` (Fase L3d), nunca por
+ * `/sistema/pacotes` nem pelo seletor de tipo em `/admin/mesas` (esse
+ * precisa de continuar a ver um tipo novo, sem nenhuma oferta ainda). */
+export async function fetchApiPackageTypes(
+  token?: string | null,
+  withOffers?: boolean,
+): Promise<PackageType[]> {
+  const { data } = await apiFetch<{ data: ApiPackageType[] }>(
+    `/package-types${withOffers ? "?with_offers=1" : ""}`,
+    { token: token ?? null },
+  );
   return data.map(mapApiPackageType);
+}
+
+/** Restaurantes ativos que oferecem este tipo de pacote, com resumo do
+ * restaurante embutido (nome/imagem/lat/lng) — descoberta pública por tipo
+ * (`/pacotes/$packageTypeId`, Fase L3d). Público, sem token. */
+export async function fetchApiPackageTypeRestaurants(
+  packageTypeId: string,
+): Promise<RestaurantPackage[]> {
+  const { data } = await apiFetch<{ data: ApiRestaurantPackage[] }>(
+    `/package-types/${packageTypeId}/restaurants`,
+  );
+  return data.map(mapApiRestaurantPackageWithRestaurant);
 }
 
 type PackageTypeInput = {

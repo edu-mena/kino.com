@@ -8,9 +8,16 @@ import type { RestaurantPackage } from "./types";
  * restaurante — por isso `fetchApiRestaurantPackages` aceita `token`
  * opcional, ao contrário do CRUD de escrita, que exige sempre. */
 
-type ApiRestaurantPackage = {
+export type ApiRestaurantPackage = {
   id: string;
   restaurantId?: string;
+  restaurant?: {
+    id: string;
+    name: string;
+    image: string | null;
+    lat: number | null;
+    lng: number | null;
+  };
   packageType?: { id: string; name: string; icon: string | null };
   title: string | null;
   description: string | null;
@@ -35,6 +42,26 @@ function mapApiRestaurantPackage(p: ApiRestaurantPackage, restaurantId: string):
     ...(p.maxPeople != null ? { maxPeople: p.maxPeople } : {}),
     characteristics: p.characteristics,
     isActive: p.isActive,
+  };
+}
+
+/** Mesmo mapeamento acima, mas para a descoberta pública por tipo de
+ * pacote (`fetchApiPackageTypeRestaurants`, `@/data/api-package-types`) —
+ * aí não há um `restaurantId` já conhecido de antemão (cada linha é de um
+ * restaurante diferente), por isso deriva-se do `restaurant` embutido, que
+ * este endpoint sempre carrega. */
+export function mapApiRestaurantPackageWithRestaurant(p: ApiRestaurantPackage): RestaurantPackage {
+  const base = mapApiRestaurantPackage(p, p.restaurant?.id ?? "");
+  if (!p.restaurant) return base;
+  return {
+    ...base,
+    restaurant: {
+      id: p.restaurant.id,
+      name: p.restaurant.name,
+      ...(p.restaurant.image ? { image: p.restaurant.image } : {}),
+      ...(p.restaurant.lat != null ? { lat: p.restaurant.lat } : {}),
+      ...(p.restaurant.lng != null ? { lng: p.restaurant.lng } : {}),
+    },
   };
 }
 

@@ -106,6 +106,16 @@ export const en: Dictionary = {
     locateLoading: "Locating...",
     locateDenied: "Location permission denied — enable it in your browser settings.",
   },
+  pacotes: {
+    title: "Packages",
+    description:
+      "Birthday, business meeting, friends, holidays — find a restaurant offering the right package for your occasion.",
+    empty: "No packages available yet.",
+    backToTypes: "Back to packages",
+    noRestaurants: "No restaurant offers this package yet.",
+    maxPeopleValue: "Up to {count} people",
+    reserve: "Reserve",
+  },
   entrega: {
     eyebrow: "Delivery",
     title: "Your orders",

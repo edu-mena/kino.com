@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Briefcase, Cake, Package, Pencil, PartyPopper, Plus, Trash2, Users } from "lucide-react";
+import { Pencil, PartyPopper, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -21,21 +21,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { SystemPageHeading } from "@/components/system-shell";
 import type { PackageType } from "@/data/types";
 import { useTranslation } from "@/i18n";
+import { packageTypeIcon } from "@/lib/package-type-icons";
 import { usePackageTypesAdmin } from "@/lib/package-types";
 
 export const Route = createFileRoute("/sistema/pacotes")({
   head: () => ({ meta: [{ title: "Pacotes — Sistema Luku.com" }] }),
   component: SistemaPacotes,
 });
-
-/** Ícones conhecidos do seed — qualquer outro nome digitado cai no genérico
- * (`Package`), nunca quebra a lista por um nome de ícone desconhecido. */
-const ICON_MAP: Record<string, typeof Package> = {
-  cake: Cake,
-  briefcase: Briefcase,
-  users: Users,
-  "party-popper": PartyPopper,
-};
 
 type Draft = {
   name: string;
@@ -120,7 +112,7 @@ function SistemaPacotes() {
         ) : (
           <div className="space-y-3">
             {packageTypes.map((type) => {
-              const Icon = (type.icon && ICON_MAP[type.icon]) || Package;
+              const Icon = packageTypeIcon(type.icon);
               return (
                 <div key={type.id} className="card-soft flex items-start gap-4 p-4">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">

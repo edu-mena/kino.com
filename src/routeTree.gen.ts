@@ -23,6 +23,7 @@ import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as LukuRouteImport } from './routes/luku'
 import { Route as NotificacoesRouteImport } from './routes/notificacoes'
 import { Route as OfertasRouteImport } from './routes/ofertas'
+import { Route as PacotesRouteImport } from './routes/pacotes'
 import { Route as ParceirosRouteImport } from './routes/parceiros'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PreferenciasRouteImport } from './routes/preferencias'
@@ -49,6 +50,7 @@ import { Route as AdminSuporteRouteImport } from './routes/admin.suporte'
 import { Route as AdminCardapioPdfRouteImport } from './routes/admin_.cardapio-pdf'
 import { Route as AdminEntrarRouteImport } from './routes/admin_.entrar'
 import { Route as MenuRestaurantIdRouteImport } from './routes/menu.$restaurantId'
+import { Route as PacotesPackageTypeIdRouteImport } from './routes/pacotes.$packageTypeId'
 import { Route as PratoDishIdRouteImport } from './routes/prato.$dishId'
 import { Route as PratosDishNameRouteImport } from './routes/pratos.$dishName'
 import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
@@ -130,6 +132,11 @@ const NotificacoesRoute = NotificacoesRouteImport.update({
 const OfertasRoute = OfertasRouteImport.update({
   id: '/ofertas',
   path: '/ofertas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PacotesRoute = PacotesRouteImport.update({
+  id: '/pacotes',
+  path: '/pacotes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParceirosRoute = ParceirosRouteImport.update({
@@ -262,6 +269,11 @@ const MenuRestaurantIdRoute = MenuRestaurantIdRouteImport.update({
   path: '/menu/$restaurantId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PacotesPackageTypeIdRoute = PacotesPackageTypeIdRouteImport.update({
+  id: '/$packageTypeId',
+  path: '/$packageTypeId',
+  getParentRoute: () => PacotesRoute,
+} as any)
 const PratoDishIdRoute = PratoDishIdRouteImport.update({
   id: '/prato/$dishId',
   path: '/prato/$dishId',
@@ -338,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/luku': typeof LukuRoute
   '/notificacoes': typeof NotificacoesRoute
   '/ofertas': typeof OfertasRoute
+  '/pacotes': typeof PacotesRouteWithChildren
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
@@ -363,6 +376,7 @@ export interface FileRoutesByFullPath {
   '/admin/cardapio-pdf': typeof AdminCardapioPdfRoute
   '/admin/entrar': typeof AdminEntrarRoute
   '/menu/$restaurantId': typeof MenuRestaurantIdRoute
+  '/pacotes/$packageTypeId': typeof PacotesPackageTypeIdRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
@@ -391,6 +405,7 @@ export interface FileRoutesByTo {
   '/luku': typeof LukuRoute
   '/notificacoes': typeof NotificacoesRoute
   '/ofertas': typeof OfertasRoute
+  '/pacotes': typeof PacotesRouteWithChildren
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
@@ -415,6 +430,7 @@ export interface FileRoutesByTo {
   '/admin/cardapio-pdf': typeof AdminCardapioPdfRoute
   '/admin/entrar': typeof AdminEntrarRoute
   '/menu/$restaurantId': typeof MenuRestaurantIdRoute
+  '/pacotes/$packageTypeId': typeof PacotesPackageTypeIdRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
@@ -445,6 +461,7 @@ export interface FileRoutesById {
   '/luku': typeof LukuRoute
   '/notificacoes': typeof NotificacoesRoute
   '/ofertas': typeof OfertasRoute
+  '/pacotes': typeof PacotesRouteWithChildren
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
@@ -470,6 +487,7 @@ export interface FileRoutesById {
   '/admin_/cardapio-pdf': typeof AdminCardapioPdfRoute
   '/admin_/entrar': typeof AdminEntrarRoute
   '/menu/$restaurantId': typeof MenuRestaurantIdRoute
+  '/pacotes/$packageTypeId': typeof PacotesPackageTypeIdRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes_/$id': typeof RestaurantesIdRoute
@@ -501,6 +519,7 @@ export interface FileRouteTypes {
     | '/luku'
     | '/notificacoes'
     | '/ofertas'
+    | '/pacotes'
     | '/parceiros'
     | '/perfil'
     | '/preferencias'
@@ -526,6 +545,7 @@ export interface FileRouteTypes {
     | '/admin/cardapio-pdf'
     | '/admin/entrar'
     | '/menu/$restaurantId'
+    | '/pacotes/$packageTypeId'
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes/$id'
@@ -554,6 +574,7 @@ export interface FileRouteTypes {
     | '/luku'
     | '/notificacoes'
     | '/ofertas'
+    | '/pacotes'
     | '/parceiros'
     | '/perfil'
     | '/preferencias'
@@ -578,6 +599,7 @@ export interface FileRouteTypes {
     | '/admin/cardapio-pdf'
     | '/admin/entrar'
     | '/menu/$restaurantId'
+    | '/pacotes/$packageTypeId'
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes/$id'
@@ -607,6 +629,7 @@ export interface FileRouteTypes {
     | '/luku'
     | '/notificacoes'
     | '/ofertas'
+    | '/pacotes'
     | '/parceiros'
     | '/perfil'
     | '/preferencias'
@@ -632,6 +655,7 @@ export interface FileRouteTypes {
     | '/admin_/cardapio-pdf'
     | '/admin_/entrar'
     | '/menu/$restaurantId'
+    | '/pacotes/$packageTypeId'
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes_/$id'
@@ -662,6 +686,7 @@ export interface RootRouteChildren {
   LukuRoute: typeof LukuRoute
   NotificacoesRoute: typeof NotificacoesRoute
   OfertasRoute: typeof OfertasRoute
+  PacotesRoute: typeof PacotesRouteWithChildren
   ParceirosRoute: typeof ParceirosRoute
   PerfilRoute: typeof PerfilRoute
   PreferenciasRoute: typeof PreferenciasRoute
@@ -778,6 +803,13 @@ declare module '@tanstack/react-router' {
       path: '/ofertas'
       fullPath: '/ofertas'
       preLoaderRoute: typeof OfertasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pacotes': {
+      id: '/pacotes'
+      path: '/pacotes'
+      fullPath: '/pacotes'
+      preLoaderRoute: typeof PacotesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/parceiros': {
@@ -962,6 +994,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MenuRestaurantIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pacotes/$packageTypeId': {
+      id: '/pacotes/$packageTypeId'
+      path: '/$packageTypeId'
+      fullPath: '/pacotes/$packageTypeId'
+      preLoaderRoute: typeof PacotesPackageTypeIdRouteImport
+      parentRoute: typeof PacotesRoute
+    }
     '/prato/$dishId': {
       id: '/prato/$dishId'
       path: '/prato/$dishId'
@@ -1085,6 +1124,17 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface PacotesRouteChildren {
+  PacotesPackageTypeIdRoute: typeof PacotesPackageTypeIdRoute
+}
+
+const PacotesRouteChildren: PacotesRouteChildren = {
+  PacotesPackageTypeIdRoute: PacotesPackageTypeIdRoute,
+}
+
+const PacotesRouteWithChildren =
+  PacotesRoute._addFileChildren(PacotesRouteChildren)
+
 interface SistemaRouteChildren {
   SistemaOperacaoRoute: typeof SistemaOperacaoRoute
   SistemaPacotesRoute: typeof SistemaPacotesRoute
@@ -1125,6 +1175,7 @@ const rootRouteChildren: RootRouteChildren = {
   LukuRoute: LukuRoute,
   NotificacoesRoute: NotificacoesRoute,
   OfertasRoute: OfertasRoute,
+  PacotesRoute: PacotesRouteWithChildren,
   ParceirosRoute: ParceirosRoute,
   PerfilRoute: PerfilRoute,
   PreferenciasRoute: PreferenciasRoute,

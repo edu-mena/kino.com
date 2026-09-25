@@ -113,6 +113,16 @@ export const pt = {
     locateLoading: "A localizar...",
     locateDenied: "Permissão de localização negada — ative-a nas definições do navegador.",
   },
+  pacotes: {
+    title: "Pacotes",
+    description:
+      "Aniversário, reunião de negócios, amigos, feriados — encontre um restaurante que ofereça o pacote certo para a sua ocasião.",
+    empty: "Ainda não há pacotes disponíveis.",
+    backToTypes: "Voltar aos pacotes",
+    noRestaurants: "Ainda não há nenhum restaurante a oferecer este pacote.",
+    maxPeopleValue: "Até {count} pessoas",
+    reserve: "Reservar",
+  },
   entrega: {
     eyebrow: "Entrega",
     title: "Os seus pedidos",

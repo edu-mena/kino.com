@@ -397,6 +397,11 @@ export interface RestaurantPackage {
    * pacote (`ReservationDialog`), mas mantido para não perder o histórico
    * de reservas já feitas com ele. */
   isActive: boolean;
+  /** Resumo do restaurante que oferece — só presente na descoberta pública
+   * por tipo de pacote (`/pacotes/$packageTypeId`, Fase L3d), para ordenar
+   * por distância como `/restaurantes` já faz. Ausente em `/admin/mesas`
+   * (que já sabe o próprio restaurante, não precisa disto). */
+  restaurant?: { id: string; name: string; image?: string; lat?: number; lng?: number };
 }
 
 export interface SavedAddress {
