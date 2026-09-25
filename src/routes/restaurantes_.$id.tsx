@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import icon from "@/assets/icon.png";
+import { FollowBar } from "@/components/follow-button";
 import { LocationMap } from "@/components/location-map";
 import { MenuBrowser } from "@/components/menu-browser";
 import { ReservationDialog } from "@/components/reservation-dialog";
@@ -237,6 +238,11 @@ function RestaurantDetail() {
 
       <div className="mx-auto max-w-6xl px-4 pt-3 md:px-6">
         <div className="flex flex-wrap items-center gap-3">
+          <FollowBar
+            restaurantId={restaurant.id}
+            restaurantName={restaurant.name}
+            initialFollowersCount={restaurant.followersCount}
+          />
           {!paused && outOfZone && (
             <Popover>
               <PopoverTrigger asChild>

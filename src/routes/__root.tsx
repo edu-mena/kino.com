@@ -23,6 +23,7 @@ import { ReservationsProvider } from "../lib/reservations";
 import { RestaurantPackagesProvider } from "../lib/restaurant-packages";
 import { StoriesProvider } from "../lib/stories";
 import { SubscriptionsProvider } from "../lib/subscriptions";
+import { FollowsProvider } from "../lib/follows";
 import { NotificationsProvider } from "../lib/notifications";
 import { TablesProvider } from "../lib/tables";
 import { TutorialProvider } from "../lib/tutorial";
@@ -147,38 +148,40 @@ function RootComponent() {
       <AuthProvider>
         <SubscriptionsProvider>
           <PreferencesProvider>
-            <StoriesProvider>
-              <AddressesProvider>
-                <CompaniesProvider>
-                  <LocationProvider>
-                    <ReservationsProvider>
-                      <BillProvider>
-                        <MenuAdminProvider>
-                          <CartProvider>
-                            <PendingShareProvider>
-                              <TablesProvider>
-                                <RestaurantPackagesProvider>
-                                  <NotificationsProvider>
-                                    <TutorialProvider>
-                                      <AuthGate>
-                                        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-                                        <Outlet />
-                                      </AuthGate>
-                                      <PendingShareDialog />
-                                      <Toaster />
-                                    </TutorialProvider>
-                                  </NotificationsProvider>
-                                </RestaurantPackagesProvider>
-                              </TablesProvider>
-                            </PendingShareProvider>
-                          </CartProvider>
-                        </MenuAdminProvider>
-                      </BillProvider>
-                    </ReservationsProvider>
-                  </LocationProvider>
-                </CompaniesProvider>
-              </AddressesProvider>
-            </StoriesProvider>
+            <FollowsProvider>
+              <StoriesProvider>
+                <AddressesProvider>
+                  <CompaniesProvider>
+                    <LocationProvider>
+                      <ReservationsProvider>
+                        <BillProvider>
+                          <MenuAdminProvider>
+                            <CartProvider>
+                              <PendingShareProvider>
+                                <TablesProvider>
+                                  <RestaurantPackagesProvider>
+                                    <NotificationsProvider>
+                                      <TutorialProvider>
+                                        <AuthGate>
+                                          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                                          <Outlet />
+                                        </AuthGate>
+                                        <PendingShareDialog />
+                                        <Toaster />
+                                      </TutorialProvider>
+                                    </NotificationsProvider>
+                                  </RestaurantPackagesProvider>
+                                </TablesProvider>
+                              </PendingShareProvider>
+                            </CartProvider>
+                          </MenuAdminProvider>
+                        </BillProvider>
+                      </ReservationsProvider>
+                    </LocationProvider>
+                  </CompaniesProvider>
+                </AddressesProvider>
+              </StoriesProvider>
+            </FollowsProvider>
           </PreferencesProvider>
         </SubscriptionsProvider>
       </AuthProvider>

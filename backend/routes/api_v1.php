@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\V1\CourierController;
 use App\Http\Controllers\Api\V1\CustomerNoteController;
 use App\Http\Controllers\Api\V1\DeliveryPolicyController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
-use App\Http\Controllers\Api\V1\FavoriteController;
+use App\Http\Controllers\Api\V1\FollowController;
 use App\Http\Controllers\Api\V1\MenuItemController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OfferController;
@@ -240,9 +240,12 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::put('reviews/{review}/reply', [ReviewController::class, 'reply']);
     Route::delete('reviews/{review}', [ReviewController::class, 'destroy']);
 
-    Route::get('favorites', [FavoriteController::class, 'index']);
-    Route::post('restaurants/{restaurant}/favorite', [FavoriteController::class, 'store']);
-    Route::delete('restaurants/{restaurant}/favorite', [FavoriteController::class, 'destroy']);
+    // Seguir restaurante (substitui os antigos favoritos de restaurante —
+    // favoritos ficam só para pratos/bebidas). Ver FollowController.
+    Route::get('follows', [FollowController::class, 'index']);
+    Route::post('restaurants/{restaurant}/follow', [FollowController::class, 'store']);
+    Route::patch('restaurants/{restaurant}/follow', [FollowController::class, 'update']);
+    Route::delete('restaurants/{restaurant}/follow', [FollowController::class, 'destroy']);
 
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::get('restaurants/{restaurant}/notifications', [NotificationController::class, 'indexForRestaurant']);

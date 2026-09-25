@@ -49,7 +49,7 @@ export function NotificationList({
       <ul className="divide-y divide-border">
         {items.map((n) => {
           const name = restaurantById.get(n.restaurantId)?.name ?? "";
-          const to = targetFor(scope, n.kind);
+          const to = n.kind === "restaurant" ? null : targetFor(scope, n.kind);
           // Pedido recusado — o resto da app já trata isto (ver
           // `order-builder-card.tsx`/`restaurantes_.$id.tsx`), a notificação
           // é só mais um sítio de onde chegar às mesmas sugestões.
@@ -68,7 +68,7 @@ export function NotificationList({
                     n.read ? "text-muted-foreground" : "font-semibold text-foreground"
                   }`}
                 >
-                  {t(`notifications.${n.event}`, { name })}
+                  {t(`notifications.${n.event}`, { name, status: n.status })}
                 </span>
               </span>
               <span className="mt-0.5 block pl-3.5 text-[11px] text-muted-foreground">
@@ -78,7 +78,16 @@ export function NotificationList({
           );
           return (
             <li key={n.id}>
-              {to ? (
+              {n.kind === "restaurant" && n.restaurantId ? (
+                <Link
+                  to="/restaurantes/$id"
+                  params={{ id: n.restaurantId }}
+                  onClick={onNavigate}
+                  className="block px-4 py-2.5 hover:bg-surface"
+                >
+                  {body}
+                </Link>
+              ) : to ? (
                 <Link to={to} onClick={onNavigate} className="block px-4 py-2.5 hover:bg-surface">
                   {body}
                 </Link>

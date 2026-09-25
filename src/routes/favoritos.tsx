@@ -1,11 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Heart, Soup, Store } from "lucide-react";
-import { useState } from "react";
+import { Heart, Soup, UserCheck } from "lucide-react";
+import { useMemo, useState } from "react";
 import icon from "@/assets/icon.png";
 import { DishCard } from "@/components/dish-card";
 import { EmptyState } from "@/components/empty-state";
+import { FollowBar } from "@/components/follow-button";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { getAllRestaurants, getMenuItem } from "@/data/helpers";
+import { getMenuItem } from "@/data/helpers";
+import { useRestaurants } from "@/data/use-restaurants-query";
+import { useFollows } from "@/lib/follows";
 import { usePreferences } from "@/lib/preferences";
 import { useTranslation } from "@/i18n";
 
@@ -15,7 +18,7 @@ export const Route = createFileRoute("/favoritos")({
       { title: "Favoritos — Luku.com" },
       {
         name: "description",
-        content: "Os pratos e restaurantes que você mais gosta, num só lugar.",
+        content: "Os pratos que você mais gosta e os restaurantes que segue, num só lugar.",
       },
       { property: "og:title", content: "Favoritos — Luku.com" },
       { property: "og:image", content: icon },
@@ -27,19 +30,26 @@ export const Route = createFileRoute("/favoritos")({
 type Tab = "dishes" | "restaurants";
 
 function Favoritos() {
-  const { favoriteRestaurantIds, favoriteDishIds } = usePreferences();
+  const { favoriteDishIds } = usePreferences();
+  const { follows } = useFollows();
+  const { data: restaurants = [] } = useRestaurants();
   const { t } = useTranslation();
 
-  const favoriteRestaurants = getAllRestaurants().filter((r) =>
-    favoriteRestaurantIds.includes(r.id),
-  );
+  // Restaurantes seguidos, pela ordem em que foram seguidos (mais recente
+  // primeiro, ver @/lib/follows).
+  const followedRestaurants = useMemo(() => {
+    const byId = new Map(restaurants.map((r) => [r.id, r]));
+    return follows
+      .map((f) => byId.get(f.restaurantId))
+      .filter((r): r is NonNullable<typeof r> => r != null);
+  }, [follows, restaurants]);
   const favoriteDishes = favoriteDishIds
     .map((id) => getMenuItem(id))
     .filter((item): item is NonNullable<typeof item> => item != null);
 
   // Abre no separador que tem conteúdo — pratos por omissão.
   const [tab, setTab] = useState<Tab>(
-    favoriteDishes.length === 0 && favoriteRestaurants.length > 0 ? "restaurants" : "dishes",
+    favoriteDishes.length === 0 && follows.length > 0 ? "restaurants" : "dishes",
   );
 
   const tabs: { key: Tab; label: string; icon: typeof Soup; count: number }[] = [
@@ -47,8 +57,8 @@ function Favoritos() {
     {
       key: "restaurants",
       label: t("favoritos.tabRestaurants"),
-      icon: Store,
-      count: favoriteRestaurants.length,
+      icon: UserCheck,
+      count: followedRestaurants.length,
     },
   ];
 
@@ -103,9 +113,9 @@ function Favoritos() {
                 ))}
               </div>
             )
-          ) : favoriteRestaurants.length === 0 ? (
+          ) : followedRestaurants.length === 0 ? (
             <EmptyState
-              icon={Heart}
+              icon={UserCheck}
               description={t("favoritos.emptyText")}
               action={
                 <Link
@@ -118,21 +128,24 @@ function Favoritos() {
             />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {favoriteRestaurants.map((r) => (
-                <Link
+              {followedRestaurants.map((r) => (
+                <div
                   key={r.id}
-                  to="/restaurantes/$id"
-                  params={{ id: r.id }}
                   className="card-soft overflow-hidden transition-colors hover:border-brand"
                 >
-                  <div className="h-32 overflow-hidden bg-surface">
-                    <img src={r.coverImage} alt={r.name} className="h-full w-full object-cover" />
+                  <Link to="/restaurantes/$id" params={{ id: r.id }} className="block">
+                    <div className="h-32 overflow-hidden bg-surface">
+                      <img src={r.coverImage} alt={r.name} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="px-4 pt-4">
+                      <h2 className="truncate font-display text-base font-bold">{r.name}</h2>
+                      <p className="truncate text-xs text-muted-foreground">{r.cuisine}</p>
+                    </div>
+                  </Link>
+                  <div className="p-4 pt-3">
+                    <FollowBar restaurantId={r.id} restaurantName={r.name} />
                   </div>
-                  <div className="p-4">
-                    <h2 className="truncate font-display text-base font-bold">{r.name}</h2>
-                    <p className="truncate text-xs text-muted-foreground">{r.cuisine}</p>
-                  </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}

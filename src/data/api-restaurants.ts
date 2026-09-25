@@ -31,6 +31,7 @@ type ApiRestaurant = {
   cuisine: string | null;
   rating: number | null;
   reviewCount: number;
+  followersCount?: number;
   address: string | null;
   neighborhood: string | null;
   city: string | null;
@@ -110,6 +111,7 @@ export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
     cuisine: r.cuisine ?? "",
     rating: r.rating ?? 0,
     reviewCount: r.reviewCount,
+    ...(r.followersCount != null ? { followersCount: r.followersCount } : {}),
     // Sem valor "de seed" para a distância (ao contrário do mock) — quem
     // usa isto sempre recalcula a distância real a partir da morada/GPS do
     // cliente (ver personalizedRestaurantDistanceKm), este é só o fallback.

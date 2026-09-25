@@ -253,9 +253,9 @@ export const pt = {
     eyebrow: "Favoritos",
     title: "Os seus favoritos",
     tabDishes: "Pratos",
-    tabRestaurants: "Restaurantes",
+    tabRestaurants: "A seguir",
     emptyText:
-      "Ainda não guardou nenhum restaurante. Toque no coração de um restaurante para o guardar aqui.",
+      "Ainda não segue nenhum restaurante. Siga os seus preferidos para receber os stories, as promoções e os preços novos.",
     emptyDishes:
       "Ainda não guardou nenhum prato. Toque no coração de um prato para o guardar aqui.",
     explore: "Explorar restaurantes",
@@ -2176,6 +2176,9 @@ export const pt = {
     orderStatus: "O seu pedido em {name} foi atualizado",
     reservationNew: "Nova reserva em {name}",
     reservationStatus: "A sua reserva em {name} foi atualizada",
+    followStoryNew: "{name} publicou um story novo",
+    followOfferNew: "{name} lançou uma promoção: {status}",
+    followPriceChange: "{name} atualizou {status} preço(s) do cardápio",
   },
   restaurantRecommendations: {
     seeAlternatives: "Ver alternativas",
@@ -2468,5 +2471,20 @@ export const pt = {
     skip: "Agora não",
     save: "Guardar preferências",
     savedToast: "Preferências guardadas!",
+  },
+  follow: {
+    follow: "Seguir",
+    following: "A seguir",
+    followAria: "Seguir {name}",
+    unfollowAria: "Deixar de seguir {name}",
+    followersOne: "1 seguidor",
+    followersMany: "{count} seguidores",
+    notifyOnAria: "Desligar os avisos de {name}",
+    notifyOffAria: "Ligar os avisos de {name}",
+    followedToast: "Agora segue {name}. Vai receber as novidades.",
+    unfollowedToast: "Deixou de seguir {name}.",
+    notifyOnToast: "Avisos de {name} ligados.",
+    notifyOffToast: "Avisos de {name} desligados. Continua a segui-lo.",
+    loginToast: "Entre na sua conta para seguir restaurantes.",
   },
 };

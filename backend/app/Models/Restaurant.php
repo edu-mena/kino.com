@@ -140,8 +140,10 @@ class Restaurant extends Model
         return $this->hasMany(Courier::class);
     }
 
-    public function favoritedByUsers(): BelongsToMany
+    public function followers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'user_favorites');
+        return $this->belongsToMany(User::class, 'restaurant_follows')
+            ->withPivot('notify')
+            ->withTimestamps();
     }
 }

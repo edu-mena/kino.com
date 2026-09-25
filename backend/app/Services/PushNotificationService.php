@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Notification;
+use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging as FirebaseMessaging;
@@ -246,6 +247,12 @@ class PushNotificationService
      * nunca as duas ao mesmo tempo (ver Order/ReservationObserver::notify). */
     private function urlFor(Notification $notification): string
     {
+        if ($notification->kind === 'restaurant') {
+            $uuid = Restaurant::query()->whereKey($notification->ref_id)->value('uuid');
+
+            return $uuid ? "/restaurantes/{$uuid}" : '/restaurantes';
+        }
+
         $forRestaurant = $notification->restaurant_id !== null;
 
         if ($notification->kind === 'order') {
@@ -258,13 +265,19 @@ class PushNotificationService
     /** @return array{0: string, 1: string} [título, corpo] */
     private function textFor(Notification $notification): array
     {
-        $name = $notification->restaurant?->name ?? 'Luku';
+        $name = $notification->kind === 'restaurant'
+            ? (Restaurant::query()->whereKey($notification->ref_id)->value('name') ?? 'Luku')
+            : ($notification->restaurant?->name ?? 'Luku');
+        $snapshot = (string) $notification->status_snapshot;
 
         return match ($notification->event) {
             'orderNew' => ['Novo pedido', "Novo pedido em {$name}"],
             'orderStatus' => ['Pedido atualizado', "O seu pedido em {$name} foi atualizado"],
             'reservationNew' => ['Nova reserva', "Nova reserva em {$name}"],
             'reservationStatus' => ['Reserva atualizada', "A sua reserva em {$name} foi atualizada"],
+            'followStoryNew' => [$name, "{$name} publicou um story novo"],
+            'followOfferNew' => [$name, $snapshot !== '' ? "Promoção nova: {$snapshot}" : "{$name} lançou uma promoção"],
+            'followPriceChange' => [$name, "{$name} atualizou {$snapshot} preço(s) do cardápio"],
             default => ['Luku', "Tem uma notificação nova de {$name}"],
         };
     }

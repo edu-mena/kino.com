@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Bike,
   CalendarCheck,
-  Heart,
   LayoutGrid,
   Map as MapIcon,
   MapPin,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import icon from "@/assets/icon.png";
+import { FollowIconButton } from "@/components/follow-button";
 import { LazyImage } from "@/components/lazy-image";
 import { LocationMap } from "@/components/location-map";
 import { ListPagination } from "@/components/list-pagination";
@@ -34,7 +34,6 @@ import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
 import { haversineKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
-import { usePreferences } from "@/lib/preferences";
 import { computeRestaurantStatus } from "@/lib/restaurant-status";
 import { useSubscriptions } from "@/lib/subscriptions";
 import { useTranslation } from "@/i18n";
@@ -69,7 +68,6 @@ const VIEW_KEY = "luku_restaurantes_view";
 function Restaurantes() {
   const { t, locale } = useTranslation();
   const navigate = useNavigate();
-  const { isFavoriteRestaurant, toggleFavoriteRestaurant } = usePreferences();
   const { byRestaurant: subByRestaurant } = useSubscriptions();
   // Morada selecionada no chip do header — dá uma distância "real" (por
   // usuário) em vez do `distanceKm` fixo da seed, igual pra toda a gente.
@@ -284,7 +282,6 @@ function Restaurantes() {
           className={`mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${view === "map" ? "hidden" : ""}`}
         >
           {pageItems.map((r) => {
-            const liked = isFavoriteRestaurant(r.id);
             const rStatus = computeRestaurantStatus(r, subByRestaurant(r.id)?.status, locale);
             const paused = !rStatus.available;
             return (
@@ -292,17 +289,7 @@ function Restaurantes() {
                 key={r.id}
                 className="card-soft group relative overflow-hidden transition-colors hover:border-brand"
               >
-                <button
-                  type="button"
-                  aria-label="Guardar nos favoritos"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    toggleFavoriteRestaurant(r.id);
-                  }}
-                  className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/80 text-muted-foreground backdrop-blur transition-colors hover:text-brand"
-                >
-                  <Heart className={`h-4 w-4 ${liked ? "fill-brand text-brand" : ""}`} />
-                </button>
+                <FollowIconButton restaurantId={r.id} restaurantName={r.name} />
                 <Link to="/restaurantes/$id" params={{ id: r.id }}>
                   <div className="relative h-40 overflow-hidden bg-surface">
                     <LazyImage

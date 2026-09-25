@@ -5,6 +5,7 @@ namespace App\Http\Resources\Api\V1;
 use App\Models\Notification;
 use App\Models\Order;
 use App\Models\Reservation;
+use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,7 +18,10 @@ class NotificationResource extends JsonResource
             'id' => $this->uuid,
             'kind' => $this->kind,
             'refId' => $this->refId(),
-            'restaurantId' => $this->whenLoaded('restaurant', fn () => $this->restaurant?->uuid),
+            // Aviso a seguidor (kind=restaurant): o restaurante é o próprio ref.
+            'restaurantId' => $this->kind === 'restaurant'
+                ? $this->refId()
+                : $this->whenLoaded('restaurant', fn () => $this->restaurant?->uuid),
             'event' => $this->event,
             'status' => $this->status_snapshot,
             'readAt' => $this->read_at?->toIso8601String(),
@@ -31,9 +35,11 @@ class NotificationResource extends JsonResource
      * um preload em lote por kind no controller). */
     private function refId(): ?string
     {
-        $model = $this->kind === 'order'
-            ? Order::query()->find($this->ref_id)
-            : Reservation::query()->find($this->ref_id);
+        $model = match ($this->kind) {
+            'order' => Order::query()->find($this->ref_id),
+            'restaurant' => Restaurant::query()->find($this->ref_id),
+            default => Reservation::query()->find($this->ref_id),
+        };
 
         return $model?->uuid;
     }

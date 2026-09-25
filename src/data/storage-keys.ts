@@ -24,6 +24,7 @@ export const STORAGE_KEYS = {
   notifications: "luku_notifications_v1",
   customerNotes: "luku_customer_notes",
   profileViews: "luku_profile_views_v1",
+  follows: "luku_follows_v1",
 } as const;
 
 /** Evento disparado por todas as stores puras quando escrevem — os

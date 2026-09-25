@@ -73,9 +73,13 @@ class User extends Authenticatable
         return $this->hasMany(Company::class);
     }
 
-    public function favoriteRestaurants(): BelongsToMany
+    /** Restaurantes que o cliente segue — `notify` é o sino por
+     * restaurante (ver migration restaurant_follows). */
+    public function followedRestaurants(): BelongsToMany
     {
-        return $this->belongsToMany(Restaurant::class, 'user_favorites');
+        return $this->belongsToMany(Restaurant::class, 'restaurant_follows')
+            ->withPivot('notify')
+            ->withTimestamps();
     }
 
     public function preferences(): HasOne

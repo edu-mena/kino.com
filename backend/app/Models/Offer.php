@@ -3,11 +3,14 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasPublicUuid;
+use App\Observers\OfferObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[ObservedBy(OfferObserver::class)]
 class Offer extends Model
 {
     use HasFactory, HasPublicUuid;
@@ -23,6 +26,7 @@ class Offer extends Model
         return [
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'followers_notified_at' => 'datetime',
             'target_menu_item_ids' => 'array',
             'target_categories' => 'array',
         ];

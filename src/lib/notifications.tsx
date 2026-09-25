@@ -22,6 +22,7 @@ import { hasRealBackend } from "@/lib/api-client";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { viewerKey } from "@/lib/customer";
+import { useMockFollowerNotes } from "@/lib/follow-notifications-mock";
 import { getAdminToken, getManagedRestaurantId } from "@/lib/restaurant-admin";
 import { useReservations } from "@/lib/reservations";
 
@@ -34,7 +35,9 @@ import { useReservations } from "@/lib/reservations";
  */
 export type LukuNotification = {
   id: string;
-  kind: "order" | "reservation";
+  /** `"restaurant"` = aviso a quem segue o restaurante (story, promoção,
+   * preços — ver @/lib/follows); `refId` é o próprio restaurante. */
+  kind: "order" | "reservation" | "restaurant";
   refId: string;
   restaurantId: string;
   /** chave i18n do evento: "orderNew" | "orderStatus" | "reservationNew" | "reservationStatus" */
@@ -245,6 +248,9 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
       read: false,
     };
   }
+
+  // Avisos a seguidores (story/promoção/preços de restaurantes seguidos).
+  useMockFollowerNotes((fresh) => pushNotes(fresh), true);
 
   function noteText(n: LukuNotification) {
     const name = getRestaurant(n.restaurantId)?.name ?? "";

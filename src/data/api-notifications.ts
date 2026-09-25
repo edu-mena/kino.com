@@ -8,7 +8,7 @@ import type { LukuNotification } from "@/lib/notifications";
  * dois aceita ver notificações de outra conta/restaurante. */
 type ApiNotification = {
   id: string;
-  kind: "order" | "reservation";
+  kind: "order" | "reservation" | "restaurant";
   refId: string | null;
   restaurantId: string | null;
   event: string;

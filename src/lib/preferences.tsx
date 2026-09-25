@@ -9,8 +9,10 @@ export type NotificationSettings = {
   news: boolean;
 };
 
+/** Favoritos são só pratos/bebidas — restaurantes passaram a ser
+ * SEGUIDOS (ver @/lib/follows, que migra os antigos
+ * `favoriteRestaurantIds` guardados aqui). */
 export type Preferences = {
-  favoriteRestaurantIds: string[];
   favoriteDishIds: string[];
   dietaryRestrictions: string[];
   priceRange: string | null;
@@ -23,7 +25,6 @@ export type Preferences = {
 };
 
 const DEFAULT_PREFERENCES: Preferences = {
-  favoriteRestaurantIds: [],
   favoriteDishIds: [],
   dietaryRestrictions: [],
   priceRange: null,
@@ -36,8 +37,6 @@ const DEFAULT_PREFERENCES: Preferences = {
 };
 
 type PreferencesValue = Preferences & {
-  isFavoriteRestaurant: (restaurantId: string) => boolean;
-  toggleFavoriteRestaurant: (restaurantId: string) => void;
   isFavoriteDish: (dishId: string) => boolean;
   toggleFavoriteDish: (dishId: string) => void;
   setDietaryRestrictions: (list: string[]) => void;
@@ -62,7 +61,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return;
     try {
-      setPrefs({ ...DEFAULT_PREFERENCES, ...JSON.parse(stored) });
+      const { favoriteRestaurantIds: _legacy, ...rest } = JSON.parse(stored) as Partial<
+        Preferences & { favoriteRestaurantIds: string[] }
+      >;
+      setPrefs({ ...DEFAULT_PREFERENCES, ...rest });
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -89,19 +91,27 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const persist = (next: Preferences) => {
     setPrefs(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    // Mantém os favoritos de restaurante antigos até @/lib/follows os
+    // migrar para "seguir" (no 1º login) — sem isto, mudar uma preferência
+    // ainda como convidado apagava-os antes da migração.
+    let legacy: string[] | undefined;
+    try {
+      legacy = (
+        JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as {
+          favoriteRestaurantIds?: string[];
+        }
+      ).favoriteRestaurantIds;
+    } catch {
+      legacy = undefined;
+    }
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(legacy ? { ...next, favoriteRestaurantIds: legacy } : next),
+    );
   };
 
   const value: PreferencesValue = {
     ...prefs,
-    isFavoriteRestaurant: (restaurantId) => prefs.favoriteRestaurantIds.includes(restaurantId),
-    toggleFavoriteRestaurant: (restaurantId) =>
-      persist({
-        ...prefs,
-        favoriteRestaurantIds: prefs.favoriteRestaurantIds.includes(restaurantId)
-          ? prefs.favoriteRestaurantIds.filter((id) => id !== restaurantId)
-          : [...prefs.favoriteRestaurantIds, restaurantId],
-      }),
     isFavoriteDish: (dishId) => prefs.favoriteDishIds.includes(dishId),
     toggleFavoriteDish: (dishId) =>
       persist({

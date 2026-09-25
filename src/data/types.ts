@@ -80,6 +80,8 @@ export interface Restaurant {
   /** Aceita pedidos de reserva de mesa online. Ausente = true (a maioria
    * aceita); false esconde o fluxo de reserva no lado do cliente. */
   acceptsReservations?: boolean;
+  /** Nº de seguidores — só no detalhe com backend real (ver FollowController). */
+  followersCount?: number;
   /** Duração média de uma reserva, em minutos — base da janela de ocupação
    * usada para detetar sobre-reservas em `/admin/reservas`. Ausente = 120. */
   reservationSlotMinutes?: number;

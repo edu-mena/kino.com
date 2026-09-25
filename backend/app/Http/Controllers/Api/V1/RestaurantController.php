@@ -72,6 +72,7 @@ class RestaurantController extends Controller
     {
         return new RestaurantResource(
             $restaurant->load(['galleryImages', 'hours.ranges', 'subscription'])
+                ->loadCount('followers')
         );
     }
 

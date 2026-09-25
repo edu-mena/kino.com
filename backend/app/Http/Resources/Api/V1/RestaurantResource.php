@@ -72,6 +72,9 @@ class RestaurantResource extends JsonResource
                     'end' => substr((string) $r->end_time, 0, 5),
                 ]) : [],
             ])),
+            // Só no detalhe (`show` faz loadCount) — nunca nas listagens,
+            // para não somar uma contagem por restaurante.
+            'followersCount' => $this->whenCounted('followers'),
             'createdAt' => $this->created_at?->toIso8601String(),
         ];
     }

@@ -248,9 +248,9 @@ export const fr: Dictionary = {
     eyebrow: "Favoris",
     title: "Vos favoris",
     tabDishes: "Plats",
-    tabRestaurants: "Restaurants",
+    tabRestaurants: "Abonnements",
     emptyText:
-      "Vous n'avez encore sauvegardé aucun restaurant. Touchez le cœur d'un restaurant pour le sauvegarder ici.",
+      "Vous ne suivez encore aucun restaurant. Suivez vos préférés pour recevoir leurs nouvelles stories, promotions et prix.",
     emptyDishes:
       "Vous n'avez encore sauvegardé aucun plat. Touchez le cœur d'un plat pour le sauvegarder ici.",
     explore: "Explorer les restaurants",
@@ -2197,6 +2197,9 @@ export const fr: Dictionary = {
     orderStatus: "Votre commande chez {name} a été mise à jour",
     reservationNew: "Nouvelle réservation chez {name}",
     reservationStatus: "Votre réservation chez {name} a été mise à jour",
+    followStoryNew: "{name} a publié une nouvelle story",
+    followOfferNew: "{name} a lancé une promotion : {status}",
+    followPriceChange: "{name} a mis à jour {status} prix du menu",
   },
   restaurantRecommendations: {
     seeAlternatives: "Voir des alternatives",
@@ -2490,5 +2493,20 @@ export const fr: Dictionary = {
     skip: "Pas maintenant",
     save: "Enregistrer les préférences",
     savedToast: "Préférences enregistrées !",
+  },
+  follow: {
+    follow: "Suivre",
+    following: "Abonné",
+    followAria: "Suivre {name}",
+    unfollowAria: "Ne plus suivre {name}",
+    followersOne: "1 abonné",
+    followersMany: "{count} abonnés",
+    notifyOnAria: "Désactiver les nouvelles de {name}",
+    notifyOffAria: "Activer les nouvelles de {name}",
+    followedToast: "Vous suivez maintenant {name}. Vous recevrez ses nouveautés.",
+    unfollowedToast: "Vous ne suivez plus {name}.",
+    notifyOnToast: "Nouvelles de {name} activées.",
+    notifyOffToast: "Nouvelles de {name} désactivées. Vous le suivez toujours.",
+    loginToast: "Connectez-vous pour suivre des restaurants.",
   },
 };
