@@ -9,11 +9,13 @@ import { DietaryOnboardingPopup } from "@/components/dietary-onboarding-popup";
 import { DishRecommendationRow } from "@/components/dish-recommendation-row";
 import { HeaderSearch } from "@/components/header-search";
 import { OnboardingTour, TutorialHint } from "@/components/onboarding-tour";
+import { PackageTypeShortcutRow } from "@/components/package-type-shortcut-row";
 import { PromoCarousel } from "@/components/promo-carousel";
 import { RestaurantAvatarRow } from "@/components/restaurant-avatar-row";
 import { PageShell, SiteHeader } from "@/components/site-shell";
 import { getRestaurant } from "@/data/helpers";
 import { useMenuItems } from "@/data/use-menu-items";
+import { usePackageTypesWithOffers } from "@/data/use-package-types-query";
 import { useAuth } from "@/lib/auth";
 import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
 import { useLocation } from "@/lib/location";
@@ -149,7 +151,7 @@ function SectionHeading({
   search,
 }: {
   title: string;
-  to?: "/cardapio" | "/restaurantes";
+  to?: "/cardapio" | "/restaurantes" | "/pacotes";
   search?: { categoria?: string | undefined };
 }) {
   const { t } = useTranslation();
@@ -174,6 +176,7 @@ function HomeLoggedIn() {
   const { items } = useMenuItems();
   const { cuisinePreferences, excludedIngredients, dietaryRestrictions } = usePreferences();
   const { selected: selectedAddress } = useLocation();
+  const { data: packageTypes = [] } = usePackageTypesWithOffers();
 
   // Derivados da lista efetiva de pratos (reativa a criações/edições no
   // painel do restaurante) — não do seed estático diretamente.
@@ -243,6 +246,17 @@ function HomeLoggedIn() {
           <DishRecommendationRow items={recommendedItems} />
         </div>
       </section>
+
+      {/* Pacotes — só aparece com pelo menos um tipo com oferta ativa
+          (ver usePackageTypesWithOffers), nunca uma secção vazia. */}
+      {packageTypes.length > 0 && (
+        <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
+          <SectionHeading title={t("home.packages")} to="/pacotes" />
+          <div className="mt-5">
+            <PackageTypeShortcutRow />
+          </div>
+        </section>
+      )}
 
       {/* Categorias */}
       <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">

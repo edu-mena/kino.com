@@ -374,6 +374,7 @@ export const pt = {
     fastFood: "Fast-food",
     grilled: "Grelhados",
     trending: "Em Alta",
+    packages: "Pacotes",
     categories: "Categorias",
     restrictionGlutenFree: "Sem glúten",
     restrictionLactoseFree: "Sem lactose",

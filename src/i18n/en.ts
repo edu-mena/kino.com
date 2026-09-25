@@ -366,6 +366,7 @@ export const en: Dictionary = {
     fastFood: "Fast food",
     grilled: "Grilled",
     trending: "Trending",
+    packages: "Packages",
     categories: "Categories",
     restrictionGlutenFree: "Gluten-free",
     restrictionLactoseFree: "Lactose-free",

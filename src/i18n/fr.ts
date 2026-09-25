@@ -370,6 +370,7 @@ export const fr: Dictionary = {
     fastFood: "Fast-food",
     grilled: "Grillades",
     trending: "Tendance",
+    packages: "Forfaits",
     categories: "Catégories",
     restrictionGlutenFree: "Sans gluten",
     restrictionLactoseFree: "Sans lactose",
