@@ -303,9 +303,6 @@ function AdminDashboard() {
           )}
         </section>
 
-        {/* ---------- Quem viu o seu perfil (em destaque) ---------- */}
-        <ProfileViewersCard restaurantId={restaurantId} />
-
         {/* ---------- Visão geral ---------- */}
         <StatSection title={t("adminIndex.overviewTitle")} hint={t("adminIndex.overviewHint")}>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
@@ -503,6 +500,9 @@ function AdminDashboard() {
             {t("adminIndex.viewProfile")}
           </Link>
         </div>
+
+        {/* ---------- Quem viu o seu perfil (última secção) ---------- */}
+        <ProfileViewersCard restaurantId={restaurantId} />
       </div>
     </div>
   );

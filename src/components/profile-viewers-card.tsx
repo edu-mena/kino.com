@@ -13,7 +13,7 @@ const dateLocales = { pt: ptBR, en: enUS, fr: frLocale };
 const PREVIEW = 5;
 
 /**
- * "Quem viu o seu perfil" em destaque no topo do painel: visitantes da
+ * "Quem viu o seu perfil" como última secção do painel: visitantes da
  * semana (com variação face à anterior), os últimos visitantes pelo nome e
  * o convite "siga-nos". O restaurante vê só nomes — nunca contactos.
  */
