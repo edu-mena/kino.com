@@ -37,7 +37,7 @@ import {
   TrendBadge,
 } from "@/components/admin-stats";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
-import { GoldBadge, GoldCustomerPopover } from "@/components/gold-customer";
+import { LoyaltyBadge, LoyaltyCustomerPopover } from "@/components/loyalty-badge";
 import { LocationMap } from "@/components/location-map";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -65,6 +65,7 @@ import {
 import { fetchApiRestaurantPaymentDetails } from "@/data/api-restaurants";
 import { customerKey } from "@/lib/customer";
 import { formatKz } from "@/lib/format";
+import { isPremiumTier } from "@/lib/loyalty";
 import { useRestaurantLoyalty } from "@/lib/use-loyalty";
 import { hasRealBackend } from "@/lib/api-client";
 import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
@@ -165,7 +166,7 @@ function weekStart(d: Date) {
 
 function AdminPedidos() {
   const { restaurant } = useRestaurantAdmin();
-  // Clientes Gold (ver @/lib/loyalty) — selo na lista e ficha rápida no detalhe.
+  // Clientes Gold/Platina (ver @/lib/loyalty) — selo na lista e ficha rápida no detalhe.
   const loyaltyOf = useRestaurantLoyalty(restaurant?.id);
   const deliveryPolicy = useDeliveryPolicy();
   const {
@@ -715,11 +716,14 @@ function AdminPedidos() {
                                     o.deliveryAddress?.label ||
                                     t("adminPedidos.customerFallback")}
                                 </span>
-                                {loyaltyOf({
-                                  email: o.customerEmail,
-                                  phone: o.customerPhone,
-                                  name: o.customerName,
-                                })?.tier === "gold" && <GoldBadge />}
+                                {(() => {
+                                  const tier = loyaltyOf({
+                                    email: o.customerEmail,
+                                    phone: o.customerPhone,
+                                    name: o.customerName,
+                                  })?.tier;
+                                  return isPremiumTier(tier) ? <LoyaltyBadge tier={tier} /> : null;
+                                })()}
                               </span>
                               <span className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
                                 {o.deliveryAddress ? (
@@ -820,15 +824,14 @@ function AdminPedidos() {
                                     phone: active.customerPhone,
                                     name: active.customerName,
                                   };
-                                  const stats = loyaltyOf(ref);
-                                  return stats?.tier === "gold" ? (
-                                    <GoldCustomerPopover
-                                      stats={stats}
+                                  return (
+                                    <LoyaltyCustomerPopover
+                                      stats={loyaltyOf(ref)}
                                       name={active.customerName}
                                       phone={active.customerPhone}
                                       customerKey={customerKey(ref)}
                                     />
-                                  ) : null;
+                                  );
                                 })()}
                               </div>
                               <p className="mt-0.5 text-xs text-muted-foreground">

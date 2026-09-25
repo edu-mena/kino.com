@@ -2552,19 +2552,31 @@ export const fr: Dictionary = {
   },
   loyalty: {
     gold: "Gold",
+    platinum: "Platine",
     segmentGold: "Clients Gold",
-    cardTitle: "Client Gold",
-    openCardAria: "Voir la fiche client Gold de {name}",
-    honored: "Réservations et commandes honorées",
+    segmentPlatinum: "Clients Platine",
+    cardTitle: {
+      gold: "Client Gold",
+      platinum: "Client Platine",
+    },
+    openCardAria: "Voir la fiche client {tier} de {name}",
     spend: "Total dépensé",
-    rule: "Gold = plus de {visits} réservations et commandes honorées, ou {spend} dépensés (commandes, frais et cautions).",
-    adminProgress:
-      "Il manque {visits} réservations/commandes honorées ou {spend} dépensés pour Gold.",
+    rule: "Gold à partir de {gold} dépensés, Platine au-delà de {platinum} (commandes, frais et cautions, dans ce restaurant).",
+    adminRemaining: {
+      gold: "Encore {spend} de consommation pour Gold.",
+      platinum: "Encore {spend} de consommation pour Platine.",
+    },
     openProfile: "Voir la fiche client",
-    youAreGold: "Vous êtes client Gold chez {name}. Merci de votre fidélité !",
+    youAre: {
+      gold: "Vous êtes client Gold chez {name}. Merci de votre fidélité !",
+      platinum: "Vous êtes client Platine chez {name}. Merci de votre fidélité !",
+    },
     progressTitle: "En route vers Gold",
-    progressHint: "Encore {visits} réservations ou commandes, ou {spend} de consommation.",
-    profileTitle: "Client Gold",
-    profileHint: "Les restaurants où vous êtes déjà client Gold.",
+    remaining: {
+      gold: "Encore {spend} de consommation pour devenir client Gold.",
+      platinum: "Encore {spend} de consommation pour devenir client Platine.",
+    },
+    profileTitle: "Client Gold et Platine",
+    profileHint: "Les restaurants où vous êtes déjà client Gold ou Platine.",
   },
 };

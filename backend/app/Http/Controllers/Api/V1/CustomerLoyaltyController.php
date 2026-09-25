@@ -8,7 +8,7 @@ use App\Services\CustomerLoyaltyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-/** Clientes Gold — regra em CustomerLoyaltyService. */
+/** Clientes Gold/Platina (só pelo gasto) — regra em CustomerLoyaltyService. */
 class CustomerLoyaltyController extends Controller
 {
     public function __construct(private readonly CustomerLoyaltyService $loyalty) {}
@@ -45,12 +45,12 @@ class CustomerLoyaltyController extends Controller
         ]);
     }
 
-    /** @return array{visits: int, spend: int} */
+    /** @return array{gold: int, platinumAbove: int} */
     private function thresholds(): array
     {
         return [
-            'visits' => CustomerLoyaltyService::GOLD_MIN_VISITS,
-            'spend' => CustomerLoyaltyService::GOLD_MIN_SPEND,
+            'gold' => CustomerLoyaltyService::GOLD_MIN_SPEND,
+            'platinumAbove' => CustomerLoyaltyService::PLATINUM_ABOVE_SPEND,
         ];
     }
 }

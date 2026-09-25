@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/api-client";
 import type { LoyaltyTier } from "@/lib/loyalty";
 
-/** Clientes Gold — backend/app/Http/Controllers/Api/V1/CustomerLoyaltyController.php.
+/** Clientes Gold/Platina — backend/app/Http/Controllers/Api/V1/CustomerLoyaltyController.php.
  * Só com `hasRealBackend`. */
 
 export type ApiCustomerLoyalty = {
@@ -9,7 +9,6 @@ export type ApiCustomerLoyalty = {
   email: string | null;
   phone: string | null;
   name: string | null;
-  honoredCount: number;
   spend: number;
   tier: LoyaltyTier;
 };
@@ -27,7 +26,6 @@ export async function fetchApiRestaurantLoyalty(
 
 export type ApiOwnLoyalty = {
   restaurantId: string;
-  honoredCount: number;
   spend: number;
   tier: LoyaltyTier;
 };

@@ -14,7 +14,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import icon from "@/assets/icon.png";
 import { FollowBar } from "@/components/follow-button";
-import { OwnGoldStatus } from "@/components/gold-customer";
+import { OwnLoyaltyStatus } from "@/components/loyalty-badge";
 import { LocationMap } from "@/components/location-map";
 import { MenuBrowser } from "@/components/menu-browser";
 import { ReservationDialog } from "@/components/reservation-dialog";
@@ -291,7 +291,10 @@ function RestaurantDetail() {
         </div>
 
         <div className="mt-4 empty:hidden">
-          <OwnGoldStatus stats={ownLoyalty.get(restaurant.id)} restaurantName={restaurant.name} />
+          <OwnLoyaltyStatus
+            stats={ownLoyalty.get(restaurant.id)}
+            restaurantName={restaurant.name}
+          />
         </div>
 
         <div className="mt-4">

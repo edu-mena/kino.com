@@ -22,7 +22,7 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
-import { GoldBadge, GoldCustomerPopover } from "@/components/gold-customer";
+import { LoyaltyBadge, LoyaltyCustomerPopover } from "@/components/loyalty-badge";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { ReservationFloorPlan } from "@/components/reservation-floor-plan";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -30,6 +30,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useTranslation, type Locale } from "@/i18n";
 import { customerKey } from "@/lib/customer";
 import { formatKz } from "@/lib/format";
+import { isPremiumTier } from "@/lib/loyalty";
 import { useRestaurantLoyalty } from "@/lib/use-loyalty";
 import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
 import { useReservations } from "@/lib/reservations";
@@ -87,7 +88,7 @@ function weekStart(d: Date) {
 
 function AdminReservas() {
   const { restaurant } = useRestaurantAdmin();
-  // Clientes Gold (ver @/lib/loyalty) — selo na lista e ficha rápida no detalhe.
+  // Clientes Gold/Platina (ver @/lib/loyalty) — selo na lista e ficha rápida no detalhe.
   const loyaltyOf = useRestaurantLoyalty(restaurant?.id);
   const { reservations, updateReservationStatus, setInvoice, confirmCaution, assignTable } =
     useReservations();
@@ -611,11 +612,14 @@ function AdminReservas() {
                                 <span className="truncate text-sm font-semibold text-foreground">
                                   {r.customerName}
                                 </span>
-                                {loyaltyOf({
-                                  email: r.customerEmail,
-                                  phone: r.customerPhone,
-                                  name: r.customerName,
-                                })?.tier === "gold" && <GoldBadge />}
+                                {(() => {
+                                  const tier = loyaltyOf({
+                                    email: r.customerEmail,
+                                    phone: r.customerPhone,
+                                    name: r.customerName,
+                                  })?.tier;
+                                  return isPremiumTier(tier) ? <LoyaltyBadge tier={tier} /> : null;
+                                })()}
                               </span>
                               <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                                 <Users className="h-3 w-3 shrink-0" />
@@ -678,15 +682,14 @@ function AdminReservas() {
                                     phone: active.customerPhone,
                                     name: active.customerName,
                                   };
-                                  const stats = loyaltyOf(ref);
-                                  return stats?.tier === "gold" ? (
-                                    <GoldCustomerPopover
-                                      stats={stats}
+                                  return (
+                                    <LoyaltyCustomerPopover
+                                      stats={loyaltyOf(ref)}
                                       name={active.customerName}
                                       phone={active.customerPhone}
                                       customerKey={customerKey(ref)}
                                     />
-                                  ) : null;
+                                  );
                                 })()}
                               </div>
                               <p className="mt-0.5 text-xs text-muted-foreground">

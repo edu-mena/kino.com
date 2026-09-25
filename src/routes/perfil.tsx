@@ -16,7 +16,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { CompanyFormDialog } from "@/components/company-form-dialog";
-import { OwnGoldRestaurants } from "@/components/gold-customer";
+import { OwnPremiumRestaurants } from "@/components/loyalty-badge";
 import { PageShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
 import { UseCurrentLocationField } from "@/components/use-current-location-field";
@@ -224,7 +224,7 @@ function Perfil() {
           </div>
         </div>
 
-        <OwnGoldRestaurants />
+        <OwnPremiumRestaurants />
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <div className="card-soft divide-y divide-border">

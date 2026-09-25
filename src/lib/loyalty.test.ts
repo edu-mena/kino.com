@@ -4,11 +4,10 @@ import {
   computeOwnLoyalty,
   computeRestaurantLoyalty,
   GOLD_MIN_SPEND,
-  progressToGold,
+  nextTier,
+  PLATINUM_ABOVE_SPEND,
   tierFor,
 } from "./loyalty";
-
-const now = new Date("2026-10-10T12:00:00");
 
 function resv(over: Partial<Reservation> = {}): Reservation {
   return {
@@ -54,12 +53,18 @@ const order = (over: Partial<O> = {}): O => ({
 });
 const total = (o: O) => o.total;
 
-describe("cliente Gold", () => {
-  it("mais de 25 cumpridos (26) ou 500.000 Kz", () => {
-    expect(tierFor(25, 0)).toBe("regular");
-    expect(tierFor(26, 0)).toBe("gold");
-    expect(tierFor(0, GOLD_MIN_SPEND - 1)).toBe("regular");
-    expect(tierFor(0, GOLD_MIN_SPEND)).toBe("gold");
+describe("níveis de cliente (só pelo gasto)", () => {
+  it("Gold a partir de 500.000 Kz, Platina só acima de 1.000.000 Kz", () => {
+    expect(tierFor(GOLD_MIN_SPEND - 1)).toBe("regular");
+    expect(tierFor(GOLD_MIN_SPEND)).toBe("gold");
+    expect(tierFor(PLATINUM_ABOVE_SPEND)).toBe("gold");
+    expect(tierFor(PLATINUM_ABOVE_SPEND + 1)).toBe("platinum");
+  });
+
+  it("muitas visitas sem gasto não dão nível nenhum", () => {
+    const reservations = Array.from({ length: 40 }, () => resv());
+    const map = computeRestaurantLoyalty("r1", reservations, [], total);
+    expect(map.get("ana@example.com")).toEqual({ spend: 0, tier: "regular" });
   });
 
   it("soma pedidos cumpridos (com taxas) e cauções pagas; ignora o resto", () => {
@@ -67,17 +72,12 @@ describe("cliente Gold", () => {
       "r1",
       [
         resv({ cautionAmount: 50_000, cautionStatus: "Paga (Garantia)" }),
-        resv({ status: "Recusada" }),
-        resv({ status: "Não compareceu" }),
-        resv({ date: "2026-10-20" }), // confirmada, mas ainda não aconteceu
         resv({ status: "Cancelada", cautionAmount: 90_000, cautionStatus: "Reembolsada" }),
       ],
       [order({ total: 450_000 }), order({ status: "canceled", total: 900_000 })],
       total,
-      now,
     );
-    const stats = map.get("ana@example.com");
-    expect(stats).toEqual({ honoredCount: 2, spend: 500_000, tier: "gold" });
+    expect(map.get("ana@example.com")).toEqual({ spend: 500_000, tier: "gold" });
   });
 
   it("é por restaurante", () => {
@@ -86,27 +86,25 @@ describe("cliente Gold", () => {
       [],
       [order({ total: 900_000 }), order({ restaurantId: "r2", total: 10 })],
       total,
-      now,
     );
     expect(map.get("ana@example.com")?.tier).toBe("regular");
   });
 
-  it("cliente vê o próprio estatuto por restaurante", () => {
+  it("cliente vê o próprio nível por restaurante", () => {
     const map = computeOwnLoyalty(
       "ana@example.com",
-      [resv(), resv({ ownerKey: "outra" })],
-      [order({ restaurantId: "r2", total: 600_000 })],
+      [resv(), resv({ ownerKey: "outra", cautionAmount: 999_999, cautionStatus: "Paga" })],
+      [order({ restaurantId: "r2", total: 1_200_000 })],
       total,
-      now,
     );
-    expect(map.get("r1")).toEqual({ honoredCount: 1, spend: 0, tier: "regular" });
-    expect(map.get("r2")?.tier).toBe("gold");
+    expect(map.get("r1")).toEqual({ spend: 0, tier: "regular" });
+    expect(map.get("r2")?.tier).toBe("platinum");
   });
 
-  it("progresso: basta uma das metas", () => {
-    const p = progressToGold({ honoredCount: 13, spend: 400_000 });
-    expect(p.remainingVisits).toBe(13);
-    expect(p.remainingSpend).toBe(100_000);
-    expect(p.ratio).toBeCloseTo(0.8);
+  it("quanto falta para o nível seguinte", () => {
+    expect(nextTier(400_000)).toEqual({ tier: "gold", remaining: 100_000, ratio: 0.8 });
+    expect(nextTier(1_000_000)?.tier).toBe("platinum");
+    expect(nextTier(1_000_000)?.remaining).toBe(1);
+    expect(nextTier(1_500_000)).toBeNull();
   });
 });

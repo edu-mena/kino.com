@@ -19,7 +19,7 @@ type CustomerRef = {
 };
 
 /**
- * Estatuto (Gold ou não) de cada cliente do restaurante gerido — para o
+ * Estatuto (regular, Gold ou Platina) de cada cliente do restaurante gerido — para o
  * painel. Com backend real vem do servidor (a regra vive lá, ver
  * CustomerLoyaltyService); na demo, calculado dos pedidos/reservas locais.
  * Devolve uma função de consulta por email/telefone/nome.
@@ -65,7 +65,7 @@ export function useRestaurantLoyalty(restaurantId: string | undefined) {
     const byEmail = new Map<string, LoyaltyStats>();
     const byPhone = new Map<string, LoyaltyStats>();
     for (const r of apiRows) {
-      const stats = { honoredCount: r.honoredCount, spend: r.spend, tier: r.tier };
+      const stats = { spend: r.spend, tier: r.tier };
       if (r.email) byEmail.set(r.email.toLowerCase(), stats);
       if (r.phone) byPhone.set(r.phone, stats);
     }
@@ -102,14 +102,7 @@ export function useOwnLoyalty(): Map<string, LoyaltyStats> {
     fetchApiOwnLoyalty(token)
       .then((rows) => {
         if (cancelled) return;
-        setApiMap(
-          new Map(
-            rows.map((r) => [
-              r.restaurantId,
-              { honoredCount: r.honoredCount, spend: r.spend, tier: r.tier },
-            ]),
-          ),
-        );
+        setApiMap(new Map(rows.map((r) => [r.restaurantId, { spend: r.spend, tier: r.tier }])));
       })
       .catch(() => {});
     return () => {

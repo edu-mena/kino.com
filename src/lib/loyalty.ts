@@ -2,38 +2,53 @@ import type { Reservation } from "@/data/types";
 import { customerKey } from "@/lib/customer";
 
 /**
- * Cliente Gold de um restaurante — espelha
+ * Estatuto do cliente num restaurante, só pelo que gastou lá — espelha
  * backend/app/Services/CustomerLoyaltyService.php (o servidor decide com
  * backend real; isto serve o modo demo e as contas de progresso).
  *
- * Gold = mais de 25 (26+) reservas e pedidos cumpridos, OU gasto de
- * 500.000 Kz ou mais (pedidos com taxas + cauções pagas). Por restaurante.
+ * - Gold: 500.000 Kz ou mais;
+ * - Platina: acima de 1.000.000 Kz.
+ * Gasto = pedidos cumpridos (com taxas) + cauções pagas. Por restaurante.
  */
-export const GOLD_MIN_VISITS = 26;
 export const GOLD_MIN_SPEND = 500_000;
+export const PLATINUM_ABOVE_SPEND = 1_000_000;
 
-export type LoyaltyTier = "gold" | "regular";
+export type LoyaltyTier = "regular" | "gold" | "platinum";
 
 export type LoyaltyStats = {
-  honoredCount: number;
   spend: number;
   tier: LoyaltyTier;
 };
 
-export function tierFor(honoredCount: number, spend: number): LoyaltyTier {
-  return honoredCount >= GOLD_MIN_VISITS || spend >= GOLD_MIN_SPEND ? "gold" : "regular";
+export function tierFor(spend: number): LoyaltyTier {
+  if (spend > PLATINUM_ABOVE_SPEND) return "platinum";
+  return spend >= GOLD_MIN_SPEND ? "gold" : "regular";
 }
 
-/** O que falta para Gold — basta UMA das duas metas. */
-export function progressToGold(stats: Pick<LoyaltyStats, "honoredCount" | "spend">) {
+/** Gold ou Platina — os que têm destaque no painel. */
+export function isPremiumTier(tier: LoyaltyTier | undefined): tier is "gold" | "platinum" {
+  return tier === "gold" || tier === "platinum";
+}
+
+/** Próximo nível e quanto falta para lá chegar (`null` já em Platina). */
+export function nextTier(
+  spend: number,
+): { tier: "gold" | "platinum"; remaining: number; ratio: number } | null {
+  const tier = tierFor(spend);
+  if (tier === "platinum") return null;
+  if (tier === "gold") {
+    // "Acima de" 1.000.000: falta chegar a 1.000.000 e passar por 1 Kz.
+    const target = PLATINUM_ABOVE_SPEND + 1;
+    return {
+      tier: "platinum",
+      remaining: Math.max(0, target - spend),
+      ratio: Math.min(1, (spend - GOLD_MIN_SPEND) / (target - GOLD_MIN_SPEND)),
+    };
+  }
   return {
-    remainingVisits: Math.max(0, GOLD_MIN_VISITS - stats.honoredCount),
-    remainingSpend: Math.max(0, GOLD_MIN_SPEND - stats.spend),
-    /** 0–1, a meta mais perto de ser atingida. */
-    ratio: Math.min(
-      1,
-      Math.max(stats.honoredCount / GOLD_MIN_VISITS, stats.spend / GOLD_MIN_SPEND),
-    ),
+    tier: "gold",
+    remaining: Math.max(0, GOLD_MIN_SPEND - spend),
+    ratio: Math.min(1, spend / GOLD_MIN_SPEND),
   };
 }
 
@@ -48,19 +63,25 @@ type OrderLike = {
   ownerKey?: string | undefined;
 };
 
-function isHonoredReservation(r: Reservation, today: string): boolean {
-  return r.status === "Confirmada" && r.date <= today;
-}
+const cautionSpend = (r: Reservation) => (r.cautionStatus.startsWith("Paga") ? r.cautionAmount : 0);
 
-function isPaidCaution(r: Reservation): boolean {
-  return r.cautionStatus.startsWith("Paga");
-}
-
-function todayIso(now = new Date()): string {
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+function sumByKey<O extends OrderLike>(
+  reservations: Reservation[],
+  orders: O[],
+  orderTotal: (o: O) => number,
+  keyOfReservation: (r: Reservation) => string | null,
+  keyOfOrder: (o: O) => string | null,
+): Map<string, LoyaltyStats> {
+  const spend = new Map<string, number>();
+  const add = (key: string | null, amount: number) => {
+    if (!key) return;
+    spend.set(key, (spend.get(key) ?? 0) + amount);
+  };
+  for (const r of reservations) add(keyOfReservation(r), cautionSpend(r));
+  for (const o of orders) {
+    add(keyOfOrder(o), HONORED_ORDER_STATUSES.has(o.status) ? orderTotal(o) : 0);
+  }
+  return new Map([...spend].map(([k, s]) => [k, { spend: s, tier: tierFor(s) }]));
 }
 
 /** Estatuto de cada cliente de UM restaurante, pela mesma chave que a
@@ -71,71 +92,35 @@ export function computeRestaurantLoyalty<O extends OrderLike>(
   reservations: Reservation[],
   orders: O[],
   orderTotal: (o: O) => number,
-  now = new Date(),
 ): Map<string, LoyaltyStats> {
-  const today = todayIso(now);
-  const acc = new Map<string, { honoredCount: number; spend: number }>();
-  const add = (key: string, honored: number, spend: number) => {
-    if (!key) return;
-    const cur = acc.get(key) ?? { honoredCount: 0, spend: 0 };
-    acc.set(key, { honoredCount: cur.honoredCount + honored, spend: cur.spend + spend });
-  };
-
-  for (const r of reservations) {
-    if (r.restaurantId !== restaurantId) continue;
-    const key = customerKey({
-      email: r.customerEmail,
-      phone: r.customerPhone,
-      name: r.customerName,
-    });
-    add(key, isHonoredReservation(r, today) ? 1 : 0, isPaidCaution(r) ? r.cautionAmount : 0);
-  }
-  for (const o of orders) {
-    if (o.restaurantId !== restaurantId) continue;
-    const key = customerKey({
-      email: o.customerEmail,
-      phone: o.customerPhone,
-      name: o.customerName,
-    });
-    const honored = HONORED_ORDER_STATUSES.has(o.status);
-    add(key, honored ? 1 : 0, honored ? orderTotal(o) : 0);
-  }
-
-  return new Map(
-    [...acc].map(([key, s]) => [key, { ...s, tier: tierFor(s.honoredCount, s.spend) }]),
+  return sumByKey(
+    reservations,
+    orders,
+    orderTotal,
+    (r) =>
+      r.restaurantId === restaurantId
+        ? customerKey({ email: r.customerEmail, phone: r.customerPhone, name: r.customerName })
+        : null,
+    (o) =>
+      o.restaurantId === restaurantId
+        ? customerKey({ email: o.customerEmail, phone: o.customerPhone, name: o.customerName })
+        : null,
   );
 }
 
 /** Estatuto do próprio cliente em cada restaurante (demo) — só os
- * registos dele (`ownerKey`). */
+ * registos dele (`ownerKey`), por id de restaurante. */
 export function computeOwnLoyalty<O extends OrderLike>(
   ownerKey: string,
   reservations: Reservation[],
   orders: O[],
   orderTotal: (o: O) => number,
-  now = new Date(),
 ): Map<string, LoyaltyStats> {
-  const today = todayIso(now);
-  const acc = new Map<string, { honoredCount: number; spend: number }>();
-  const add = (restaurantId: string, honored: number, spend: number) => {
-    const cur = acc.get(restaurantId) ?? { honoredCount: 0, spend: 0 };
-    acc.set(restaurantId, {
-      honoredCount: cur.honoredCount + honored,
-      spend: cur.spend + spend,
-    });
-  };
-  for (const r of reservations) {
-    if (r.ownerKey !== ownerKey) continue;
-    add(
-      r.restaurantId,
-      isHonoredReservation(r, today) ? 1 : 0,
-      isPaidCaution(r) ? r.cautionAmount : 0,
-    );
-  }
-  for (const o of orders) {
-    if (o.ownerKey !== ownerKey) continue;
-    const honored = HONORED_ORDER_STATUSES.has(o.status);
-    add(o.restaurantId, honored ? 1 : 0, honored ? orderTotal(o) : 0);
-  }
-  return new Map([...acc].map(([id, s]) => [id, { ...s, tier: tierFor(s.honoredCount, s.spend) }]));
+  return sumByKey(
+    reservations,
+    orders,
+    orderTotal,
+    (r) => (r.ownerKey === ownerKey ? r.restaurantId : null),
+    (o) => (o.ownerKey === ownerKey ? o.restaurantId : null),
+  );
 }
