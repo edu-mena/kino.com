@@ -247,12 +247,12 @@ export const fr: Dictionary = {
   favoritos: {
     eyebrow: "Favoris",
     title: "Vos favoris",
-    tabDishes: "Plats",
+    tabDishes: "Plats et boissons",
     tabRestaurants: "Abonnements",
     emptyText:
       "Vous ne suivez encore aucun restaurant. Suivez vos préférés pour recevoir leurs nouvelles stories, promotions et prix.",
     emptyDishes:
-      "Vous n'avez encore sauvegardé aucun plat. Touchez le cœur d'un plat pour le sauvegarder ici.",
+      "Vous n'avez encore sauvegardé aucun plat ni boisson. Touchez le cœur pour le sauvegarder ici — vos favoris nous aident à vous recommander des choses similaires.",
     explore: "Explorer les restaurants",
     exploreDishes: "Explorer les plats",
   },

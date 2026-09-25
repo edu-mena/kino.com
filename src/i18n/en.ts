@@ -245,11 +245,12 @@ export const en: Dictionary = {
   favoritos: {
     eyebrow: "Favorites",
     title: "Your favorites",
-    tabDishes: "Dishes",
+    tabDishes: "Dishes & drinks",
     tabRestaurants: "Following",
     emptyText:
       "You don't follow any restaurant yet. Follow your favourites to get their new stories, promotions and prices.",
-    emptyDishes: "You haven't saved any dish yet. Tap the heart on a dish to save it here.",
+    emptyDishes:
+      "You haven't saved any dish or drink yet. Tap the heart to save it here — we use your favourites to recommend similar things.",
     explore: "Explore restaurants",
     exploreDishes: "Explore dishes",
   },

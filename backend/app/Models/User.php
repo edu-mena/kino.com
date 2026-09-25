@@ -82,6 +82,13 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    /** Pratos e bebidas favoritos (favoritos são só itens do cardápio —
+     * restaurantes são seguidos, ver followedRestaurants). */
+    public function favoriteMenuItems(): BelongsToMany
+    {
+        return $this->belongsToMany(MenuItem::class, 'menu_item_favorites')->withTimestamps();
+    }
+
     public function preferences(): HasOne
     {
         return $this->hasOne(UserPreference::class);

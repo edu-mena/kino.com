@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\CourierController;
 use App\Http\Controllers\Api\V1\CustomerNoteController;
 use App\Http\Controllers\Api\V1\DeliveryPolicyController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
+use App\Http\Controllers\Api\V1\FavoriteMenuItemController;
 use App\Http\Controllers\Api\V1\FollowController;
 use App\Http\Controllers\Api\V1\MenuItemController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -246,6 +247,12 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('restaurants/{restaurant}/follow', [FollowController::class, 'store']);
     Route::patch('restaurants/{restaurant}/follow', [FollowController::class, 'update']);
     Route::delete('restaurants/{restaurant}/follow', [FollowController::class, 'destroy']);
+
+    // Favoritos = só pratos e bebidas (ver FavoriteMenuItemController).
+    Route::get('favorites/menu-items', [FavoriteMenuItemController::class, 'index']);
+    Route::post('favorites/menu-items/sync', [FavoriteMenuItemController::class, 'sync']);
+    Route::post('menu-items/{menuItem}/favorite', [FavoriteMenuItemController::class, 'store']);
+    Route::delete('menu-items/{menuItem}/favorite', [FavoriteMenuItemController::class, 'destroy']);
 
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::get('restaurants/{restaurant}/notifications', [NotificationController::class, 'indexForRestaurant']);

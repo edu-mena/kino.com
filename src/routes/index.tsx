@@ -174,7 +174,13 @@ function SectionHeading({
 function HomeLoggedIn() {
   const { t } = useTranslation();
   const { items } = useMenuItems();
-  const { cuisinePreferences, excludedIngredients, dietaryRestrictions } = usePreferences();
+  const {
+    cuisinePreferences,
+    excludedIngredients,
+    dietaryRestrictions,
+    favoriteDishIds,
+    favoriteIngredients,
+  } = usePreferences();
   const { selected: selectedAddress } = useLocation();
   const { data: packageTypes = [] } = usePackageTypesWithOffers();
 
@@ -210,9 +216,20 @@ function HomeLoggedIn() {
         excludedIngredients,
         dietaryRestrictions,
         ownListReason: t("home.dishConflictOwnListReason"),
+        favoriteItemIds: favoriteDishIds,
+        favoriteIngredients,
         limit: 10,
       }),
-    [items, selectedAddress, cuisinePreferences, excludedIngredients, dietaryRestrictions, t],
+    [
+      items,
+      selectedAddress,
+      cuisinePreferences,
+      excludedIngredients,
+      dietaryRestrictions,
+      favoriteDishIds,
+      favoriteIngredients,
+      t,
+    ],
   );
 
   return (

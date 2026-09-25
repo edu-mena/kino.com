@@ -1,4 +1,10 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  favoriteApiMenuItem,
+  fetchApiFavoriteMenuItems,
+  syncApiFavoriteMenuItems,
+  unfavoriteApiMenuItem,
+} from "@/data/api-favorites";
 import { fetchApiPreferences, updateApiPreferences } from "@/data/api-preferences";
 import { hasRealBackend } from "@/lib/api-client";
 import { getAuthToken, useAuth } from "@/lib/auth";
@@ -70,9 +76,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // `dietaryRestrictions` é o único campo aqui com equivalente real no
-  // backend (ver @/data/api-preferences) — as outras preferências
-  // (favoritos, faixa de preço, etc.) continuam só em localStorage. Sem
+  // `dietaryRestrictions` e os pratos/bebidas favoritos são os campos aqui
+  // com equivalente real no backend (ver @/data/api-preferences e
+  // @/data/api-favorites) — as outras preferências (faixa de preço, etc.)
+  // continuam só em localStorage. Sem
   // isto, a conta "esquecia" as restrições ao trocar de browser/
   // dispositivo, e o card de onboarding (@/lib/tutorial) reaparecia
   // sempre — o próprio bug reportado.
@@ -88,6 +95,42 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         // best-effort — mantém o que já estava em localStorage
       });
   }, [isLoggedIn]);
+
+  // Pratos/bebidas favoritos acompanham a conta (backend real): no login,
+  // os que estavam guardados só neste browser juntam-se aos da conta (nunca
+  // os substituem), e a lista da conta passa a ser a verdade daqui em diante.
+  useEffect(() => {
+    if (!hasRealBackend || !isLoggedIn) return;
+    const token = getAuthToken();
+    if (!token) return;
+    let local: string[] = [];
+    try {
+      local =
+        (JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as { favoriteDishIds?: string[] })
+          .favoriteDishIds ?? [];
+    } catch {
+      local = [];
+    }
+    const request =
+      local.length > 0 ? syncApiFavoriteMenuItems(local, token) : fetchApiFavoriteMenuItems(token);
+    request.then(applyServerFavorites).catch(() => {
+      // best-effort — continua com a lista local
+    });
+  }, [isLoggedIn]);
+
+  /** Lista de favoritos devolvida pelo servidor vira a verdade local. */
+  function applyServerFavorites(ids: string[]) {
+    setPrefs((cur) => {
+      const next = { ...cur, favoriteDishIds: ids };
+      try {
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as object;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...stored, favoriteDishIds: ids }));
+      } catch {
+        // localStorage indisponível — fica só em memória
+      }
+      return next;
+    });
+  }
 
   const persist = (next: Preferences) => {
     setPrefs(next);
@@ -113,13 +156,25 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const value: PreferencesValue = {
     ...prefs,
     isFavoriteDish: (dishId) => prefs.favoriteDishIds.includes(dishId),
-    toggleFavoriteDish: (dishId) =>
+    toggleFavoriteDish: (dishId) => {
+      const wasFavorite = prefs.favoriteDishIds.includes(dishId);
       persist({
         ...prefs,
-        favoriteDishIds: prefs.favoriteDishIds.includes(dishId)
+        favoriteDishIds: wasFavorite
           ? prefs.favoriteDishIds.filter((id) => id !== dishId)
           : [...prefs.favoriteDishIds, dishId],
-      }),
+      });
+      // Convidado: fica só neste browser até entrar (ver sync acima).
+      if (!hasRealBackend || !isLoggedIn) return;
+      const token = getAuthToken();
+      if (!token) return;
+      const request = wasFavorite
+        ? unfavoriteApiMenuItem(dishId, token)
+        : favoriteApiMenuItem(dishId, token);
+      request.then(applyServerFavorites).catch(() => {
+        // best-effort — a UI já refletiu localmente; o próximo login volta a sincronizar
+      });
+    },
     setDietaryRestrictions: (list) => {
       persist({ ...prefs, dietaryRestrictions: list });
       if (!hasRealBackend) return;

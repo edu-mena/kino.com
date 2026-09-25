@@ -6,7 +6,7 @@ import { DishCard } from "@/components/dish-card";
 import { EmptyState } from "@/components/empty-state";
 import { FollowBar } from "@/components/follow-button";
 import { PageHeading, PageShell } from "@/components/site-shell";
-import { getMenuItem } from "@/data/helpers";
+import { useMenuItems } from "@/data/use-menu-items";
 import { useRestaurants } from "@/data/use-restaurants-query";
 import { useFollows } from "@/lib/follows";
 import { usePreferences } from "@/lib/preferences";
@@ -33,6 +33,9 @@ function Favoritos() {
   const { favoriteDishIds } = usePreferences();
   const { follows } = useFollows();
   const { data: restaurants = [] } = useRestaurants();
+  // Todos os itens (mock ou API) — um favorito resolve-se pelo id em
+  // qualquer modo, não só no dataset local.
+  const { items: allItems } = useMenuItems();
   const { t } = useTranslation();
 
   // Restaurantes seguidos, pela ordem em que foram seguidos (mais recente
@@ -43,9 +46,12 @@ function Favoritos() {
       .map((f) => byId.get(f.restaurantId))
       .filter((r): r is NonNullable<typeof r> => r != null);
   }, [follows, restaurants]);
-  const favoriteDishes = favoriteDishIds
-    .map((id) => getMenuItem(id))
-    .filter((item): item is NonNullable<typeof item> => item != null);
+  const favoriteDishes = useMemo(() => {
+    const byId = new Map(allItems.map((m) => [m.id, m]));
+    return favoriteDishIds
+      .map((id) => byId.get(id))
+      .filter((item): item is NonNullable<typeof item> => item != null);
+  }, [allItems, favoriteDishIds]);
 
   // Abre no separador que tem conteúdo — pratos por omissão.
   const [tab, setTab] = useState<Tab>(

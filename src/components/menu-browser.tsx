@@ -68,7 +68,13 @@ export function MenuBrowser({
   const effectiveRestaurantId = lockedRestaurantId ?? restaurantFilter?.id;
   const { t, locale } = useTranslation();
   const { items, loading: itemsLoading } = useMenuItems(lockedRestaurantId);
-  const { cuisinePreferences, excludedIngredients, dietaryRestrictions } = usePreferences();
+  const {
+    cuisinePreferences,
+    excludedIngredients,
+    dietaryRestrictions,
+    favoriteDishIds,
+    favoriteIngredients,
+  } = usePreferences();
   const { selected: selectedAddress } = useLocation();
   const addToBill = useAddToBill();
   const overallMaxPrice = useMemo(
@@ -204,6 +210,9 @@ export function MenuBrowser({
       excludedIngredients,
       dietaryRestrictions,
       ownListReason: t("home.dishConflictOwnListReason"),
+      favoriteItemIds: favoriteDishIds,
+      favoriteIngredients,
+      profileItems: items,
     });
   }, [
     filteredExceptPrice,
@@ -214,6 +223,9 @@ export function MenuBrowser({
     cuisinePreferences,
     excludedIngredients,
     dietaryRestrictions,
+    favoriteDishIds,
+    favoriteIngredients,
+    items,
     t,
   ]);
 

@@ -252,12 +252,12 @@ export const pt = {
   favoritos: {
     eyebrow: "Favoritos",
     title: "Os seus favoritos",
-    tabDishes: "Pratos",
+    tabDishes: "Pratos e bebidas",
     tabRestaurants: "A seguir",
     emptyText:
       "Ainda não segue nenhum restaurante. Siga os seus preferidos para receber os stories, as promoções e os preços novos.",
     emptyDishes:
-      "Ainda não guardou nenhum prato. Toque no coração de um prato para o guardar aqui.",
+      "Ainda não guardou nenhum prato nem bebida. Toque no coração para o guardar aqui — usamos os seus favoritos para lhe recomendar coisas parecidas.",
     explore: "Explorar restaurantes",
     exploreDishes: "Explorar pratos",
   },
