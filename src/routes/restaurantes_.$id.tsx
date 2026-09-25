@@ -284,56 +284,6 @@ function RestaurantDetail() {
           </div>
         </div>
 
-        {/* Pacotes — só aparece com pelo menos uma oferta ativa; cada card
-            já abre a reserva com esse pacote pré-selecionado. */}
-        {!suspended && restaurantPackages.length > 0 && (
-          <div className="mt-6">
-            <h2 className="font-display text-lg font-bold text-primary">
-              {t("restaurantDetail.packagesTitle")}
-            </h2>
-            <p className="text-xs text-muted-foreground">{t("restaurantDetail.packagesHint")}</p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {restaurantPackages.map((pkg) => {
-                const Icon = packageTypeIcon(pkg.packageType.icon);
-                return (
-                  <div key={pkg.id} className="card-soft p-4">
-                    <div className="flex items-center gap-2.5">
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand/10 text-brand">
-                        <Icon className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-foreground">
-                          {pkg.title ?? pkg.packageType.name}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {pkg.packageType.name}
-                        </p>
-                      </div>
-                    </div>
-                    {pkg.description && (
-                      <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
-                        {pkg.description}
-                      </p>
-                    )}
-                    <div className="mt-3 flex items-center justify-between gap-2">
-                      <span className="text-sm font-bold text-primary">{formatKz(pkg.price)}</span>
-                      {acceptsReservations && !paused && (
-                        <button
-                          type="button"
-                          onClick={() => openReservePackage(pkg)}
-                          className="rounded-lg border border-primary px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/5"
-                        >
-                          {t("restaurantDetail.reservePackage")}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         <div className="mt-4">
           {suspended ? (
             <div className="card-soft grid place-items-center gap-2 p-10 text-center">
@@ -579,6 +529,57 @@ function RestaurantDetail() {
             />
           )}
         </section>
+
+        {/* Pacotes — última secção da página, só aparece com pelo menos
+            uma oferta ativa; cada card já abre a reserva com esse pacote
+            pré-selecionado. */}
+        {!suspended && restaurantPackages.length > 0 && (
+          <div className="mt-6">
+            <h2 className="font-display text-lg font-bold text-primary">
+              {t("restaurantDetail.packagesTitle")}
+            </h2>
+            <p className="text-xs text-muted-foreground">{t("restaurantDetail.packagesHint")}</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {restaurantPackages.map((pkg) => {
+                const Icon = packageTypeIcon(pkg.packageType.icon);
+                return (
+                  <div key={pkg.id} className="card-soft p-4">
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand/10 text-brand">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-foreground">
+                          {pkg.title ?? pkg.packageType.name}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {pkg.packageType.name}
+                        </p>
+                      </div>
+                    </div>
+                    {pkg.description && (
+                      <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+                        {pkg.description}
+                      </p>
+                    )}
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <span className="text-sm font-bold text-primary">{formatKz(pkg.price)}</span>
+                      {acceptsReservations && !paused && (
+                        <button
+                          type="button"
+                          onClick={() => openReservePackage(pkg)}
+                          className="rounded-lg border border-primary px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/5"
+                        >
+                          {t("restaurantDetail.reservePackage")}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <ReservationDialog
