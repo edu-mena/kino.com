@@ -2,7 +2,9 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Bike, ChevronLeft, ChevronRight, MapPin, Star, TriangleAlert } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { PageShell } from "@/components/site-shell";
+import { fetchApiAllMenuItems } from "@/data/api-restaurants";
 import { getCommonIngredients, getMenuItemsByName, getRestaurant } from "@/data/helpers";
+import { hasRealBackend } from "@/lib/api-client";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
 import { computeDishConflicts } from "@/lib/use-dish-conflicts";
@@ -10,8 +12,12 @@ import { rankDishOfferings, type DishOffering } from "@/lib/rank-dish-offerings"
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/pratos/$dishName")({
-  loader: ({ params }) => {
-    const items = getMenuItemsByName(params.dishName);
+  // Assíncrono, mesmo padrão de `/prato/$dishId` — `getMenuItemsByName` só
+  // olha o catálogo mock, nunca encontrava pratos reais (backend real).
+  loader: async ({ params }) => {
+    const items = hasRealBackend
+      ? (await fetchApiAllMenuItems()).filter((m) => m.name === params.dishName)
+      : getMenuItemsByName(params.dishName);
     if (items.length === 0) throw notFound();
     return { items };
   },

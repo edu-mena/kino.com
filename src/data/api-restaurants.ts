@@ -69,6 +69,12 @@ type ApiRestaurant = {
 
 type ApiMenuItem = {
   id: string;
+  // Só vem preenchido se o backend tiver carregado a relação `restaurant`
+  // (ver `MenuItemController::show`) — `index`/`fetchApiMenuItems` não
+  // precisam disto, o `restaurantId` já é conhecido de fora (rota do
+  // restaurante); só o detalhe de UM prato (`/prato/$dishId`), que não
+  // sabe o restaurante de antemão, depende deste campo.
+  restaurantId?: string | null;
   // Só vem preenchido se o backend tiver carregado a relação `menu` (ver
   // `whenLoaded` em MenuItemResource.php) — sem isto, todo prato caía no
   // cardápio "sintético" de mock (`defaultMenuId`) em vez do cardápio real,
@@ -164,10 +170,10 @@ function mapIngredient(i: ApiMenuItem["ingredients"][number]): MenuItemIngredien
   };
 }
 
-export function mapApiMenuItem(m: ApiMenuItem, restaurantId: string): MenuItem {
+export function mapApiMenuItem(m: ApiMenuItem, restaurantId?: string): MenuItem {
   return {
     id: m.id,
-    restaurantId,
+    restaurantId: restaurantId ?? m.restaurantId ?? "",
     ...(m.menuId ? { menuId: m.menuId } : {}),
     name: m.name,
     description: m.description ?? "",
@@ -205,6 +211,18 @@ export async function fetchApiMenuItems(restaurantId: string): Promise<MenuItem[
     `/restaurants/${restaurantId}/menu-items`,
   );
   return data.map((m) => mapApiMenuItem(m, restaurantId));
+}
+
+/** UM prato pelo próprio id — `/prato/$dishId` só tem o id do prato, nunca
+ * o do restaurante (ao contrário de `fetchApiMenuItems`, sempre chamado já
+ * dentro do contexto de um restaurante conhecido). */
+export async function fetchApiMenuItem(id: string): Promise<MenuItem | undefined> {
+  try {
+    const { data } = await apiFetch<{ data: ApiMenuItem }>(`/menu-items/${id}`);
+    return mapApiMenuItem(data);
+  } catch {
+    return undefined;
+  }
 }
 
 /** Todos os pratos de todos os restaurantes — não há endpoint global no

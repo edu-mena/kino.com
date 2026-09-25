@@ -18,6 +18,15 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class MenuItemController extends Controller
 {
+    /** Público — página de detalhe de um prato (`/prato/$dishId`), que só
+     * tem o id do prato, nunca o do restaurante. Carrega `restaurant`
+     * (sem isto `MenuItemResource.restaurantId` vem vazio, ver
+     * `whenLoaded`) além do que `index` já carrega. */
+    public function show(MenuItem $menuItem): MenuItemResource
+    {
+        return new MenuItemResource($menuItem->load(['restaurant', 'menu', 'ingredients']));
+    }
+
     public function index(Request $request, Restaurant $restaurant): AnonymousResourceCollection
     {
         $items = QueryBuilder::for($restaurant->menuItems()->getQuery())

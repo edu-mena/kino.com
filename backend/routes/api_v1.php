@@ -86,6 +86,7 @@ Route::get('restaurants', [RestaurantController::class, 'index']);
 Route::get('restaurants/{restaurant}', [RestaurantController::class, 'show']);
 Route::get('restaurants/{restaurant}/menus', [RestaurantMenuController::class, 'index']);
 Route::get('restaurants/{restaurant}/menu-items', [MenuItemController::class, 'index']);
+Route::get('menu-items/{menuItem}', [MenuItemController::class, 'show']);
 
 // Escrita — sempre autenticada; autorização fina fica nas Policies/FormRequests
 // (ver RestaurantPolicy — staff só mexe no PRÓPRIO restaurante).

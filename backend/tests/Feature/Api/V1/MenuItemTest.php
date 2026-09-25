@@ -5,6 +5,24 @@ use App\Models\Restaurant;
 use App\Models\RestaurantMenu;
 use App\Models\User;
 
+test('detalhe público de um prato expõe o restaurantId, sem autenticação', function () {
+    $restaurant = Restaurant::factory()->create();
+    $menu = RestaurantMenu::factory()->for($restaurant)->create();
+    $item = MenuItem::factory()->for($restaurant)->create(['menu_id' => $menu->id, 'name' => 'Calulu de Peixe']);
+
+    $response = $this->getJson("/api/v1/menu-items/{$item->uuid}");
+
+    $response->assertOk()
+        ->assertJsonPath('data.name', 'Calulu de Peixe')
+        ->assertJsonPath('data.restaurantId', $restaurant->uuid)
+        ->assertJsonPath('data.menuId', $menu->uuid);
+});
+
+test('detalhe de um prato inexistente devolve 404', function () {
+    $this->getJson('/api/v1/menu-items/00000000-0000-0000-0000-000000000000')
+        ->assertStatus(404);
+});
+
 test('criar prato com ingredientes grava tudo numa transação', function () {
     $restaurant = Restaurant::factory()->create();
     $menu = RestaurantMenu::factory()->for($restaurant)->create();

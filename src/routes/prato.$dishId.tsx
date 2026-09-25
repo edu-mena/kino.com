@@ -5,9 +5,11 @@ import icon from "@/assets/icon.png";
 import { DishCard } from "@/components/dish-card";
 import { LazyImage } from "@/components/lazy-image";
 import { PageShell } from "@/components/site-shell";
+import { fetchApiMenuItem } from "@/data/api-restaurants";
 import { getMenuItem, getRestaurant, getRestaurantsOfferingDish } from "@/data/helpers";
 import type { SelectedIngredient } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
+import { hasRealBackend } from "@/lib/api-client";
 import { useAddToBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
 import { useMenuAdmin } from "@/lib/menu-admin";
@@ -17,8 +19,14 @@ import { formatDishConflicts, useDishConflicts } from "@/lib/use-dish-conflicts"
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/prato/$dishId")({
-  loader: ({ params }) => {
-    const item = getMenuItem(params.dishId);
+  // Assíncrono (TanStack Router já trata isto nativamente, mesmo padrão de
+  // `/restaurantes/$id`) — sem isto, `getMenuItem` (só o catálogo mock)
+  // nunca encontrava um prato criado a sério com o backend real, e a
+  // página dava 404 SEMPRE que se clicava num prato de verdade.
+  loader: async ({ params }) => {
+    const item = hasRealBackend
+      ? await fetchApiMenuItem(params.dishId)
+      : getMenuItem(params.dishId);
     if (!item) throw notFound();
     return { item };
   },
