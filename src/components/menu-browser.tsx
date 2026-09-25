@@ -21,6 +21,7 @@ import { Slider } from "@/components/ui/slider";
 import { addressProvince, getRestaurant } from "@/data/helpers";
 import type { MenuItem } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
+import { useRestaurantDetail } from "@/data/use-restaurants-query";
 import { useAddToBill } from "@/lib/bill";
 import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
@@ -39,6 +40,11 @@ const sortOptions = [
 ] as const;
 
 const PAGE_SIZE = 12;
+/** Pseudo-categoria — cruza a categoria de verdade do prato (buffet e
+ * à-la-carte podem coexistir na mesma categoria, ex: "Saladas"). Só
+ * aparece como chip quando há pelo menos um prato de buffet no
+ * restaurante fixado/filtrado (ver `hasBuffetItems`). */
+const BUFFET_FILTER_ID = "__buffet__";
 
 /**
  * Pesquisa + filtros + grade de pratos — o mesmo componente usado tanto no
@@ -94,6 +100,19 @@ export function MenuBrowser({
     return ids.map((id) => ({ id, label: translateMenuCategory(id, locale) }));
   }, [items, effectiveRestaurantId, locale]);
 
+  // Chip "Buffet" só faz sentido preso a UM restaurante (o banner de
+  // preço/horário abaixo é desse restaurante só) — nunca na busca geral
+  // sem filtro nenhum, que mistura vários.
+  const hasBuffetItems = useMemo(
+    () =>
+      !!effectiveRestaurantId &&
+      items.some((m) => m.restaurantId === effectiveRestaurantId && m.isBuffetOnly),
+    [items, effectiveRestaurantId],
+  );
+  const { data: buffetRestaurant } = useRestaurantDetail(
+    hasBuffetItems ? effectiveRestaurantId : undefined,
+  );
+
   const [active, setActive] = useState<string>(initialCategory ?? "todos");
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query);
@@ -124,7 +143,12 @@ export function MenuBrowser({
   const filteredExceptPrice = useMemo(() => {
     return items.filter((item) => {
       const restaurant = getRestaurant(item.restaurantId);
-      const byCat = active === "todos" || item.category === active;
+      const byCat =
+        active === "todos"
+          ? true
+          : active === BUFFET_FILTER_ID
+            ? !!item.isBuffetOnly
+            : item.category === active;
       const byRestaurant = !effectiveRestaurantId || item.restaurantId === effectiveRestaurantId;
       const byQuery =
         !debouncedQuery ||
@@ -163,10 +187,15 @@ export function MenuBrowser({
   // ele não tem essa categoria), volta pra "Todos" em vez de ficar preso
   // num filtro que não bate com nenhum chip visível.
   useEffect(() => {
-    if (active !== "todos" && !categories.some((c) => c.id === active)) {
-      setActive("todos");
-    }
+    if (active === "todos" || active === BUFFET_FILTER_ID) return;
+    if (!categories.some((c) => c.id === active)) setActive("todos");
   }, [categories, active]);
+
+  // Idem, mas para o chip "Buffet": se deixar de haver pratos de buffet
+  // (ex: trocou de restaurante), sai desse filtro.
+  useEffect(() => {
+    if (active === BUFFET_FILTER_ID && !hasBuffetItems) setActive("todos");
+  }, [active, hasBuffetItems]);
 
   const filtered = useMemo(() => {
     // Prato de buffet não tem preço — nunca é excluído pelo filtro de preço
@@ -297,7 +326,11 @@ export function MenuBrowser({
       {/* Topo arredondado, fundo reto e encostado na linha cinzenta abaixo
           — como abas presas ao separador, sem gap entre elas e a linha. */}
       <div className="no-scrollbar mt-3 flex gap-1.5 overflow-x-auto border-b border-border">
-        {[{ id: "todos", label: t("common.all") }, ...categories].map((cat) => (
+        {[
+          { id: "todos", label: t("common.all") },
+          ...(hasBuffetItems ? [{ id: BUFFET_FILTER_ID, label: t("cardapio.buffetChip") }] : []),
+          ...categories,
+        ].map((cat) => (
           <button
             key={cat.id}
             type="button"
@@ -312,6 +345,43 @@ export function MenuBrowser({
           </button>
         ))}
       </div>
+
+      {active === BUFFET_FILTER_ID && (
+        <div className="card-soft mt-3 flex flex-wrap items-center gap-x-6 gap-y-3 p-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              {t("cardapio.buffetPriceLabel")}
+            </p>
+            <p className="text-lg font-bold text-primary">
+              {buffetRestaurant?.buffetPrice != null
+                ? formatKz(buffetRestaurant.buffetPrice)
+                : t("cardapio.buffetPriceUnset")}
+            </p>
+          </div>
+          {buffetRestaurant?.buffetHoursNotice && (
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                {t("cardapio.buffetHoursLabel")}
+              </p>
+              <p className="text-sm font-semibold text-foreground">
+                {buffetRestaurant.buffetHoursNotice}
+              </p>
+            </div>
+          )}
+          {buffetRestaurant?.buffetTableTimeLimitMinutes != null && (
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                {t("cardapio.buffetTimeLimitLabel")}
+              </p>
+              <p className="text-sm font-semibold text-foreground">
+                {t("cardapio.buffetTimeLimitValue", {
+                  count: buffetRestaurant.buffetTableTimeLimitMinutes,
+                })}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">

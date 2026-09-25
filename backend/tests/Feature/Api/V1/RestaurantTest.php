@@ -175,6 +175,35 @@ test('owner consegue editar campos de política de negócio', function () {
         ->caution_amount->toEqual(5000);
 });
 
+test('manager pode editar horário/tempo de mesa do buffet, mas não o preço (política de negócio)', function () {
+    $restaurant = Restaurant::factory()->create();
+    $manager = User::factory()->restaurantStaff()->create();
+    $manager->restaurantUsers()->create(['restaurant_id' => $restaurant->id, 'role_in_restaurant' => 'manager']);
+
+    $this->actingAs($manager, 'sanctum')
+        ->patchJson("/api/v1/restaurants/{$restaurant->uuid}", [
+            'buffet_hours_notice' => 'Todos os dias, 12h às 15h',
+            'buffet_table_time_limit_minutes' => 90,
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.buffetHoursNotice', 'Todos os dias, 12h às 15h')
+        ->assertJsonPath('data.buffetTableTimeLimitMinutes', 90);
+
+    $this->actingAs($manager, 'sanctum')
+        ->patchJson("/api/v1/restaurants/{$restaurant->uuid}", ['buffet_price' => 8000])
+        ->assertForbidden();
+});
+
+test('owner configura o preço do buffet', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+
+    $response = $this->actingAs($owner, 'sanctum')
+        ->patchJson("/api/v1/restaurants/{$restaurant->uuid}", ['buffet_price' => 8000]);
+
+    $response->assertOk()->assertJsonPath('data.buffetPrice', 8000);
+});
+
 test('só o owner consegue atualizar payment-details, manager não', function () {
     $restaurant = Restaurant::factory()->create();
     $manager = User::factory()->restaurantStaff()->create();

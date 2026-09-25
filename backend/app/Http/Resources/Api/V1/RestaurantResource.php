@@ -40,6 +40,12 @@ class RestaurantResource extends JsonResource
             'estimatedDeliveryMinutes' => $this->estimated_delivery_minutes,
             'cautionAmount' => (float) $this->caution_amount,
             'cautionPolicyNotice' => $this->caution_policy_notice,
+            // Buffet é único por restaurante (não um por prato) — preço
+            // nulo = ainda não configurado, mesmo que já haja pratos
+            // marcados `is_buffet_only` (ver plano, MenuItem.isBuffetOnly).
+            'buffetPrice' => $this->buffet_price === null ? null : (float) $this->buffet_price,
+            'buffetHoursNotice' => $this->buffet_hours_notice,
+            'buffetTableTimeLimitMinutes' => $this->buffet_table_time_limit_minutes,
             'isFeatured' => $this->is_featured,
             'acceptsReservations' => $this->accepts_reservations,
             'reservationSlotMinutes' => $this->reservation_slot_minutes,

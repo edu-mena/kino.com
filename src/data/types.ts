@@ -76,6 +76,15 @@ export interface Restaurant {
   estimatedDeliveryMinutes: number;
   cautionAmount: number;
   cautionPolicyNotice: string;
+  /** Preço da taxa fixa do buffet/self-service — único por restaurante
+   * (nunca por prato, ver `MenuItem.isBuffetOnly`). Ausente = o
+   * restaurante ainda não configurou, mesmo que já tenha pratos marcados
+   * como buffet. */
+  buffetPrice?: number;
+  /** Texto livre, ex: "Todos os dias, 12h às 15h". */
+  buffetHoursNotice?: string;
+  /** Minutos que o cliente tem à mesa depois de sentar, ex: 90. */
+  buffetTableTimeLimitMinutes?: number;
   isFeatured: boolean;
   /** Aceita pedidos de reserva de mesa online. Ausente = true (a maioria
    * aceita); false esconde o fluxo de reserva no lado do cliente. */

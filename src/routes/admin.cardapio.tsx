@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ChevronLeft,
@@ -33,11 +34,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Switch } from "@/components/ui/switch";
 import { DishFormDialog } from "@/components/dish-form-dialog";
 import { MenuQrDialog } from "@/components/menu-qr-dialog";
 import { fetchApiMenus } from "@/data/api-menus";
+import { updateApiRestaurant, type RestaurantPatchPayload } from "@/data/api-restaurants";
 import { INGREDIENT_CATALOG } from "@/data/ingredient-catalog";
 import { defaultMenuId } from "@/data/menus-store";
 import {
@@ -45,12 +49,13 @@ import {
   normalizeIngredients,
   type MenuItemInput,
 } from "@/data/menu-store";
+import { saveProfileEdits } from "@/data/restaurant-profile-store";
 import type { MenuItem } from "@/data/types";
 import { translateMenuCategory, useTranslation } from "@/i18n";
 import { hasRealBackend } from "@/lib/api-client";
 import { formatKz } from "@/lib/format";
 import { useMenuAdmin } from "@/lib/menu-admin";
-import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/cardapio")({
@@ -76,6 +81,7 @@ function AdminCardapio() {
   const { items, isAvailable, toggleAvailability, createItem, updateItem, deleteItem } =
     useMenuAdmin();
   const { t, locale } = useTranslation();
+  const queryClient = useQueryClient();
 
   const [formOpen, setFormOpen] = useState(false);
   const [formKind, setFormKind] = useState<"dish" | "drink">("dish");
@@ -105,6 +111,27 @@ function AdminCardapio() {
   const [ingKind, setIngKind] = useState<"main" | "extra">("main");
   const [ingExtra, setIngExtra] = useState("");
   const [priceDraft, setPriceDraft] = useState("");
+
+  // Configuração do buffet — único por restaurante (não por prato), ver
+  // `Restaurant.buffetPrice`. Reabastecido sempre que o restaurante muda de
+  // dados (ex: depois de guardar), mesmo padrão de `priceDraft` acima.
+  const [buffetPriceDraft, setBuffetPriceDraft] = useState("");
+  const [buffetHoursDraft, setBuffetHoursDraft] = useState("");
+  const [buffetTimeLimitDraft, setBuffetTimeLimitDraft] = useState("");
+  const [savingBuffetSettings, setSavingBuffetSettings] = useState(false);
+  useEffect(() => {
+    setBuffetPriceDraft(restaurant?.buffetPrice != null ? String(restaurant.buffetPrice) : "");
+    setBuffetHoursDraft(restaurant?.buffetHoursNotice ?? "");
+    setBuffetTimeLimitDraft(
+      restaurant?.buffetTableTimeLimitMinutes != null
+        ? String(restaurant.buffetTableTimeLimitMinutes)
+        : "",
+    );
+  }, [
+    restaurant?.buffetPrice,
+    restaurant?.buffetHoursNotice,
+    restaurant?.buffetTableTimeLimitMinutes,
+  ]);
 
   const dishes = useMemo(
     () => (restaurant ? items.filter((i) => i.restaurantId === restaurant.id) : []),
@@ -265,6 +292,45 @@ function AdminCardapio() {
     void applyDishPatch(active, { price: p }, "dishFormDialog.updatedToast");
   };
 
+  const hasBuffetItems = dishes.some((d) => d.isBuffetOnly);
+
+  const saveBuffetSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!restaurant) return;
+    const price = Number(buffetPriceDraft);
+    if (!buffetPriceDraft.trim() || !price || price <= 0) {
+      toast.error(t("adminCardapio.buffetPriceRequiredError"));
+      return;
+    }
+    const patch: RestaurantPatchPayload = {
+      buffetPrice: price,
+      ...(buffetHoursDraft.trim() ? { buffetHoursNotice: buffetHoursDraft.trim() } : {}),
+      ...(buffetTimeLimitDraft.trim()
+        ? { buffetTableTimeLimitMinutes: Number(buffetTimeLimitDraft) }
+        : {}),
+    };
+    setSavingBuffetSettings(true);
+    if (hasRealBackend) {
+      const token = getAdminToken();
+      if (!token) {
+        toast.error(t("adminCardapio.buffetSaveFailedError"));
+        setSavingBuffetSettings(false);
+        return;
+      }
+      try {
+        await updateApiRestaurant(restaurant.id, patch, token);
+        await queryClient.invalidateQueries({ queryKey: ["restaurant", restaurant.id] });
+        toast.success(t("adminCardapio.buffetSavedToast"));
+      } catch {
+        toast.error(t("adminCardapio.buffetSaveFailedError"));
+      }
+    } else {
+      saveProfileEdits(restaurant.id, patch);
+      toast.success(t("adminCardapio.buffetSavedToast"));
+    }
+    setSavingBuffetSettings(false);
+  };
+
   const categoryOptions = ["todas", ...categories];
 
   return (
@@ -294,6 +360,60 @@ function AdminCardapio() {
       />
 
       <div className="mx-auto mt-6 max-w-6xl px-4 md:px-6">
+        {/* Buffet — único por restaurante, não por prato (ver
+            MenuItem.isBuffetOnly). Só aparece com pelo menos um prato
+            marcado como buffet; sem preço/horário configurados aqui, o
+            cliente nunca vê essa informação em lado nenhum. */}
+        {hasBuffetItems && (
+          <form onSubmit={saveBuffetSettings} className="card-soft mb-6 space-y-3 p-4 sm:p-5">
+            <div>
+              <h2 className="font-display text-base font-bold text-foreground">
+                {t("adminCardapio.buffetSectionTitle")}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {t("adminCardapio.buffetSectionHint")}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="buffet-price">{t("adminCardapio.buffetPriceLabel")}</Label>
+                <Input
+                  id="buffet-price"
+                  type="number"
+                  min={1}
+                  step="any"
+                  value={buffetPriceDraft}
+                  onChange={(e) => setBuffetPriceDraft(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="buffet-hours">{t("adminCardapio.buffetHoursLabel")}</Label>
+                <Input
+                  id="buffet-hours"
+                  value={buffetHoursDraft}
+                  onChange={(e) => setBuffetHoursDraft(e.target.value)}
+                  placeholder={t("adminCardapio.buffetHoursPlaceholder")}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="buffet-time-limit">{t("adminCardapio.buffetTimeLimitLabel")}</Label>
+                <Input
+                  id="buffet-time-limit"
+                  type="number"
+                  min={1}
+                  value={buffetTimeLimitDraft}
+                  onChange={(e) => setBuffetTimeLimitDraft(e.target.value)}
+                  placeholder="90"
+                />
+              </div>
+            </div>
+            <Button type="submit" disabled={savingBuffetSettings} className="rounded-xl">
+              {t("adminCardapio.buffetSave")}
+            </Button>
+          </form>
+        )}
+
         {dishes.length === 0 ? (
           <div className="card-soft grid place-items-center gap-3 p-12 text-center">
             <Utensils className="h-10 w-10 text-muted-foreground" />

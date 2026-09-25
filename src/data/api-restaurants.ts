@@ -49,6 +49,9 @@ type ApiRestaurant = {
   estimatedDeliveryMinutes: number | null;
   cautionAmount: number;
   cautionPolicyNotice: string | null;
+  buffetPrice: number | null;
+  buffetHoursNotice: string | null;
+  buffetTableTimeLimitMinutes: number | null;
   isFeatured: boolean;
   acceptsReservations: boolean;
   reservationSlotMinutes: number;
@@ -138,6 +141,11 @@ export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
     estimatedDeliveryMinutes: r.estimatedDeliveryMinutes ?? 30,
     cautionAmount: r.cautionAmount,
     cautionPolicyNotice: r.cautionPolicyNotice ?? "",
+    ...(r.buffetPrice != null ? { buffetPrice: r.buffetPrice } : {}),
+    ...(r.buffetHoursNotice ? { buffetHoursNotice: r.buffetHoursNotice } : {}),
+    ...(r.buffetTableTimeLimitMinutes != null
+      ? { buffetTableTimeLimitMinutes: r.buffetTableTimeLimitMinutes }
+      : {}),
     isFeatured: r.isFeatured,
     acceptsReservations: r.acceptsReservations,
     reservationSlotMinutes: r.reservationSlotMinutes,
@@ -255,6 +263,10 @@ export type RestaurantPatchPayload = Partial<{
   acceptsReservations: boolean;
   reservationSlotMinutes: number;
   reservationCancellationWindowMinutes: number;
+  /** Buffet é único por restaurante — ver `MenuItem.isBuffetOnly`. */
+  buffetPrice: number;
+  buffetHoursNotice: string;
+  buffetTableTimeLimitMinutes: number;
 }>;
 
 export async function updateApiRestaurant(
@@ -304,6 +316,11 @@ export async function updateApiRestaurant(
   }
   if (patch.reservationCancellationWindowMinutes !== undefined) {
     body["reservation_cancellation_window_minutes"] = patch.reservationCancellationWindowMinutes;
+  }
+  if (patch.buffetPrice !== undefined) body["buffet_price"] = patch.buffetPrice;
+  if (patch.buffetHoursNotice !== undefined) body["buffet_hours_notice"] = patch.buffetHoursNotice;
+  if (patch.buffetTableTimeLimitMinutes !== undefined) {
+    body["buffet_table_time_limit_minutes"] = patch.buffetTableTimeLimitMinutes;
   }
 
   const { data } = await apiFetch<{ data: ApiRestaurant }>(`/restaurants/${id}`, {

@@ -23,6 +23,7 @@ class Restaurant extends Model
         'is_featured', 'accepts_reservations', 'reservation_slot_minutes',
         'reservation_cancellation_window_minutes',
         'orders_paused_manually',
+        'buffet_price', 'buffet_hours_notice', 'buffet_table_time_limit_minutes',
     ];
 
     // rating/review_count ficam de fora de $fillable de propósito — nunca
@@ -44,6 +45,7 @@ class Restaurant extends Model
             'orders_paused_manually' => 'boolean',
             'delivery_fee' => 'decimal:2',
             'caution_amount' => 'decimal:2',
+            'buffet_price' => 'decimal:2',
             'rating' => 'decimal:1',
         ];
     }

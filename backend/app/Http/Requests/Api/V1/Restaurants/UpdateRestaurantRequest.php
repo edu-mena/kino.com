@@ -12,7 +12,7 @@ class UpdateRestaurantRequest extends FormRequest
      * morada, horários, etc). Ver RestaurantPolicy::manageBusinessPolicy. */
     private const BUSINESS_POLICY_FIELDS = [
         'fulfillment_modes', 'accepted_payment_methods',
-        'caution_modes_for_orders', 'caution_amount',
+        'caution_modes_for_orders', 'caution_amount', 'buffet_price',
     ];
 
     public function authorize(): bool
@@ -69,6 +69,9 @@ class UpdateRestaurantRequest extends FormRequest
             // como o slot acima.
             'reservation_cancellation_window_minutes' => ['sometimes', 'integer', 'min:0'],
             'orders_paused_manually' => ['sometimes', 'boolean'],
+            'buffet_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'buffet_hours_notice' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'buffet_table_time_limit_minutes' => ['sometimes', 'nullable', 'integer', 'min:1'],
         ];
     }
 }
