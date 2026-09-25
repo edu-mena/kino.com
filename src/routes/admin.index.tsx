@@ -19,6 +19,7 @@ import {
 import { useMemo } from "react";
 import { KpiTile, StatCard, StatSection, TrendArea, TrendBadge } from "@/components/admin-stats";
 import { AdminPageHeading } from "@/components/admin-shell";
+import { ProfileViewersCard } from "@/components/profile-viewers-card";
 import { useOwnRestaurantSubscription } from "@/data/api-subscriptions";
 import { getReviewsForRestaurant } from "@/data/helpers";
 import { PLAN_PRICE } from "@/data/subscriptions-store";
@@ -301,6 +302,9 @@ function AdminDashboard() {
             </div>
           )}
         </section>
+
+        {/* ---------- Quem viu o seu perfil (em destaque) ---------- */}
+        <ProfileViewersCard restaurantId={restaurantId} />
 
         {/* ---------- Visão geral ---------- */}
         <StatSection title={t("adminIndex.overviewTitle")} hint={t("adminIndex.overviewHint")}>

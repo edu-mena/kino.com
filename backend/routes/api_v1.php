@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\OfferController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PackageTypeController;
 use App\Http\Controllers\Api\V1\PartnerApplicationController;
+use App\Http\Controllers\Api\V1\ProfileViewController;
 use App\Http\Controllers\Api\V1\ReservationController;
 use App\Http\Controllers\Api\V1\RestaurantController;
 use App\Http\Controllers\Api\V1\RestaurantMenuController;
@@ -236,6 +237,11 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
 */
 Route::get('restaurants/{restaurant}/reviews', [ReviewController::class, 'index']);
 
+// Visita ao perfil público — cliente com conta OU convidado (id aleatório do
+// browser); nunca conta o staff do próprio restaurante.
+Route::post('restaurants/{restaurant}/profile-views', [ProfileViewController::class, 'record'])
+    ->middleware('throttle:writes');
+
 Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('restaurants/{restaurant}/reviews', [ReviewController::class, 'store']);
     Route::put('reviews/{review}/reply', [ReviewController::class, 'reply']);
@@ -253,6 +259,13 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('favorites/menu-items/sync', [FavoriteMenuItemController::class, 'sync']);
     Route::post('menu-items/{menuItem}/favorite', [FavoriteMenuItemController::class, 'store']);
     Route::delete('menu-items/{menuItem}/favorite', [FavoriteMenuItemController::class, 'destroy']);
+
+    // "Quem viu o seu perfil" (staff) + convite "siga-nos" e respostas do
+    // cliente — regras anti-spam em FollowInvitePolicy.
+    Route::get('restaurants/{restaurant}/profile-views', [ProfileViewController::class, 'index']);
+    Route::post('restaurants/{restaurant}/profile-views/{profileView}/invite', [ProfileViewController::class, 'invite']);
+    Route::post('restaurants/{restaurant}/follow-invite/decline', [ProfileViewController::class, 'decline']);
+    Route::post('restaurants/{restaurant}/follow-invite/mute', [ProfileViewController::class, 'mute']);
 
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::get('restaurants/{restaurant}/notifications', [NotificationController::class, 'indexForRestaurant']);

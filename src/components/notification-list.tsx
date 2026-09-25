@@ -1,9 +1,15 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { RestaurantRecommendationsDialog } from "@/components/restaurant-recommendations-dialog";
+import { declineApiFollowInvite, muteApiFollowInvites } from "@/data/api-profile-views";
 import { useRestaurants } from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
-import type { LukuNotification } from "@/lib/notifications";
+import { hasRealBackend } from "@/lib/api-client";
+import { getAuthToken } from "@/lib/auth";
+import { declineMockInvite, muteMockInvite } from "@/lib/follow-invites";
+import { useFollows } from "@/lib/follows";
+import { useNotifications, type LukuNotification } from "@/lib/notifications";
 
 const targetFor = (scope: "client" | "restaurant", kind: LukuNotification["kind"]) =>
   scope === "client" ? (kind === "order" ? "/entrega" : "/reservas") : null;
@@ -30,6 +36,37 @@ export function NotificationList({
   // `RestaurantRecommendationsDialog`), para as sugestões nunca divergirem
   // conforme onde aparecem.
   const [recFor, setRecFor] = useState<LukuNotification | null>(null);
+  const { markRead } = useNotifications();
+  const { isFollowing, toggleFollow } = useFollows();
+  const navigate = useNavigate();
+
+  // Convite "siga-nos" (ver @/lib/follow-invites): seguir, "agora não"
+  // (o restaurante só pode voltar a convidar 90 dias depois) ou silenciar
+  // os convites deste restaurante de vez.
+  const answerInvite = (n: LukuNotification, answer: "follow" | "decline" | "mute") => {
+    markRead(n.id);
+    const name = restaurantById.get(n.restaurantId)?.name ?? "";
+    if (answer === "follow") {
+      if (!isFollowing(n.restaurantId) && toggleFollow(n.restaurantId) === "login") {
+        void navigate({ to: "/entrar" });
+        return;
+      }
+      toast(t("follow.followedToast", { name }));
+      return;
+    }
+    if (hasRealBackend) {
+      const token = getAuthToken();
+      if (!token) return;
+      const request =
+        answer === "decline"
+          ? declineApiFollowInvite(n.restaurantId, token)
+          : muteApiFollowInvites(n.restaurantId, token);
+      void request.catch(() => {});
+    } else if (n.ownerKey) {
+      (answer === "decline" ? declineMockInvite : muteMockInvite)(n.restaurantId, n.ownerKey);
+    }
+    if (answer === "mute") toast(t("notifications.followInviteMutedToast", { name }));
+  };
   const recRestaurant = recFor ? restaurantById.get(recFor.restaurantId) : undefined;
 
   const fmt = (iso: string) =>
@@ -54,6 +91,7 @@ export function NotificationList({
           // `order-builder-card.tsx`/`restaurantes_.$id.tsx`), a notificação
           // é só mais um sítio de onde chegar às mesmas sugestões.
           const showRecommend = scope === "client" && n.kind === "order" && n.status === "rejected";
+          const isInvite = scope === "client" && n.event === "followInvite";
           const body = (
             <>
               <span className="flex items-start gap-2">
@@ -93,6 +131,33 @@ export function NotificationList({
                 </Link>
               ) : (
                 <div className="px-4 py-2.5">{body}</div>
+              )}
+              {isInvite && !n.read && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2.5 pl-[1.625rem] text-xs font-semibold">
+                  {!isFollowing(n.restaurantId) && (
+                    <button
+                      type="button"
+                      onClick={() => answerInvite(n, "follow")}
+                      className="rounded-lg bg-primary px-3 py-1 text-primary-foreground hover:bg-primary/90"
+                    >
+                      {t("notifications.followInviteAccept")}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => answerInvite(n, "decline")}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    {t("notifications.followInviteDecline")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => answerInvite(n, "mute")}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    {t("notifications.followInviteMute")}
+                  </button>
+                </div>
               )}
               {showRecommend && (
                 <button

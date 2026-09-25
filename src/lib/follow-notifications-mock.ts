@@ -1,9 +1,11 @@
 import { useEffect, useRef } from "react";
 import { safeLocalStorageSet } from "@/data/safe-storage";
+import { CHANGE_EVENT } from "@/data/storage-keys";
 import type { MenuItem, Offer, RestaurantStory } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { useOffers } from "@/data/use-offers";
 import { useEffectiveStories } from "@/data/use-stories";
+import { getStoredInvites } from "@/lib/follow-invites";
 import { getStoredFollows } from "@/lib/follows";
 import type { LukuNotification } from "@/lib/notifications";
 
@@ -21,7 +23,13 @@ import type { LukuNotification } from "@/lib/notifications";
 const SEEN_KEY = "luku_follow_seen_v1";
 
 /** Cada fonte tem a sua base — ausente = ainda nunca vista (regista sem avisar). */
-type Seen = { stories?: string[]; offers?: string[]; prices?: Record<string, number | null> };
+type Seen = {
+  stories?: string[];
+  offers?: string[];
+  prices?: Record<string, number | null>;
+  /** Convites "siga-nos" já entregues (restaurante|conta|data de envio). */
+  invites?: string[];
+};
 
 function readSeen(): Seen | null {
   try {
@@ -117,6 +125,44 @@ export function useMockFollowerNotes(push: (notes: LukuNotification[]) => void, 
     writeSeen(base);
     if (fresh.length) pushRef.current(fresh);
   };
+
+  // Convites "siga-nos" do painel (ver @/lib/follow-invites) — cada envio
+  // novo vira uma notificação para a conta convidada.
+  useEffect(() => {
+    if (!enabled) return;
+    const sync = () => {
+      const base: Seen = readSeen() ?? {};
+      const known = new Set(base.invites ?? []);
+      const fresh: LukuNotification[] = [];
+      const keys: string[] = [];
+      for (const inv of getStoredInvites()) {
+        if (!inv.lastSentAt) continue;
+        const key = `${inv.restaurantId}|${inv.ownerKey}|${inv.lastSentAt}`;
+        keys.push(key);
+        if (known.has(key)) continue;
+        fresh.push({
+          id: `ntf-restaurant-${inv.restaurantId}-followInvite-${inv.lastSentAt}-${inv.ownerKey}`,
+          kind: "restaurant",
+          refId: inv.restaurantId,
+          restaurantId: inv.restaurantId,
+          event: "followInvite",
+          status: "",
+          ownerKey: inv.ownerKey,
+          at: inv.lastSentAt,
+          read: false,
+        });
+      }
+      writeSeen({ ...base, invites: keys });
+      if (fresh.length) pushRef.current(fresh);
+    };
+    sync();
+    window.addEventListener(CHANGE_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(CHANGE_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, [enabled]);
 
   useEffect(() => diff("stories", stories), [stories]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => diff("offers", offers), [offers]); // eslint-disable-line react-hooks/exhaustive-deps

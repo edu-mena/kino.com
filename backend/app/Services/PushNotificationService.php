@@ -278,6 +278,7 @@ class PushNotificationService
             'followStoryNew' => [$name, "{$name} publicou um story novo"],
             'followOfferNew' => [$name, $snapshot !== '' ? "Promoção nova: {$snapshot}" : "{$name} lançou uma promoção"],
             'followPriceChange' => [$name, "{$name} atualizou {$snapshot} preço(s) do cardápio"],
+            'followInvite' => [$name, "{$name} convida-o a seguir o restaurante"],
             default => ['Luku', "Tem uma notificação nova de {$name}"],
         };
     }

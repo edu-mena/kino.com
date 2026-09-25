@@ -22,7 +22,6 @@ import { PageShell } from "@/components/site-shell";
 import { StoryViewer } from "@/components/story-viewer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
-import { recordProfileView } from "@/data/profile-views-store";
 import { useEffectiveStories } from "@/data/use-stories";
 import { addressProvince, canDeliverToNeighborhood, getRestaurant } from "@/data/helpers";
 import type { RestaurantPackage } from "@/data/types";
@@ -33,7 +32,6 @@ import { hasRealBackend } from "@/lib/api-client";
 import { useTranslation, type Locale } from "@/i18n";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
-import { viewerKey } from "@/lib/customer";
 import { estimateDeliveryMinutes } from "@/lib/delivery-history";
 import { formatKz } from "@/lib/format";
 import { formatKm } from "@/lib/geo";
@@ -41,6 +39,7 @@ import { useLocation } from "@/lib/location";
 import { useTravelEstimate, type LatLng } from "@/lib/maps";
 import { formatWeeklyHours, isOpenNow, nextOpenAt } from "@/lib/opening-hours";
 import { packageTypeIcon } from "@/lib/package-type-icons";
+import { recordRestaurantProfileView } from "@/lib/profile-views";
 import { useRestaurantStatus } from "@/lib/restaurant-status";
 import { isVideoSrc, parseTimeFragment } from "@/lib/video-trim";
 
@@ -96,13 +95,11 @@ function RestaurantDetail() {
   };
 
   // "Quem viu o seu perfil" — visitante único, não pageview (ver
-  // `recordProfileView`). `user?.name` só entra quando muda para não
-  // reabrir a janela de sessão a cada render.
+  // @/lib/profile-views: servidor com backend real, localStorage na demo).
+  // `user?.name` só entra quando muda para não reabrir a janela de sessão a
+  // cada render.
   useEffect(() => {
-    recordProfileView(restaurant.id, {
-      key: viewerKey(user),
-      ...(user?.name ? { name: user.name } : {}),
-    });
+    recordRestaurantProfileView(restaurant.id, user);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant.id, user?.name, user?.email, user?.phone]);
 
