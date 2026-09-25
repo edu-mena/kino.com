@@ -37,6 +37,7 @@ import {
   TrendBadge,
 } from "@/components/admin-stats";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
+import { GoldBadge, GoldCustomerPopover } from "@/components/gold-customer";
 import { LocationMap } from "@/components/location-map";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -62,7 +63,9 @@ import {
   type DeliveryLevel,
 } from "@/lib/delivery-eval";
 import { fetchApiRestaurantPaymentDetails } from "@/data/api-restaurants";
+import { customerKey } from "@/lib/customer";
 import { formatKz } from "@/lib/format";
+import { useRestaurantLoyalty } from "@/lib/use-loyalty";
 import { hasRealBackend } from "@/lib/api-client";
 import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
 import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -162,6 +165,8 @@ function weekStart(d: Date) {
 
 function AdminPedidos() {
   const { restaurant } = useRestaurantAdmin();
+  // Clientes Gold (ver @/lib/loyalty) — selo na lista e ficha rápida no detalhe.
+  const loyaltyOf = useRestaurantLoyalty(restaurant?.id);
   const deliveryPolicy = useDeliveryPolicy();
   const {
     orders,
@@ -704,10 +709,17 @@ function AdminPedidos() {
                             }`}
                           >
                             <span className="min-w-0">
-                              <span className="block truncate text-sm font-semibold text-foreground">
-                                {o.customerName ||
-                                  o.deliveryAddress?.label ||
-                                  t("adminPedidos.customerFallback")}
+                              <span className="flex items-center gap-1.5">
+                                <span className="truncate text-sm font-semibold text-foreground">
+                                  {o.customerName ||
+                                    o.deliveryAddress?.label ||
+                                    t("adminPedidos.customerFallback")}
+                                </span>
+                                {loyaltyOf({
+                                  email: o.customerEmail,
+                                  phone: o.customerPhone,
+                                  name: o.customerName,
+                                })?.tier === "gold" && <GoldBadge />}
                               </span>
                               <span className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
                                 {o.deliveryAddress ? (
@@ -798,9 +810,27 @@ function AdminPedidos() {
 
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <h2 className="font-display text-xl font-bold text-primary">
-                                {active.customerName || t("adminPedidos.customerFallback")}
-                              </h2>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h2 className="font-display text-xl font-bold text-primary">
+                                  {active.customerName || t("adminPedidos.customerFallback")}
+                                </h2>
+                                {(() => {
+                                  const ref = {
+                                    email: active.customerEmail,
+                                    phone: active.customerPhone,
+                                    name: active.customerName,
+                                  };
+                                  const stats = loyaltyOf(ref);
+                                  return stats?.tier === "gold" ? (
+                                    <GoldCustomerPopover
+                                      stats={stats}
+                                      name={active.customerName}
+                                      phone={active.customerPhone}
+                                      customerKey={customerKey(ref)}
+                                    />
+                                  ) : null;
+                                })()}
+                              </div>
                               <p className="mt-0.5 text-xs text-muted-foreground">
                                 {t("adminPedidos.orderRef", { ref: orderShortId(active.id) })} ·{" "}
                                 {fmtDateTime(active.createdAt)}

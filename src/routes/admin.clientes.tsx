@@ -23,6 +23,7 @@ import {
   TrendBadge,
 } from "@/components/admin-stats";
 import { AdminPageHeading } from "@/components/admin-shell";
+import { GoldBadge } from "@/components/gold-customer";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { getCustomerNote, setCustomerNote } from "@/data/customer-notes-store";
@@ -31,17 +32,23 @@ import { useTranslation } from "@/i18n";
 import { useCart, type CartOrder } from "@/lib/cart";
 import { customerKey } from "@/lib/customer";
 import { formatKz } from "@/lib/format";
+import { GOLD_MIN_SPEND, GOLD_MIN_VISITS, progressToGold } from "@/lib/loyalty";
+import { useRestaurantLoyalty } from "@/lib/use-loyalty";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { BCP47, last8Weeks, weekStart } from "@/lib/week";
 
 export const Route = createFileRoute("/admin/clientes")({
+  // `?cliente=<chave>` abre logo a ficha desse cliente (ex.: a partir do
+  // selo Gold numa reserva/pedido, ver @/components/gold-customer).
+  validateSearch: (s: Record<string, unknown>): { cliente?: string } =>
+    typeof s["cliente"] === "string" && s["cliente"] ? { cliente: s["cliente"] } : {},
   head: () => ({ meta: [{ title: "Clientes — Painel Luku.com" }] }),
   component: AdminClientes,
 });
 
-type SegmentFilter = "todos" | "recorrentes" | "ocasionais";
+type SegmentFilter = "todos" | "gold" | "recorrentes" | "ocasionais";
 type SortKey = "recent" | "reservas" | "pessoas" | "nome";
 
 const statusTone: Record<string, string> = {
@@ -93,7 +100,9 @@ function AdminClientes() {
   const debouncedQuery = useDebouncedValue(query);
   const [segment, setSegment] = useState<SegmentFilter>("todos");
   const [sortKey, setSortKey] = useState<SortKey>("recent");
-  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const { cliente } = Route.useSearch();
+  const [activeKey, setActiveKey] = useState<string | null>(cliente ?? null);
+  const loyaltyOf = useRestaurantLoyalty(restaurant?.id);
   const [noteDraft, setNoteDraft] = useState("");
 
   const statusLabels: Record<string, string> = {
@@ -135,16 +144,18 @@ function AdminClientes() {
           lastStatus: byRecent[0]?.status ?? "",
           firstCreatedAt: allCreatedAt.length ? Math.min(...allCreatedAt) : Date.now(),
           returning: c.reservations.length + c.orders.length > 1,
+          loyalty: loyaltyOf(c),
         };
       })
       .sort((a, b) => b.firstCreatedAt - a.firstCreatedAt);
-  }, [reservations, orders, orderTotal, restaurant]);
+  }, [reservations, orders, orderTotal, restaurant, loyaltyOf]);
 
   type CustomerAgg = (typeof customers)[number];
 
   const list = useMemo(() => {
     const q = debouncedQuery.trim().toLowerCase();
     const rows = customers.filter((c) => {
+      if (segment === "gold" && c.loyalty?.tier !== "gold") return false;
       if (segment === "recorrentes" && !c.returning) return false;
       if (segment === "ocasionais" && c.returning) return false;
       if (q && ![c.name, c.phone, c.email].some((v) => v.toLowerCase().includes(q))) return false;
@@ -270,6 +281,7 @@ function AdminClientes() {
                 className={ADMIN_FILTER_SELECT}
               >
                 <option value="todos">{t("adminClientes.segmentAll")}</option>
+                <option value="gold">{t("loyalty.segmentGold")}</option>
                 <option value="recorrentes">{t("adminClientes.segmentReturning")}</option>
                 <option value="ocasionais">{t("adminClientes.segmentOccasional")}</option>
               </select>
@@ -311,9 +323,11 @@ function AdminClientes() {
                         className={`mb-[5px] grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-[20rem] px-5 py-2.5 text-left transition-colors last:mb-0 ${
                           activeKey === c.key
                             ? "bg-primary/10"
-                            : i % 2 === 1
-                              ? "bg-surface/70 hover:bg-primary/5"
-                              : "hover:bg-primary/5"
+                            : c.loyalty?.tier === "gold"
+                              ? "bg-star/10 ring-1 ring-inset ring-star/50 hover:bg-star/20"
+                              : i % 2 === 1
+                                ? "bg-surface/70 hover:bg-primary/5"
+                                : "hover:bg-primary/5"
                         }`}
                       >
                         <span className="min-w-0">
@@ -321,7 +335,8 @@ function AdminClientes() {
                             <span className="truncate text-sm font-semibold text-foreground">
                               {c.name}
                             </span>
-                            {c.returning && (
+                            {c.loyalty?.tier === "gold" && <GoldBadge />}
+                            {c.returning && c.loyalty?.tier !== "gold" && (
                               <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
                                 {t("adminClientes.badgeReturning")}
                               </span>
@@ -383,18 +398,52 @@ function AdminClientes() {
                             })}
                           </p>
                         </div>
-                        <span
-                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
-                            active.returning
-                              ? "bg-primary/10 text-primary"
-                              : "bg-surface text-muted-foreground"
+                        {active.loyalty?.tier === "gold" ? (
+                          <GoldBadge size="md" />
+                        ) : (
+                          <span
+                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+                              active.returning
+                                ? "bg-primary/10 text-primary"
+                                : "bg-surface text-muted-foreground"
+                            }`}
+                          >
+                            {active.returning
+                              ? t("adminClientes.badgeReturning")
+                              : t("adminClientes.badgeNew")}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Estatuto Gold: cumpridos + gasto (regra no servidor,
+                          ver CustomerLoyaltyService) — ou quanto falta. */}
+                      {active.loyalty && (
+                        <div
+                          className={`mt-4 rounded-xl px-4 py-3 text-xs ${
+                            active.loyalty.tier === "gold"
+                              ? "border border-star/50 bg-star/10"
+                              : "bg-surface"
                           }`}
                         >
-                          {active.returning
-                            ? t("adminClientes.badgeReturning")
-                            : t("adminClientes.badgeNew")}
-                        </span>
-                      </div>
+                          <p className="text-foreground">
+                            <span className="font-bold">{active.loyalty.honoredCount}</span>{" "}
+                            {t("loyalty.honored").toLowerCase()} ·{" "}
+                            <span className="font-bold">{formatKz(active.loyalty.spend)}</span>{" "}
+                            {t("loyalty.spend").toLowerCase()}
+                          </p>
+                          <p className="mt-0.5 text-muted-foreground">
+                            {active.loyalty.tier === "gold"
+                              ? t("loyalty.rule", {
+                                  visits: GOLD_MIN_VISITS - 1,
+                                  spend: formatKz(GOLD_MIN_SPEND),
+                                })
+                              : t("loyalty.adminProgress", {
+                                  visits: progressToGold(active.loyalty).remainingVisits,
+                                  spend: formatKz(progressToGold(active.loyalty).remainingSpend),
+                                })}
+                          </p>
+                        </div>
+                      )}
 
                       <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
                         <AdminField label={t("adminClientes.detailContact")}>

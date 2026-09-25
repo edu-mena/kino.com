@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\ContactMessageController;
 use App\Http\Controllers\Api\V1\CourierController;
+use App\Http\Controllers\Api\V1\CustomerLoyaltyController;
 use App\Http\Controllers\Api\V1\CustomerNoteController;
 use App\Http\Controllers\Api\V1\DeliveryPolicyController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
@@ -266,6 +267,11 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('restaurants/{restaurant}/profile-views/{profileView}/invite', [ProfileViewController::class, 'invite']);
     Route::post('restaurants/{restaurant}/follow-invite/decline', [ProfileViewController::class, 'decline']);
     Route::post('restaurants/{restaurant}/follow-invite/mute', [ProfileViewController::class, 'mute']);
+
+    // Clientes Gold (ver CustomerLoyaltyService): o restaurante vê os seus,
+    // o cliente vê o próprio estatuto em cada restaurante.
+    Route::get('restaurants/{restaurant}/customer-loyalty', [CustomerLoyaltyController::class, 'forRestaurant']);
+    Route::get('loyalty', [CustomerLoyaltyController::class, 'mine']);
 
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::get('restaurants/{restaurant}/notifications', [NotificationController::class, 'indexForRestaurant']);

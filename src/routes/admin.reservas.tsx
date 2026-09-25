@@ -22,12 +22,15 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
+import { GoldBadge, GoldCustomerPopover } from "@/components/gold-customer";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { ReservationFloorPlan } from "@/components/reservation-floor-plan";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTranslation, type Locale } from "@/i18n";
+import { customerKey } from "@/lib/customer";
 import { formatKz } from "@/lib/format";
+import { useRestaurantLoyalty } from "@/lib/use-loyalty";
 import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -84,6 +87,8 @@ function weekStart(d: Date) {
 
 function AdminReservas() {
   const { restaurant } = useRestaurantAdmin();
+  // Clientes Gold (ver @/lib/loyalty) — selo na lista e ficha rápida no detalhe.
+  const loyaltyOf = useRestaurantLoyalty(restaurant?.id);
   const { reservations, updateReservationStatus, setInvoice, confirmCaution, assignTable } =
     useReservations();
   const { tablesByRestaurant, totalSeats: totalSeatsOf, tableCount: tableCountOf } = useTables();
@@ -602,8 +607,15 @@ function AdminReservas() {
                             }`}
                           >
                             <span className="min-w-0">
-                              <span className="block truncate text-sm font-semibold text-foreground">
-                                {r.customerName}
+                              <span className="flex items-center gap-1.5">
+                                <span className="truncate text-sm font-semibold text-foreground">
+                                  {r.customerName}
+                                </span>
+                                {loyaltyOf({
+                                  email: r.customerEmail,
+                                  phone: r.customerPhone,
+                                  name: r.customerName,
+                                })?.tier === "gold" && <GoldBadge />}
                               </span>
                               <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                                 <Users className="h-3 w-3 shrink-0" />
@@ -656,9 +668,27 @@ function AdminReservas() {
 
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <h2 className="font-display text-xl font-bold text-primary">
-                                {active.customerName}
-                              </h2>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h2 className="font-display text-xl font-bold text-primary">
+                                  {active.customerName}
+                                </h2>
+                                {(() => {
+                                  const ref = {
+                                    email: active.customerEmail,
+                                    phone: active.customerPhone,
+                                    name: active.customerName,
+                                  };
+                                  const stats = loyaltyOf(ref);
+                                  return stats?.tier === "gold" ? (
+                                    <GoldCustomerPopover
+                                      stats={stats}
+                                      name={active.customerName}
+                                      phone={active.customerPhone}
+                                      customerKey={customerKey(ref)}
+                                    />
+                                  ) : null;
+                                })()}
+                              </div>
                               <p className="mt-0.5 text-xs text-muted-foreground">
                                 {t("adminReservas.detailCreatedAt")}{" "}
                                 {new Date(active.createdAt.replace(" ", "T")).toLocaleString(

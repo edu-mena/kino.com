@@ -2550,4 +2550,21 @@ export const fr: Dictionary = {
       daily_cap: "Limite du jour",
     },
   },
+  loyalty: {
+    gold: "Gold",
+    segmentGold: "Clients Gold",
+    cardTitle: "Client Gold",
+    openCardAria: "Voir la fiche client Gold de {name}",
+    honored: "Réservations et commandes honorées",
+    spend: "Total dépensé",
+    rule: "Gold = plus de {visits} réservations et commandes honorées, ou {spend} dépensés (commandes, frais et cautions).",
+    adminProgress:
+      "Il manque {visits} réservations/commandes honorées ou {spend} dépensés pour Gold.",
+    openProfile: "Voir la fiche client",
+    youAreGold: "Vous êtes client Gold chez {name}. Merci de votre fidélité !",
+    progressTitle: "En route vers Gold",
+    progressHint: "Encore {visits} réservations ou commandes, ou {spend} de consommation.",
+    profileTitle: "Client Gold",
+    profileHint: "Les restaurants où vous êtes déjà client Gold.",
+  },
 };
