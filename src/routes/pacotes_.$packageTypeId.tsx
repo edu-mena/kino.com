@@ -16,7 +16,7 @@ import { haversineKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
 import { packageTypeIcon } from "@/lib/package-type-icons";
 
-export const Route = createFileRoute("/pacotes/$packageTypeId")({
+export const Route = createFileRoute("/pacotes_/$packageTypeId")({
   head: () => ({ meta: [{ title: "Pacotes — Luku.com" }] }),
   component: PacotesPorTipo,
 });

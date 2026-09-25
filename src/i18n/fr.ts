@@ -2265,6 +2265,8 @@ export const fr: Dictionary = {
     dateLabel: "Date",
     timeLabel: "Heure",
     peopleLabel: "Nombre de personnes",
+    typeLabel: "Type de réservation",
+    typeTable: "Table normale",
     notesLabel: "Demandes particulières (facultatif)",
     notesPlaceholder: "Ex : table près de la fenêtre, anniversaire...",
     submit: "Demander la réservation",
@@ -2286,6 +2288,9 @@ export const fr: Dictionary = {
   },
   restaurantDetail: {
     reserveTable: "Réserver une table",
+    packagesTitle: "Forfaits",
+    packagesHint: "Forfaits de consommation pour occasions spéciales, proposés par ce restaurant.",
+    reservePackage: "Réserver",
     paused: "Ce restaurant est temporairement indisponible.",
     closedNow: "Fermé maintenant — ouvre à {opensAt}.",
     seeAlternatives: "Voir des alternatives",

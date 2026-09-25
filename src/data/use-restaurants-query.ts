@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchApiMenus } from "./api-menus";
+import { fetchApiRestaurantPackages } from "./api-restaurant-packages";
 import { fetchApiMenuItems, fetchApiRestaurant, fetchApiRestaurants } from "./api-restaurants";
 import { getAllRestaurants, getMenuItemsByRestaurant, getRestaurant } from "./helpers";
 import { getMenusByRestaurant } from "./menus-store";
-import type { MenuItem, Restaurant, RestaurantMenu } from "./types";
+import { getRestaurantPackagesByRestaurant } from "./restaurant-packages-store";
+import type { MenuItem, Restaurant, RestaurantMenu, RestaurantPackage } from "./types";
 import { hasRealBackend } from "@/lib/api-client";
 
 /**
@@ -60,6 +62,27 @@ export function useRestaurantMenus(restaurantId: string | undefined) {
       hasRealBackend
         ? fetchApiMenus(restaurantId!)
         : Promise.resolve(getMenusByRestaurant(restaurantId!)),
+    enabled: !!restaurantId,
+    staleTime: 30_000,
+  });
+}
+
+/** Pacotes de consumo (Aniversário, Reunião de Negócios...) que ESTE
+ * restaurante oferece — página pública do restaurante e `ReservationDialog`
+ * (mostra como opção ao reservar). Sem token: só ativos, mesma regra
+ * pública de `RestaurantPackageController::index`. Nome distinto de
+ * `useRestaurantPackages` (`@/lib/restaurant-packages`) — esse é o do
+ * painel do restaurante (escopado a `managedRestaurantId`, vê inativos
+ * também); este é para QUALQUER restaurante, só ativos. */
+export function usePublicRestaurantPackages(restaurantId: string | undefined) {
+  return useQuery({
+    queryKey: ["restaurant-packages-public", restaurantId],
+    queryFn: (): Promise<RestaurantPackage[]> =>
+      hasRealBackend
+        ? fetchApiRestaurantPackages(restaurantId!)
+        : Promise.resolve(
+            getRestaurantPackagesByRestaurant(restaurantId!).filter((p) => p.isActive),
+          ),
     enabled: !!restaurantId,
     staleTime: 30_000,
   });

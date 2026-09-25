@@ -1,15 +1,23 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Info, TriangleAlert } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { resolvePromoCode, type PromoEffect } from "@/data/offers-store";
 import type { Restaurant, RestaurantPackage } from "@/data/types";
 import { useOffers } from "@/data/use-offers";
+import { usePublicRestaurantPackages } from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { useReservations } from "@/lib/reservations";
@@ -17,6 +25,7 @@ import { useRestaurantStatus } from "@/lib/restaurant-status";
 import { useTables } from "@/lib/tables";
 
 const DEFAULT_SLOT_MIN = 120;
+const TABLE_OPTION = "table";
 const timeToMin = (s: string) => {
   const [h = 0, m = 0] = s.split(":").map(Number);
   return h * 60 + m;
@@ -36,10 +45,11 @@ export function ReservationDialog({
   restaurant: Restaurant;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Reserva de um pacote específico (Fase L3d: aberto a partir da página
-   * de um pacote) — a caução deixa de ser o valor genérico do restaurante e
-   * passa a ser o preço do pacote; o resto do fluxo (promo, disponibilidade
-   * de lugares) é o mesmo. */
+  /** Pré-seleciona um pacote específico (ex: aberto a partir de
+   * `/pacotes/$packageTypeId` ou de um card de pacote na página do
+   * restaurante) — o cliente continua a poder trocar para "Mesa normal" ou
+   * outro pacote no seletor abaixo, se o restaurante oferecer mais do que
+   * um. */
   restaurantPackage?: RestaurantPackage;
 }) {
   const navigate = useNavigate();
@@ -47,6 +57,17 @@ export function ReservationDialog({
   const { reservations, addReservation } = useReservations();
   const { totalSeats } = useTables();
   const status = useRestaurantStatus(restaurant.id);
+  const { data: fetchedPackages = [] } = usePublicRestaurantPackages(restaurant.id);
+  // O pacote pré-selecionado (se vier de fora) pode ainda não estar na
+  // lista buscada (cache desatualizado, corrida de rede) — inclui-o à
+  // parte, sem duplicar, pra nunca "desaparecer" o que o cliente já
+  // escolheu antes de abrir este diálogo.
+  const packageOptions = useMemo(() => {
+    if (!restaurantPackage) return fetchedPackages;
+    if (fetchedPackages.some((p) => p.id === restaurantPackage.id)) return fetchedPackages;
+    return [restaurantPackage, ...fetchedPackages];
+  }, [fetchedPackages, restaurantPackage]);
+
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   // String em vez de número: guardar já como número forçava um "1" a cada
@@ -56,11 +77,25 @@ export function ReservationDialog({
   const [peopleCountInput, setPeopleCountInput] = useState("2");
   const peopleCount = Math.max(1, Math.min(30, Number(peopleCountInput) || 1));
   const [specialRequests, setSpecialRequests] = useState("");
+  const [selectedPackageId, setSelectedPackageId] = useState(restaurantPackage?.id ?? TABLE_OPTION);
   const offers = useOffers();
   const [promoInput, setPromoInput] = useState("");
   const [promo, setPromo] = useState<PromoEffect | null>(null);
   const [promoError, setPromoError] = useState(false);
-  const cautionBase = restaurantPackage ? restaurantPackage.price : restaurant.cautionAmount;
+
+  // Reabastece a seleção sempre que o diálogo abre — evita herdar a
+  // escolha de uma abertura anterior (ex: fechou tendo escolhido "Mesa
+  // normal", reabriu a partir de um card de pacote diferente).
+  useEffect(() => {
+    if (open) setSelectedPackageId(restaurantPackage?.id ?? TABLE_OPTION);
+  }, [open, restaurantPackage]);
+
+  const selectedPackage =
+    selectedPackageId === TABLE_OPTION
+      ? undefined
+      : packageOptions.find((p) => p.id === selectedPackageId);
+
+  const cautionBase = selectedPackage ? selectedPackage.price : restaurant.cautionAmount;
   const discountedCaution = promo
     ? Math.round(cautionBase * (1 - promo.percentOff / 100))
     : cautionBase;
@@ -127,7 +162,7 @@ export function ReservationDialog({
       peopleCount,
       specialRequests,
       ...(promo ? { promoCode: promo.code } : {}),
-      ...(restaurantPackage ? { packageId: restaurantPackage.id } : {}),
+      ...(selectedPackage ? { packageId: selectedPackage.id } : {}),
     });
     setSubmitting(false);
     if (!ok) {
@@ -221,6 +256,25 @@ export function ReservationDialog({
               </p>
             )}
 
+            {packageOptions.length > 0 && (
+              <div className="space-y-1.5">
+                <Label htmlFor="res-type">{t("reservationDialog.typeLabel")}</Label>
+                <Select value={selectedPackageId} onValueChange={setSelectedPackageId}>
+                  <SelectTrigger id="res-type" className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={TABLE_OPTION}>{t("reservationDialog.typeTable")}</SelectItem>
+                    {packageOptions.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.title ?? p.packageType.name} — {formatKz(p.price)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label htmlFor="res-notes">{t("reservationDialog.notesLabel")}</Label>
               <Textarea
@@ -287,9 +341,9 @@ export function ReservationDialog({
               <div className="flex items-start gap-2 rounded-xl border border-brand/30 bg-brand/5 p-3 text-xs text-foreground">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
                 <span>
-                  {restaurantPackage
+                  {selectedPackage
                     ? t("reservationDialog.packageNotice", {
-                        title: restaurantPackage.title ?? restaurantPackage.packageType.name,
+                        title: selectedPackage.title ?? selectedPackage.packageType.name,
                         amount: formatKz(discountedCaution),
                       })
                     : t("reservationDialog.cautionNotice", {

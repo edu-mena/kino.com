@@ -50,7 +50,7 @@ import { Route as AdminSuporteRouteImport } from './routes/admin.suporte'
 import { Route as AdminCardapioPdfRouteImport } from './routes/admin_.cardapio-pdf'
 import { Route as AdminEntrarRouteImport } from './routes/admin_.entrar'
 import { Route as MenuRestaurantIdRouteImport } from './routes/menu.$restaurantId'
-import { Route as PacotesPackageTypeIdRouteImport } from './routes/pacotes.$packageTypeId'
+import { Route as PacotesPackageTypeIdRouteImport } from './routes/pacotes_.$packageTypeId'
 import { Route as PratoDishIdRouteImport } from './routes/prato.$dishId'
 import { Route as PratosDishNameRouteImport } from './routes/pratos.$dishName'
 import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
@@ -270,9 +270,9 @@ const MenuRestaurantIdRoute = MenuRestaurantIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const PacotesPackageTypeIdRoute = PacotesPackageTypeIdRouteImport.update({
-  id: '/$packageTypeId',
-  path: '/$packageTypeId',
-  getParentRoute: () => PacotesRoute,
+  id: '/pacotes_/$packageTypeId',
+  path: '/pacotes/$packageTypeId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PratoDishIdRoute = PratoDishIdRouteImport.update({
   id: '/prato/$dishId',
@@ -350,7 +350,7 @@ export interface FileRoutesByFullPath {
   '/luku': typeof LukuRoute
   '/notificacoes': typeof NotificacoesRoute
   '/ofertas': typeof OfertasRoute
-  '/pacotes': typeof PacotesRouteWithChildren
+  '/pacotes': typeof PacotesRoute
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
@@ -405,7 +405,7 @@ export interface FileRoutesByTo {
   '/luku': typeof LukuRoute
   '/notificacoes': typeof NotificacoesRoute
   '/ofertas': typeof OfertasRoute
-  '/pacotes': typeof PacotesRouteWithChildren
+  '/pacotes': typeof PacotesRoute
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
@@ -461,7 +461,7 @@ export interface FileRoutesById {
   '/luku': typeof LukuRoute
   '/notificacoes': typeof NotificacoesRoute
   '/ofertas': typeof OfertasRoute
-  '/pacotes': typeof PacotesRouteWithChildren
+  '/pacotes': typeof PacotesRoute
   '/parceiros': typeof ParceirosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
@@ -487,7 +487,7 @@ export interface FileRoutesById {
   '/admin_/cardapio-pdf': typeof AdminCardapioPdfRoute
   '/admin_/entrar': typeof AdminEntrarRoute
   '/menu/$restaurantId': typeof MenuRestaurantIdRoute
-  '/pacotes/$packageTypeId': typeof PacotesPackageTypeIdRoute
+  '/pacotes_/$packageTypeId': typeof PacotesPackageTypeIdRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes_/$id': typeof RestaurantesIdRoute
@@ -655,7 +655,7 @@ export interface FileRouteTypes {
     | '/admin_/cardapio-pdf'
     | '/admin_/entrar'
     | '/menu/$restaurantId'
-    | '/pacotes/$packageTypeId'
+    | '/pacotes_/$packageTypeId'
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes_/$id'
@@ -686,7 +686,7 @@ export interface RootRouteChildren {
   LukuRoute: typeof LukuRoute
   NotificacoesRoute: typeof NotificacoesRoute
   OfertasRoute: typeof OfertasRoute
-  PacotesRoute: typeof PacotesRouteWithChildren
+  PacotesRoute: typeof PacotesRoute
   ParceirosRoute: typeof ParceirosRoute
   PerfilRoute: typeof PerfilRoute
   PreferenciasRoute: typeof PreferenciasRoute
@@ -699,6 +699,7 @@ export interface RootRouteChildren {
   AdminCardapioPdfRoute: typeof AdminCardapioPdfRoute
   AdminEntrarRoute: typeof AdminEntrarRoute
   MenuRestaurantIdRoute: typeof MenuRestaurantIdRoute
+  PacotesPackageTypeIdRoute: typeof PacotesPackageTypeIdRoute
   PratoDishIdRoute: typeof PratoDishIdRoute
   PratosDishNameRoute: typeof PratosDishNameRoute
   RestaurantesIdRoute: typeof RestaurantesIdRoute
@@ -994,12 +995,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MenuRestaurantIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pacotes/$packageTypeId': {
-      id: '/pacotes/$packageTypeId'
-      path: '/$packageTypeId'
+    '/pacotes_/$packageTypeId': {
+      id: '/pacotes_/$packageTypeId'
+      path: '/pacotes/$packageTypeId'
       fullPath: '/pacotes/$packageTypeId'
       preLoaderRoute: typeof PacotesPackageTypeIdRouteImport
-      parentRoute: typeof PacotesRoute
+      parentRoute: typeof rootRouteImport
     }
     '/prato/$dishId': {
       id: '/prato/$dishId'
@@ -1124,17 +1125,6 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
-interface PacotesRouteChildren {
-  PacotesPackageTypeIdRoute: typeof PacotesPackageTypeIdRoute
-}
-
-const PacotesRouteChildren: PacotesRouteChildren = {
-  PacotesPackageTypeIdRoute: PacotesPackageTypeIdRoute,
-}
-
-const PacotesRouteWithChildren =
-  PacotesRoute._addFileChildren(PacotesRouteChildren)
-
 interface SistemaRouteChildren {
   SistemaOperacaoRoute: typeof SistemaOperacaoRoute
   SistemaPacotesRoute: typeof SistemaPacotesRoute
@@ -1175,7 +1165,7 @@ const rootRouteChildren: RootRouteChildren = {
   LukuRoute: LukuRoute,
   NotificacoesRoute: NotificacoesRoute,
   OfertasRoute: OfertasRoute,
-  PacotesRoute: PacotesRouteWithChildren,
+  PacotesRoute: PacotesRoute,
   ParceirosRoute: ParceirosRoute,
   PerfilRoute: PerfilRoute,
   PreferenciasRoute: PreferenciasRoute,
@@ -1188,6 +1178,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminCardapioPdfRoute: AdminCardapioPdfRoute,
   AdminEntrarRoute: AdminEntrarRoute,
   MenuRestaurantIdRoute: MenuRestaurantIdRoute,
+  PacotesPackageTypeIdRoute: PacotesPackageTypeIdRoute,
   PratoDishIdRoute: PratoDishIdRoute,
   PratosDishNameRoute: PratosDishNameRoute,
   RestaurantesIdRoute: RestaurantesIdRoute,

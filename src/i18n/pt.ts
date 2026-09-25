@@ -2244,6 +2244,8 @@ export const pt = {
     dateLabel: "Data",
     timeLabel: "Hora",
     peopleLabel: "Número de pessoas",
+    typeLabel: "Tipo de reserva",
+    typeTable: "Mesa normal",
     notesLabel: "Pedidos especiais (opcional)",
     notesPlaceholder: "Ex: mesa perto da janela, aniversário...",
     submit: "Pedir reserva",
@@ -2265,6 +2267,9 @@ export const pt = {
   },
   restaurantDetail: {
     reserveTable: "Reservar mesa",
+    packagesTitle: "Pacotes",
+    packagesHint: "Pacotes de consumo para ocasiões especiais, oferecidos por este restaurante.",
+    reservePackage: "Reservar",
     paused: "Este restaurante está temporariamente indisponível.",
     closedNow: "Fechado agora — abre às {opensAt}.",
     seeAlternatives: "Ver alternativas",

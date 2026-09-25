@@ -2233,6 +2233,8 @@ export const en: Dictionary = {
     dateLabel: "Date",
     timeLabel: "Time",
     peopleLabel: "Number of people",
+    typeLabel: "Reservation type",
+    typeTable: "Regular table",
     notesLabel: "Special requests (optional)",
     notesPlaceholder: "E.g.: table by the window, birthday...",
     submit: "Request reservation",
@@ -2254,6 +2256,9 @@ export const en: Dictionary = {
   },
   restaurantDetail: {
     reserveTable: "Book a table",
+    packagesTitle: "Packages",
+    packagesHint: "Consumption packages for special occasions, offered by this restaurant.",
+    reservePackage: "Reserve",
     closedNow: "Closed now — opens at {opensAt}.",
     paused: "This restaurant is temporarily unavailable.",
     seeAlternatives: "See alternatives",
