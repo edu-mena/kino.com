@@ -19,6 +19,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { LeftSidebar, tabs } from "./left-sidebar";
 import { Logo } from "./logo";
+import { NavBadge } from "./nav-badge";
 import { NotificationsBell } from "./notifications-bell";
 import { OrderBuilderCard } from "./order-builder-card";
 import {
@@ -31,6 +32,7 @@ import {
 import { useCart } from "@/lib/cart";
 import { useLocation } from "@/lib/location";
 import { useAuth } from "@/lib/auth";
+import { useUnreadByKind } from "@/lib/notifications";
 import { usePreferences } from "@/lib/preferences";
 import { useTutorial } from "@/lib/tutorial";
 import { cn } from "@/lib/utils";
@@ -177,6 +179,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
   // existem lá dentro no mobile.
   const { mobileMenuOpen: open, setMobileMenuOpen: setOpen } = useTutorial();
   const { isLoggedIn, user, logout } = useAuth();
+  const unread = useUnreadByKind("client");
   const navigate = useNavigate();
   const { t } = useTranslation();
   const isGuestHome = variant === "guestHome";
@@ -334,7 +337,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
               aria-label={panelAlwaysAvailable ? t("header.moreOptions") : t("header.openMenu")}
               onClick={() => setOpen(!open)}
               className={cn(
-                "grid h-10 w-10 place-items-center rounded-xl lg:hidden",
+                "relative grid h-10 w-10 place-items-center rounded-xl lg:hidden",
                 isGuestHome
                   ? "bg-brand text-brand-foreground"
                   : panelAlwaysAvailable
@@ -349,6 +352,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
               ) : (
                 <Menu className="h-4 w-4" />
               )}
+              {!open && <NavBadge count={unread.total} />}
             </button>
           </div>
         </div>
@@ -380,19 +384,32 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
         )}
       >
         <div className="flex-1 mt-4 overflow-y-auto px-4 py-8">
-          {panelLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              data-tour={link.to === "/preferencias" ? "preferences" : undefined}
-              {...(isGuestHome ? { viewTransition: { types: guestViewTransitionTypes } } : {})}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-2 py-3 text-lg font-medium text-foreground hover:bg-surface"
-            >
-              {"icon" in link && <link.icon className="h-4 w-4 shrink-0 text-primary" />}
-              {t(link.labelKey)}
-            </Link>
-          ))}
+          {panelLinks.map((link) => {
+            const badge =
+              link.to === "/entrega"
+                ? unread.orders
+                : link.to === "/reservas"
+                  ? unread.reservations
+                  : 0;
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                data-tour={link.to === "/preferencias" ? "preferences" : undefined}
+                {...(isGuestHome ? { viewTransition: { types: guestViewTransitionTypes } } : {})}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-lg px-2 py-3 text-lg font-medium text-foreground hover:bg-surface"
+              >
+                {"icon" in link && (
+                  <span className="relative shrink-0">
+                    <link.icon className="h-4 w-4 text-primary" />
+                    <NavBadge count={badge} />
+                  </span>
+                )}
+                {t(link.labelKey)}
+              </Link>
+            );
+          })}
         </div>
 
         {/* O idioma funciona igual para convidados (usePreferences não
@@ -455,27 +472,36 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
 
 export function MobileTabBar() {
   const { count } = useCart();
+  const unread = useUnreadByKind("client");
   const { t } = useTranslation();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
       <div className="grid grid-cols-5">
-        {tabs.map((tab) => (
-          <Link
-            key={tab.to}
-            to={tab.to}
-            activeOptions={{ exact: tab.to === "/" }}
-            activeProps={{ className: "text-primary" }}
-            className="relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground"
-          >
-            <tab.icon className="h-5 w-5" />
-            {tab.to === "/entrega" && count > 0 && (
-              <span className="absolute right-1/2 top-1 translate-x-4 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
-                {count}
-              </span>
-            )}
-            {t(tab.labelKey)}
-          </Link>
-        ))}
+        {tabs.map((tab) => {
+          const badge =
+            tab.to === "/entrega"
+              ? Math.max(count, unread.orders)
+              : tab.to === "/reservas"
+                ? unread.reservations
+                : 0;
+          return (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              activeOptions={{ exact: tab.to === "/" }}
+              activeProps={{ className: "text-primary" }}
+              className="relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground"
+            >
+              <tab.icon className="h-5 w-5" />
+              {badge > 0 && (
+                <span className="absolute right-1/2 top-1 translate-x-4 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
+                  {badge > 9 ? "9+" : badge}
+                </span>
+              )}
+              {t(tab.labelKey)}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

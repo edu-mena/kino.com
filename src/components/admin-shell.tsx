@@ -23,13 +23,25 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Logo } from "./logo";
+import { NavBadge } from "./nav-badge";
 import { NotificationsBell } from "./notifications-bell";
 import { AdminOnboardingTour, AdminTutorialHint } from "./admin-onboarding-tour";
 import { useTranslation } from "@/i18n";
 import { AdminTutorialProvider, useAdminTutorial } from "@/lib/admin-tutorial";
 import { hasRealBackend } from "@/lib/api-client";
+import { useUnreadByKind } from "@/lib/notifications";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useRestaurantAccess, useSubscriptions, usePlanFeatures } from "@/lib/subscriptions";
+
+/** Contagem de não lidas para o ícone deste item de navegação — só
+ * "Pedidos"/"Reservas" têm badge próprio (ver `useUnreadByKind`); o resto
+ * fica sem, mesmo com notificações de seguidor por ler (essas só entram no
+ * agregado do hamburger). */
+function badgeCountFor(labelKey: string, unread: { orders: number; reservations: number }): number {
+  if (labelKey === "orders") return unread.orders;
+  if (labelKey === "reservations") return unread.reservations;
+  return 0;
+}
 
 // `labelKey` também serve de `tourId` (data-tour="admin-<tourId>") — só
 // orders/menu/reservations/promotions/restaurant têm passo no tour hoje,
@@ -96,6 +108,7 @@ function AdminShellContent({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { mobileMenuOpen: mobileOpen, setMobileMenuOpen: setMobileOpen } = useAdminTutorial();
   const { t } = useTranslation();
+  const unread = useUnreadByKind("restaurant", restaurant?.id);
 
   if (!restaurant) return null;
 
@@ -127,7 +140,10 @@ function AdminShellContent({ children }: { children: ReactNode }) {
               activeProps={{ className: "text-primary bg-surface" }}
               className="relative mx-2 flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-primary xl:justify-start"
             >
-              <item.icon className="mx-auto h-6 w-6 shrink-0 xl:mx-0" />
+              <span className="relative mx-auto shrink-0 xl:mx-0">
+                <item.icon className="h-6 w-6 shrink-0" />
+                <NavBadge count={badgeCountFor(item.labelKey, unread)} />
+              </span>
               <span className="hidden truncate xl:inline">{t(`adminNav.${item.labelKey}`)}</span>
             </Link>
           ))}
@@ -176,9 +192,10 @@ function AdminShellContent({ children }: { children: ReactNode }) {
               data-tour="admin-nav-menu"
               aria-label={mobileOpen ? t("adminNav.closeMenu") : t("adminNav.openMenu")}
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground"
+              className="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground"
             >
               {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              {!mobileOpen && <NavBadge count={unread.total} />}
             </button>
           </div>
         </header>
@@ -193,7 +210,10 @@ function AdminShellContent({ children }: { children: ReactNode }) {
                 onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-3 rounded-lg px-2 py-3 text-sm font-medium text-foreground hover:bg-surface"
               >
-                <item.icon className="h-4 w-4 shrink-0 text-primary" />
+                <span className="relative shrink-0">
+                  <item.icon className="h-4 w-4 text-primary" />
+                  <NavBadge count={badgeCountFor(item.labelKey, unread)} />
+                </span>
                 {t(`adminNav.${item.labelKey}`)}
               </Link>
             ))}
@@ -228,7 +248,10 @@ function AdminShellContent({ children }: { children: ReactNode }) {
               activeProps={{ className: "text-primary" }}
               className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground"
             >
-              <item.icon className="h-5 w-5" />
+              <span className="relative shrink-0">
+                <item.icon className="h-5 w-5" />
+                <NavBadge count={badgeCountFor(item.labelKey, unread)} />
+              </span>
               {t(`adminNav.${item.labelKey}`)}
             </Link>
           ))}

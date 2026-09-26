@@ -526,3 +526,45 @@ export function useNotifications() {
   if (!ctx) throw new Error("useNotifications must be used inside NotificationsProvider");
   return ctx;
 }
+
+export type UnreadByKind = {
+  /** `kind === "order"` — mapeia para `/entrega` (cliente) ou `/admin/pedidos` (restaurante). */
+  orders: number;
+  /** `kind === "reservation"` — mapeia para `/reservas` (cliente) ou `/admin/reservas` (restaurante). */
+  reservations: number;
+  /** `kind === "restaurant"` (avisos de seguidor) — sem aba própria, só entra no total agregado. */
+  other: number;
+  total: number;
+};
+
+/** Não-lidas por destino (Fase N4) — mesmo filtro que `NotificationsBell`
+ * já fazia para a contagem única do sino, agora partilhado para colocar um
+ * badge sobre o ícone certo em cada aba/menu (Pedidos/Reservas, sidebar,
+ * bottom bar, hamburger — ver admin-shell.tsx/site-shell.tsx/
+ * left-sidebar.tsx). Um único sítio com esta lógica, para nunca haver duas
+ * fontes da verdade sobre "quantas notificações por tipo". */
+export function useUnreadByKind(
+  scope: "client" | "restaurant",
+  restaurantId?: string,
+): UnreadByKind {
+  const { all } = useNotifications();
+  const { user } = useAuth();
+
+  return useMemo(() => {
+    const mineKey = viewerKey(user);
+    const scoped = scopeNotifications(all, scope, {
+      ...(restaurantId ? { restaurantId } : {}),
+      ownerKey: mineKey,
+    }).filter((n) => !n.read);
+
+    let orders = 0;
+    let reservations = 0;
+    let other = 0;
+    for (const n of scoped) {
+      if (n.kind === "order") orders += 1;
+      else if (n.kind === "reservation") reservations += 1;
+      else other += 1;
+    }
+    return { orders, reservations, other, total: scoped.length };
+  }, [all, scope, restaurantId, user]);
+}

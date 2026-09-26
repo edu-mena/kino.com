@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Bell } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +10,7 @@ import { NotificationList } from "@/components/notification-list";
 import { useTranslation } from "@/i18n";
 import { useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
+import { playNotificationSound } from "@/lib/notification-sound";
 import { scopeNotifications, useNotifications } from "@/lib/notifications";
 
 const BELL_CAP = 12;
@@ -46,6 +47,26 @@ export function NotificationsBell({
       ownerKey: mineKey,
     }).filter((n) => !n.read);
   }, [all, scope, restaurantId, user]);
+
+  // Som característico (Fase N4) — só nas notificações que aparecem DEPOIS
+  // da primeira leitura desta aba (nunca no lote inicial já não-lido ao
+  // carregar a página, senão tocava sempre que o utilizador tivesse
+  // notificações antigas por ler).
+  const knownIds = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    const idsNow = new Set(unread.map((n) => n.id));
+    if (knownIds.current) {
+      let hasNew = false;
+      for (const id of idsNow) {
+        if (!knownIds.current.has(id)) {
+          hasNew = true;
+          break;
+        }
+      }
+      if (hasNew) playNotificationSound();
+    }
+    knownIds.current = idsNow;
+  }, [unread]);
 
   const list = unread.slice(0, BELL_CAP);
   const historyHref = scope === "restaurant" ? "/admin/notificacoes" : "/notificacoes";

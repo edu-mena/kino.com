@@ -24,7 +24,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
+import { useUnreadByKind } from "@/lib/notifications";
 import { useTranslation } from "@/i18n";
+
+/** Contagem do badge por destino — `/entrega` combina pedidos ativos (já
+ * existia) com notificações de pedido por ler (novo, Fase N4); `/reservas`
+ * só tinha o segundo, não tinha badge nenhum até agora. */
+function badgeCountFor(
+  to: string,
+  count: number,
+  unread: { orders: number; reservations: number },
+): number {
+  if (to === "/entrega") return Math.max(count, unread.orders);
+  if (to === "/reservas") return unread.reservations;
+  return 0;
+}
 
 /** Reaproveitado pelo bottombar mobile — mantém-se em 5 destinos lá, mesmo
  * a leftbar do desktop tendo mais opções (ver `desktopNavItems` abaixo).
@@ -67,6 +81,7 @@ const navItemClass =
  */
 export function LeftSidebar() {
   const { count } = useCart();
+  const unread = useUnreadByKind("client");
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -84,25 +99,28 @@ export function LeftSidebar() {
       </Link>
 
       <nav data-tour="nav-menu" className="flex flex-1 flex-col gap-2 overflow-y-auto">
-        {desktopNavItems.map((tab) => (
-          <Link
-            key={tab.to}
-            to={tab.to}
-            activeOptions={{ exact: tab.to === "/" }}
-            activeProps={{ className: "text-primary bg-surface" }}
-            className={navItemClass}
-          >
-            <span className="relative mx-auto shrink-0 xl:mx-0">
-              <tab.icon className="h-7 w-7" />
-              {tab.to === "/entrega" && count > 0 && (
-                <span className="absolute -right-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
-                  {count}
-                </span>
-              )}
-            </span>
-            <span className="hidden truncate xl:inline">{t(tab.labelKey)}</span>
-          </Link>
-        ))}
+        {desktopNavItems.map((tab) => {
+          const badge = badgeCountFor(tab.to, count, unread);
+          return (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              activeOptions={{ exact: tab.to === "/" }}
+              activeProps={{ className: "text-primary bg-surface" }}
+              className={navItemClass}
+            >
+              <span className="relative mx-auto shrink-0 xl:mx-0">
+                <tab.icon className="h-7 w-7" />
+                {badge > 0 && (
+                  <span className="absolute -right-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
+                    {badge > 9 ? "9+" : badge}
+                  </span>
+                )}
+              </span>
+              <span className="hidden truncate xl:inline">{t(tab.labelKey)}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       <div className="mx-2 shrink-0 space-y-1 rounded-2xl bg-surface/80 p-1.5">
