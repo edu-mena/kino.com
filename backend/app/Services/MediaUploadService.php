@@ -22,7 +22,7 @@ class MediaUploadService
 {
     // Os 5 presets já usados no crop client-side (ver plano) — "story" aqui
     // é só a variante imagem (vídeo de story vai por storeRawVideo).
-    private const IMAGE_PURPOSES = ['dish', 'cover', 'wallpaper', 'gallery', 'promo', 'story', 'partner'];
+    private const IMAGE_PURPOSES = ['dish', 'cover', 'wallpaper', 'gallery', 'promo', 'story', 'partner', 'site'];
 
     /** Aceitam imagem OU PDF (ver storeDocument). "invoice" = fatura emitida
      * pelo restaurante; "payment-proof" = comprovativo de pagamento anexado
@@ -32,7 +32,7 @@ class MediaUploadService
     private const DOCUMENT_PURPOSES = ['invoice', 'payment-proof'];
 
     /** Só os 2 media_type que aceitam vídeo no schema (ver migrations). */
-    private const VIDEO_PURPOSES = ['story', 'promo'];
+    private const VIDEO_PURPOSES = ['story', 'promo', 'site'];
 
     private const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8MB
 

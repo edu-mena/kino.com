@@ -3,6 +3,8 @@ import { Quote, Star, Store, UtensilsCrossed, Users } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell, SiteHeader } from "@/components/site-shell";
 import { useTranslation } from "@/i18n";
+import { formatCount } from "@/lib/format";
+import { useSiteContentPublic, useSiteStats } from "@/lib/site-content";
 
 export const Route = createFileRoute("/sobre")({
   head: () => ({
@@ -37,84 +39,113 @@ const partners = [
 
 function Sobre() {
   const { t } = useTranslation();
+  const { content } = useSiteContentPublic();
+  const stats = useSiteStats();
 
-  const team = [
-    { initials: "CR", name: "Christopher Rosinho", role: t("sobre.roleDirector") },
-    { initials: "EM", name: "Eduardo Mena", role: t("sobre.roleProjectManager") },
-  ];
+  const settings = content?.settings;
+  const team = content?.team ?? [];
+  const testimonials = content?.testimonials ?? [];
 
-  const stats = [
-    { icon: Users, value: "12.000+", label: t("sobre.statActiveCustomers") },
-    { icon: Store, value: "350+", label: t("sobre.statPartnerRestaurants") },
-    { icon: UtensilsCrossed, value: "40 mil+", label: t("sobre.statMenuDishes") },
-    { icon: Star, value: "4.8", label: t("sobre.statAverageRating") },
-  ];
-
-  const testimonials = [
-    {
-      initials: "CM",
-      name: "Carla Mendes",
-      role: t("sobre.testimonial1Role"),
-      quote: t("sobre.testimonial1Quote"),
-    },
-    {
-      initials: "JP",
-      name: "João Paulo",
-      role: t("sobre.testimonial2Role"),
-      quote: t("sobre.testimonial2Quote"),
-    },
-    {
-      initials: "IN",
-      name: "Inês Neto",
-      role: t("sobre.testimonial3Role"),
-      quote: t("sobre.testimonial3Quote"),
-    },
-  ];
+  // Ícone de cada estatística fica fixo no frontend (o backend só devolve o
+  // número real) — ver SystemStatsController::siteStats.
+  const statCards = stats
+    ? [
+        {
+          icon: Users,
+          value: formatCount(stats.activeCustomers),
+          label: t("sobre.statActiveCustomers"),
+        },
+        {
+          icon: Store,
+          value: formatCount(stats.partnerRestaurants),
+          label: t("sobre.statPartnerRestaurants"),
+        },
+        {
+          icon: UtensilsCrossed,
+          value: formatCount(stats.menuDishes),
+          label: t("sobre.statMenuDishes"),
+        },
+        { icon: Star, value: stats.averageRating.toFixed(1), label: t("sobre.statAverageRating") },
+      ]
+    : [];
 
   return (
     <PageShell header={<SiteHeader variant="guestHome" />} footer={null} showMobileTabBar={false}>
       <PageHeading
-        eyebrow={t("sobre.eyebrow")}
-        title={t("sobre.title")}
-        description={t("sobre.description")}
+        eyebrow={settings?.aboutEyebrow || t("sobre.eyebrow")}
+        title={settings?.aboutTitle || t("sobre.title")}
+        description={settings?.aboutDescription || t("sobre.description")}
       />
 
+      {/* Hero — imagem ou vídeo de destaque, editável em /sistema/conteudo.
+          Só aparece quando preenchido (nunca por omissão). */}
+      {settings?.aboutHeroImageUrl && settings.processingStatus === "ready" && (
+        <section className="mx-auto mt-10 max-w-6xl px-4 md:px-6">
+          <div className="overflow-hidden rounded-[2rem] bg-surface">
+            {settings.aboutHeroMediaType === "video" ? (
+              <video
+                src={settings.aboutHeroImageUrl}
+                poster={settings.aboutHeroThumbnailUrl ?? undefined}
+                controls
+                className="aspect-video w-full object-cover"
+              />
+            ) : (
+              <img
+                src={settings.aboutHeroImageUrl}
+                alt=""
+                className="aspect-video w-full object-cover"
+              />
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Team */}
-      <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">{t("sobre.teamHeading")}</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {team.map((person) => (
-            <div
-              key={person.name}
-              className="flex items-center gap-4 rounded-[2rem] border border-border bg-card p-6"
-            >
-              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-primary font-display text-lg font-bold text-primary-foreground">
-                {person.initials}
-              </span>
-              <div>
-                <h3 className="font-display text-lg font-bold text-primary">{person.name}</h3>
-                <p className="text-sm text-muted-foreground">{person.role}</p>
+      {team.length > 0 && (
+        <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
+          <h2 className="text-2xl font-extrabold text-primary">{t("sobre.teamHeading")}</h2>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {team.map((person) => (
+              <div
+                key={person.id}
+                className="flex items-center gap-4 rounded-[2rem] border border-border bg-card p-6"
+              >
+                <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-primary font-display text-lg font-bold text-primary-foreground">
+                  {person.photoUrl ? (
+                    <img src={person.photoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    person.initials
+                  )}
+                </span>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-primary">{person.name}</h3>
+                  <p className="text-sm text-muted-foreground">{person.role}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Stats */}
-      <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-2xl border border-border bg-card p-5 text-left"
-            >
-              <stat.icon className="h-8 w-8 text-brand" />
-              <p className="mt-4 font-display text-3xl font-extrabold text-primary">{stat.value}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {statCards.length > 0 && (
+        <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {statCards.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-2xl border border-border bg-card p-5 text-left"
+              >
+                <stat.icon className="h-8 w-8 text-brand" />
+                <p className="mt-4 font-display text-3xl font-extrabold text-primary">
+                  {stat.value}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Partners marquee */}
       <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
@@ -134,29 +165,35 @@ function Sobre() {
       </div>
 
       {/* Testimonials */}
-      <section className="mx-auto mb-20 mt-14 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">{t("sobre.testimonialsHeading")}</h2>
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
-          {testimonials.map((item) => (
-            <div
-              key={item.name}
-              className="flex flex-col rounded-[2rem] border border-border bg-card p-6"
-            >
-              <Quote className="h-6 w-6 text-brand" />
-              <p className="mt-3 flex-1 text-sm text-foreground">{item.quote}</p>
-              <div className="mt-5 flex items-center gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface font-display text-sm font-bold text-primary">
-                  {item.initials}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">{item.role}</p>
+      {testimonials.length > 0 && (
+        <section className="mx-auto mb-20 mt-14 max-w-6xl px-4 md:px-6">
+          <h2 className="text-2xl font-extrabold text-primary">{t("sobre.testimonialsHeading")}</h2>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {testimonials.map((item) => (
+              <div
+                key={item.id}
+                className="flex flex-col rounded-[2rem] border border-border bg-card p-6"
+              >
+                <Quote className="h-6 w-6 text-brand" />
+                <p className="mt-3 flex-1 text-sm text-foreground">{item.quote}</p>
+                <div className="mt-5 flex items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-surface font-display text-sm font-bold text-primary">
+                    {item.photoUrl ? (
+                      <img src={item.photoUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      item.initials
+                    )}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.role}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Call to action — a página descreve a Luku mas, até aqui, não dava
           nenhum próximo passo; fecha com os mesmos dois caminhos usados

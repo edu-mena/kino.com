@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Activity,
   CreditCard,
+  FileText,
   Inbox,
   LayoutGrid,
   LifeBuoy,
@@ -27,6 +28,7 @@ const navItems = [
   { to: "/sistema/promocoes", labelKey: "promotions", icon: Megaphone },
   { to: "/sistema/pacotes", labelKey: "packages", icon: PartyPopper },
   { to: "/sistema/suporte", labelKey: "support", icon: LifeBuoy },
+  { to: "/sistema/conteudo", labelKey: "content", icon: FileText },
 ] as const;
 
 const mobileTabRoutes = new Set([

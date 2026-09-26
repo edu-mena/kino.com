@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\RestaurantStaffController;
 use App\Http\Controllers\Api\V1\RestaurantTableController;
 use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\V1\SavedAddressController;
+use App\Http\Controllers\Api\V1\SiteContentController;
 use App\Http\Controllers\Api\V1\StoryController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupportTicketController;
@@ -165,6 +166,14 @@ Route::get('restaurants/{restaurant}/stories', [StoryController::class, 'indexFo
 Route::get('offers', [OfferController::class, 'index']);
 Route::get('restaurants/{restaurant}/offers', [OfferController::class, 'indexForRestaurant']);
 
+// Conteúdo institucional (contacto, "Sobre nós", equipa, testemunhos, FAQ) —
+// editável em /sistema/conteudo. Leitura pública (consumida por /sobre e
+// /contacto sem sessão nenhuma); estatísticas "automáticas" (nº de clientes/
+// restaurantes/pratos) ficam em SystemStatsController::siteStats, calculadas
+// a partir dos dados reais, nunca escritas à mão.
+Route::get('site/content', [SiteContentController::class, 'show']);
+Route::get('system/site-stats', [SystemStatsController::class, 'siteStats']);
+
 Route::middleware(['auth:sanctum', 'throttle:uploads'])->group(function () {
     Route::post('restaurants/{restaurant}/stories', [StoryController::class, 'store']);
     Route::post('stories', [StoryController::class, 'storeGlobal']);
@@ -188,6 +197,26 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     // diretamente em vez de simular o parsing HTTP real).
     Route::post('offers/{offer}', [OfferController::class, 'update']);
     Route::delete('offers/{offer}', [OfferController::class, 'destroy']);
+});
+
+// Escrita do conteúdo institucional — sempre system_operator (ver cada
+// FormRequest::authorize() em App\Http\Requests\Api\V1\SiteContent). POST,
+// não PATCH, em updateSettings/updateTeamMember/updateTestimonial: aceitam
+// multipart (troca de imagem/vídeo) — mesmo motivo de offers/{offer} acima.
+Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
+    Route::post('site/settings', [SiteContentController::class, 'updateSettings']);
+
+    Route::post('site/team', [SiteContentController::class, 'storeTeamMember']);
+    Route::post('site/team/{teamMember}', [SiteContentController::class, 'updateTeamMember']);
+    Route::delete('site/team/{teamMember}', [SiteContentController::class, 'destroyTeamMember']);
+
+    Route::post('site/testimonials', [SiteContentController::class, 'storeTestimonial']);
+    Route::post('site/testimonials/{testimonial}', [SiteContentController::class, 'updateTestimonial']);
+    Route::delete('site/testimonials/{testimonial}', [SiteContentController::class, 'destroyTestimonial']);
+
+    Route::post('site/faqs', [SiteContentController::class, 'storeFaq']);
+    Route::patch('site/faqs/{faq}', [SiteContentController::class, 'updateFaq']);
+    Route::delete('site/faqs/{faq}', [SiteContentController::class, 'destroyFaq']);
 });
 
 /*

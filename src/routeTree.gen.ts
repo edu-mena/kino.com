@@ -55,6 +55,7 @@ import { Route as PratoDishIdRouteImport } from './routes/prato.$dishId'
 import { Route as PratosDishNameRouteImport } from './routes/pratos.$dishName'
 import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
 import { Route as SistemaIndexRouteImport } from './routes/sistema.index'
+import { Route as SistemaConteudoRouteImport } from './routes/sistema.conteudo'
 import { Route as SistemaOperacaoRouteImport } from './routes/sistema.operacao'
 import { Route as SistemaPacotesRouteImport } from './routes/sistema.pacotes'
 import { Route as SistemaParceirosRouteImport } from './routes/sistema.parceiros'
@@ -294,6 +295,11 @@ const SistemaIndexRoute = SistemaIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SistemaRoute,
 } as any)
+const SistemaConteudoRoute = SistemaConteudoRouteImport.update({
+  id: '/conteudo',
+  path: '/conteudo',
+  getParentRoute: () => SistemaRoute,
+} as any)
 const SistemaOperacaoRoute = SistemaOperacaoRouteImport.update({
   id: '/operacao',
   path: '/operacao',
@@ -380,6 +386,7 @@ export interface FileRoutesByFullPath {
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
+  '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
@@ -434,6 +441,7 @@ export interface FileRoutesByTo {
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
+  '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
@@ -491,6 +499,7 @@ export interface FileRoutesById {
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes_/$id': typeof RestaurantesIdRoute
+  '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
@@ -549,6 +558,7 @@ export interface FileRouteTypes {
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes/$id'
+    | '/sistema/conteudo'
     | '/sistema/operacao'
     | '/sistema/pacotes'
     | '/sistema/parceiros'
@@ -603,6 +613,7 @@ export interface FileRouteTypes {
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes/$id'
+    | '/sistema/conteudo'
     | '/sistema/operacao'
     | '/sistema/pacotes'
     | '/sistema/parceiros'
@@ -659,6 +670,7 @@ export interface FileRouteTypes {
     | '/prato/$dishId'
     | '/pratos/$dishName'
     | '/restaurantes_/$id'
+    | '/sistema/conteudo'
     | '/sistema/operacao'
     | '/sistema/pacotes'
     | '/sistema/parceiros'
@@ -1030,6 +1042,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SistemaIndexRouteImport
       parentRoute: typeof SistemaRoute
     }
+    '/sistema/conteudo': {
+      id: '/sistema/conteudo'
+      path: '/conteudo'
+      fullPath: '/sistema/conteudo'
+      preLoaderRoute: typeof SistemaConteudoRouteImport
+      parentRoute: typeof SistemaRoute
+    }
     '/sistema/operacao': {
       id: '/sistema/operacao'
       path: '/operacao'
@@ -1126,6 +1145,7 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface SistemaRouteChildren {
+  SistemaConteudoRoute: typeof SistemaConteudoRoute
   SistemaOperacaoRoute: typeof SistemaOperacaoRoute
   SistemaPacotesRoute: typeof SistemaPacotesRoute
   SistemaParceirosRoute: typeof SistemaParceirosRoute
@@ -1137,6 +1157,7 @@ interface SistemaRouteChildren {
 }
 
 const SistemaRouteChildren: SistemaRouteChildren = {
+  SistemaConteudoRoute: SistemaConteudoRoute,
   SistemaOperacaoRoute: SistemaOperacaoRoute,
   SistemaPacotesRoute: SistemaPacotesRoute,
   SistemaParceirosRoute: SistemaParceirosRoute,

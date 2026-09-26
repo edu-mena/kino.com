@@ -20,6 +20,7 @@ import { PageHeading, PageShell, SiteHeader } from "@/components/site-shell";
 import { sendApiContactMessage } from "@/data/api-contact";
 import { useTranslation } from "@/i18n";
 import { hasRealBackend } from "@/lib/api-client";
+import { useSiteContentPublic } from "@/lib/site-content";
 
 export const Route = createFileRoute("/contacto")({
   head: () => ({
@@ -48,26 +49,42 @@ function WhatsAppIcon(props: SVGProps<SVGSVGElement>) {
 const inputClass =
   "w-full min-w-0 rounded-xl border border-border bg-card px-4 py-3 text-sm outline-none transition-colors focus:border-primary";
 
-const CONTACT_EMAIL = "ola@luku.ao";
+const FALLBACK_CONTACT_EMAIL = "ola@luku.ao";
 
 function Contacto() {
   const { t } = useTranslation();
   const [sending, setSending] = useState(false);
+  const { content } = useSiteContentPublic();
+  const settings = content?.settings;
+  const contactEmail = settings?.contactEmail || FALLBACK_CONTACT_EMAIL;
 
   const contactInfo = [
     {
       icon: Mail,
       title: t("contacto.emailLabel"),
-      text: CONTACT_EMAIL,
-      href: `mailto:${CONTACT_EMAIL}`,
+      text: contactEmail,
+      href: `mailto:${contactEmail}`,
     },
-    {
-      icon: Phone,
-      title: t("contacto.phoneLabel"),
-      text: "+244 923 456 789",
-      href: "tel:+244923456789",
-    },
-    { icon: MapPin, title: t("contacto.addressLabel"), text: "Luanda, Angola", href: undefined },
+    ...(settings?.contactPhone
+      ? [
+          {
+            icon: Phone,
+            title: t("contacto.phoneLabel"),
+            text: settings.contactPhone,
+            href: `tel:${settings.contactPhone.replace(/\s+/g, "")}`,
+          },
+        ]
+      : []),
+    ...(settings?.contactAddress
+      ? [
+          {
+            icon: MapPin,
+            title: t("contacto.addressLabel"),
+            text: settings.contactAddress,
+            href: undefined,
+          },
+        ]
+      : []),
   ];
 
   const subjects = [
@@ -78,13 +95,7 @@ function Contacto() {
     { value: "outro", label: t("contacto.subjectOther") },
   ];
 
-  const faqs = [
-    { question: t("contacto.faq1Question"), answer: t("contacto.faq1Answer") },
-    { question: t("contacto.faq2Question"), answer: t("contacto.faq2Answer") },
-    { question: t("contacto.faq3Question"), answer: t("contacto.faq3Answer") },
-    { question: t("contacto.faq4Question"), answer: t("contacto.faq4Answer") },
-    { question: t("contacto.faq5Question"), answer: t("contacto.faq5Answer") },
-  ];
+  const faqs = content?.faqs ?? [];
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -116,7 +127,7 @@ function Contacto() {
     }
 
     const body = `${message}\n\n— ${name} (${email})`;
-    const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+    const mailto = `mailto:${contactEmail}?subject=${encodeURIComponent(
       `[Luku.com] ${subjectLabel}`,
     )}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
@@ -150,16 +161,18 @@ function Contacto() {
             );
           })}
 
-          <a
-            href="https://wa.me/244930814277"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-primary p-5 text-center text-primary-foreground transition-opacity hover:opacity-90"
-          >
-            <WhatsAppIcon className="h-8 w-8" />
-            <h3 className="mt-3 font-display text-base font-bold">{t("contacto.whatsapp")}</h3>
-            <p className="text-sm text-primary-foreground/85">{t("contacto.whatsappHint")}</p>
-          </a>
+          {settings?.contactWhatsapp && (
+            <a
+              href={`https://wa.me/${settings.contactWhatsapp.replace(/\D/g, "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-primary p-5 text-center text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              <WhatsAppIcon className="h-8 w-8" />
+              <h3 className="mt-3 font-display text-base font-bold">{t("contacto.whatsapp")}</h3>
+              <p className="text-sm text-primary-foreground/85">{t("contacto.whatsappHint")}</p>
+            </a>
+          )}
         </div>
       </section>
 
@@ -227,7 +240,7 @@ function Contacto() {
         <Accordion type="single" collapsible className="mt-5 space-y-3">
           {faqs.map((faq, i) => (
             <AccordionItem
-              key={faq.question}
+              key={faq.id}
               value={`item-${i}`}
               className="rounded-2xl border border-border bg-card px-6"
             >
