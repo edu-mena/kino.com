@@ -49,26 +49,46 @@ function loadEchoLibs() {
   return loading;
 }
 
+/** `null` sem chave configurada — nunca lançado, só registado (ver
+ * `getEcho`): faltar `VITE_REVERB_APP_KEY` no ambiente onde o frontend foi
+ * publicado é uma falha de configuração externa, não um bug de código, e
+ * não pode impedir o resto da app de funcionar (o poll de 30s continua a
+ * cobrir as notificações mesmo sem tempo real nenhum). */
 async function getEcho(token: string): Promise<EchoType<"reverb"> | null> {
   if (!hasRealBackend || typeof window === "undefined") return null;
   if (echo && echoToken === token) return echo;
+
+  const key = import.meta.env["VITE_REVERB_APP_KEY"] as string | undefined;
+  if (!key) {
+    console.warn(
+      "[echo] VITE_REVERB_APP_KEY não configurada — notificações em tempo real desligadas, a usar só o poll periódico.",
+    );
+    return null;
+  }
+
   if (echo) echo.disconnect();
 
-  const { Echo, Pusher } = await loadEchoLibs();
-  echoToken = token;
-  window.Pusher = Pusher;
-  echo = new Echo<"reverb">({
-    broadcaster: "reverb",
-    key: import.meta.env["VITE_REVERB_APP_KEY"] as string,
-    wsHost: import.meta.env["VITE_REVERB_HOST"] as string,
-    wsPort: Number(import.meta.env["VITE_REVERB_PORT"] ?? 80),
-    wssPort: Number(import.meta.env["VITE_REVERB_PORT"] ?? 443),
-    forceTLS: (import.meta.env["VITE_REVERB_SCHEME"] as string) === "https",
-    enabledTransports: ["ws", "wss"],
-    authEndpoint: `${API_BASE_URL}/broadcasting/auth`,
-    bearerToken: token,
-  });
-  return echo;
+  try {
+    const { Echo, Pusher } = await loadEchoLibs();
+    echoToken = token;
+    window.Pusher = Pusher;
+    echo = new Echo<"reverb">({
+      broadcaster: "reverb",
+      key,
+      wsHost: import.meta.env["VITE_REVERB_HOST"] as string,
+      wsPort: Number(import.meta.env["VITE_REVERB_PORT"] ?? 80),
+      wssPort: Number(import.meta.env["VITE_REVERB_PORT"] ?? 443),
+      forceTLS: (import.meta.env["VITE_REVERB_SCHEME"] as string) === "https",
+      enabledTransports: ["ws", "wss"],
+      authEndpoint: `${API_BASE_URL}/broadcasting/auth`,
+      bearerToken: token,
+    });
+    return echo;
+  } catch (e) {
+    console.warn("[echo] falhou a ligar ao Reverb — a usar só o poll periódico.", e);
+    echo = null;
+    return null;
+  }
 }
 
 /** Fecha a ligação — chamado no logout (cliente ou painel), para nunca
@@ -94,15 +114,19 @@ export function subscribeToNotifications(
   let cancelled = false;
   let subscribed: { client: EchoType<"reverb">; channelName: string } | null = null;
 
-  void getEcho(token).then((client) => {
-    if (cancelled || !client) return;
-    const channelName =
-      channel.type === "user"
-        ? `App.Models.User.${channel.id}`
-        : `App.Models.Restaurant.${channel.id}`;
-    client.private(channelName).listen(".notification.created", onEvent);
-    subscribed = { client, channelName };
-  });
+  getEcho(token)
+    .then((client) => {
+      if (cancelled || !client) return;
+      const channelName =
+        channel.type === "user"
+          ? `App.Models.User.${channel.id}`
+          : `App.Models.Restaurant.${channel.id}`;
+      client.private(channelName).listen(".notification.created", onEvent);
+      subscribed = { client, channelName };
+    })
+    .catch((e: unknown) => {
+      console.warn("[echo] subscribeToNotifications falhou", e);
+    });
 
   return () => {
     cancelled = true;
