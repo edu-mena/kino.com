@@ -2201,7 +2201,8 @@ export const pt = {
     reservationNew: "Nova reserva em {name}",
     reservationNewDetailed: "Nova reserva em {name} · {peopleCount} pessoa(s) · {time}",
     reservationStatus: "A sua reserva em {name} foi atualizada",
-    reservationStatusDetailed: "Reserva em {name}: {statusLabel} · {peopleCount} pessoa(s) · {time}",
+    reservationStatusDetailed:
+      "Reserva em {name}: {statusLabel} · {peopleCount} pessoa(s) · {time}",
     followStoryNew: "{name} publicou um story novo",
     followOfferNew: "{name} lançou uma promoção: {status}",
     followPriceChange: "{name} atualizou {status} preço(s) do cardápio",

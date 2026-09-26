@@ -1,24 +1,29 @@
-import Echo from "laravel-echo";
-import Pusher from "pusher-js";
+import type EchoType from "laravel-echo";
+import type PusherType from "pusher-js";
 import { API_BASE_URL, hasRealBackend } from "@/lib/api-client";
 
 /**
  * Cliente Reverb (Fase N3) — substitui o poll de 30s por transmissão real:
  * `NotificationCreated` (backend, ver `app/Events`) chega aqui assim que a
- * notificação é criada, sem esperar o próximo ciclo de poll. `pusher-js`
- * precisa de estar acessível ao `laravel-echo` — window global, convenção da
- * própria lib (ver capacitor/README.md para o resto da configuração).
+ * notificação é criada, sem esperar o próximo ciclo de poll.
+ *
+ * `laravel-echo`/`pusher-js` só são importados (via `import()` dinâmico), e
+ * só chamados dentro de um `useEffect` (nunca durante SSR) — importá-los
+ * estaticamente aqui rebentava a app inteira: `notifications.tsx` (que
+ * importa este ficheiro) faz parte da árvore de providers da raiz,
+ * renderizada também no servidor, e o bundle de `pusher-js` toca em
+ * `window` incondicionalmente ao carregar — sem `window` no runtime do
+ * servidor (edge/Cloudflare Workers), o import falhava e derrubava a
+ * renderização de TODA a árvore de providers antes de chegar ao
+ * `PreferencesProvider`, daí o erro genérico "usePreferences must be used
+ * inside PreferencesProvider" em qualquer página.
  */
 declare global {
   interface Window {
-    Pusher: typeof Pusher;
+    Pusher: typeof PusherType;
   }
 }
 
-/** Disparado no `window` sempre que uma notificação chega em tempo real —
- * `cart.tsx`/`reservations.tsx` ouvem isto para se atualizarem de imediato
- * (mesma ideia do evento `storage` já usado para sincronizar abas, só que
- * entre o servidor e a app, não entre abas). */
 export const REALTIME_NOTIFICATION_EVENT = "luku:realtime-notification";
 
 export type RealtimeNotificationPayload = {
@@ -33,14 +38,23 @@ export type RealtimeNotificationPayload = {
   createdAt: string;
 };
 
-let echo: Echo<"reverb"> | null = null;
+let echo: EchoType<"reverb"> | null = null;
 let echoToken: string | null = null;
+let loading: Promise<{ Echo: typeof EchoType; Pusher: typeof PusherType }> | null = null;
 
-function getEcho(token: string): Echo<"reverb"> | null {
+function loadEchoLibs() {
+  loading ??= Promise.all([import("laravel-echo"), import("pusher-js")]).then(
+    ([echoMod, pusherMod]) => ({ Echo: echoMod.default, Pusher: pusherMod.default }),
+  );
+  return loading;
+}
+
+async function getEcho(token: string): Promise<EchoType<"reverb"> | null> {
   if (!hasRealBackend || typeof window === "undefined") return null;
   if (echo && echoToken === token) return echo;
   if (echo) echo.disconnect();
 
+  const { Echo, Pusher } = await loadEchoLibs();
   echoToken = token;
   window.Pusher = Pusher;
   echo = new Echo<"reverb">({
@@ -69,26 +83,29 @@ export function disconnectEcho(): void {
 /** Ouve o canal privado de um utilizador (cliente) OU de um restaurante
  * (painel) — nunca os dois na mesma chamada (ver `NotificationCreated`,
  * cada notificação pertence só a um). Devolve a função de limpeza
- * (unsubscribe) para o `useEffect` chamador. */
+ * (unsubscribe) para o `useEffect` chamador — a subscrição em si é
+ * assíncrona (`import()` dinâmico), por isso a limpeza cancela mesmo que o
+ * componente desmonte antes de `getEcho` resolver. */
 export function subscribeToNotifications(
   token: string,
   channel: { type: "user" | "restaurant"; id: string },
   onEvent: (payload: RealtimeNotificationPayload) => void,
 ): () => void {
-  const client = getEcho(token);
-  if (!client) return () => {};
+  let cancelled = false;
+  let subscribed: { client: EchoType<"reverb">; channelName: string } | null = null;
 
-  const channelName =
-    channel.type === "user"
-      ? `App.Models.User.${channel.id}`
-      : `App.Models.Restaurant.${channel.id}`;
-
-  // `.notification.created` com ponto inicial — nome de evento próprio
-  // (`broadcastAs()` no backend), não o nome de classe totalmente
-  // qualificado que o Echo assumiria por omissão.
-  client.private(channelName).listen(".notification.created", onEvent);
+  void getEcho(token).then((client) => {
+    if (cancelled || !client) return;
+    const channelName =
+      channel.type === "user"
+        ? `App.Models.User.${channel.id}`
+        : `App.Models.Restaurant.${channel.id}`;
+    client.private(channelName).listen(".notification.created", onEvent);
+    subscribed = { client, channelName };
+  });
 
   return () => {
-    client.leaveChannel(`private-${channelName}`);
+    cancelled = true;
+    if (subscribed) subscribed.client.leaveChannel(`private-${subscribed.channelName}`);
   };
 }

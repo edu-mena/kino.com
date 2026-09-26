@@ -2191,7 +2191,8 @@ export const en: Dictionary = {
     reservationNew: "New reservation at {name}",
     reservationNewDetailed: "New reservation at {name} · {peopleCount} people · {time}",
     reservationStatus: "Your reservation at {name} was updated",
-    reservationStatusDetailed: "Reservation at {name}: {statusLabel} · {peopleCount} people · {time}",
+    reservationStatusDetailed:
+      "Reservation at {name}: {statusLabel} · {peopleCount} people · {time}",
     followStoryNew: "{name} posted a new story",
     followOfferNew: "{name} launched a promotion: {status}",
     followPriceChange: "{name} updated {status} menu price(s)",
@@ -2511,7 +2512,8 @@ export const en: Dictionary = {
     customersBody:
       "See each customer's history, tier (Gold/Platinum) and notes. Available on the Plus plan.",
     statsTitle: "Stats is a Plus plan feature",
-    statsBody: "Track orders, revenue and trends with the full dashboard. Available on the Plus plan.",
+    statsBody:
+      "Track orders, revenue and trends with the full dashboard. Available on the Plus plan.",
     cta: "See plans",
   },
   dietaryOnboarding: {

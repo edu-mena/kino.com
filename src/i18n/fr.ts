@@ -2222,7 +2222,8 @@ export const fr: Dictionary = {
     reservationNew: "Nouvelle réservation chez {name}",
     reservationNewDetailed: "Nouvelle réservation chez {name} · {peopleCount} personne(s) · {time}",
     reservationStatus: "Votre réservation chez {name} a été mise à jour",
-    reservationStatusDetailed: "Réservation chez {name} : {statusLabel} · {peopleCount} personne(s) · {time}",
+    reservationStatusDetailed:
+      "Réservation chez {name} : {statusLabel} · {peopleCount} personne(s) · {time}",
     followStoryNew: "{name} a publié une nouvelle story",
     followOfferNew: "{name} a lancé une promotion : {status}",
     followPriceChange: "{name} a mis à jour {status} prix du menu",
