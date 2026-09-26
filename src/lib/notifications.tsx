@@ -24,7 +24,16 @@ import { useCart } from "@/lib/cart";
 import { viewerKey } from "@/lib/customer";
 import { formatKz } from "@/lib/format";
 import { useMockFollowerNotes } from "@/lib/follow-notifications-mock";
-import { getAdminToken, getManagedRestaurantId } from "@/lib/restaurant-admin";
+import {
+  getAdminToken,
+  getManagedRestaurantId,
+  useManagedRestaurantId,
+} from "@/lib/restaurant-admin";
+import {
+  REALTIME_NOTIFICATION_EVENT,
+  subscribeToNotifications,
+  type RealtimeNotificationPayload,
+} from "@/lib/echo";
 import { useReservations } from "@/lib/reservations";
 
 type TFn = (path: string, vars?: Record<string, string | number>) => string;
@@ -363,6 +372,7 @@ const POLL_MS = 30_000;
  * verdade já existe via push (ver @/lib/push-notifications). */
 function RealNotificationsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const managedRestaurantId = useManagedRestaurantId();
   const { orders } = useCart();
   const { reservations } = useReservations();
   const [clientNotes, setClientNotes] = useState<LukuNotification[]>([]);
@@ -415,6 +425,38 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("storage", onStorage);
     };
   }, [refetchAll]);
+
+  // Fase N3 — Reverb: liga aos canais privados para reagir de imediato,
+  // sem esperar o próximo dos 30s acima. `refetchAll()` atualiza o sino já
+  // aqui; o evento global avisa Cart/Reservations (fora deste provider) a
+  // fazerem o próprio refetch — mesma ideia do `storage` já usado para
+  // sincronizar entre abas, agora entre o servidor e a app.
+  useEffect(() => {
+    const onEvent = (payload: RealtimeNotificationPayload) => {
+      refetchAll();
+      window.dispatchEvent(new CustomEvent(REALTIME_NOTIFICATION_EVENT, { detail: payload }));
+    };
+
+    const cleanups: Array<() => void> = [];
+    const clientToken = getAuthToken();
+    if (clientToken && user) {
+      cleanups.push(subscribeToNotifications(clientToken, { type: "user", id: user.id }, onEvent));
+    }
+    const adminToken = getAdminToken();
+    if (adminToken && managedRestaurantId) {
+      cleanups.push(
+        subscribeToNotifications(
+          adminToken,
+          { type: "restaurant", id: managedRestaurantId },
+          onEvent,
+        ),
+      );
+    }
+    return () => {
+      for (const cleanup of cleanups) cleanup();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, managedRestaurantId]);
 
   // `refId` do cliente não vem com `restaurantId` do backend (a notificação
   // do cliente só guarda user_id, ver OrderObserver::notify) — resolve-se

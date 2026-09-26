@@ -19,7 +19,10 @@ const RAW_BASE_URL = (import.meta.env["VITE_API_BASE_URL"] as string | undefined
  * `apiFetch` rebentar com erro de rede. */
 export const hasRealBackend = Boolean(RAW_BASE_URL);
 
-const API_BASE_URL = (RAW_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
+/** Exportada para `@/lib/echo` montar `${API_BASE_URL}/broadcasting/auth` —
+ * o mesmo endpoint que `apiFetch` já usa para tudo o resto, sem duplicar a
+ * lógica de fallback/trim acima. */
+export const API_BASE_URL = (RAW_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
 
 export class ApiError extends Error {
   status: number;

@@ -1,10 +1,12 @@
 <?php
 
+use App\Events\NotificationCreated;
 use App\Models\Notification;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
 test('criar um pedido gera notificação para o restaurante E para o cliente autenticado', function () {
@@ -214,6 +216,37 @@ test('notificação antiga (status_snapshot em texto simples) continua a devolve
         ->assertOk()
         ->assertJsonPath('data.0.status', 'pending')
         ->assertJsonPath('data.0.snapshot', null);
+});
+
+test('criar uma notificação transmite NotificationCreated no canal certo (Fase N3)', function () {
+    Event::fake([NotificationCreated::class]);
+    $restaurant = Restaurant::factory()->create();
+    $user = User::factory()->create();
+
+    $restaurant->orders()->create([
+        'user_id' => $user->id, 'fulfillment_type' => 'takeaway', 'customer_name' => $user->name,
+        'customer_phone' => '900', 'pickup_asap' => true, 'status' => 'pending',
+        'subtotal' => 1000, 'total' => 1000,
+    ]);
+
+    Event::assertDispatched(
+        NotificationCreated::class,
+        fn (NotificationCreated $e) => $e->notification->restaurant_id === $restaurant->id
+            && $e->notification->user_id === null,
+    );
+    Event::assertDispatched(
+        NotificationCreated::class,
+        fn (NotificationCreated $e) => $e->notification->user_id === $user->id,
+    );
+
+    // Canal certo por dono — restaurante transmite em Restaurant.{id}, o
+    // cliente em User.{id} (nunca os dois na mesma notificação).
+    $restaurantNotification = Notification::where('restaurant_id', $restaurant->id)->firstOrFail();
+    $customerNotification = Notification::where('user_id', $user->id)->firstOrFail();
+    expect((new NotificationCreated($restaurantNotification))->broadcastOn()[0]->name)
+        ->toBe("private-App.Models.Restaurant.{$restaurant->uuid}");
+    expect((new NotificationCreated($customerNotification))->broadcastOn()[0]->name)
+        ->toBe("private-App.Models.User.{$user->uuid}");
 });
 
 test('sino do restaurante só mostra as notificações do próprio restaurante, staff de outro não acede', function () {

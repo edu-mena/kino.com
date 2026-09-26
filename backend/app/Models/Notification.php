@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasPublicUuid;
+use App\Observers\NotificationObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * schema próprio e mais simples, ver plano). Gerada por Observers em
  * Order/Reservation, nunca por diffing client-side.
  */
+#[ObservedBy(NotificationObserver::class)]
 class Notification extends Model
 {
     use HasFactory, HasPublicUuid;

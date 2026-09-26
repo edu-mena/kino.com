@@ -17,6 +17,7 @@ import type { Reservation, Restaurant } from "@/data/types";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { hasRealBackend } from "@/lib/api-client";
 import { viewerKey } from "@/lib/customer";
+import { REALTIME_NOTIFICATION_EVENT } from "@/lib/echo";
 import { getAdminToken, useManagedRestaurantId } from "@/lib/restaurant-admin";
 
 const SEED_RESERVATIONS: Reservation[] = hasRealBackend ? [] : INITIAL_RESERVATIONS;
@@ -130,6 +131,15 @@ export function ReservationsProvider({ children }: { children: ReactNode }) {
     if (hasRealBackend) refetchApi();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [managedRestaurantId, user?.email, user?.phone]);
+
+  // Fase N3 — Reverb: ver mesmo raciocínio em @/lib/cart.tsx.
+  useEffect(() => {
+    if (!hasRealBackend) return;
+    const onRealtime = () => refetchApi();
+    window.addEventListener(REALTIME_NOTIFICATION_EVENT, onRealtime);
+    return () => window.removeEventListener(REALTIME_NOTIFICATION_EVENT, onRealtime);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (hasRealBackend) return;

@@ -18,6 +18,7 @@ import { hasRealBackend } from "@/lib/api-client";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
 import { orderDistanceKm } from "@/lib/delivery-eval";
+import { REALTIME_NOTIFICATION_EVENT } from "@/lib/echo";
 import { getAdminToken, useManagedRestaurantId } from "@/lib/restaurant-admin";
 import { useReservations } from "@/lib/reservations";
 import type { FulfillmentType, SavedAddress, SelectedIngredient } from "@/data/types";
@@ -598,6 +599,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (hasRealBackend) refetchApi();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [managedRestaurantId, user?.email, user?.phone]);
+
+  // Fase N3 — Reverb: uma notificação de pedido em tempo real (ver
+  // @/lib/echo, disparado por @/lib/notifications) refaz os pedidos de
+  // imediato, sem esperar o próximo poll do sino — sem isto, a notificação
+  // chegava mas o pedido em ecrã continuava com o estado antigo até um
+  // refresh manual.
+  useEffect(() => {
+    if (!hasRealBackend) return;
+    const onRealtime = () => refetchApi();
+    window.addEventListener(REALTIME_NOTIFICATION_EVENT, onRealtime);
+    return () => window.removeEventListener(REALTIME_NOTIFICATION_EVENT, onRealtime);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Carrega pedidos persistidos (se houver) por cima da seed, uma vez, no
   // cliente — assim o painel do restaurante e a página do cliente

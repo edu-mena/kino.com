@@ -22,8 +22,18 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->group(__DIR__.'/../routes/api_v1.php');
         },
         commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
+    )
+    // Sem passar `channels:` a `withRouting()` acima de propósito — isso
+    // regista `Broadcast::routes()` com o middleware por omissão ('web',
+    // sessão/cookie) em `/broadcasting/auth`, que uma SPA com tokens Bearer
+    // (Sanctum) nunca consegue autenticar. Aqui a rota nasce já sob
+    // `api/v1` com `auth:sanctum` — o mesmo guard de toda a API — e
+    // `routes/channels.php` continua a ser carregado (as regras de
+    // `Broadcast::channel(...)` lá dentro) através do 2º argumento.
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        attributes: ['prefix' => 'api/v1', 'middleware' => ['api', 'auth:sanctum']],
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Fly.io termina o TLS na edge e reencaminha HTTP puro para o
