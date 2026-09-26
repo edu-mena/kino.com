@@ -249,6 +249,29 @@ test('criar uma notificação transmite NotificationCreated no canal certo (Fase
         ->toBe("private-App.Models.User.{$user->uuid}");
 });
 
+test('falha ao transmitir a notificação (Reverb inalcançável) NÃO derruba a criação do pedido', function () {
+    // Simula uma falha na transmissão em tempo real (Reverb em baixo/mal
+    // configurado) registando um listener que rebenta — o dispatcher do
+    // Laravel corre todos os listeners de um evento na mesma chamada, por
+    // isso isto propaga exatamente como uma falha real do broadcaster
+    // propagaria. Bug real que já aconteceu em produção: sem o try/catch
+    // em NotificationObserver, isto derrubava o pedido inteiro com 500.
+    Event::listen(NotificationCreated::class, function () {
+        throw new RuntimeException('reverb unreachable (simulado)');
+    });
+
+    $restaurant = Restaurant::factory()->create();
+    $response = $restaurant->orders()->create([
+        'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900',
+        'pickup_asap' => true, 'status' => 'pending', 'subtotal' => 1000, 'total' => 1000,
+        'guest_token' => Str::uuid(),
+    ]);
+
+    expect($response->exists)->toBeTrue();
+    expect(Notification::where('restaurant_id', $restaurant->id)->where('event', 'orderNew')->exists())
+        ->toBeTrue();
+});
+
 test('sino do restaurante só mostra as notificações do próprio restaurante, staff de outro não acede', function () {
     $restaurant = Restaurant::factory()->create();
     $otherRestaurant = Restaurant::factory()->create();
