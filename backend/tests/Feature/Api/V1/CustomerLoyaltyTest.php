@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Restaurant;
+use App\Models\RestaurantSubscription;
 use App\Models\User;
 use App\Services\CustomerLoyaltyService;
 use Illuminate\Support\Facades\DB;
@@ -121,6 +122,18 @@ test('staff vê o estatuto dos clientes; outro restaurante não', function () {
     $this->actingAs(ownerOf(Restaurant::factory()->create()), 'sanctum')
         ->getJson("/api/v1/restaurants/{$restaurant->uuid}/customer-loyalty")
         ->assertForbidden();
+});
+
+test('restaurante Pro não tem Gestão de Clientes — funcionalidade só do Plano Plus', function () {
+    $restaurant = Restaurant::factory()->create();
+    RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id, 'plan' => 'pro',
+        'started_at' => now(), 'trial_ends_at' => now()->addDays(60), 'status' => 'active',
+    ]);
+
+    $this->actingAs(ownerOf($restaurant), 'sanctum')
+        ->getJson("/api/v1/restaurants/{$restaurant->uuid}/customer-loyalty")
+        ->assertStatus(403);
 });
 
 test('cliente vê o próprio estatuto em cada restaurante', function () {

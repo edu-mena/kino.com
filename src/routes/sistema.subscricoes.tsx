@@ -37,9 +37,8 @@ function SistemaSubscricoes() {
   const { token: operatorToken } = useSystemAdmin();
   const mock = useSubscriptions();
   const real = useSystemSubscriptions(hasRealBackend ? operatorToken : null);
-  const { subscriptions, mrr, counts, setStatus, registerPayment, extendTrial } = hasRealBackend
-    ? real
-    : mock;
+  const { subscriptions, mrr, counts, setStatus, setPlan, registerPayment, extendTrial } =
+    hasRealBackend ? real : mock;
   const { t, locale } = useTranslation();
   const bcp = BCP47[locale];
 
@@ -258,8 +257,21 @@ function SistemaSubscricoes() {
 
                     <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
                       <AdminField label={t("sistema.subscricoes.colPlan")}>
-                        {t(`sistema.plan.${active.plan}`)} · {formatKz(PLAN_PRICE[active.plan])}
-                        {t("sistema.subscricoes.perMonth")}
+                        <select
+                          value={active.plan}
+                          onChange={(e) => {
+                            setPlan(active.restaurantId, e.target.value as "pro" | "plus");
+                            toast.success(t("sistema.subscricoes.planChangedToast"));
+                          }}
+                          className={ADMIN_FILTER_SELECT}
+                        >
+                          <option value="pro">
+                            {t("sistema.plan.pro")} · {formatKz(PLAN_PRICE.pro)}
+                          </option>
+                          <option value="plus">
+                            {t("sistema.plan.plus")} · {formatKz(PLAN_PRICE.plus)}
+                          </option>
+                        </select>
                       </AdminField>
                       <AdminField label={t("sistema.subscricoes.trialEnds")}>
                         {fmtDate(active.trialEndsAt)}

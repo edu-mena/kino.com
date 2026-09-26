@@ -3,6 +3,7 @@
 use App\Jobs\ProcessUploadedVideoJob;
 use App\Models\Restaurant;
 use App\Models\RestaurantStory;
+use App\Models\RestaurantSubscription;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
@@ -131,4 +132,36 @@ test('staff só apaga story institucional se for system_operator', function () {
     $this->actingAs($owner, 'sanctum')
         ->deleteJson("/api/v1/stories/{$global->uuid}")
         ->assertForbidden();
+});
+
+test('restaurante Pro só cria 2 stories ativas por dia, a 3ª é bloqueada', function () {
+    $restaurant = Restaurant::factory()->create();
+    RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id, 'plan' => 'pro',
+        'started_at' => now(), 'trial_ends_at' => now()->addDays(60), 'status' => 'active',
+    ]);
+    $owner = ownerOf($restaurant);
+    RestaurantStory::factory()->for($restaurant)->count(2)->create();
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/stories", [
+            'media' => UploadedFile::fake()->image('story.jpg'),
+        ])
+        ->assertStatus(403);
+});
+
+test('restaurante Plus não tem tecto de stories', function () {
+    $restaurant = Restaurant::factory()->create();
+    RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id, 'plan' => 'plus',
+        'started_at' => now(), 'trial_ends_at' => now()->addDays(60), 'status' => 'active',
+    ]);
+    $owner = ownerOf($restaurant);
+    RestaurantStory::factory()->for($restaurant)->count(5)->create();
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/stories", [
+            'media' => UploadedFile::fake()->image('story.jpg'),
+        ])
+        ->assertStatus(201);
 });

@@ -100,14 +100,14 @@ function SistemaIndex() {
       .sort((a, b) => b.rev - a.rev)
       .slice(0, 5);
 
-    const planBars: StatBarRow[] = (["luku"] as const).map((plan) => {
+    const planBars: StatBarRow[] = (["plus", "pro"] as const).map((plan, i) => {
       const count = subscriptions.filter((s) => s.plan === plan).length;
       return {
         key: plan,
         label: `${t(`sistema.plan.${plan}`)} · ${formatKz(PLAN_PRICE[plan])}`,
         count,
         pct: subscriptions.length ? Math.round((count / subscriptions.length) * 100) : 0,
-        tone: "bg-primary",
+        tone: i === 0 ? "bg-primary" : "bg-brand",
       };
     });
     const statusTone: Record<string, string> = {

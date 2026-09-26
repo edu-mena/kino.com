@@ -14,6 +14,7 @@ use App\Models\RestaurantPackage;
 use App\Models\RestaurantTable;
 use App\Services\MediaUploadService;
 use App\Services\OrderPricingService;
+use App\Services\PlanLimitService;
 use App\Services\ReservationOccupancyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -78,8 +79,17 @@ class ReservationController extends Controller
         return new ReservationResource($reservation);
     }
 
-    public function store(StoreReservationRequest $request, Restaurant $restaurant, OrderPricingService $pricing): JsonResponse
-    {
+    public function store(
+        StoreReservationRequest $request,
+        Restaurant $restaurant,
+        OrderPricingService $pricing,
+        PlanLimitService $planLimits,
+    ): JsonResponse {
+        // Capacidade do PLANO do restaurante, não permissão de quem reserva
+        // (o cliente final não é staff) — ver PlanLimitService, tecto
+        // mensal só existe no plano Pro.
+        abort_unless($planLimits->hasCapacity($restaurant, 'reservations_per_month'), 403, 'plan_limit_reached');
+
         $data = $request->validated();
         // 'sanctum' explícito — rota aceita convidados sem token.
         $user = $request->user('sanctum');

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Restaurant;
+use App\Models\RestaurantSubscription;
 
 test('staff grava e lê notas de um cliente do próprio restaurante', function () {
     $restaurant = Restaurant::factory()->create();
@@ -35,4 +36,21 @@ test('sem nota gravada devolve notas vazias, não 404', function () {
     $this->actingAs($owner, 'sanctum')
         ->getJson("/api/v1/restaurants/{$restaurant->uuid}/customer-notes/ninguem@example.com")
         ->assertOk()->assertJsonPath('data.notes', '');
+});
+
+test('restaurante Pro não acede a notas de cliente — funcionalidade só do Plano Plus', function () {
+    $restaurant = Restaurant::factory()->create();
+    RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id, 'plan' => 'pro',
+        'started_at' => now(), 'trial_ends_at' => now()->addDays(60), 'status' => 'active',
+    ]);
+    $owner = ownerOf($restaurant);
+
+    $this->actingAs($owner, 'sanctum')
+        ->getJson("/api/v1/restaurants/{$restaurant->uuid}/customer-notes/cliente@example.com")
+        ->assertStatus(403);
+
+    $this->actingAs($owner, 'sanctum')
+        ->putJson("/api/v1/restaurants/{$restaurant->uuid}/customer-notes/cliente@example.com", ['notes' => 'X'])
+        ->assertStatus(403);
 });

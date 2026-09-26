@@ -10,7 +10,7 @@ function createSubscribedRestaurant(array $subAttrs = []): Restaurant
     $restaurant = Restaurant::factory()->create();
     RestaurantSubscription::query()->create(array_merge([
         'restaurant_id' => $restaurant->id,
-        'plan' => 'luku',
+        'plan' => 'plus',
         'started_at' => now()->subDays(10),
         'trial_ends_at' => now()->addDays(50),
         'status' => 'trial',
@@ -79,6 +79,49 @@ test('registerPayment em status overdue reativa para active', function () {
     $this->actingAs($operator, 'sanctum')
         ->postJson("/api/v1/restaurants/{$restaurant->uuid}/subscription/register-payment")
         ->assertOk()->assertJsonPath('data.status', 'active');
+});
+
+test('só aceita plan pro/plus — o plano único antigo já não é válido', function () {
+    $restaurant = createSubscribedRestaurant();
+    $operator = User::factory()->systemOperator()->create();
+
+    $this->actingAs($operator, 'sanctum')
+        ->patchJson("/api/v1/restaurants/{$restaurant->uuid}/subscription", ['plan' => 'luku'])
+        ->assertStatus(422)->assertJsonValidationErrors('plan');
+
+    $this->actingAs($operator, 'sanctum')
+        ->patchJson("/api/v1/restaurants/{$restaurant->uuid}/subscription", ['plan' => 'pro'])
+        ->assertOk()->assertJsonPath('data.plan', 'pro')->assertJsonPath('data.price', 9999);
+});
+
+test('subscrição expõe preço, tectos e uso do plano — Pro tem tecto, Plus não', function () {
+    $restaurant = createSubscribedRestaurant(['plan' => 'pro']);
+    $owner = ownerOf($restaurant);
+
+    $response = $this->actingAs($owner, 'sanctum')
+        ->getJson("/api/v1/restaurants/{$restaurant->uuid}/subscription");
+
+    $response->assertOk()
+        ->assertJsonPath('data.price', 9999)
+        ->assertJsonPath('data.limits.stories', 2)
+        ->assertJsonPath('data.limits.offers', 2)
+        ->assertJsonPath('data.limits.reservationsPerMonth', 20)
+        ->assertJsonPath('data.usage.stories', 0)
+        ->assertJsonPath('data.features.packages', false)
+        ->assertJsonPath('data.features.customers', false)
+        ->assertJsonPath('data.features.stats', false);
+
+    $plusRestaurant = createSubscribedRestaurant(['plan' => 'plus']);
+    $plusOwner = ownerOf($plusRestaurant);
+
+    $this->actingAs($plusOwner, 'sanctum')
+        ->getJson("/api/v1/restaurants/{$plusRestaurant->uuid}/subscription")
+        ->assertOk()
+        ->assertJsonPath('data.price', 12999)
+        ->assertJsonPath('data.limits.stories', null)
+        ->assertJsonPath('data.features.packages', true)
+        ->assertJsonPath('data.features.customers', true)
+        ->assertJsonPath('data.features.stats', true);
 });
 
 test('extendTrial soma a partir do maior entre agora e o trial_ends_at atual, força status=trial', function () {

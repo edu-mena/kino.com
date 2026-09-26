@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { enUS, fr as frLocale, ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, ImageIcon, Link2, Plus, Sparkles, Trash2 } from "lucide-react";
@@ -38,6 +38,7 @@ import { useTranslation } from "@/i18n";
 import { useFirstUseHint } from "@/lib/first-use-hints";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useStoriesAdmin } from "@/lib/stories-admin";
+import { usePlanFeatures } from "@/lib/subscriptions";
 import { BCP47, last8Weeks, weekStart } from "@/lib/week";
 
 export const Route = createFileRoute("/admin/stories")({
@@ -58,6 +59,8 @@ function AdminStories() {
   const { storiesByRestaurant, createStory, deleteStory } = useStoriesAdmin();
   const { t, locale } = useTranslation();
   const storyHint = useFirstUseHint("story");
+  const { limits, usage, hasCapacity } = usePlanFeatures();
+  const atStoryCap = !hasCapacity("stories");
 
   const [formOpen, setFormOpen] = useState(false);
   const [image, setImage] = useState("");
@@ -203,6 +206,7 @@ function AdminStories() {
         title={t("adminStories.title")}
         action={
           <Button
+            disabled={atStoryCap}
             onClick={() => {
               setImage("");
               setMedia({ mediaType: "image" });
@@ -247,6 +251,23 @@ function AdminStories() {
                 <option value="old">{t("adminStories.sortOldest")}</option>
               </select>
             </div>
+
+            {limits.stories !== null && (
+              <p className="mt-3 text-xs font-medium text-muted-foreground">
+                {t("adminStories.planUsage", { used: usage.stories, limit: limits.stories })}
+                {atStoryCap && (
+                  <>
+                    {" — "}
+                    <Link
+                      to="/admin/subscricao"
+                      className="font-semibold text-primary hover:underline"
+                    >
+                      {t("adminStories.planUpgradeCta")}
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
               {/* Lista */}

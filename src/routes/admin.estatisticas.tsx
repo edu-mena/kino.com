@@ -22,7 +22,7 @@ import {
   TrendBadge,
   type StatBarRow,
 } from "@/components/admin-stats";
-import { AdminPageHeading } from "@/components/admin-shell";
+import { AdminPageHeading, PlanGate } from "@/components/admin-shell";
 import { getMenuItem, getReviewsForRestaurant } from "@/data/helpers";
 import { useTranslation } from "@/i18n";
 import { lineName, lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
@@ -422,426 +422,428 @@ function AdminEstatisticas() {
         }
       />
 
-      <div className="mx-auto max-w-6xl px-4 md:px-6">
-        {/* ---------- Receita geral ---------- */}
-        <StatSection
-          title={t("adminEstatisticas.revenue.section")}
-          hint={t("adminEstatisticas.revenue.sectionHint")}
-        >
-          <div className="mt-4 card-soft p-5 sm:p-6">
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t("adminEstatisticas.revenue.gross")}
-                </p>
-                <div className="mt-1 flex flex-wrap items-end gap-3">
-                  <p className="font-display text-4xl font-extrabold text-primary">
-                    {formatKz(stats.grossRevenue)}
+      <PlanGate feature="stats">
+        <div className="mx-auto max-w-6xl px-4 md:px-6">
+          {/* ---------- Receita geral ---------- */}
+          <StatSection
+            title={t("adminEstatisticas.revenue.section")}
+            hint={t("adminEstatisticas.revenue.sectionHint")}
+          >
+            <div className="mt-4 card-soft p-5 sm:p-6">
+              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t("adminEstatisticas.revenue.gross")}
                   </p>
-                  <TrendBadge
-                    delta={revenueDelta}
-                    label={t("adminEstatisticas.revenue.vsPrevWeek")}
-                  />
+                  <div className="mt-1 flex flex-wrap items-end gap-3">
+                    <p className="font-display text-4xl font-extrabold text-primary">
+                      {formatKz(stats.grossRevenue)}
+                    </p>
+                    <TrendBadge
+                      delta={revenueDelta}
+                      label={t("adminEstatisticas.revenue.vsPrevWeek")}
+                    />
+                  </div>
+
+                  <dl className="mt-5 space-y-3">
+                    {composition.map((c) => (
+                      <div key={c.key}>
+                        <div className="flex items-baseline justify-between text-sm">
+                          <dt className="flex items-center gap-2 font-medium text-foreground">
+                            <span className={`h-2 w-2 rounded-full ${c.tone}`} />
+                            {c.label}
+                          </dt>
+                          <dd className="tabular-nums text-muted-foreground">
+                            <span className="font-bold text-foreground">{formatKz(c.value)}</span> ·{" "}
+                            {pct(c.value, stats.grossRevenue)}%
+                          </dd>
+                        </div>
+                        <div className="mt-1.5">
+                          <MiniProgress pct={pct(c.value, stats.grossRevenue)} tone={c.tone} />
+                        </div>
+                      </div>
+                    ))}
+                  </dl>
+
+                  <p className="mt-5 text-xs text-muted-foreground">
+                    {t("adminEstatisticas.revenue.avgTicket", { value: formatKz(stats.avgTicket) })}
+                  </p>
                 </div>
 
-                <dl className="mt-5 space-y-3">
-                  {composition.map((c) => (
-                    <div key={c.key}>
-                      <div className="flex items-baseline justify-between text-sm">
-                        <dt className="flex items-center gap-2 font-medium text-foreground">
-                          <span className={`h-2 w-2 rounded-full ${c.tone}`} />
-                          {c.label}
-                        </dt>
-                        <dd className="tabular-nums text-muted-foreground">
-                          <span className="font-bold text-foreground">{formatKz(c.value)}</span> ·{" "}
-                          {pct(c.value, stats.grossRevenue)}%
-                        </dd>
-                      </div>
-                      <div className="mt-1.5">
-                        <MiniProgress pct={pct(c.value, stats.grossRevenue)} tone={c.tone} />
-                      </div>
-                    </div>
-                  ))}
-                </dl>
-
-                <p className="mt-5 text-xs text-muted-foreground">
-                  {t("adminEstatisticas.revenue.avgTicket", { value: formatKz(stats.avgTicket) })}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t("adminEstatisticas.revenue.byWeek")}
-                </p>
-                <div className="mt-3">
-                  <TrendArea
-                    points={weeks.map((w) => ({ label: w.label, a: w.revenue }))}
-                    legendA={t("adminEstatisticas.revenue.legend")}
-                  />
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t("adminEstatisticas.revenue.byWeek")}
+                  </p>
+                  <div className="mt-3">
+                    <TrendArea
+                      points={weeks.map((w) => ({ label: w.label, a: w.revenue }))}
+                      legendA={t("adminEstatisticas.revenue.legend")}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiTile
-              icon={Wallet}
-              tone="success"
-              label={t("adminEstatisticas.kpi.revenue")}
-              value={formatKz(stats.deliveredRevenue)}
-              hint={t("adminEstatisticas.kpi.revenueHint", { count: stats.deliveredCount })}
-            />
-            <KpiTile
-              icon={TrendingUp}
-              tone="primary"
-              label={t("adminEstatisticas.kpi.orders")}
-              value={String(stats.pOrdersCount)}
-              hint={t("adminEstatisticas.kpi.ordersHint", {
-                delivered: stats.deliveredCount,
-                rejected: stats.rejectedCount,
-              })}
-            >
-              <TrendBadge delta={ordersDelta} label={t("adminEstatisticas.revenue.vsPrevWeek")} />
-            </KpiTile>
-            <KpiTile
-              icon={CalendarCheck}
-              tone="brand"
-              label={t("adminEstatisticas.kpi.reservations")}
-              value={String(stats.confirmedCount)}
-              hint={
-                stats.acceptanceRate !== null
-                  ? t("adminEstatisticas.kpi.reservationsHint", { rate: stats.acceptanceRate })
-                  : t("adminEstatisticas.kpi.reservationsNoData")
-              }
-            >
-              {stats.acceptanceRate !== null && <MiniProgress pct={stats.acceptanceRate} />}
-            </KpiTile>
-            <KpiTile
-              icon={Star}
-              tone="muted"
-              label={t("adminEstatisticas.kpi.rating")}
-              value={avgRating.toFixed(1)}
-              hint={t("adminEstatisticas.kpi.ratingHint", { count: reviews.length })}
-            />
-          </div>
-        </StatSection>
-
-        {/* ---------- Operação de pedidos ---------- */}
-        <StatSection
-          title={t("adminEstatisticas.orders.section")}
-          hint={t("adminEstatisticas.orders.sectionHint")}
-        >
-          <div className="mt-4 grid gap-4 lg:grid-cols-3">
-            <StatCard
-              wide
-              title={t("adminEstatisticas.orders.trend")}
-              subtitle={t("adminEstatisticas.orders.trendSub")}
-            >
-              <TrendArea
-                points={weeks.map((w) => ({ label: w.label, a: w.orders, b: w.delivered }))}
-                legendA={t("adminEstatisticas.orders.legendTotal")}
-                legendB={t("adminEstatisticas.orders.legendDelivered")}
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <KpiTile
+                icon={Wallet}
+                tone="success"
+                label={t("adminEstatisticas.kpi.revenue")}
+                value={formatKz(stats.deliveredRevenue)}
+                hint={t("adminEstatisticas.kpi.revenueHint", { count: stats.deliveredCount })}
               />
-            </StatCard>
-            <StatCard
-              title={t("adminEstatisticas.orders.statusDist")}
-              subtitle={t("adminEstatisticas.orders.unitCount", { count: stats.pOrdersCount })}
-            >
-              <StatBars rows={stats.statusDist} />
-            </StatCard>
-          </div>
-
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <StatCard
-              title={t("adminEstatisticas.orders.payments")}
-              subtitle={t("adminEstatisticas.orders.paymentsSub")}
-            >
-              {stats.payments.length ? (
-                <StatBars rows={stats.payments} />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {t("adminEstatisticas.emptyGeneric")}
-                </p>
-              )}
-            </StatCard>
-            <StatCard
-              title={t("adminEstatisticas.orders.peakHours")}
-              subtitle={t("adminEstatisticas.orders.peakHoursSub")}
-            >
-              <MiniBars bars={stats.peakHours} unit={t("adminEstatisticas.orders.unit")} />
-            </StatCard>
-          </div>
-        </StatSection>
-
-        {/* ---------- Reservas ---------- */}
-        <StatSection
-          title={t("adminEstatisticas.reservations.section")}
-          hint={t("adminEstatisticas.reservations.sectionHint")}
-        >
-          <div className="mt-4 grid gap-4 lg:grid-cols-3">
-            <StatCard
-              wide
-              title={t("adminEstatisticas.reservations.trend")}
-              subtitle={t("adminEstatisticas.orders.trendSub")}
-            >
-              <TrendArea
-                points={weeks.map((w) => ({ label: w.label, a: w.resv, b: w.confirmed }))}
-                legendA={t("adminEstatisticas.reservations.legendRequested")}
-                legendB={t("adminEstatisticas.reservations.legendConfirmed")}
+              <KpiTile
+                icon={TrendingUp}
+                tone="primary"
+                label={t("adminEstatisticas.kpi.orders")}
+                value={String(stats.pOrdersCount)}
+                hint={t("adminEstatisticas.kpi.ordersHint", {
+                  delivered: stats.deliveredCount,
+                  rejected: stats.rejectedCount,
+                })}
+              >
+                <TrendBadge delta={ordersDelta} label={t("adminEstatisticas.revenue.vsPrevWeek")} />
+              </KpiTile>
+              <KpiTile
+                icon={CalendarCheck}
+                tone="brand"
+                label={t("adminEstatisticas.kpi.reservations")}
+                value={String(stats.confirmedCount)}
+                hint={
+                  stats.acceptanceRate !== null
+                    ? t("adminEstatisticas.kpi.reservationsHint", { rate: stats.acceptanceRate })
+                    : t("adminEstatisticas.kpi.reservationsNoData")
+                }
+              >
+                {stats.acceptanceRate !== null && <MiniProgress pct={stats.acceptanceRate} />}
+              </KpiTile>
+              <KpiTile
+                icon={Star}
+                tone="muted"
+                label={t("adminEstatisticas.kpi.rating")}
+                value={avgRating.toFixed(1)}
+                hint={t("adminEstatisticas.kpi.ratingHint", { count: reviews.length })}
               />
-            </StatCard>
-            <KpiTile
-              icon={ShieldCheck}
-              tone="success"
-              label={t("adminEstatisticas.kpi.deposit")}
-              value={formatKz(stats.depositHeld)}
-              hint={t("adminEstatisticas.kpi.depositHint", { count: stats.confirmedCount })}
-            >
-              <p className="text-xs text-muted-foreground">
-                {t("adminEstatisticas.kpi.peopleServed", { count: stats.peopleServed })}
-              </p>
-            </KpiTile>
-          </div>
+            </div>
+          </StatSection>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <StatCard
-              title={t("adminEstatisticas.reservations.weekday")}
-              subtitle={t("adminEstatisticas.reservations.weekdaySub")}
-            >
-              <MiniBars
-                bars={stats.weekdayOcc}
-                unit={t("adminEstatisticas.reservations.peopleUnit")}
-                tone="bg-brand/80"
-              />
-            </StatCard>
-            <StatCard
-              title={t("adminEstatisticas.reservations.groupSize")}
-              subtitle={t("adminEstatisticas.reservations.groupSizeSub")}
-            >
-              {stats.confirmedCount ? (
-                <StatBars rows={stats.groupSize} />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {t("adminEstatisticas.emptyGeneric")}
-                </p>
-              )}
-            </StatCard>
-          </div>
-        </StatSection>
+          {/* ---------- Operação de pedidos ---------- */}
+          <StatSection
+            title={t("adminEstatisticas.orders.section")}
+            hint={t("adminEstatisticas.orders.sectionHint")}
+          >
+            <div className="mt-4 grid gap-4 lg:grid-cols-3">
+              <StatCard
+                wide
+                title={t("adminEstatisticas.orders.trend")}
+                subtitle={t("adminEstatisticas.orders.trendSub")}
+              >
+                <TrendArea
+                  points={weeks.map((w) => ({ label: w.label, a: w.orders, b: w.delivered }))}
+                  legendA={t("adminEstatisticas.orders.legendTotal")}
+                  legendB={t("adminEstatisticas.orders.legendDelivered")}
+                />
+              </StatCard>
+              <StatCard
+                title={t("adminEstatisticas.orders.statusDist")}
+                subtitle={t("adminEstatisticas.orders.unitCount", { count: stats.pOrdersCount })}
+              >
+                <StatBars rows={stats.statusDist} />
+              </StatCard>
+            </div>
 
-        {/* ---------- Menu e produtos ---------- */}
-        <StatSection
-          title={t("adminEstatisticas.menu.section")}
-          hint={t("adminEstatisticas.menu.sectionHint")}
-        >
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <StatCard
-              title={t("adminEstatisticas.menu.topDishes")}
-              subtitle={t("adminEstatisticas.menu.topDishesSub")}
-            >
-              {stats.topDishes.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("adminEstatisticas.menu.topDishesEmpty")}
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <StatCard
+                title={t("adminEstatisticas.orders.payments")}
+                subtitle={t("adminEstatisticas.orders.paymentsSub")}
+              >
+                {stats.payments.length ? (
+                  <StatBars rows={stats.payments} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {t("adminEstatisticas.emptyGeneric")}
+                  </p>
+                )}
+              </StatCard>
+              <StatCard
+                title={t("adminEstatisticas.orders.peakHours")}
+                subtitle={t("adminEstatisticas.orders.peakHoursSub")}
+              >
+                <MiniBars bars={stats.peakHours} unit={t("adminEstatisticas.orders.unit")} />
+              </StatCard>
+            </div>
+          </StatSection>
+
+          {/* ---------- Reservas ---------- */}
+          <StatSection
+            title={t("adminEstatisticas.reservations.section")}
+            hint={t("adminEstatisticas.reservations.sectionHint")}
+          >
+            <div className="mt-4 grid gap-4 lg:grid-cols-3">
+              <StatCard
+                wide
+                title={t("adminEstatisticas.reservations.trend")}
+                subtitle={t("adminEstatisticas.orders.trendSub")}
+              >
+                <TrendArea
+                  points={weeks.map((w) => ({ label: w.label, a: w.resv, b: w.confirmed }))}
+                  legendA={t("adminEstatisticas.reservations.legendRequested")}
+                  legendB={t("adminEstatisticas.reservations.legendConfirmed")}
+                />
+              </StatCard>
+              <KpiTile
+                icon={ShieldCheck}
+                tone="success"
+                label={t("adminEstatisticas.kpi.deposit")}
+                value={formatKz(stats.depositHeld)}
+                hint={t("adminEstatisticas.kpi.depositHint", { count: stats.confirmedCount })}
+              >
+                <p className="text-xs text-muted-foreground">
+                  {t("adminEstatisticas.kpi.peopleServed", { count: stats.peopleServed })}
                 </p>
-              ) : (
-                <div className="space-y-3">
-                  {stats.topDishes.map((d, i) => (
-                    <div key={d.id} className="flex items-center gap-3">
-                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-surface text-xs font-bold text-muted-foreground">
-                        {i + 1}
-                      </span>
-                      {d.image ? (
-                        <img
-                          src={d.image}
-                          alt=""
-                          className="h-9 w-9 shrink-0 rounded-lg bg-surface object-contain"
-                        />
-                      ) : (
-                        <span className="h-9 w-9 shrink-0 rounded-lg bg-surface" />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-foreground">{d.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {t("adminEstatisticas.menu.sold", { qty: d.qty })} ·{" "}
-                          {pct(d.revenue, stats.goodsAll)}%
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-sm font-bold text-primary">
-                        {formatKz(d.revenue)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </StatCard>
-            <StatCard
-              title={t("adminEstatisticas.menu.categoryRevenue")}
-              subtitle={t("adminEstatisticas.menu.categoryRevenueSub")}
-            >
-              {stats.categoryRevenue.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("adminEstatisticas.emptyGeneric")}
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {stats.categoryRevenue.map((r) => (
-                    <div key={r.key}>
-                      <div className="flex items-baseline justify-between text-sm">
-                        <span className="flex items-center gap-2 font-medium text-foreground">
-                          <span className={`h-2 w-2 rounded-full ${r.tone}`} />
-                          {r.label}
+              </KpiTile>
+            </div>
+
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <StatCard
+                title={t("adminEstatisticas.reservations.weekday")}
+                subtitle={t("adminEstatisticas.reservations.weekdaySub")}
+              >
+                <MiniBars
+                  bars={stats.weekdayOcc}
+                  unit={t("adminEstatisticas.reservations.peopleUnit")}
+                  tone="bg-brand/80"
+                />
+              </StatCard>
+              <StatCard
+                title={t("adminEstatisticas.reservations.groupSize")}
+                subtitle={t("adminEstatisticas.reservations.groupSizeSub")}
+              >
+                {stats.confirmedCount ? (
+                  <StatBars rows={stats.groupSize} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {t("adminEstatisticas.emptyGeneric")}
+                  </p>
+                )}
+              </StatCard>
+            </div>
+          </StatSection>
+
+          {/* ---------- Menu e produtos ---------- */}
+          <StatSection
+            title={t("adminEstatisticas.menu.section")}
+            hint={t("adminEstatisticas.menu.sectionHint")}
+          >
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <StatCard
+                title={t("adminEstatisticas.menu.topDishes")}
+                subtitle={t("adminEstatisticas.menu.topDishesSub")}
+              >
+                {stats.topDishes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("adminEstatisticas.menu.topDishesEmpty")}
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {stats.topDishes.map((d, i) => (
+                      <div key={d.id} className="flex items-center gap-3">
+                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-surface text-xs font-bold text-muted-foreground">
+                          {i + 1}
                         </span>
-                        <span className="tabular-nums text-muted-foreground">
-                          <span className="font-bold text-foreground">{formatKz(r.count)}</span> ·{" "}
-                          {r.pct}%
+                        {d.image ? (
+                          <img
+                            src={d.image}
+                            alt=""
+                            className="h-9 w-9 shrink-0 rounded-lg bg-surface object-contain"
+                          />
+                        ) : (
+                          <span className="h-9 w-9 shrink-0 rounded-lg bg-surface" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-foreground">{d.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {t("adminEstatisticas.menu.sold", { qty: d.qty })} ·{" "}
+                            {pct(d.revenue, stats.goodsAll)}%
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-sm font-bold text-primary">
+                          {formatKz(d.revenue)}
                         </span>
                       </div>
-                      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface">
-                        <div
-                          className={`h-full rounded-full ${r.tone}`}
-                          style={{ width: `${Math.max(r.pct, 2)}%` }}
-                        />
+                    ))}
+                  </div>
+                )}
+              </StatCard>
+              <StatCard
+                title={t("adminEstatisticas.menu.categoryRevenue")}
+                subtitle={t("adminEstatisticas.menu.categoryRevenueSub")}
+              >
+                {stats.categoryRevenue.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("adminEstatisticas.emptyGeneric")}
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {stats.categoryRevenue.map((r) => (
+                      <div key={r.key}>
+                        <div className="flex items-baseline justify-between text-sm">
+                          <span className="flex items-center gap-2 font-medium text-foreground">
+                            <span className={`h-2 w-2 rounded-full ${r.tone}`} />
+                            {r.label}
+                          </span>
+                          <span className="tabular-nums text-muted-foreground">
+                            <span className="font-bold text-foreground">{formatKz(r.count)}</span> ·{" "}
+                            {r.pct}%
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface">
+                          <div
+                            className={`h-full rounded-full ${r.tone}`}
+                            style={{ width: `${Math.max(r.pct, 2)}%` }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </StatCard>
-          </div>
-        </StatSection>
+                    ))}
+                  </div>
+                )}
+              </StatCard>
+            </div>
+          </StatSection>
 
-        {/* ---------- Clientes ---------- */}
-        <StatSection
-          title={t("adminEstatisticas.customers.section")}
-          hint={t("adminEstatisticas.customers.sectionHint")}
-        >
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiTile
-              icon={Users}
-              tone="primary"
-              label={t("adminEstatisticas.kpi.uniqueCustomers")}
-              value={String(stats.uniqueCustomers)}
-              hint={t("adminEstatisticas.kpi.uniqueCustomersHint")}
-            />
-            <KpiTile
-              icon={Repeat}
-              tone="success"
-              label={t("adminEstatisticas.kpi.returnRate")}
-              value={`${stats.returnRate}%`}
-              hint={t("adminEstatisticas.kpi.returnRateHint", {
-                returning: stats.returning,
-                total: stats.uniqueCustomers,
-              })}
-            >
-              <MiniProgress pct={stats.returnRate} />
-            </KpiTile>
-            <KpiTile
-              icon={CreditCard}
-              tone="brand"
-              label={t("adminEstatisticas.kpi.spendPerCustomer")}
-              value={formatKz(stats.spendPerCustomer)}
-              hint={t("adminEstatisticas.kpi.spendPerCustomerHint")}
-            />
-            <KpiTile
-              icon={Clock3}
-              tone="muted"
-              big={false}
-              label={t("adminEstatisticas.kpi.avgTicket")}
-              value={formatKz(stats.avgTicket)}
-              hint={t("adminEstatisticas.kpi.avgTicketHint")}
-            />
-          </div>
+          {/* ---------- Clientes ---------- */}
+          <StatSection
+            title={t("adminEstatisticas.customers.section")}
+            hint={t("adminEstatisticas.customers.sectionHint")}
+          >
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <KpiTile
+                icon={Users}
+                tone="primary"
+                label={t("adminEstatisticas.kpi.uniqueCustomers")}
+                value={String(stats.uniqueCustomers)}
+                hint={t("adminEstatisticas.kpi.uniqueCustomersHint")}
+              />
+              <KpiTile
+                icon={Repeat}
+                tone="success"
+                label={t("adminEstatisticas.kpi.returnRate")}
+                value={`${stats.returnRate}%`}
+                hint={t("adminEstatisticas.kpi.returnRateHint", {
+                  returning: stats.returning,
+                  total: stats.uniqueCustomers,
+                })}
+              >
+                <MiniProgress pct={stats.returnRate} />
+              </KpiTile>
+              <KpiTile
+                icon={CreditCard}
+                tone="brand"
+                label={t("adminEstatisticas.kpi.spendPerCustomer")}
+                value={formatKz(stats.spendPerCustomer)}
+                hint={t("adminEstatisticas.kpi.spendPerCustomerHint")}
+              />
+              <KpiTile
+                icon={Clock3}
+                tone="muted"
+                big={false}
+                label={t("adminEstatisticas.kpi.avgTicket")}
+                value={formatKz(stats.avgTicket)}
+                hint={t("adminEstatisticas.kpi.avgTicketHint")}
+              />
+            </div>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <StatCard
-              title={t("adminEstatisticas.customers.newReturning")}
-              subtitle={t("adminEstatisticas.customers.sectionHint")}
-            >
-              {stats.uniqueCustomers ? (
-                <StatBars rows={stats.newReturning} />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {t("adminEstatisticas.emptyGeneric")}
-                </p>
-              )}
-            </StatCard>
-            <StatCard
-              title={t("adminEstatisticas.customers.topSpenders")}
-              subtitle={t("adminEstatisticas.customers.topSpendersSub")}
-            >
-              {stats.topSpenders.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("adminEstatisticas.customers.topSpendersEmpty")}
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {stats.topSpenders.map((c, i) => (
-                    <div key={`${c.name}-${i}`} className="flex items-center gap-3">
-                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-surface text-xs font-bold text-muted-foreground">
-                        {i + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-foreground">{c.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {t("adminEstatisticas.customers.ordersCount", { count: c.orders })}
-                        </p>
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <StatCard
+                title={t("adminEstatisticas.customers.newReturning")}
+                subtitle={t("adminEstatisticas.customers.sectionHint")}
+              >
+                {stats.uniqueCustomers ? (
+                  <StatBars rows={stats.newReturning} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {t("adminEstatisticas.emptyGeneric")}
+                  </p>
+                )}
+              </StatCard>
+              <StatCard
+                title={t("adminEstatisticas.customers.topSpenders")}
+                subtitle={t("adminEstatisticas.customers.topSpendersSub")}
+              >
+                {stats.topSpenders.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("adminEstatisticas.customers.topSpendersEmpty")}
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {stats.topSpenders.map((c, i) => (
+                      <div key={`${c.name}-${i}`} className="flex items-center gap-3">
+                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-surface text-xs font-bold text-muted-foreground">
+                          {i + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-foreground">{c.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {t("adminEstatisticas.customers.ordersCount", { count: c.orders })}
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-sm font-bold text-primary">
+                          {formatKz(c.spent)}
+                        </span>
                       </div>
-                      <span className="shrink-0 text-sm font-bold text-primary">
-                        {formatKz(c.spent)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </StatCard>
-          </div>
-        </StatSection>
+                    ))}
+                  </div>
+                )}
+              </StatCard>
+            </div>
+          </StatSection>
 
-        {/* ---------- Avaliações ---------- */}
-        <StatSection
-          title={t("adminEstatisticas.reviews.section")}
-          hint={t("adminEstatisticas.reviews.sectionHint")}
-        >
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <StatCard
-              title={t("adminEstatisticas.reviews.distribution")}
-              subtitle={t("adminEstatisticas.reviews.distributionSub", { count: reviews.length })}
-            >
-              {reviews.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("adminEstatisticas.reviews.distributionEmpty")}
-                </p>
-              ) : (
-                <StatBars rows={ratingRows} />
-              )}
-            </StatCard>
-            <StatCard
-              title={t("adminEstatisticas.reviews.tags")}
-              subtitle={t("adminEstatisticas.reviews.tagsSub")}
-            >
-              {topTags.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("adminEstatisticas.reviews.tagsEmpty")}
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {topTags.map(([tag, count]) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-xs font-medium text-foreground"
-                    >
-                      {tag}
-                      <span className="rounded-full bg-primary/15 px-1.5 text-[11px] font-bold text-primary">
-                        {count}
+          {/* ---------- Avaliações ---------- */}
+          <StatSection
+            title={t("adminEstatisticas.reviews.section")}
+            hint={t("adminEstatisticas.reviews.sectionHint")}
+          >
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <StatCard
+                title={t("adminEstatisticas.reviews.distribution")}
+                subtitle={t("adminEstatisticas.reviews.distributionSub", { count: reviews.length })}
+              >
+                {reviews.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("adminEstatisticas.reviews.distributionEmpty")}
+                  </p>
+                ) : (
+                  <StatBars rows={ratingRows} />
+                )}
+              </StatCard>
+              <StatCard
+                title={t("adminEstatisticas.reviews.tags")}
+                subtitle={t("adminEstatisticas.reviews.tagsSub")}
+              >
+                {topTags.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("adminEstatisticas.reviews.tagsEmpty")}
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {topTags.map(([tag, count]) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-xs font-medium text-foreground"
+                      >
+                        {tag}
+                        <span className="rounded-full bg-primary/15 px-1.5 text-[11px] font-bold text-primary">
+                          {count}
+                        </span>
                       </span>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </StatCard>
-          </div>
-        </StatSection>
-      </div>
+                    ))}
+                  </div>
+                )}
+              </StatCard>
+            </div>
+          </StatSection>
+        </div>
+      </PlanGate>
     </div>
   );
 }

@@ -18,7 +18,7 @@ class UpdateSubscriptionRequest extends FormRequest
     {
         return [
             'status' => ['sometimes', Rule::in(['trial', 'active', 'overdue', 'suspended'])],
-            'plan' => ['sometimes', Rule::in(['luku'])],
+            'plan' => ['sometimes', Rule::in(['pro', 'plus'])],
         ];
     }
 }

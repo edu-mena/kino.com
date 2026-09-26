@@ -38,7 +38,7 @@ test('listagem e detalhe públicos expõem isSuspended, nunca plano/valores/data
     $restaurant = Restaurant::factory()->create();
     RestaurantSubscription::query()->create([
         'restaurant_id' => $restaurant->id,
-        'plan' => 'luku',
+        'plan' => 'plus',
         'started_at' => now(),
         'trial_ends_at' => now()->addDays(60),
         'status' => 'suspended',
@@ -65,7 +65,7 @@ test('suspender/reativar a subscrição invalida a cache da listagem pública', 
     $restaurant = Restaurant::factory()->create();
     $subscription = RestaurantSubscription::query()->create([
         'restaurant_id' => $restaurant->id,
-        'plan' => 'luku',
+        'plan' => 'plus',
         'started_at' => now(),
         'trial_ends_at' => now()->addDays(60),
         'status' => 'active',

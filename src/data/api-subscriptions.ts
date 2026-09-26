@@ -3,6 +3,9 @@ import { apiFetch } from "@/lib/api-client";
 import { getAdminToken } from "@/lib/restaurant-admin";
 import {
   PLAN_PRICE,
+  type PlanFeatureFlags,
+  type PlanLimits,
+  type PlanUsage,
   type RestaurantSubscription,
   type SubscriptionPlan,
   type SubStatus,
@@ -27,26 +30,47 @@ import {
 type ApiSubscription = {
   restaurantId: string;
   plan: SubscriptionPlan;
+  price: number;
   startedAt: string;
   trialEndsAt: string;
   status: SubStatus;
   lastPaymentAt: string | null;
   locked: boolean;
   trialDaysLeft: number;
+  limits: PlanLimits;
+  usage: PlanUsage;
+  features: PlanFeatureFlags;
 };
 
-function mapApiSubscription(s: ApiSubscription): RestaurantSubscription {
+/** `price`/`limits`/`usage`/`features` só existem no wire type — resolvidos
+ * pelo `PlanLimitService` a cada pedido (ver `SubscriptionResource`), nunca
+ * persistidos no `RestaurantSubscription` do frontend (mesma separação do
+ * backend: a subscrição só guarda `plan`/`status`, o resto é derivado). */
+export type RestaurantSubscriptionWithPlan = RestaurantSubscription & {
+  price: number;
+  limits: PlanLimits;
+  usage: PlanUsage;
+  features: PlanFeatureFlags;
+};
+
+function mapApiSubscription(s: ApiSubscription): RestaurantSubscriptionWithPlan {
   return {
     restaurantId: s.restaurantId,
     plan: s.plan,
+    price: s.price,
     startedAt: s.startedAt,
     trialEndsAt: s.trialEndsAt,
     status: s.status,
     ...(s.lastPaymentAt ? { lastPaymentAt: s.lastPaymentAt } : {}),
+    limits: s.limits,
+    usage: s.usage,
+    features: s.features,
   };
 }
 
-export async function fetchApiSubscriptions(token: string): Promise<RestaurantSubscription[]> {
+export async function fetchApiSubscriptions(
+  token: string,
+): Promise<RestaurantSubscriptionWithPlan[]> {
   const { data } = await apiFetch<{ data: ApiSubscription[] }>("/subscriptions", { token });
   return data.map(mapApiSubscription);
 }
@@ -57,7 +81,7 @@ export async function fetchApiSubscriptions(token: string): Promise<RestaurantSu
 export async function fetchApiRestaurantSubscription(
   restaurantId: string,
   token: string,
-): Promise<RestaurantSubscription> {
+): Promise<RestaurantSubscriptionWithPlan> {
   const { data } = await apiFetch<{ data: ApiSubscription }>(
     `/restaurants/${restaurantId}/subscription`,
     { token },
@@ -69,7 +93,7 @@ export async function setApiSubscriptionStatus(
   restaurantId: string,
   status: SubStatus,
   token: string,
-): Promise<RestaurantSubscription> {
+): Promise<RestaurantSubscriptionWithPlan> {
   const { data } = await apiFetch<{ data: ApiSubscription }>(
     `/restaurants/${restaurantId}/subscription`,
     { method: "PATCH", token, body: { status } },
@@ -77,10 +101,22 @@ export async function setApiSubscriptionStatus(
   return mapApiSubscription(data);
 }
 
+export async function setApiSubscriptionPlan(
+  restaurantId: string,
+  plan: SubscriptionPlan,
+  token: string,
+): Promise<RestaurantSubscriptionWithPlan> {
+  const { data } = await apiFetch<{ data: ApiSubscription }>(
+    `/restaurants/${restaurantId}/subscription`,
+    { method: "PATCH", token, body: { plan } },
+  );
+  return mapApiSubscription(data);
+}
+
 export async function registerApiSubscriptionPayment(
   restaurantId: string,
   token: string,
-): Promise<RestaurantSubscription> {
+): Promise<RestaurantSubscriptionWithPlan> {
   const { data } = await apiFetch<{ data: ApiSubscription }>(
     `/restaurants/${restaurantId}/subscription/register-payment`,
     { method: "POST", token },
@@ -92,7 +128,7 @@ export async function extendApiSubscriptionTrial(
   restaurantId: string,
   days: number,
   token: string,
-): Promise<RestaurantSubscription> {
+): Promise<RestaurantSubscriptionWithPlan> {
   const { data } = await apiFetch<{ data: ApiSubscription }>(
     `/restaurants/${restaurantId}/subscription/extend-trial`,
     { method: "POST", token, body: { days } },
@@ -114,7 +150,7 @@ export async function fetchApiCustomersCount(token: string): Promise<number> {
  * token de `useSystemAdmin()` (o próprio chamador decide isso, `null`
  * enquanto a sessão ainda não hidratou não dispara pedido nenhum). */
 export function useSystemSubscriptions(token: string | null) {
-  const [subscriptions, setSubscriptions] = useState<RestaurantSubscription[]>([]);
+  const [subscriptions, setSubscriptions] = useState<RestaurantSubscriptionWithPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(() => {
@@ -155,6 +191,10 @@ export function useSystemSubscriptions(token: string | null) {
       if (!token) return;
       void setApiSubscriptionStatus(restaurantId, status, token).then(refetch);
     },
+    setPlan: (restaurantId: string, plan: SubscriptionPlan) => {
+      if (!token) return;
+      void setApiSubscriptionPlan(restaurantId, plan, token).then(refetch);
+    },
     registerPayment: (restaurantId: string) => {
       if (!token) return;
       void registerApiSubscriptionPayment(restaurantId, token).then(refetch);
@@ -173,7 +213,7 @@ export function useSystemSubscriptions(token: string | null) {
  * `undefined` fora de `hasRealBackend` (ver `useRestaurantAccess` em
  * `@/lib/subscriptions`). */
 export function useOwnRestaurantSubscription(restaurantId: string | undefined) {
-  const [sub, setSub] = useState<RestaurantSubscription | null>(null);
+  const [sub, setSub] = useState<RestaurantSubscriptionWithPlan | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(() => {

@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Armchair, PartyPopper, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
+import { AdminPageHeading, PlanGate, RestaurantGate } from "@/components/admin-shell";
 import { KpiTile } from "@/components/admin-stats";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -362,79 +362,81 @@ function AdminMesas() {
         </div>
 
         {/* Pacotes */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="font-display text-base font-bold text-foreground">
-                {t("adminMesas.packages.sectionTitle")}
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {t("adminMesas.packages.sectionHint")}
-              </p>
+        <PlanGate feature="packages">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-base font-bold text-foreground">
+                  {t("adminMesas.packages.sectionTitle")}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {t("adminMesas.packages.sectionHint")}
+                </p>
+              </div>
+              <Button type="button" size="sm" onClick={openCreatePkg} className="rounded-xl">
+                <Plus className="h-4 w-4" /> {t("adminMesas.packages.add")}
+              </Button>
             </div>
-            <Button type="button" size="sm" onClick={openCreatePkg} className="rounded-xl">
-              <Plus className="h-4 w-4" /> {t("adminMesas.packages.add")}
-            </Button>
-          </div>
 
-          {packages.length === 0 ? (
-            <div className="card-soft grid place-items-center gap-3 p-10 text-center">
-              <PartyPopper className="h-9 w-9 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">{t("adminMesas.packages.empty")}</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {packages.map((pkg) => (
-                <div key={pkg.id} className="card-soft flex items-start gap-3 p-4">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface text-muted-foreground">
-                    <PartyPopper className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-sm font-semibold text-foreground">
-                        {pkg.title || pkg.packageType.name}
+            {packages.length === 0 ? (
+              <div className="card-soft grid place-items-center gap-3 p-10 text-center">
+                <PartyPopper className="h-9 w-9 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">{t("adminMesas.packages.empty")}</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {packages.map((pkg) => (
+                  <div key={pkg.id} className="card-soft flex items-start gap-3 p-4">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface text-muted-foreground">
+                      <PartyPopper className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-semibold text-foreground">
+                          {pkg.title || pkg.packageType.name}
+                        </p>
+                        {!pkg.isActive && (
+                          <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                            {t("adminMesas.packages.inactiveBadge")}
+                          </span>
+                        )}
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {pkg.packageType.name}
+                        {pkg.maxPeople
+                          ? ` · ${t("adminMesas.packages.maxPeopleValue", { count: pkg.maxPeople })}`
+                          : ""}
                       </p>
-                      {!pkg.isActive && (
-                        <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
-                          {t("adminMesas.packages.inactiveBadge")}
-                        </span>
-                      )}
                     </div>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {pkg.packageType.name}
-                      {pkg.maxPeople
-                        ? ` · ${t("adminMesas.packages.maxPeopleValue", { count: pkg.maxPeople })}`
-                        : ""}
-                    </p>
+                    <button
+                      type="button"
+                      aria-label={t("adminMesas.edit")}
+                      onClick={() => openEditPkg(pkg)}
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-primary"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={t("adminMesas.remove")}
+                      onClick={async () => {
+                        const ok = await removePackage(pkg.id);
+                        if (!ok) {
+                          toast.error(t("adminMesas.packages.removeFailedError"));
+                          return;
+                        }
+                        toast.success(t("adminMesas.packages.removedToast"));
+                      }}
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    aria-label={t("adminMesas.edit")}
-                    onClick={() => openEditPkg(pkg)}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-primary"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={t("adminMesas.remove")}
-                    onClick={async () => {
-                      const ok = await removePackage(pkg.id);
-                      if (!ok) {
-                        toast.error(t("adminMesas.packages.removeFailedError"));
-                        return;
-                      }
-                      toast.success(t("adminMesas.packages.removedToast"));
-                    }}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </PlanGate>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

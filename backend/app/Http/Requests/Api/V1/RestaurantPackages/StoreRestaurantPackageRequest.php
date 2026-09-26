@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\RestaurantPackages;
 
+use App\Services\PlanLimitService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,7 +10,16 @@ class StoreRestaurantPackageRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manageOperations', $this->route('restaurant'));
+        $restaurant = $this->route('restaurant');
+        if (! $this->user()->can('manageOperations', $restaurant)) {
+            return false;
+        }
+
+        // Mensagem distinta (não a genérica "unauthorized") para o frontend
+        // saber mostrar "isto é do Plano Plus" em vez de um 403 qualquer.
+        abort_unless(app(PlanLimitService::class)->allows($restaurant, 'packages'), 403, 'plan_locked');
+
+        return true;
     }
 
     public function rules(): array

@@ -75,7 +75,7 @@ class DemoRestaurantSeeder extends Seeder
 
         RestaurantSubscription::query()->create([
             'restaurant_id' => $restaurant->id,
-            'plan' => 'luku',
+            'plan' => 'plus',
             'started_at' => now(),
             'trial_ends_at' => now()->addDays(60),
             'status' => 'trial',

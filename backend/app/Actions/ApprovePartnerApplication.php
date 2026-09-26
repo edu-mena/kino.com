@@ -43,7 +43,9 @@ class ApprovePartnerApplication
 
             RestaurantSubscription::query()->create([
                 'restaurant_id' => $restaurant->id,
-                'plan' => 'luku',
+                // Trial dá acesso Plus completo (ver config/plans.php) —
+                // decide-se Pro vs Plus a sério quando o trial acaba.
+                'plan' => 'plus',
                 'started_at' => now(),
                 'trial_ends_at' => now()->addDays(self::TRIAL_DAYS),
                 'status' => 'trial',

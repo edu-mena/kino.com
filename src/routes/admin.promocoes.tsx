@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Bike,
   Check,
@@ -54,6 +54,7 @@ import { useTranslation } from "@/i18n";
 import { useFirstUseHint } from "@/lib/first-use-hints";
 import { useOffersAdmin } from "@/lib/offers-admin";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { usePlanFeatures } from "@/lib/subscriptions";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/promocoes")({
@@ -75,6 +76,8 @@ function AdminPromocoes() {
   const { offersByRestaurant, createOffer, updateOffer, deleteOffer } = useOffersAdmin();
   const { t } = useTranslation();
   const promoHint = useFirstUseHint("promo");
+  const { limits, usage, hasCapacity } = usePlanFeatures();
+  const atOfferCap = !hasCapacity("offers");
   const menuItemsQuery = useRestaurantMenuItems(restaurant?.id);
   const menuItems = menuItemsQuery.data ?? [];
   const menuCategories = useMemo(
@@ -245,7 +248,7 @@ function AdminPromocoes() {
         eyebrow={t("adminPromocoes.eyebrow")}
         title={t("adminPromocoes.title")}
         action={
-          <Button onClick={openCreate} className="rounded-xl">
+          <Button disabled={atOfferCap} onClick={openCreate} className="rounded-xl">
             <Plus className="h-4 w-4" /> {t("adminPromocoes.newPromo")}
           </Button>
         }
@@ -296,6 +299,23 @@ function AdminPromocoes() {
                 <option value="nome">{t("adminPromocoes.sortName")}</option>
               </select>
             </div>
+
+            {limits.offers !== null && (
+              <p className="mt-3 text-xs font-medium text-muted-foreground">
+                {t("adminPromocoes.planUsage", { used: usage.offers, limit: limits.offers })}
+                {atOfferCap && (
+                  <>
+                    {" — "}
+                    <Link
+                      to="/admin/subscricao"
+                      className="font-semibold text-primary hover:underline"
+                    >
+                      {t("adminPromocoes.planUpgradeCta")}
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
               {/* Lista */}

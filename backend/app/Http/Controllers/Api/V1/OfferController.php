@@ -10,6 +10,7 @@ use App\Jobs\ProcessUploadedVideoJob;
 use App\Models\Offer;
 use App\Models\Restaurant;
 use App\Services\MediaUploadService;
+use App\Services\PlanLimitService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -36,9 +37,14 @@ class OfferController extends Controller
         return OfferResource::collection($offers);
     }
 
-    public function store(StoreOfferRequest $request, Restaurant $restaurant, MediaUploadService $uploads): JsonResponse
-    {
+    public function store(
+        StoreOfferRequest $request,
+        Restaurant $restaurant,
+        MediaUploadService $uploads,
+        PlanLimitService $planLimits,
+    ): JsonResponse {
         $this->authorize('manageOperations', $restaurant);
+        abort_unless($planLimits->hasCapacity($restaurant, 'offers'), 403, 'plan_limit_reached');
 
         return $this->handleCreate($request, $uploads, ['restaurant_id' => $restaurant->id], $restaurant->uuid);
     }

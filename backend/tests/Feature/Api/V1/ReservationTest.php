@@ -4,6 +4,7 @@ use App\Models\Offer;
 use App\Models\PackageType;
 use App\Models\Restaurant;
 use App\Models\RestaurantPackage;
+use App\Models\RestaurantSubscription;
 use App\Models\RestaurantTable;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -666,4 +667,44 @@ test('código promocional aplicável desconta também a caução de uma reserva 
     ], ['Idempotency-Key' => Str::uuid()->toString()]);
 
     $response->assertStatus(201)->assertJsonPath('data.cautionAmount', 36000);
+});
+
+test('restaurante Pro só aceita 20 reservas por mês, a 21ª é bloqueada', function () {
+    $restaurant = createReservableRestaurant();
+    RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id, 'plan' => 'pro',
+        'started_at' => now(), 'trial_ends_at' => now()->addDays(60), 'status' => 'active',
+    ]);
+    for ($i = 0; $i < 20; $i++) {
+        $restaurant->reservations()->create([
+            'customer_name' => 'Ana', 'customer_phone' => '900',
+            'date' => now()->startOfMonth()->addDays($i)->toDateString(), 'time' => '19:00',
+            'people_count' => 2, 'status' => 'pending', 'status_updated_at' => now(),
+        ]);
+    }
+
+    $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'Ana', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 2,
+    ], ['Idempotency-Key' => Str::uuid()->toString()])->assertStatus(403);
+});
+
+test('restaurante Plus não tem tecto de reservas por mês', function () {
+    $restaurant = createReservableRestaurant();
+    RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id, 'plan' => 'plus',
+        'started_at' => now(), 'trial_ends_at' => now()->addDays(60), 'status' => 'active',
+    ]);
+    for ($i = 0; $i < 25; $i++) {
+        $restaurant->reservations()->create([
+            'customer_name' => 'Ana', 'customer_phone' => '900',
+            'date' => now()->startOfMonth()->addDays($i)->toDateString(), 'time' => '19:00',
+            'people_count' => 2, 'status' => 'pending', 'status_updated_at' => now(),
+        ]);
+    }
+
+    $this->postJson("/api/v1/restaurants/{$restaurant->uuid}/reservations", [
+        'customer_name' => 'Ana', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30', 'people_count' => 2,
+    ], ['Idempotency-Key' => Str::uuid()->toString()])->assertStatus(201);
 });

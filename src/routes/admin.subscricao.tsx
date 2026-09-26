@@ -1,16 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarClock, CheckCircle2, CreditCard, TriangleAlert } from "lucide-react";
+import { CalendarClock, Check, CheckCircle2, CreditCard, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { AdminPageHeading } from "@/components/admin-shell";
 import { KpiTile } from "@/components/admin-stats";
 import { useOwnRestaurantSubscription } from "@/data/api-subscriptions";
-import { PLAN_PRICE } from "@/data/subscriptions-store";
+import { PLAN_PRICE, type SubscriptionPlan } from "@/data/subscriptions-store";
 import { useTranslation } from "@/i18n";
 import { hasRealBackend } from "@/lib/api-client";
 import { formatKz } from "@/lib/format";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useSubscriptions } from "@/lib/subscriptions";
 import { BCP47 } from "@/lib/week";
+
+const PLAN_ORDER: SubscriptionPlan[] = ["pro", "plus"];
+const PLAN_PERK_KEYS: Record<SubscriptionPlan, string[]> = {
+  pro: ["perkCore", "perkMenu", "perkStories2", "perkPromo2", "perkTables", "perkReservations20"],
+  plus: [
+    "perkCore",
+    "perkMenu",
+    "perkMenuAdvanced",
+    "perkStoriesUnlimited",
+    "perkPromoUnlimited",
+    "perkTables",
+    "perkReservationsUnlimited",
+    "perkPackages",
+    "perkCustomers",
+    "perkStats",
+  ],
+};
 
 export const Route = createFileRoute("/admin/subscricao")({
   head: () => ({ meta: [{ title: "Subscrição — Painel Luku.com" }] }),
@@ -21,7 +38,7 @@ const DAY = 86_400_000;
 
 function AdminSubscricao() {
   const { restaurant } = useRestaurantAdmin();
-  const { byRestaurant, registerPayment } = useSubscriptions();
+  const { byRestaurant, registerPayment, setPlan } = useSubscriptions();
   const real = useOwnRestaurantSubscription(hasRealBackend ? restaurant?.id : undefined);
   const { t, locale } = useTranslation();
 
@@ -116,25 +133,78 @@ function AdminSubscricao() {
           />
         </div>
 
+        {/* Comparar planos */}
+        <div className="card-soft p-6">
+          <h2 className="font-display text-base font-bold text-foreground">
+            {t("adminSubscricao.plansTitle")}
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">{t("adminSubscricao.plansHint")}</p>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {PLAN_ORDER.map((plan) => {
+              const isCurrent = plan === sub.plan;
+              return (
+                <div
+                  key={plan}
+                  className={`rounded-xl border p-4 ${
+                    isCurrent ? "border-primary bg-primary/5" : "border-border"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-display text-sm font-bold text-foreground">
+                      {t(`sistema.plan.${plan}`)}
+                    </p>
+                    {isCurrent && (
+                      <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">
+                        {t("adminSubscricao.currentPlanBadge")}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-lg font-extrabold text-primary">
+                    {formatKz(PLAN_PRICE[plan])}
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {t("adminSubscricao.perMonth")}
+                    </span>
+                  </p>
+                  <ul className="mt-3 space-y-1.5">
+                    {PLAN_PERK_KEYS[plan].map((key) => (
+                      <li key={key} className="flex items-start gap-1.5 text-xs text-foreground">
+                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                        <span>{t(`adminSubscricao.${key}`)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    disabled={isCurrent}
+                    onClick={() => {
+                      // Mudar de plano é billing — system_operator-only no
+                      // backend real (mesma razão de registerPayment abaixo).
+                      if (hasRealBackend) {
+                        toast.info(t("adminSubscricao.renewContactSupport"));
+                        return;
+                      }
+                      setPlan(restaurant.id, plan);
+                      toast.success(t("adminSubscricao.planChangedToast"));
+                    }}
+                    className="mt-4 w-full rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    {isCurrent
+                      ? t("adminSubscricao.currentPlanBadge")
+                      : t("adminSubscricao.switchTo", { plan: t(`sistema.plan.${plan}`) })}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Ações */}
         <div className="card-soft p-6">
           <h2 className="font-display text-base font-bold text-foreground">
             {t("adminSubscricao.actionsTitle")}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">{t("adminSubscricao.actionsHint")}</p>
-
-          <div className="mt-4 rounded-xl border border-primary bg-primary/5 p-4">
-            <p className="font-display text-sm font-bold text-foreground">
-              {t("sistema.plan.luku")}
-            </p>
-            <p className="mt-0.5 text-lg font-extrabold text-primary">
-              {formatKz(PLAN_PRICE.luku)}
-              <span className="text-xs font-medium text-muted-foreground">
-                {t("adminSubscricao.perMonth")}
-              </span>
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">{t("adminSubscricao.perks")}</p>
-          </div>
 
           <button
             type="button"

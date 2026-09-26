@@ -9,12 +9,18 @@ import {
   seedSubscriptions,
   setPlan,
   setSubStatus,
+  type PlanFeatureFlags,
+  type PlanLimits,
+  type PlanUsage,
   type RestaurantSubscription,
   type SubscriptionPlan,
   type SubStatus,
 } from "@/data/subscriptions-store";
 import { hasRealBackend } from "@/lib/api-client";
+import { useOffersAdmin } from "@/lib/offers-admin";
+import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { useStoriesAdmin } from "@/lib/stories-admin";
 
 const DAY = 86_400_000;
 
@@ -124,4 +130,108 @@ export function useRestaurantAccess(): RestaurantAccess {
   const real = useOwnRestaurantSubscription(hasRealBackend ? restaurant?.id : undefined);
   if (hasRealBackend) return computeAccess(real.sub ?? undefined);
   return restaurant ? access(restaurant.id) : computeAccess(undefined);
+}
+
+export type CountedFeature = keyof PlanLimits;
+export type FlagFeature = keyof PlanFeatureFlags;
+
+export type PlanFeatures = {
+  plan: SubscriptionPlan | "unknown";
+  price: number;
+  limits: PlanLimits;
+  usage: PlanUsage;
+  hasCapacity: (feature: CountedFeature) => boolean;
+  allows: (feature: FlagFeature) => boolean;
+};
+
+const UNKNOWN_LIMITS: PlanLimits = { stories: 0, offers: 0, reservationsPerMonth: 0 };
+const UNKNOWN_USAGE: PlanUsage = { stories: 0, offers: 0, reservationsPerMonth: 0 };
+const UNKNOWN_FEATURES: PlanFeatureFlags = { packages: false, customers: false, stats: false };
+
+/**
+ * Tier de plano (Pro/Plus) — eixo independente de `useRestaurantAccess`
+ * (esse é status de pagamento: trial/atraso/suspensa). Espelha
+ * `PlanLimitService` do backend: no backend real lê os números já
+ * resolvidos em `SubscriptionResource`; em mock, calcula a partir dos
+ * mesmos stores que os ecrãs de Stories/Promoções/Reservas já usam — nunca
+ * um segundo conceito de "ativo"/"este mês".
+ */
+export function usePlanFeatures(): PlanFeatures {
+  const { restaurant } = useRestaurantAdmin();
+  const real = useOwnRestaurantSubscription(hasRealBackend ? restaurant?.id : undefined);
+  const { byRestaurant } = useSubscriptions();
+  const { storiesByRestaurant } = useStoriesAdmin();
+  const { offersByRestaurant } = useOffersAdmin();
+  const { reservations } = useReservations();
+
+  return useMemo<PlanFeatures>(() => {
+    if (hasRealBackend) {
+      const sub = real.sub;
+      if (!sub) {
+        return {
+          plan: "unknown",
+          price: 0,
+          limits: UNKNOWN_LIMITS,
+          usage: UNKNOWN_USAGE,
+          hasCapacity: () => false,
+          allows: () => false,
+        };
+      }
+      return {
+        plan: sub.plan,
+        price: sub.price,
+        limits: sub.limits,
+        usage: sub.usage,
+        hasCapacity: (feature) => {
+          const limit = sub.limits[feature];
+          return limit === null || sub.usage[feature] < limit;
+        },
+        allows: (feature) => sub.features[feature],
+      };
+    }
+
+    if (!restaurant) {
+      return {
+        plan: "unknown",
+        price: 0,
+        limits: UNKNOWN_LIMITS,
+        usage: UNKNOWN_USAGE,
+        hasCapacity: () => false,
+        allows: () => false,
+      };
+    }
+
+    const sub = byRestaurant(restaurant.id);
+    const plan: SubscriptionPlan = sub?.plan ?? "pro";
+    const limits: PlanLimits = {
+      stories: plan === "plus" ? null : 2,
+      offers: plan === "plus" ? null : 2,
+      reservationsPerMonth: plan === "plus" ? null : 20,
+    };
+    const monthPrefix = new Date().toISOString().slice(0, 7);
+    const usage: PlanUsage = {
+      stories: storiesByRestaurant(restaurant.id).length,
+      offers: offersByRestaurant(restaurant.id).length,
+      reservationsPerMonth: reservations.filter(
+        (r) => r.restaurantId === restaurant.id && r.date.startsWith(monthPrefix),
+      ).length,
+    };
+    const features: PlanFeatureFlags = {
+      packages: plan === "plus",
+      customers: plan === "plus",
+      stats: plan === "plus",
+    };
+
+    return {
+      plan,
+      price: PLAN_PRICE[plan],
+      limits,
+      usage,
+      hasCapacity: (feature) => {
+        const limit = limits[feature];
+        return limit === null || usage[feature] < limit;
+      },
+      allows: (feature) => features[feature],
+    };
+  }, [restaurant, byRestaurant, storiesByRestaurant, offersByRestaurant, reservations, real.sub]);
 }

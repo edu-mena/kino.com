@@ -7,15 +7,36 @@ import { safeLocalStorageSet } from "./safe-storage";
  * (`/sistema/subscricoes`). Sem backend: store pura e síncrona, segura em
  * SSR, mesmo desenho de `restaurant-profile-store.ts`.
  *
- * Cada restaurante paga mensalidade — plano único Luku, 9 999 Kz — com os 2
- * primeiros meses grátis (trial). O estado é a fonte da verdade sobre MRR,
- * trials a terminar e pagamentos em atraso.
+ * Dois planos — Pro (mais barato, limitado) e Plus (tudo liberado, ver
+ * `backend/config/plans.php`) — com os 2 primeiros meses grátis (trial, já
+ * com acesso Plus completo). O estado é a fonte da verdade sobre MRR, trials
+ * a terminar e pagamentos em atraso.
  */
-export type SubscriptionPlan = "luku";
+export type SubscriptionPlan = "pro" | "plus";
 export type SubStatus = "trial" | "active" | "overdue" | "suspended";
 
-export const PLAN_PRICE: Record<SubscriptionPlan, number> = { luku: 9999 };
+export const PLAN_PRICE: Record<SubscriptionPlan, number> = { pro: 9999, plus: 12999 };
 export const TRIAL_DAYS = 60;
+
+/** `null` = sem tecto — espelha `PlanLimitService::limit` do backend. */
+export type PlanLimits = {
+  stories: number | null;
+  offers: number | null;
+  reservationsPerMonth: number | null;
+};
+
+export type PlanUsage = {
+  stories: number;
+  offers: number;
+  reservationsPerMonth: number;
+};
+
+/** Funcionalidades tudo-ou-nada — espelha `PlanLimitService::allows`. */
+export type PlanFeatureFlags = {
+  packages: boolean;
+  customers: boolean;
+  stats: boolean;
+};
 
 export type RestaurantSubscription = {
   restaurantId: string;
@@ -56,7 +77,9 @@ export function seedSubscriptions(): RestaurantSubscription[] {
     const monthsAgo = h % 10; // entrou há 0..9 meses
     const startedMs = now - monthsAgo * 30 * DAY;
     const trialEndsMs = startedMs + TRIAL_DAYS * DAY;
-    const plan: SubscriptionPlan = "luku";
+    // Determinístico a partir do id — dá para exercitar as duas UIs em modo
+    // mock (antes só existia um plano, "luku").
+    const plan: SubscriptionPlan = index % 2 === 0 ? "plus" : "pro";
 
     let status: SubStatus = now < trialEndsMs ? "trial" : "active";
     if (status === "active") {
@@ -82,11 +105,12 @@ function read(): RestaurantSubscription[] {
   try {
     const stored = window.localStorage.getItem(KEY);
     if (!stored) return seedSubscriptions();
-    // coage planos antigos ("basico"/"pro") persistidos em localStorage para
-    // o plano único atual
+    // coage o plano único antigo ("luku"), persistido em localStorage de
+    // sessões anteriores a esta feature, para o novo plano Plus (tudo
+    // liberado — o mais próximo do que "luku" já era)
     const parsed = (JSON.parse(stored) as RestaurantSubscription[]).map((s) => ({
       ...s,
-      plan: "luku" as SubscriptionPlan,
+      plan: (s.plan === "pro" ? "pro" : "plus") as SubscriptionPlan,
     }));
     // garante uma linha por restaurante mesmo que o seed cresça
     const known = new Set(parsed.map((s) => s.restaurantId));
@@ -112,7 +136,7 @@ export function getSubscriptions(): RestaurantSubscription[] {
  * começa em período grátis de 2 meses. */
 export function createSubscription(
   restaurantId: string,
-  plan: SubscriptionPlan = "luku",
+  plan: SubscriptionPlan = "plus",
 ): RestaurantSubscription {
   const now = Date.now();
   const sub: RestaurantSubscription = {

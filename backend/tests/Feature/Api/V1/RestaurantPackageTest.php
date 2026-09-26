@@ -3,6 +3,7 @@
 use App\Models\PackageType;
 use App\Models\Restaurant;
 use App\Models\RestaurantPackage;
+use App\Models\RestaurantSubscription;
 
 test('staff cria, edita e apaga pacotes do próprio restaurante', function () {
     $restaurant = Restaurant::factory()->create();
@@ -61,6 +62,40 @@ test('staff de outro restaurante não gere pacotes alheios, mas vê os ativos co
     $this->actingAs($otherOwner, 'sanctum')
         ->patchJson("/api/v1/restaurant-packages/{$active->uuid}", ['price' => 1])
         ->assertForbidden();
+});
+
+test('restaurante Pro não pode oferecer pacotes — funcionalidade só do Plano Plus', function () {
+    $restaurant = Restaurant::factory()->create();
+    RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id, 'plan' => 'pro',
+        'started_at' => now(), 'trial_ends_at' => now()->addDays(60), 'status' => 'active',
+    ]);
+    $owner = ownerOf($restaurant);
+    $type = PackageType::factory()->create();
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/packages", [
+            'package_type_id' => $type->uuid,
+            'price' => 10000,
+        ])
+        ->assertStatus(403);
+});
+
+test('restaurante Plus pode oferecer pacotes', function () {
+    $restaurant = Restaurant::factory()->create();
+    RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id, 'plan' => 'plus',
+        'started_at' => now(), 'trial_ends_at' => now()->addDays(60), 'status' => 'active',
+    ]);
+    $owner = ownerOf($restaurant);
+    $type = PackageType::factory()->create();
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/packages", [
+            'package_type_id' => $type->uuid,
+            'price' => 10000,
+        ])
+        ->assertStatus(201);
 });
 
 test('não é possível escolher um tipo de pacote inativo', function () {

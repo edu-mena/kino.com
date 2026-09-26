@@ -149,7 +149,7 @@ test('aprovar cria restaurante+subscrição trial+3 mesas+conta do dono, e marca
 
     expect($restaurant->tables()->count())->toBe(3);
     expect($restaurant->subscription->status)->toBe('trial');
-    expect($restaurant->subscription->plan)->toBe('luku');
+    expect($restaurant->subscription->plan)->toBe('plus');
 
     $owner = User::query()->where('email', 'novo-dono@example.com')->firstOrFail();
     expect($owner->role)->toBe('restaurant_staff');

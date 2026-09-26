@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Restaurant;
 use App\Services\CustomerLoyaltyService;
+use App\Services\PlanLimitService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,9 +17,10 @@ class CustomerLoyaltyController extends Controller
     /** Staff: estatuto de cada cliente do restaurante (o staff já vê os
      * contactos destes clientes nas reservas/pedidos — é por eles que o
      * front casa cada linha com a sua lista de clientes). */
-    public function forRestaurant(Request $request, Restaurant $restaurant): JsonResponse
+    public function forRestaurant(Request $request, Restaurant $restaurant, PlanLimitService $planLimits): JsonResponse
     {
         $this->authorize('manageOperations', $restaurant);
+        abort_unless($planLimits->allows($restaurant, 'customers'), 403, 'plan_locked');
 
         return response()->json([
             'data' => [

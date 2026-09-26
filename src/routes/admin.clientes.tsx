@@ -22,7 +22,7 @@ import {
   TrendArea,
   TrendBadge,
 } from "@/components/admin-stats";
-import { AdminPageHeading } from "@/components/admin-shell";
+import { AdminPageHeading, PlanGate } from "@/components/admin-shell";
 import { LoyaltyBadge } from "@/components/loyalty-badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -256,363 +256,377 @@ function AdminClientes() {
     <div className="pb-16">
       <AdminPageHeading eyebrow={t("adminClientes.eyebrow")} title={t("adminClientes.title")} />
 
-      <div className="mx-auto mt-6 max-w-6xl px-4 md:px-6">
-        {customers.length === 0 ? (
-          <div className="card-soft grid place-items-center gap-3 p-12 text-center">
-            <Users className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{t("adminClientes.emptyNoCustomers")}</p>
-          </div>
-        ) : (
-          <>
-            {/* Pesquisa + filtros */}
-            <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
-              <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 transition-colors focus-within:border-brand has-[:focus]:text-brand sm:max-w-xs">
-                <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t("adminClientes.searchPlaceholder")}
-                  className="w-full min-w-0 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
-                />
-              </label>
-
-              <select
-                value={segment}
-                onChange={(e) => setSegment(e.target.value as SegmentFilter)}
-                className={ADMIN_FILTER_SELECT}
-              >
-                <option value="todos">{t("adminClientes.segmentAll")}</option>
-                <option value="platinum">{t("loyalty.segmentPlatinum")}</option>
-                <option value="gold">{t("loyalty.segmentGold")}</option>
-                <option value="recorrentes">{t("adminClientes.segmentReturning")}</option>
-                <option value="ocasionais">{t("adminClientes.segmentOccasional")}</option>
-              </select>
-
-              <select
-                value={sortKey}
-                onChange={(e) => setSortKey(e.target.value as SortKey)}
-                className={ADMIN_FILTER_SELECT}
-              >
-                <option value="recent">{t("adminClientes.sortRecent")}</option>
-                <option value="reservas">{t("adminClientes.sortMostReservations")}</option>
-                <option value="pessoas">{t("adminClientes.sortMostPeople")}</option>
-                <option value="nome">{t("adminClientes.sortName")}</option>
-              </select>
+      <PlanGate feature="customers">
+        <div className="mx-auto mt-6 max-w-6xl px-4 md:px-6">
+          {customers.length === 0 ? (
+            <div className="card-soft grid place-items-center gap-3 p-12 text-center">
+              <Users className="h-10 w-10 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">{t("adminClientes.emptyNoCustomers")}</p>
             </div>
+          ) : (
+            <>
+              {/* Pesquisa + filtros */}
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
+                <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 transition-colors focus-within:border-brand has-[:focus]:text-brand sm:max-w-xs">
+                  <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={t("adminClientes.searchPlaceholder")}
+                    className="w-full min-w-0 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+                  />
+                </label>
 
-            <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-              {/* Lista */}
-              <div className={`min-w-0 ${activeKey ? "hidden lg:block" : "block"}`}>
-                <p className="px-1 text-xs font-medium text-muted-foreground">
-                  {t("adminClientes.resultsCount", { count: list.length })}
-                </p>
+                <select
+                  value={segment}
+                  onChange={(e) => setSegment(e.target.value as SegmentFilter)}
+                  className={ADMIN_FILTER_SELECT}
+                >
+                  <option value="todos">{t("adminClientes.segmentAll")}</option>
+                  <option value="platinum">{t("loyalty.segmentPlatinum")}</option>
+                  <option value="gold">{t("loyalty.segmentGold")}</option>
+                  <option value="recorrentes">{t("adminClientes.segmentReturning")}</option>
+                  <option value="ocasionais">{t("adminClientes.segmentOccasional")}</option>
+                </select>
 
-                <div className="card-soft mt-2 overflow-hidden p-[5px]">
-                  <div className="mb-[5px] grid w-full grid-cols-[minmax(0,1fr)_auto_auto] gap-3 rounded-[20rem] bg-primary px-6 py-4 text-sm font-bold uppercase tracking-wide text-white">
-                    <span>{t("adminClientes.colCustomer")}</span>
-                    <span className="text-right">{t("adminClientes.colReservations")}</span>
-                    <span className="pl-3 text-right">{t("adminClientes.colLast")}</span>
-                  </div>
+                <select
+                  value={sortKey}
+                  onChange={(e) => setSortKey(e.target.value as SortKey)}
+                  className={ADMIN_FILTER_SELECT}
+                >
+                  <option value="recent">{t("adminClientes.sortRecent")}</option>
+                  <option value="reservas">{t("adminClientes.sortMostReservations")}</option>
+                  <option value="pessoas">{t("adminClientes.sortMostPeople")}</option>
+                  <option value="nome">{t("adminClientes.sortName")}</option>
+                </select>
+              </div>
 
-                  {/* ~5 registos visíveis, resto com scroll vertical — o card
+              <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+                {/* Lista */}
+                <div className={`min-w-0 ${activeKey ? "hidden lg:block" : "block"}`}>
+                  <p className="px-1 text-xs font-medium text-muted-foreground">
+                    {t("adminClientes.resultsCount", { count: list.length })}
+                  </p>
+
+                  <div className="card-soft mt-2 overflow-hidden p-[5px]">
+                    <div className="mb-[5px] grid w-full grid-cols-[minmax(0,1fr)_auto_auto] gap-3 rounded-[20rem] bg-primary px-6 py-4 text-sm font-bold uppercase tracking-wide text-white">
+                      <span>{t("adminClientes.colCustomer")}</span>
+                      <span className="text-right">{t("adminClientes.colReservations")}</span>
+                      <span className="pl-3 text-right">{t("adminClientes.colLast")}</span>
+                    </div>
+
+                    {/* ~5 registos visíveis, resto com scroll vertical — o card
                       de detalhe ao lado pode ficar bem mais alto. */}
-                  <div className="max-h-[21rem] overflow-y-auto">
-                    {list.map((c, i) => (
-                      <button
-                        key={c.key}
-                        type="button"
-                        onClick={() => setActiveKey(c.key)}
-                        className={`mb-[5px] grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-[20rem] px-5 py-2.5 text-left transition-colors last:mb-0 ${
-                          activeKey === c.key
-                            ? "bg-primary/10"
-                            : c.loyalty?.tier === "platinum"
-                              ? "bg-primary/5 ring-1 ring-inset ring-primary/40 hover:bg-primary/10"
-                              : c.loyalty?.tier === "gold"
-                                ? "bg-star/10 ring-1 ring-inset ring-star/50 hover:bg-star/20"
-                                : i % 2 === 1
-                                  ? "bg-surface/70 hover:bg-primary/5"
-                                  : "hover:bg-primary/5"
-                        }`}
-                      >
-                        <span className="min-w-0">
-                          <span className="flex items-center gap-1.5">
-                            <span className="truncate text-sm font-semibold text-foreground">
-                              {c.name}
+                    <div className="max-h-[21rem] overflow-y-auto">
+                      {list.map((c, i) => (
+                        <button
+                          key={c.key}
+                          type="button"
+                          onClick={() => setActiveKey(c.key)}
+                          className={`mb-[5px] grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-[20rem] px-5 py-2.5 text-left transition-colors last:mb-0 ${
+                            activeKey === c.key
+                              ? "bg-primary/10"
+                              : c.loyalty?.tier === "platinum"
+                                ? "bg-primary/5 ring-1 ring-inset ring-primary/40 hover:bg-primary/10"
+                                : c.loyalty?.tier === "gold"
+                                  ? "bg-star/10 ring-1 ring-inset ring-star/50 hover:bg-star/20"
+                                  : i % 2 === 1
+                                    ? "bg-surface/70 hover:bg-primary/5"
+                                    : "hover:bg-primary/5"
+                          }`}
+                        >
+                          <span className="min-w-0">
+                            <span className="flex items-center gap-1.5">
+                              <span className="truncate text-sm font-semibold text-foreground">
+                                {c.name}
+                              </span>
+                              {isPremiumTier(c.loyalty?.tier) && (
+                                <LoyaltyBadge tier={c.loyalty.tier} />
+                              )}
+                              {c.returning && !isPremiumTier(c.loyalty?.tier) && (
+                                <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                                  {t("adminClientes.badgeReturning")}
+                                </span>
+                              )}
                             </span>
-                            {isPremiumTier(c.loyalty?.tier) && (
-                              <LoyaltyBadge tier={c.loyalty.tier} />
-                            )}
-                            {c.returning && !isPremiumTier(c.loyalty?.tier) && (
-                              <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                                {t("adminClientes.badgeReturning")}
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {c.phone}
+                              {c.email ? ` · ${c.email}` : ""}
+                            </span>
+                          </span>
+                          <span className="flex items-center gap-1 text-right text-xs font-semibold text-foreground">
+                            <CalendarCheck className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            {c.count}
+                          </span>
+                          <span className="flex items-center gap-1 pl-3">
+                            {c.lastStatus && (
+                              <span
+                                className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                                  statusTone[c.lastStatus] ?? "bg-surface text-muted-foreground"
+                                }`}
+                              >
+                                {statusLabels[c.lastStatus] ?? c.lastStatus}
                               </span>
                             )}
+                            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                           </span>
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {c.phone}
-                            {c.email ? ` · ${c.email}` : ""}
-                          </span>
-                        </span>
-                        <span className="flex items-center gap-1 text-right text-xs font-semibold text-foreground">
-                          <CalendarCheck className="h-3 w-3 shrink-0 text-muted-foreground" />
-                          {c.count}
-                        </span>
-                        <span className="flex items-center gap-1 pl-3">
-                          {c.lastStatus && (
+                        </button>
+                      ))}
+                      {list.length === 0 && (
+                        <p className="p-8 text-center text-sm text-muted-foreground">
+                          {t("adminClientes.emptyNoResults")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detalhe + nota */}
+                <div className={`min-w-0 ${activeKey ? "block" : "hidden lg:block"}`}>
+                  <div className="card-soft sticky top-24 p-6 lg:top-6">
+                    {active ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setActiveKey(null)}
+                          className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary lg:hidden"
+                        >
+                          <ChevronLeft className="h-4 w-4" /> {t("common.back")}
+                        </button>
+
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h2 className="font-display text-lg font-bold text-primary">
+                              {active.name}
+                            </h2>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {t("adminClientes.customerSince", {
+                                date: fmtDate(new Date(active.firstCreatedAt).toISOString()),
+                              })}
+                            </p>
+                          </div>
+                          {isPremiumTier(active.loyalty?.tier) ? (
+                            <LoyaltyBadge tier={active.loyalty.tier} size="md" />
+                          ) : (
                             <span
-                              className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                                statusTone[c.lastStatus] ?? "bg-surface text-muted-foreground"
+                              className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+                                active.returning
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-surface text-muted-foreground"
                               }`}
                             >
-                              {statusLabels[c.lastStatus] ?? c.lastStatus}
+                              {active.returning
+                                ? t("adminClientes.badgeReturning")
+                                : t("adminClientes.badgeNew")}
                             </span>
                           )}
-                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        </span>
-                      </button>
-                    ))}
-                    {list.length === 0 && (
-                      <p className="p-8 text-center text-sm text-muted-foreground">
-                        {t("adminClientes.emptyNoResults")}
-                      </p>
+                        </div>
+
+                        {/* Estatuto (só pelo gasto — regra no servidor, ver
+                          CustomerLoyaltyService) e quanto falta para o
+                          nível seguinte. */}
+                        {active.loyalty &&
+                          (() => {
+                            const next = nextTier(active.loyalty.spend);
+                            return (
+                              <div
+                                className={`mt-4 rounded-xl px-4 py-3 text-xs ${
+                                  active.loyalty.tier === "platinum"
+                                    ? "border border-primary/40 bg-primary/5"
+                                    : active.loyalty.tier === "gold"
+                                      ? "border border-star/50 bg-star/10"
+                                      : "bg-surface"
+                                }`}
+                              >
+                                <p className="text-foreground">
+                                  {t("loyalty.spend")}:{" "}
+                                  <span className="font-bold">
+                                    {formatKz(active.loyalty.spend)}
+                                  </span>
+                                </p>
+                                <p className="mt-0.5 text-muted-foreground">
+                                  {next
+                                    ? t(`loyalty.adminRemaining.${next.tier}`, {
+                                        spend: formatKz(next.remaining),
+                                      })
+                                    : t("loyalty.rule", {
+                                        gold: formatKz(GOLD_MIN_SPEND),
+                                        platinum: formatKz(PLATINUM_ABOVE_SPEND),
+                                      })}
+                                </p>
+                              </div>
+                            );
+                          })()}
+
+                        <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
+                          <AdminField label={t("adminClientes.detailContact")}>
+                            <a
+                              href={`tel:${active.phone.replace(/\s/g, "")}`}
+                              className="flex items-center gap-1.5 text-foreground hover:text-primary"
+                            >
+                              <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
+                              {active.phone}
+                            </a>
+                            {active.email && (
+                              <a
+                                href={`mailto:${active.email}`}
+                                className="mt-1 flex items-center gap-1.5 text-foreground hover:text-primary"
+                              >
+                                <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                <span className="truncate">{active.email}</span>
+                              </a>
+                            )}
+                          </AdminField>
+                          <AdminField label={t("adminClientes.detailLastVisit")}>
+                            {fmtDate(active.lastDate)}
+                          </AdminField>
+                          <AdminField label={t("adminClientes.detailReservations")}>
+                            {active.count} ·{" "}
+                            <span className="text-success">{active.confirmed}</span>{" "}
+                            {t("adminClientes.statusConfirmed").toLowerCase()}
+                          </AdminField>
+                          <AdminField label={t("adminClientes.detailPeople")}>
+                            {active.covers} {t("adminClientes.people")}
+                          </AdminField>
+                          <AdminField label={t("adminClientes.detailOrders")}>
+                            {active.orderCount} · {formatKz(active.spent)}
+                          </AdminField>
+                        </dl>
+
+                        {/* Histórico */}
+                        <div className="mt-4 border-t border-border pt-4">
+                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                            {t("adminClientes.historyTitle")}
+                          </p>
+                          <ul className="mt-2 space-y-1.5">
+                            {[
+                              ...active.reservations.map((r) => ({
+                                id: r.id,
+                                at: toTime(r.createdAt),
+                                label: `${r.date} · ${r.time} · ${r.peopleCount} ${t("adminClientes.people")}`,
+                                status: r.status,
+                                badge: statusLabels[r.status] ?? r.status,
+                                tone: statusTone[r.status] ?? "bg-card text-muted-foreground",
+                              })),
+                              ...active.orders.map((o) => ({
+                                id: o.id,
+                                at: new Date(o.createdAt).getTime(),
+                                label: `${o.createdAt.slice(0, 10)} · ${t(
+                                  "adminClientes.orderLine",
+                                  {
+                                    value: formatKz(orderTotal(o)),
+                                  },
+                                )}`,
+                                status: o.status,
+                                badge: t(`orderStatus.${o.status}`),
+                                tone: "bg-primary/10 text-primary",
+                              })),
+                            ]
+                              .sort((a, b) => b.at - a.at)
+                              .map((row) => (
+                                <li
+                                  key={row.id}
+                                  className="flex items-center justify-between gap-2 rounded-xl bg-surface px-3 py-2 text-xs"
+                                >
+                                  <span className="min-w-0 truncate text-foreground">
+                                    {row.label}
+                                  </span>
+                                  <span
+                                    className={`shrink-0 rounded-full px-2 py-0.5 font-bold ${row.tone}`}
+                                  >
+                                    {row.badge}
+                                  </span>
+                                </li>
+                              ))}
+                          </ul>
+                        </div>
+
+                        {/* Nota */}
+                        <div className="mt-4 space-y-1.5 border-t border-border pt-4">
+                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                            {t("adminClientes.notesLabel")}
+                          </p>
+                          <Textarea
+                            value={noteDraft}
+                            onChange={(e) => setNoteDraft(e.target.value)}
+                            placeholder={t("adminClientes.notesPlaceholder")}
+                            className="rounded-xl"
+                          />
+                          <Button onClick={() => saveNote(active)} size="sm" className="rounded-xl">
+                            {t("adminClientes.saveNote")}
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="grid place-items-center gap-3 py-12 text-center">
+                        <Users className="h-10 w-10 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                          {t("adminClientes.chooseHint")}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Detalhe + nota */}
-              <div className={`min-w-0 ${activeKey ? "block" : "hidden lg:block"}`}>
-                <div className="card-soft sticky top-24 p-6 lg:top-6">
-                  {active ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setActiveKey(null)}
-                        className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary lg:hidden"
-                      >
-                        <ChevronLeft className="h-4 w-4" /> {t("common.back")}
-                      </button>
+              {/* Estatísticas */}
+              <StatSection
+                title={t("adminClientes.statsTitle")}
+                hint={t("adminClientes.statsHint")}
+              >
+                <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                  <StatCard
+                    wide
+                    title={t("adminClientes.chartNewTitle")}
+                    subtitle={t("adminClientes.chartNewSubtitle")}
+                    right={
+                      <TrendBadge
+                        delta={insights.weekDelta}
+                        label={t("adminClientes.vsPrevWeek")}
+                      />
+                    }
+                  >
+                    <TrendArea points={insights.points} legendA={t("adminClientes.legendNew")} />
+                  </StatCard>
 
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <h2 className="font-display text-lg font-bold text-primary">
-                            {active.name}
-                          </h2>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {t("adminClientes.customerSince", {
-                              date: fmtDate(new Date(active.firstCreatedAt).toISOString()),
-                            })}
-                          </p>
-                        </div>
-                        {isPremiumTier(active.loyalty?.tier) ? (
-                          <LoyaltyBadge tier={active.loyalty.tier} size="md" />
-                        ) : (
-                          <span
-                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
-                              active.returning
-                                ? "bg-primary/10 text-primary"
-                                : "bg-surface text-muted-foreground"
-                            }`}
-                          >
-                            {active.returning
-                              ? t("adminClientes.badgeReturning")
-                              : t("adminClientes.badgeNew")}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Estatuto (só pelo gasto — regra no servidor, ver
-                          CustomerLoyaltyService) e quanto falta para o
-                          nível seguinte. */}
-                      {active.loyalty &&
-                        (() => {
-                          const next = nextTier(active.loyalty.spend);
-                          return (
-                            <div
-                              className={`mt-4 rounded-xl px-4 py-3 text-xs ${
-                                active.loyalty.tier === "platinum"
-                                  ? "border border-primary/40 bg-primary/5"
-                                  : active.loyalty.tier === "gold"
-                                    ? "border border-star/50 bg-star/10"
-                                    : "bg-surface"
-                              }`}
-                            >
-                              <p className="text-foreground">
-                                {t("loyalty.spend")}:{" "}
-                                <span className="font-bold">{formatKz(active.loyalty.spend)}</span>
-                              </p>
-                              <p className="mt-0.5 text-muted-foreground">
-                                {next
-                                  ? t(`loyalty.adminRemaining.${next.tier}`, {
-                                      spend: formatKz(next.remaining),
-                                    })
-                                  : t("loyalty.rule", {
-                                      gold: formatKz(GOLD_MIN_SPEND),
-                                      platinum: formatKz(PLATINUM_ABOVE_SPEND),
-                                    })}
-                              </p>
-                            </div>
-                          );
-                        })()}
-
-                      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
-                        <AdminField label={t("adminClientes.detailContact")}>
-                          <a
-                            href={`tel:${active.phone.replace(/\s/g, "")}`}
-                            className="flex items-center gap-1.5 text-foreground hover:text-primary"
-                          >
-                            <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
-                            {active.phone}
-                          </a>
-                          {active.email && (
-                            <a
-                              href={`mailto:${active.email}`}
-                              className="mt-1 flex items-center gap-1.5 text-foreground hover:text-primary"
-                            >
-                              <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
-                              <span className="truncate">{active.email}</span>
-                            </a>
-                          )}
-                        </AdminField>
-                        <AdminField label={t("adminClientes.detailLastVisit")}>
-                          {fmtDate(active.lastDate)}
-                        </AdminField>
-                        <AdminField label={t("adminClientes.detailReservations")}>
-                          {active.count} · <span className="text-success">{active.confirmed}</span>{" "}
-                          {t("adminClientes.statusConfirmed").toLowerCase()}
-                        </AdminField>
-                        <AdminField label={t("adminClientes.detailPeople")}>
-                          {active.covers} {t("adminClientes.people")}
-                        </AdminField>
-                        <AdminField label={t("adminClientes.detailOrders")}>
-                          {active.orderCount} · {formatKz(active.spent)}
-                        </AdminField>
-                      </dl>
-
-                      {/* Histórico */}
-                      <div className="mt-4 border-t border-border pt-4">
-                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                          {t("adminClientes.historyTitle")}
-                        </p>
-                        <ul className="mt-2 space-y-1.5">
-                          {[
-                            ...active.reservations.map((r) => ({
-                              id: r.id,
-                              at: toTime(r.createdAt),
-                              label: `${r.date} · ${r.time} · ${r.peopleCount} ${t("adminClientes.people")}`,
-                              status: r.status,
-                              badge: statusLabels[r.status] ?? r.status,
-                              tone: statusTone[r.status] ?? "bg-card text-muted-foreground",
-                            })),
-                            ...active.orders.map((o) => ({
-                              id: o.id,
-                              at: new Date(o.createdAt).getTime(),
-                              label: `${o.createdAt.slice(0, 10)} · ${t("adminClientes.orderLine", {
-                                value: formatKz(orderTotal(o)),
-                              })}`,
-                              status: o.status,
-                              badge: t(`orderStatus.${o.status}`),
-                              tone: "bg-primary/10 text-primary",
-                            })),
-                          ]
-                            .sort((a, b) => b.at - a.at)
-                            .map((row) => (
-                              <li
-                                key={row.id}
-                                className="flex items-center justify-between gap-2 rounded-xl bg-surface px-3 py-2 text-xs"
-                              >
-                                <span className="min-w-0 truncate text-foreground">
-                                  {row.label}
-                                </span>
-                                <span
-                                  className={`shrink-0 rounded-full px-2 py-0.5 font-bold ${row.tone}`}
-                                >
-                                  {row.badge}
-                                </span>
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-
-                      {/* Nota */}
-                      <div className="mt-4 space-y-1.5 border-t border-border pt-4">
-                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                          {t("adminClientes.notesLabel")}
-                        </p>
-                        <Textarea
-                          value={noteDraft}
-                          onChange={(e) => setNoteDraft(e.target.value)}
-                          placeholder={t("adminClientes.notesPlaceholder")}
-                          className="rounded-xl"
-                        />
-                        <Button onClick={() => saveNote(active)} size="sm" className="rounded-xl">
-                          {t("adminClientes.saveNote")}
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="grid place-items-center gap-3 py-12 text-center">
-                      <Users className="h-10 w-10 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        {t("adminClientes.chooseHint")}
-                      </p>
-                    </div>
-                  )}
+                  <StatCard
+                    title={t("adminClientes.freqTitle")}
+                    subtitle={t("adminClientes.resultsCount", { count: customers.length })}
+                  >
+                    <StatBars rows={insights.freq} />
+                  </StatCard>
                 </div>
-              </div>
-            </div>
 
-            {/* Estatísticas */}
-            <StatSection title={t("adminClientes.statsTitle")} hint={t("adminClientes.statsHint")}>
-              <div className="mt-4 grid gap-4 lg:grid-cols-3">
-                <StatCard
-                  wide
-                  title={t("adminClientes.chartNewTitle")}
-                  subtitle={t("adminClientes.chartNewSubtitle")}
-                  right={
-                    <TrendBadge delta={insights.weekDelta} label={t("adminClientes.vsPrevWeek")} />
-                  }
-                >
-                  <TrendArea points={insights.points} legendA={t("adminClientes.legendNew")} />
-                </StatCard>
-
-                <StatCard
-                  title={t("adminClientes.freqTitle")}
-                  subtitle={t("adminClientes.resultsCount", { count: customers.length })}
-                >
-                  <StatBars rows={insights.freq} />
-                </StatCard>
-              </div>
-
-              <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                <KpiTile
-                  icon={Users}
-                  tone="primary"
-                  label={t("adminClientes.kpiTotal")}
-                  value={String(insights.total)}
-                />
-                <KpiTile
-                  icon={Repeat}
-                  tone="success"
-                  label={t("adminClientes.kpiReturning")}
-                  value={String(insights.returning)}
-                  hint={t("adminClientes.kpiReturningHint", { pct: insights.returningPct })}
-                >
-                  <MiniProgress pct={insights.returningPct} />
-                </KpiTile>
-                <KpiTile
-                  icon={CalendarCheck}
-                  tone="muted"
-                  big={false}
-                  label={t("adminClientes.kpiPeople")}
-                  value={String(insights.covers)}
-                  hint={t("adminClientes.kpiPeopleHint", { avg: insights.avgParty })}
-                />
-              </div>
-            </StatSection>
-          </>
-        )}
-      </div>
+                <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                  <KpiTile
+                    icon={Users}
+                    tone="primary"
+                    label={t("adminClientes.kpiTotal")}
+                    value={String(insights.total)}
+                  />
+                  <KpiTile
+                    icon={Repeat}
+                    tone="success"
+                    label={t("adminClientes.kpiReturning")}
+                    value={String(insights.returning)}
+                    hint={t("adminClientes.kpiReturningHint", { pct: insights.returningPct })}
+                  >
+                    <MiniProgress pct={insights.returningPct} />
+                  </KpiTile>
+                  <KpiTile
+                    icon={CalendarCheck}
+                    tone="muted"
+                    big={false}
+                    label={t("adminClientes.kpiPeople")}
+                    value={String(insights.covers)}
+                    hint={t("adminClientes.kpiPeopleHint", { avg: insights.avgParty })}
+                  />
+                </div>
+              </StatSection>
+            </>
+          )}
+        </div>
+      </PlanGate>
     </div>
   );
 }

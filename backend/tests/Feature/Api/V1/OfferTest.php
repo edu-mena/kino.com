@@ -4,6 +4,7 @@ use App\Jobs\ProcessUploadedVideoJob;
 use App\Models\MenuItem;
 use App\Models\Offer;
 use App\Models\Restaurant;
+use App\Models\RestaurantSubscription;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
@@ -231,4 +232,46 @@ test('promoção global Luku não pode visar pratos/categorias', function () {
         'type' => 'discount', 'title' => 'Luku 10%', 'percent_off' => 10,
         'menu_item_ids' => [$dish->uuid],
     ])->assertStatus(422)->assertJsonValidationErrors('menu_item_ids');
+});
+
+test('restaurante Pro só cria 2 promoções ativas, a 3ª é bloqueada', function () {
+    $restaurant = Restaurant::factory()->create();
+    RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id, 'plan' => 'pro',
+        'started_at' => now(), 'trial_ends_at' => now()->addDays(60), 'status' => 'active',
+    ]);
+    $owner = ownerOf($restaurant);
+    for ($i = 0; $i < 2; $i++) {
+        Offer::query()->create([
+            'restaurant_id' => $restaurant->id, 'type' => 'delivery', 'title' => "Ativa {$i}",
+            'starts_at' => now()->subDay(),
+        ]);
+    }
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/offers", [
+            'type' => 'delivery', 'title' => 'Frete grátis',
+        ])
+        ->assertStatus(403);
+});
+
+test('restaurante Plus não tem tecto de promoções', function () {
+    $restaurant = Restaurant::factory()->create();
+    RestaurantSubscription::query()->create([
+        'restaurant_id' => $restaurant->id, 'plan' => 'plus',
+        'started_at' => now(), 'trial_ends_at' => now()->addDays(60), 'status' => 'active',
+    ]);
+    $owner = ownerOf($restaurant);
+    for ($i = 0; $i < 5; $i++) {
+        Offer::query()->create([
+            'restaurant_id' => $restaurant->id, 'type' => 'delivery', 'title' => "Ativa {$i}",
+            'starts_at' => now()->subDay(),
+        ]);
+    }
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/offers", [
+            'type' => 'delivery', 'title' => 'Frete grátis',
+        ])
+        ->assertStatus(201);
 });

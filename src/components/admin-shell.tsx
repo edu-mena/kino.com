@@ -29,7 +29,7 @@ import { useTranslation } from "@/i18n";
 import { AdminTutorialProvider, useAdminTutorial } from "@/lib/admin-tutorial";
 import { hasRealBackend } from "@/lib/api-client";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
-import { useRestaurantAccess, useSubscriptions } from "@/lib/subscriptions";
+import { useRestaurantAccess, useSubscriptions, usePlanFeatures } from "@/lib/subscriptions";
 
 // `labelKey` também serve de `tourId` (data-tour="admin-<tourId>") — só
 // orders/menu/reservations/promotions/restaurant têm passo no tour hoje,
@@ -322,6 +322,44 @@ export function RestaurantGate({ children }: { children: ReactNode }) {
         </button>
         <Link to="/admin/subscricao" className="text-xs font-semibold text-primary hover:underline">
           {t("adminSubscricao.gateSeeDetails")}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/** Envolve funcionalidades tudo-ou-nada do Plano Plus (Pacotes, Gestão de
+ * Clientes, Estatísticas) — mesma casca visual de `RestaurantGate`, mas tom
+ * "oportunidade de upgrade" (primary/brand), não "problema de pagamento"
+ * (destructive), e nunca esconde nada por causa de status de pagamento
+ * (isso é `RestaurantGate`, um eixo independente). */
+export function PlanGate({
+  feature,
+  children,
+}: {
+  feature: "packages" | "customers" | "stats";
+  children: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const { allows } = usePlanFeatures();
+
+  if (allows(feature)) return <>{children}</>;
+
+  return (
+    <div className="mx-auto max-w-lg px-4 pt-16 md:px-6">
+      <div className="card-soft grid place-items-center gap-4 p-8 text-center">
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+          <Lock className="h-6 w-6" />
+        </span>
+        <h2 className="font-display text-lg font-bold text-foreground">
+          {t(`adminPlanGate.${feature}Title`)}
+        </h2>
+        <p className="text-sm text-muted-foreground">{t(`adminPlanGate.${feature}Body`)}</p>
+        <Link
+          to="/admin/subscricao"
+          className="mt-1 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          {t("adminPlanGate.cta")}
         </Link>
       </div>
     </div>
