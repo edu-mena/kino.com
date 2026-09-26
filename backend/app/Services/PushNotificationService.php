@@ -7,6 +7,7 @@ use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging as FirebaseMessaging;
+use Kreait\Firebase\Messaging\AndroidConfig;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification as FcmNotification;
 use Minishlink\WebPush\Subscription;
@@ -214,7 +215,18 @@ class PushNotificationService
                 'kind' => $notification->kind,
                 'refId' => (string) $notification->ref_id,
                 'url' => $this->urlFor($notification),
-            ]);
+            ])
+            // Canal com som próprio (Fase N5) — o id e o ficheiro (res/raw/,
+            // sem extensão) têm de bater certo com LukuApplication.java e o
+            // recurso .wav lá colocado. Android 8+ usa sempre o som do
+            // CANAL (definido lá, uma vez, na app), nunca este aqui —
+            // incluído mesmo assim como fallback em versões mais antigas.
+            ->withAndroidConfig(AndroidConfig::fromArray([
+                'notification' => [
+                    'channel_id' => 'luku_default',
+                    'sound' => 'notification_luku',
+                ],
+            ]));
 
         try {
             $report = $client->sendMulticast($message, $tokens->all());

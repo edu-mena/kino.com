@@ -262,6 +262,32 @@ permissão do sistema e, se aceite, registar o token (`POST
 utilizador (via `/admin/pedidos` de outro dispositivo/browser, por
 exemplo) para confirmar que a notificação chega ao telemóvel.
 
+### 6. Som próprio da notificação (canal `luku_default`)
+
+Um `NotificationChannel` do Android **não pode mudar de som depois de
+criado** — por isso precisa de existir com o som certo antes de qualquer
+notificação chegar, não dá para configurar isto só do lado do payload FCM.
+Já feito no código:
+
+- `android/app/src/main/java/com/luku/app/LukuApplication.java` — cria o
+  canal `luku_default` no arranque da app, com o som de
+  `capacitor/assets/notification_luku.wav` (mesmo som sintetizado do lado
+  web, `src/lib/notification-sound.ts` — gerado com `node
+  scripts/generate-notification-sound.mjs`, dá para regenerar com outro som
+  a qualquer momento).
+- `AndroidManifest.xml` — `<application android:name=".LukuApplication">`
+  + `meta-data
+  com.google.firebase.messaging.default_notification_channel_id`.
+- `PushNotificationService.php` (`sendAndroid()`) — já manda
+  `channel_id: luku_default` no `AndroidConfig` de cada mensagem.
+
+**Atenção**: `android/` está no `.gitignore` (regenera-se com `npx cap add
+android`) — se a pasta for apagada/recriada do zero, os 3 passos acima
+têm de ser reaplicados manualmente (o ficheiro `.java`, as duas linhas do
+manifest, e copiar `capacitor/assets/notification_luku.wav` para
+`android/app/src/main/res/raw/notification_luku.wav` — o nome do
+recurso, sem extensão, é o que o `channel_id`/`sound` referenciam).
+
 ### iOS — falta ainda mais um passo (APNs)
 
 O mesmo plugin cobre iOS, e o `PushNotificationController`/`device_tokens`
