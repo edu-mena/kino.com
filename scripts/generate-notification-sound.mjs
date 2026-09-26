@@ -65,6 +65,7 @@ for (let i = 0; i < numSamples; i++) {
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const outPath = process.argv[2] ?? path.join(__dirname, "..", "capacitor", "assets", "notification_luku.wav");
+const outPath =
+  process.argv[2] ?? path.join(__dirname, "..", "capacitor", "assets", "notification_luku.wav");
 writeFileSync(outPath, buffer);
 console.log(`Escrito: ${outPath} (${buffer.length} bytes, ${totalDur}s)`);

@@ -273,11 +273,11 @@ Já feito no código:
   canal `luku_default` no arranque da app, com o som de
   `capacitor/assets/notification_luku.wav` (mesmo som sintetizado do lado
   web, `src/lib/notification-sound.ts` — gerado com `node
-  scripts/generate-notification-sound.mjs`, dá para regenerar com outro som
+scripts/generate-notification-sound.mjs`, dá para regenerar com outro som
   a qualquer momento).
 - `AndroidManifest.xml` — `<application android:name=".LukuApplication">`
-  + `meta-data
-  com.google.firebase.messaging.default_notification_channel_id`.
+  - `meta-data
+com.google.firebase.messaging.default_notification_channel_id`.
 - `PushNotificationService.php` (`sendAndroid()`) — já manda
   `channel_id: luku_default` no `AndroidConfig` de cada mensagem.
 
