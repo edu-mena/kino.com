@@ -14,7 +14,7 @@ import {
   Upload,
   Utensils,
 } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { MediaLightbox } from "@/components/media-lightbox";
@@ -69,6 +69,12 @@ export const Route = createFileRoute("/entrega")({
       { property: "og:image", content: icon },
     ],
   }),
+  // `?pedido=<uuid>` pré-seleciona um pedido — deep-link de notificação (ver
+  // notification-list.tsx), mesmo padrão de `?r=` em sistema.subscricoes.tsx.
+  validateSearch: (s: Record<string, unknown>): { pedido?: string } => {
+    const pedido = s["pedido"];
+    return typeof pedido === "string" && pedido ? { pedido } : {};
+  },
   component: Entrega,
 });
 
@@ -84,6 +90,7 @@ function etaTime(order: CartOrder) {
 }
 
 function Entrega() {
+  const { pedido: preselect } = Route.useSearch();
   const { orders: allOrders } = useCart();
   const { user } = useAuth();
   // Só os pedidos de quem está a ver (conta ou convidado) — os da seed, sem
@@ -93,8 +100,13 @@ function Entrega() {
     () => allOrders.filter((o) => o.ownerKey === mineKey),
     [allOrders, mineKey],
   );
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const active = activeIndex !== null ? (orders[activeIndex] ?? null) : null;
+  // `activeId` (uuid), não a posição na lista — a posição muda conforme
+  // filtro/ordenação e não sobrevive a um deep-link (ver Fase N2).
+  const [activeId, setActiveId] = useState<string | null>(preselect ?? null);
+  useEffect(() => {
+    if (preselect) setActiveId(preselect);
+  }, [preselect]);
+  const active = orders.find((o) => o.id === activeId) ?? null;
   const { t } = useTranslation();
 
   return (
@@ -107,7 +119,7 @@ function Entrega() {
       <div className="mx-auto mt-8 max-w-5xl px-4 md:px-6">
         {/* Mobile: um card de cada vez (lista ↔ visualização). Desktop: lado a lado. */}
         <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-          <div className={`min-w-0 ${activeIndex !== null ? "hidden lg:block" : "block"}`}>
+          <div className={`min-w-0 ${activeId !== null ? "hidden lg:block" : "block"}`}>
             {orders.length === 0 ? (
               <div className="card-soft grid place-items-center gap-3 p-12 text-center">
                 <Bike className="h-10 w-10 text-muted-foreground" />
@@ -122,7 +134,7 @@ function Entrega() {
               </div>
             ) : (
               <div className="card-soft divide-y divide-border">
-                {orders.map((order, index) => {
+                {orders.map((order) => {
                   const restaurant = getRestaurant(order.restaurantId);
                   const itemCount = order.lines.reduce((sum, l) => sum + l.qty, 0);
                   const ModeIcon = MODE_ICON[order.fulfillmentType];
@@ -130,9 +142,9 @@ function Entrega() {
                     <button
                       key={order.id}
                       type="button"
-                      onClick={() => setActiveIndex(index)}
+                      onClick={() => setActiveId(order.id)}
                       className={`group grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 text-left transition-colors hover:bg-surface ${
-                        activeIndex === index ? "bg-surface" : ""
+                        activeId === order.id ? "bg-surface" : ""
                       }`}
                     >
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
@@ -157,10 +169,10 @@ function Entrega() {
           </div>
 
           {/* Card de visualização */}
-          <div className={`min-w-0 ${activeIndex !== null ? "block" : "hidden lg:block"}`}>
+          <div className={`min-w-0 ${activeId !== null ? "block" : "hidden lg:block"}`}>
             <div className="card-soft sticky top-24 p-6">
               {active ? (
-                <OrderViewer order={active} onBack={() => setActiveIndex(null)} />
+                <OrderViewer order={active} onBack={() => setActiveId(null)} />
               ) : (
                 <div className="grid place-items-center gap-3 py-12 text-center">
                   <Package className="h-10 w-10 text-muted-foreground" />

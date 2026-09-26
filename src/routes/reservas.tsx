@@ -35,6 +35,12 @@ export const Route = createFileRoute("/reservas")({
       { property: "og:image", content: icon },
     ],
   }),
+  // `?reserva=<uuid>` pré-seleciona uma reserva — deep-link de notificação
+  // (ver notification-list.tsx), mesmo padrão de `?r=` em sistema.subscricoes.tsx.
+  validateSearch: (s: Record<string, unknown>): { reserva?: string } => {
+    const reserva = s["reserva"];
+    return typeof reserva === "string" && reserva ? { reserva } : {};
+  },
   component: Reservas,
 });
 
@@ -73,6 +79,7 @@ const CAUTION_STATUS_KEY: Record<string, string> = {
 const CANCELED_VISIBLE_MS = 60_000;
 
 function Reservas() {
+  const { reserva: preselect } = Route.useSearch();
   const { reservations: allReservations, cancelReservation, setPaymentProof } = useReservations();
   const { user } = useAuth();
   // Reavalia o filtro periodicamente pra reservas "Cancelada" sumirem
@@ -104,7 +111,10 @@ function Reservas() {
 
   // Mesma lógica de lista ↔ detalhe do Centro de ajuda (`/ajuda`): no mobile
   // é um ecrã de cada vez, no desktop fica lado a lado.
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(preselect ?? null);
+  useEffect(() => {
+    if (preselect) setActiveId(preselect);
+  }, [preselect]);
   const active = reservations.find((r) => r.id === activeId) ?? null;
   // Só para ler a janela de cancelamento pós-confirmação configurada pelo
   // restaurante (`reservationCancellationWindowMinutes`) — as reservas em

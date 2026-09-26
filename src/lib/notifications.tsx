@@ -22,9 +22,51 @@ import { hasRealBackend } from "@/lib/api-client";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { viewerKey } from "@/lib/customer";
+import { formatKz } from "@/lib/format";
 import { useMockFollowerNotes } from "@/lib/follow-notifications-mock";
 import { getAdminToken, getManagedRestaurantId } from "@/lib/restaurant-admin";
 import { useReservations } from "@/lib/reservations";
+
+type TFn = (path: string, vars?: Record<string, string | number>) => string;
+
+/** Texto da notificação — usa a versão com contexto (itens/valor,
+ * pessoas/hora) quando o `snapshot` existe, senão cai na versão genérica de
+ * sempre (notificações antigas, ou de seguidor, nunca tiveram isto). Um só
+ * sítio (não duplicado no sino/lista/toast) para nunca divergir. */
+export function notificationText(t: TFn, n: LukuNotification, name: string): string {
+  const s = n.snapshot;
+  if (n.event === "orderNew" && s?.itemCount != null && s.total != null) {
+    return t("notifications.orderNewDetailed", {
+      name,
+      itemCount: s.itemCount,
+      total: formatKz(s.total),
+    });
+  }
+  if (n.event === "orderStatus" && s?.itemCount != null && s.total != null) {
+    return t("notifications.orderStatusDetailed", {
+      name,
+      itemCount: s.itemCount,
+      total: formatKz(s.total),
+      statusLabel: t(`orderStatus.${n.status}`),
+    });
+  }
+  if (n.event === "reservationNew" && s?.peopleCount != null && s.time) {
+    return t("notifications.reservationNewDetailed", {
+      name,
+      peopleCount: s.peopleCount,
+      time: s.time,
+    });
+  }
+  if (n.event === "reservationStatus" && s?.peopleCount != null && s.time) {
+    return t("notifications.reservationStatusDetailed", {
+      name,
+      peopleCount: s.peopleCount,
+      time: s.time,
+      statusLabel: t(`reservationStatus.${n.status}`),
+    });
+  }
+  return t(`notifications.${n.event}`, { name, status: n.status });
+}
 
 /**
  * Notificações de mudança de estado — sem backend, um provider observa os
@@ -33,6 +75,18 @@ import { useReservations } from "@/lib/reservations";
  * toast. Consumido por dois sinos: cliente (todas) e painel do restaurante
  * (só as do restaurante gerido).
  */
+/** Contexto extra para o texto deixar de ser genérico — ver
+ * `PlanLimitService`-style comentário no backend, `Notification::snapshot()`.
+ * Ausente em notificações antigas (criadas antes desta ronda) ou de
+ * seguidor, que nunca tiveram isto. */
+export type NotificationSnapshot = {
+  itemCount?: number;
+  total?: number;
+  peopleCount?: number;
+  date?: string;
+  time?: string;
+};
+
 export type LukuNotification = {
   id: string;
   /** `"restaurant"` = aviso a quem segue o restaurante (story, promoção,
@@ -44,6 +98,7 @@ export type LukuNotification = {
   event: string;
   /** estado novo, para compor o texto */
   status: string;
+  snapshot?: NotificationSnapshot;
   /** `ownerKey` do pedido/reserva de origem — o sino do cliente só mostra as
    * do próprio (conta ou convidado). Ausente para registos da seed. */
   ownerKey?: string;
@@ -117,7 +172,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 }
 
 function MockNotificationsProvider({ children }: { children: ReactNode }) {
-  const { orders, hydrated: ordersHydrated } = useCart();
+  const { orders, hydrated: ordersHydrated, orderTotal } = useCart();
   const { reservations, hydrated: reservationsHydrated } = useReservations();
   const { t } = useTranslation();
 
@@ -176,10 +231,15 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
       const fresh: LukuNotification[] = [];
       for (const o of orders) {
         const was = prev.get(o.id);
+        const snapshot = { itemCount: o.lines.length, total: orderTotal(o) };
         if (was === undefined) {
-          fresh.push(makeNote("order", o.id, o.restaurantId, "orderNew", o.status, o.ownerKey));
+          fresh.push(
+            makeNote("order", o.id, o.restaurantId, "orderNew", o.status, snapshot, o.ownerKey),
+          );
         } else if (was !== o.status) {
-          fresh.push(makeNote("order", o.id, o.restaurantId, "orderStatus", o.status, o.ownerKey));
+          fresh.push(
+            makeNote("order", o.id, o.restaurantId, "orderStatus", o.status, snapshot, o.ownerKey),
+          );
         }
       }
       if (fresh.length) pushNotes(fresh);
@@ -199,9 +259,18 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
       const fresh: LukuNotification[] = [];
       for (const r of reservations) {
         const was = prev.get(r.id);
+        const snapshot = { peopleCount: r.peopleCount, date: r.date, time: r.time };
         if (was === undefined) {
           fresh.push(
-            makeNote("reservation", r.id, r.restaurantId, "reservationNew", r.status, r.ownerKey),
+            makeNote(
+              "reservation",
+              r.id,
+              r.restaurantId,
+              "reservationNew",
+              r.status,
+              snapshot,
+              r.ownerKey,
+            ),
           );
         } else if (was !== r.status) {
           fresh.push(
@@ -211,6 +280,7 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
               r.restaurantId,
               "reservationStatus",
               r.status,
+              snapshot,
               r.ownerKey,
             ),
           );
@@ -228,6 +298,7 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
     restaurantId: string,
     event: string,
     status: string,
+    snapshot?: NotificationSnapshot,
     ownerKey?: string,
   ): LukuNotification {
     return {
@@ -243,6 +314,7 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
       restaurantId,
       event,
       status,
+      ...(snapshot ? { snapshot } : {}),
       ...(ownerKey ? { ownerKey } : {}),
       at: new Date().toISOString(),
       read: false,
@@ -254,7 +326,7 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
 
   function noteText(n: LukuNotification) {
     const name = getRestaurant(n.restaurantId)?.name ?? "";
-    return t(`notifications.${n.event}`, { name, status: n.status });
+    return notificationText(t, n, name);
   }
 
   function pushNotes(fresh: LukuNotification[]) {

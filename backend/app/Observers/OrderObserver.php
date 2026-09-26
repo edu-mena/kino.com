@@ -6,6 +6,7 @@ use App\Jobs\SendPushNotificationJob;
 use App\Models\Courier;
 use App\Models\Notification;
 use App\Models\Order;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
 /**
  * Substitui o diffing client-side do mock (`src/lib/notifications.tsx`) por
@@ -14,8 +15,16 @@ use App\Models\Order;
  * (não convidado), também uma para o cliente. Convidados não têm sessão
  * para consultar um feed de notificações — continuam a ver o estado
  * diretamente via GET /orders/{id} com o guest_token.
+ *
+ * `ShouldHandleEventsAfterCommit`: `OrderController::store()` cria o pedido
+ * e SÓ DEPOIS as linhas (`$order->lines()->create(...)`), tudo dentro da
+ * mesma transação — sem isto, `created()` corria no INSERT do pedido, antes
+ * de existir uma única linha, e o snapshot da notificação (itemCount/total)
+ * saía sempre a zero. Adiar para depois do commit não muda nada no caminho
+ * de `updated()` (mudança de estado nunca está dentro de uma transação que
+ * ainda vai inserir mais linhas).
  */
-class OrderObserver
+class OrderObserver implements ShouldHandleEventsAfterCommit
 {
     /** Estados terminais — nunca mais o estafeta faz nada por este pedido
      * (ver mock, `releaseOrder` chamado ao entregar/recusar/cancelar). */
@@ -41,12 +50,14 @@ class OrderObserver
 
     private function notify(Order $order, string $event): void
     {
+        $snapshot = $this->snapshotFor($order);
+
         $restaurantNotification = Notification::query()->create([
             'restaurant_id' => $order->restaurant_id,
             'kind' => 'order',
             'ref_id' => $order->id,
             'event' => $event,
-            'status_snapshot' => $order->status,
+            'status_snapshot' => $snapshot,
         ]);
 
         // Push para toda a equipa do restaurante — mais do que um membro
@@ -63,11 +74,23 @@ class OrderObserver
                 'kind' => 'order',
                 'ref_id' => $order->id,
                 'event' => $event,
-                'status_snapshot' => $order->status,
+                'status_snapshot' => $snapshot,
             ]);
 
             SendPushNotificationJob::dispatch($order->user, $customerNotification);
         }
+    }
+
+    /** JSON compacto com o suficiente para o texto da notificação deixar de
+     * ser genérico ("Novo pedido em X") sem precisar de recarregar o pedido
+     * inteiro em nenhum sítio que só mostra o sino/lista. */
+    private function snapshotFor(Order $order): string
+    {
+        return json_encode([
+            'status' => $order->status,
+            'itemCount' => $order->lines()->count(),
+            'total' => (float) $order->total,
+        ], JSON_THROW_ON_ERROR);
     }
 
     /** Liberta o estafeta atribuído (se houver) de volta pra "disponível" —

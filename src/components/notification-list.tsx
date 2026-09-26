@@ -9,10 +9,20 @@ import { hasRealBackend } from "@/lib/api-client";
 import { getAuthToken } from "@/lib/auth";
 import { declineMockInvite, muteMockInvite } from "@/lib/follow-invites";
 import { useFollows } from "@/lib/follows";
-import { useNotifications, type LukuNotification } from "@/lib/notifications";
+import { notificationText, useNotifications, type LukuNotification } from "@/lib/notifications";
 
-const targetFor = (scope: "client" | "restaurant", kind: LukuNotification["kind"]) =>
-  scope === "client" ? (kind === "order" ? "/entrega" : "/reservas") : null;
+/** Destino de navegação por `kind`/`scope` — única fonte da verdade, também
+ * usada para agrupar badges por separador (ver `useUnreadByKind`). `kind
+ * === "restaurant"` (avisos de seguidor) não passa por aqui, tem sempre o
+ * próprio destino (`/restaurantes/$id`, ver renderização abaixo). */
+export const targetFor = (
+  scope: "client" | "restaurant",
+  kind: LukuNotification["kind"],
+): "/entrega" | "/reservas" | "/admin/pedidos" | "/admin/reservas" | null => {
+  if (kind === "restaurant") return null;
+  if (scope === "client") return kind === "order" ? "/entrega" : "/reservas";
+  return kind === "order" ? "/admin/pedidos" : "/admin/reservas";
+};
 
 /** Uma notificação, lida ou não — usado tanto no sino (só não lidas) como
  * nas páginas de histórico (`/notificacoes`, `/admin/notificacoes`). */
@@ -86,7 +96,7 @@ export function NotificationList({
       <ul className="divide-y divide-border">
         {items.map((n) => {
           const name = restaurantById.get(n.restaurantId)?.name ?? "";
-          const to = n.kind === "restaurant" ? null : targetFor(scope, n.kind);
+          const to = targetFor(scope, n.kind);
           // Pedido recusado — o resto da app já trata isto (ver
           // `order-builder-card.tsx`/`restaurantes_.$id.tsx`), a notificação
           // é só mais um sítio de onde chegar às mesmas sugestões.
@@ -106,7 +116,7 @@ export function NotificationList({
                     n.read ? "text-muted-foreground" : "font-semibold text-foreground"
                   }`}
                 >
-                  {t(`notifications.${n.event}`, { name, status: n.status })}
+                  {notificationText(t, n, name)}
                 </span>
               </span>
               <span className="mt-0.5 block pl-3.5 text-[11px] text-muted-foreground">
@@ -125,8 +135,40 @@ export function NotificationList({
                 >
                   {body}
                 </Link>
-              ) : to ? (
-                <Link to={to} onClick={onNavigate} className="block px-4 py-2.5 hover:bg-surface">
+              ) : to === "/entrega" ? (
+                <Link
+                  to="/entrega"
+                  search={{ pedido: n.refId }}
+                  onClick={onNavigate}
+                  className="block px-4 py-2.5 hover:bg-surface"
+                >
+                  {body}
+                </Link>
+              ) : to === "/reservas" ? (
+                <Link
+                  to="/reservas"
+                  search={{ reserva: n.refId }}
+                  onClick={onNavigate}
+                  className="block px-4 py-2.5 hover:bg-surface"
+                >
+                  {body}
+                </Link>
+              ) : to === "/admin/pedidos" ? (
+                <Link
+                  to="/admin/pedidos"
+                  search={{ pedido: n.refId }}
+                  onClick={onNavigate}
+                  className="block px-4 py-2.5 hover:bg-surface"
+                >
+                  {body}
+                </Link>
+              ) : to === "/admin/reservas" ? (
+                <Link
+                  to="/admin/reservas"
+                  search={{ reserva: n.refId }}
+                  onClick={onNavigate}
+                  className="block px-4 py-2.5 hover:bg-surface"
+                >
                   {body}
                 </Link>
               ) : (

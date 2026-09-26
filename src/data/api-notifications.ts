@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api-client";
-import type { LukuNotification } from "@/lib/notifications";
+import type { LukuNotification, NotificationSnapshot } from "@/lib/notifications";
 
 /** Notificações reais (backend/app/Http/Controllers/Api/V1/NotificationController.php)
  * — só usado quando `hasRealBackend`. `GET /notifications` já vem
@@ -13,6 +13,7 @@ type ApiNotification = {
   restaurantId: string | null;
   event: string;
   status: string;
+  snapshot: NotificationSnapshot | null;
   readAt: string | null;
   createdAt: string;
 };
@@ -25,6 +26,7 @@ function mapApiNotification(n: ApiNotification, ownerKey?: string): LukuNotifica
     restaurantId: n.restaurantId ?? "",
     event: n.event,
     status: n.status,
+    ...(n.snapshot ? { snapshot: n.snapshot } : {}),
     ...(ownerKey ? { ownerKey } : {}),
     at: n.createdAt,
     read: n.readAt != null,

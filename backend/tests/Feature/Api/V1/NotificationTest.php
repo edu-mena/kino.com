@@ -4,6 +4,7 @@ use App\Models\Notification;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 test('criar um pedido gera notificação para o restaurante E para o cliente autenticado', function () {
@@ -156,6 +157,63 @@ test('criar um pedido não falha quando o cliente tem um device token Android ma
     ]);
 
     expect(Notification::where('user_id', $user->id)->where('event', 'orderNew')->exists())->toBeTrue();
+});
+
+test('notificação de pedido expõe itemCount/total no snapshot — conteúdo específico, não genérico', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+    // Mesma estrutura de OrderController::store(): pedido criado, DEPOIS as
+    // linhas, tudo na mesma transação — é o que fez o snapshot sair sempre a
+    // zero antes de OrderObserver implementar ShouldHandleEventsAfterCommit.
+    DB::transaction(function () use ($restaurant) {
+        $order = $restaurant->orders()->create([
+            'fulfillment_type' => 'takeaway', 'customer_name' => 'X', 'customer_phone' => '900',
+            'pickup_asap' => true, 'status' => 'pending', 'subtotal' => 2000, 'total' => 2500,
+            'guest_token' => Str::uuid(),
+        ]);
+        $order->lines()->create([
+            'item_name_snapshot' => 'Muamba', 'unit_price_snapshot' => 1000, 'qty' => 2, 'line_total' => 2000,
+        ]);
+    });
+
+    $this->actingAs($owner, 'sanctum')
+        ->getJson("/api/v1/restaurants/{$restaurant->uuid}/notifications")
+        ->assertOk()
+        ->assertJsonPath('data.0.snapshot.itemCount', 1)
+        ->assertJsonPath('data.0.snapshot.total', 2500)
+        ->assertJsonPath('data.0.status', 'pending');
+});
+
+test('notificação de reserva expõe peopleCount/date/time no snapshot', function () {
+    $restaurant = Restaurant::factory()->create(['accepts_reservations' => true]);
+    $owner = ownerOf($restaurant);
+    $restaurant->reservations()->create([
+        'customer_name' => 'Ana', 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30',
+        'people_count' => 4, 'status' => 'pending', 'status_updated_at' => now(),
+    ]);
+
+    $this->actingAs($owner, 'sanctum')
+        ->getJson("/api/v1/restaurants/{$restaurant->uuid}/notifications")
+        ->assertOk()
+        ->assertJsonPath('data.0.snapshot.peopleCount', 4)
+        ->assertJsonPath('data.0.snapshot.time', '19:30')
+        ->assertJsonPath('data.0.status', 'pending');
+});
+
+test('notificação antiga (status_snapshot em texto simples) continua a devolver status certo, snapshot null', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+    Notification::query()->create([
+        'restaurant_id' => $restaurant->id, 'kind' => 'order', 'ref_id' => 1,
+        'event' => 'orderNew', 'status_snapshot' => 'pending',
+    ]);
+
+    $this->actingAs($owner, 'sanctum')
+        ->getJson("/api/v1/restaurants/{$restaurant->uuid}/notifications")
+        ->assertOk()
+        ->assertJsonPath('data.0.status', 'pending')
+        ->assertJsonPath('data.0.snapshot', null);
 });
 
 test('sino do restaurante só mostra as notificações do próprio restaurante, staff de outro não acede', function () {

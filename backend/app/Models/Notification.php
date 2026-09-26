@@ -38,4 +38,29 @@ class Notification extends Model
     {
         return $this->belongsTo(Restaurant::class);
     }
+
+    /**
+     * `status_snapshot` guarda um JSON compacto desde a Fase N1 (ex.
+     * `{"status": "pending", "itemCount": 3, "total": 12500}`) — mas
+     * notificações antigas (e as de seguidor, `followPriceChange`/
+     * `followInvite`) continuam a guardar só um valor simples ("pending",
+     * "3", ""). `json_decode` de um valor simples nunca devolve um array
+     * (string inválida → null; número → int/float) — por isso um `null` aqui
+     * significa sempre "sem contexto extra", nunca um erro a tratar.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function snapshot(): ?array
+    {
+        $decoded = json_decode((string) $this->status_snapshot, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /** Estado bruto, sempre disponível — do snapshot decodificado quando
+     * existe, senão o valor legado guardado diretamente na coluna. */
+    public function statusValue(): string
+    {
+        return (string) ($this->snapshot()['status'] ?? $this->status_snapshot);
+    }
 }

@@ -23,7 +23,12 @@ class NotificationResource extends JsonResource
                 ? $this->refId()
                 : $this->whenLoaded('restaurant', fn () => $this->restaurant?->uuid),
             'event' => $this->event,
-            'status' => $this->status_snapshot,
+            'status' => $this->statusValue(),
+            // Contexto extra (itens/total do pedido, pessoas/hora da reserva)
+            // para o texto deixar de ser genérico — `null` em notificações
+            // antigas ou de seguidor, que nunca tiveram isto (ver
+            // `Notification::snapshot()`).
+            'snapshot' => $this->snapshot(),
             'readAt' => $this->read_at?->toIso8601String(),
             'createdAt' => $this->created_at?->toIso8601String(),
         ];

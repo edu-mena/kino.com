@@ -19,7 +19,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
 import { LoyaltyBadge, LoyaltyCustomerPopover } from "@/components/loyalty-badge";
@@ -40,6 +40,12 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/reservas")({
   head: () => ({ meta: [{ title: "Reservas — Painel Luku.com" }] }),
+  // `?reserva=<uuid>` pré-seleciona uma reserva — deep-link de notificação
+  // (ver notification-list.tsx), mesmo padrão de `?r=` em sistema.subscricoes.tsx.
+  validateSearch: (s: Record<string, unknown>): { reserva?: string } => {
+    const reserva = s["reserva"];
+    return typeof reserva === "string" && reserva ? { reserva } : {};
+  },
   component: () => (
     <RestaurantGate>
       <AdminReservas />
@@ -87,6 +93,7 @@ function weekStart(d: Date) {
 }
 
 function AdminReservas() {
+  const { reserva: preselect } = Route.useSearch();
   const { restaurant } = useRestaurantAdmin();
   // Clientes Gold/Platina (ver @/lib/loyalty) — selo na lista e ficha rápida no detalhe.
   const loyaltyOf = useRestaurantLoyalty(restaurant?.id);
@@ -102,7 +109,10 @@ function AdminReservas() {
   const [sortKey, setSortKey] = useState<SortKey>("prioridade");
   const [onlyConflicts, setOnlyConflicts] = useState(false);
   const [conflictOpen, setConflictOpen] = useState(false);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(preselect ?? null);
+  useEffect(() => {
+    if (preselect) setActiveId(preselect);
+  }, [preselect]);
   const [proofLightboxOpen, setProofLightboxOpen] = useState(false);
   const [invoiceLightboxOpen, setInvoiceLightboxOpen] = useState(false);
   const [invoiceUploading, setInvoiceUploading] = useState(false);

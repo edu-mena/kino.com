@@ -268,16 +268,28 @@ class PushNotificationService
         $name = $notification->kind === 'restaurant'
             ? (Restaurant::query()->whereKey($notification->ref_id)->value('name') ?? 'Luku')
             : ($notification->restaurant?->name ?? 'Luku');
-        $snapshot = (string) $notification->status_snapshot;
+        $snapshot = $notification->snapshot();
+        // Notificações de seguidor (`followPriceChange`) continuam a guardar
+        // só um número em `status_snapshot` — `snapshot()` devolve `null`
+        // nesse caso (não é um JSON de objeto), por isso o valor bruto
+        // continua disponível separadamente para elas.
+        $rawSnapshot = (string) $notification->status_snapshot;
+
+        $orderDetail = $snapshot
+            ? sprintf('%d item(ns) · %s Kz', $snapshot['itemCount'] ?? 0, number_format((float) ($snapshot['total'] ?? 0), 0, ',', ' '))
+            : null;
+        $reservationDetail = $snapshot
+            ? sprintf('%d pessoa(s) · %s', $snapshot['peopleCount'] ?? '?', $snapshot['time'] ?? '')
+            : null;
 
         return match ($notification->event) {
-            'orderNew' => ['Novo pedido', "Novo pedido em {$name}"],
-            'orderStatus' => ['Pedido atualizado', "O seu pedido em {$name} foi atualizado"],
-            'reservationNew' => ['Nova reserva', "Nova reserva em {$name}"],
-            'reservationStatus' => ['Reserva atualizada', "A sua reserva em {$name} foi atualizada"],
+            'orderNew' => ['Novo pedido', $orderDetail ? "Novo pedido em {$name} · {$orderDetail}" : "Novo pedido em {$name}"],
+            'orderStatus' => ['Pedido atualizado', $orderDetail ? "Pedido em {$name} atualizado · {$orderDetail}" : "O seu pedido em {$name} foi atualizado"],
+            'reservationNew' => ['Nova reserva', $reservationDetail ? "Nova reserva em {$name} · {$reservationDetail}" : "Nova reserva em {$name}"],
+            'reservationStatus' => ['Reserva atualizada', $reservationDetail ? "Reserva em {$name} atualizada · {$reservationDetail}" : "A sua reserva em {$name} foi atualizada"],
             'followStoryNew' => [$name, "{$name} publicou um story novo"],
-            'followOfferNew' => [$name, $snapshot !== '' ? "Promoção nova: {$snapshot}" : "{$name} lançou uma promoção"],
-            'followPriceChange' => [$name, "{$name} atualizou {$snapshot} preço(s) do cardápio"],
+            'followOfferNew' => [$name, $rawSnapshot !== '' ? "Promoção nova: {$rawSnapshot}" : "{$name} lançou uma promoção"],
+            'followPriceChange' => [$name, "{$name} atualizou {$rawSnapshot} preço(s) do cardápio"],
             'followInvite' => [$name, "{$name} convida-o a seguir o restaurante"],
             default => ['Luku', "Tem uma notificação nova de {$name}"],
         };

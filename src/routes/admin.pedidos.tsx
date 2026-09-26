@@ -75,6 +75,13 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/pedidos")({
   head: () => ({ meta: [{ title: "Pedidos — Painel Luku.com" }] }),
+  // `?pedido=<uuid>` pré-seleciona um pedido — usado pelo deep-link de uma
+  // notificação (ver notification-list.tsx), mesmo padrão de `?r=` em
+  // sistema.subscricoes.tsx.
+  validateSearch: (s: Record<string, unknown>): { pedido?: string } => {
+    const pedido = s["pedido"];
+    return typeof pedido === "string" && pedido ? { pedido } : {};
+  },
   component: () => (
     <RestaurantGate>
       <AdminPedidos />
@@ -165,6 +172,7 @@ function weekStart(d: Date) {
 }
 
 function AdminPedidos() {
+  const { pedido: preselect } = Route.useSearch();
   const { restaurant } = useRestaurantAdmin();
   // Clientes Gold/Platina (ver @/lib/loyalty) — selo na lista e ficha rápida no detalhe.
   const loyaltyOf = useRestaurantLoyalty(restaurant?.id);
@@ -212,7 +220,10 @@ function AdminPedidos() {
   const debouncedQuery = useDebouncedValue(query);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
   const [sortKey, setSortKey] = useState<SortKey>("priority");
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(preselect ?? null);
+  useEffect(() => {
+    if (preselect) setActiveId(preselect);
+  }, [preselect]);
   const [navTab, setNavTab] = useState<"pedidos" | "stats">("pedidos");
   const [courierPick, setCourierPick] = useState("");
   const [confirmFarId, setConfirmFarId] = useState<string | null>(null);
