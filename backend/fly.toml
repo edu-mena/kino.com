@@ -26,6 +26,24 @@ primary_region = 'jnb'
   min_machines_running = 1
   processes = ['app']
 
+# Expõe o processo `reverb` publicamente, numa porta própria (6001) — o
+# `[http_service]` acima só cobre o processo `app`, então o browser nunca
+# conseguia abrir o WebSocket do Reverb (falhava a ligar a api.luku.ao,
+# que só respondia como o Laravel normal). O backend continua a publicar
+# eventos NO Reverb pela rede privada do Fly (REVERB_HOST=reverb.process.
+# luku-api.internal), nunca por aqui — esta porta é só para o browser.
+[[services]]
+  internal_port = 8081
+  protocol = 'tcp'
+  processes = ['reverb']
+  auto_stop_machines = 'off'
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.ports]]
+    port = 6001
+    handlers = ['tls', 'http']
+
 [[vm]]
   size = 'shared-cpu-1x'
   memory = '512mb'
