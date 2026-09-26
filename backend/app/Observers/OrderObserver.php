@@ -37,38 +37,53 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
 
     public function updated(Order $order): void
     {
-        if (! $order->isDirty('status')) {
-            return;
+        if ($order->isDirty('status')) {
+            $this->notify($order, 'orderStatus');
+
+            if (in_array($order->status, self::TERMINAL_STATUSES, true)) {
+                $this->releaseCourier($order);
+            }
         }
 
-        $this->notify($order, 'orderStatus');
-
-        if (in_array($order->status, self::TERMINAL_STATUSES, true)) {
-            $this->releaseCourier($order);
+        // Comprovativo/fatura não mudam `status` — sem isto, nenhum dos
+        // dois lados sabia que algo tinha sido enviado a não ser voltando a
+        // abrir o pedido manualmente (ver pedido do utilizador: "mais
+        // atenção" a estas duas ações). Só o lado a quem a ação diz
+        // respeito é notificado: comprovativo é o CLIENTE a avisar o
+        // restaurante (não faz sentido notificá-lo do que ele próprio fez);
+        // fatura é o INVERSO.
+        if ($order->isDirty('payment_proof_url') && $order->payment_proof_url !== null) {
+            $this->notify($order, 'orderPaymentProof', onlyFor: ['restaurant']);
+        }
+        if ($order->isDirty('invoice_url') && $order->invoice_url !== null) {
+            $this->notify($order, 'orderInvoice', onlyFor: ['customer']);
         }
     }
 
-    private function notify(Order $order, string $event): void
+    /** @param array<int, 'restaurant'|'customer'> $onlyFor */
+    private function notify(Order $order, string $event, array $onlyFor = ['restaurant', 'customer']): void
     {
         $snapshot = $this->snapshotFor($order);
 
-        $restaurantNotification = Notification::query()->create([
-            'restaurant_id' => $order->restaurant_id,
-            'kind' => 'order',
-            'ref_id' => $order->id,
-            'event' => $event,
-            'status_snapshot' => $snapshot,
-        ]);
+        if (in_array('restaurant', $onlyFor, true)) {
+            $restaurantNotification = Notification::query()->create([
+                'restaurant_id' => $order->restaurant_id,
+                'kind' => 'order',
+                'ref_id' => $order->id,
+                'event' => $event,
+                'status_snapshot' => $snapshot,
+            ]);
 
-        // Push para toda a equipa do restaurante — mais do que um membro
-        // pode ter o telemóvel/browser com a subscrição ativa (ver
-        // PushNotificationService, é um no-op silencioso para quem não
-        // tem nenhuma subscrição guardada).
-        foreach ($order->restaurant->staff as $staffUser) {
-            SendPushNotificationJob::dispatch($staffUser, $restaurantNotification);
+            // Push para toda a equipa do restaurante — mais do que um membro
+            // pode ter o telemóvel/browser com a subscrição ativa (ver
+            // PushNotificationService, é um no-op silencioso para quem não
+            // tem nenhuma subscrição guardada).
+            foreach ($order->restaurant->staff as $staffUser) {
+                SendPushNotificationJob::dispatch($staffUser, $restaurantNotification);
+            }
         }
 
-        if ($order->user_id) {
+        if (in_array('customer', $onlyFor, true) && $order->user_id) {
             $customerNotification = Notification::query()->create([
                 'user_id' => $order->user_id,
                 'kind' => 'order',

@@ -2193,6 +2193,10 @@ export const en: Dictionary = {
     reservationStatus: "Your reservation at {name} was updated",
     reservationStatusDetailed:
       "Reservation at {name}: {statusLabel} · {peopleCount} people · {time}",
+    orderPaymentProof: "New payment proof — order at {name}",
+    orderInvoice: "{name} issued the invoice for your order",
+    reservationPaymentProof: "New payment proof — reservation at {name}",
+    reservationInvoice: "{name} issued the invoice for your reservation",
     followStoryNew: "{name} posted a new story",
     followOfferNew: "{name} launched a promotion: {status}",
     followPriceChange: "{name} updated {status} menu price(s)",

@@ -4,9 +4,11 @@ use App\Events\NotificationCreated;
 use App\Models\Notification;
 use App\Models\Restaurant;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 test('criar um pedido gera notificação para o restaurante E para o cliente autenticado', function () {
@@ -270,6 +272,95 @@ test('falha ao transmitir a notificação (Reverb inalcançável) NÃO derruba a
     expect($response->exists)->toBeTrue();
     expect(Notification::where('restaurant_id', $restaurant->id)->where('event', 'orderNew')->exists())
         ->toBeTrue();
+});
+
+test('cliente envia comprovativo de pagamento — só o RESTAURANTE é notificado, não o próprio cliente', function () {
+    Storage::fake('r2', ['url' => 'https://cdn.luku.com']);
+    $restaurant = Restaurant::factory()->create();
+    $user = User::factory()->create();
+    $order = $restaurant->orders()->create([
+        'user_id' => $user->id, 'fulfillment_type' => 'takeaway', 'customer_name' => $user->name,
+        'customer_phone' => '900', 'pickup_asap' => true, 'status' => 'accepted',
+        'subtotal' => 1000, 'total' => 1000,
+    ]);
+    $countBefore = Notification::count();
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson("/api/v1/orders/{$order->uuid}/payment-proof", [
+            'proof' => UploadedFile::fake()->image('comprovativo.jpg'),
+        ])
+        ->assertOk();
+
+    expect(Notification::count())->toBe($countBefore + 1);
+    expect(
+        Notification::where('restaurant_id', $restaurant->id)->where('event', 'orderPaymentProof')->exists(),
+    )->toBeTrue();
+    expect(
+        Notification::where('user_id', $user->id)->where('event', 'orderPaymentProof')->exists(),
+    )->toBeFalse();
+});
+
+test('restaurante emite fatura do pedido — só o CLIENTE é notificado, não o restaurante', function () {
+    Storage::fake('r2', ['url' => 'https://cdn.luku.com']);
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+    $user = User::factory()->create();
+    $order = $restaurant->orders()->create([
+        'user_id' => $user->id, 'fulfillment_type' => 'takeaway', 'customer_name' => $user->name,
+        'customer_phone' => '900', 'pickup_asap' => true, 'status' => 'accepted',
+        'subtotal' => 1000, 'total' => 1000,
+    ]);
+    $countBefore = Notification::count();
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/orders/{$order->uuid}/invoice", [
+            'invoice' => UploadedFile::fake()->create('fatura.pdf', 200, 'application/pdf'),
+        ])
+        ->assertOk();
+
+    expect(Notification::count())->toBe($countBefore + 1);
+    expect(
+        Notification::where('user_id', $user->id)->where('event', 'orderInvoice')->exists(),
+    )->toBeTrue();
+    expect(
+        Notification::where('restaurant_id', $restaurant->id)->where('event', 'orderInvoice')->exists(),
+    )->toBeFalse();
+});
+
+test('reserva: comprovativo notifica só o restaurante, fatura notifica só o cliente', function () {
+    Storage::fake('r2', ['url' => 'https://cdn.luku.com']);
+    $restaurant = Restaurant::factory()->create(['accepts_reservations' => true]);
+    $owner = ownerOf($restaurant);
+    $user = User::factory()->create();
+    $reservation = $restaurant->reservations()->create([
+        'user_id' => $user->id, 'customer_name' => $user->name, 'customer_phone' => '900',
+        'date' => now()->addDay()->toDateString(), 'time' => '19:30',
+        'people_count' => 2, 'status' => 'confirmed', 'status_updated_at' => now(),
+    ]);
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson("/api/v1/reservations/{$reservation->uuid}/payment-proof", [
+            'proof' => UploadedFile::fake()->image('comprovativo.jpg'),
+        ])
+        ->assertOk();
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/reservations/{$reservation->uuid}/invoice", [
+            'invoice' => UploadedFile::fake()->create('fatura.pdf', 200, 'application/pdf'),
+        ])
+        ->assertOk();
+
+    expect(
+        Notification::where('restaurant_id', $restaurant->id)->where('event', 'reservationPaymentProof')->exists(),
+    )->toBeTrue();
+    expect(
+        Notification::where('user_id', $user->id)->where('event', 'reservationPaymentProof')->exists(),
+    )->toBeFalse();
+    expect(
+        Notification::where('user_id', $user->id)->where('event', 'reservationInvoice')->exists(),
+    )->toBeTrue();
+    expect(
+        Notification::where('restaurant_id', $restaurant->id)->where('event', 'reservationInvoice')->exists(),
+    )->toBeFalse();
 });
 
 test('sino do restaurante só mostra as notificações do próprio restaurante, staff de outro não acede', function () {

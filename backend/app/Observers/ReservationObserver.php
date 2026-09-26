@@ -19,25 +19,38 @@ class ReservationObserver
         if ($reservation->isDirty('status')) {
             $this->notify($reservation, 'reservationStatus');
         }
+
+        // Ver OrderObserver::updated — mesmo raciocínio: comprovativo/fatura
+        // não mudam `status`, e só o lado a quem a ação diz respeito é
+        // notificado.
+        if ($reservation->isDirty('payment_proof_url') && $reservation->payment_proof_url !== null) {
+            $this->notify($reservation, 'reservationPaymentProof', onlyFor: ['restaurant']);
+        }
+        if ($reservation->isDirty('invoice_url') && $reservation->invoice_url !== null) {
+            $this->notify($reservation, 'reservationInvoice', onlyFor: ['customer']);
+        }
     }
 
-    private function notify(Reservation $reservation, string $event): void
+    /** @param array<int, 'restaurant'|'customer'> $onlyFor */
+    private function notify(Reservation $reservation, string $event, array $onlyFor = ['restaurant', 'customer']): void
     {
         $snapshot = $this->snapshotFor($reservation);
 
-        $restaurantNotification = Notification::query()->create([
-            'restaurant_id' => $reservation->restaurant_id,
-            'kind' => 'reservation',
-            'ref_id' => $reservation->id,
-            'event' => $event,
-            'status_snapshot' => $snapshot,
-        ]);
+        if (in_array('restaurant', $onlyFor, true)) {
+            $restaurantNotification = Notification::query()->create([
+                'restaurant_id' => $reservation->restaurant_id,
+                'kind' => 'reservation',
+                'ref_id' => $reservation->id,
+                'event' => $event,
+                'status_snapshot' => $snapshot,
+            ]);
 
-        foreach ($reservation->restaurant->staff as $staffUser) {
-            SendPushNotificationJob::dispatch($staffUser, $restaurantNotification);
+            foreach ($reservation->restaurant->staff as $staffUser) {
+                SendPushNotificationJob::dispatch($staffUser, $restaurantNotification);
+            }
         }
 
-        if ($reservation->user_id) {
+        if (in_array('customer', $onlyFor, true) && $reservation->user_id) {
             $customerNotification = Notification::query()->create([
                 'user_id' => $reservation->user_id,
                 'kind' => 'reservation',

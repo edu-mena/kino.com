@@ -2224,6 +2224,10 @@ export const fr: Dictionary = {
     reservationStatus: "Votre réservation chez {name} a été mise à jour",
     reservationStatusDetailed:
       "Réservation chez {name} : {statusLabel} · {peopleCount} personne(s) · {time}",
+    orderPaymentProof: "Nouveau justificatif de paiement — commande chez {name}",
+    orderInvoice: "{name} a émis la facture de votre commande",
+    reservationPaymentProof: "Nouveau justificatif de paiement — réservation chez {name}",
+    reservationInvoice: "{name} a émis la facture de votre réservation",
     followStoryNew: "{name} a publié une nouvelle story",
     followOfferNew: "{name} a lancé une promotion : {status}",
     followPriceChange: "{name} a mis à jour {status} prix du menu",

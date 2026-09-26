@@ -378,6 +378,21 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
   const [clientNotes, setClientNotes] = useState<LukuNotification[]>([]);
   const [restaurantNotes, setRestaurantNotes] = useState<LukuNotification[]>([]);
 
+  // Ids marcados como lidos localmente (otimista) mas ainda sem confirmação
+  // do servidor — sem isto, um refetch (poll/foco/tempo real) que chegasse
+  // ENQUANTO a mutação `markRead`/`markManyRead` ainda ia a caminho
+  // substituía `clientNotes`/`restaurantNotes` inteiros por dados do
+  // servidor que ainda não sabiam da leitura, "ressuscitando" a
+  // notificação como não lida até um refetch mais tarde (já depois da
+  // mutação ter mesmo chegado) a mostrar corretamente — daí parecer "ficar
+  // lá por algum tempo" antes de desaparecer de vez.
+  const pendingReadIds = useRef<Set<string>>(new Set());
+
+  const applyPendingReads = useCallback((list: LukuNotification[]): LukuNotification[] => {
+    if (pendingReadIds.current.size === 0) return list;
+    return list.map((n) => (pendingReadIds.current.has(n.id) ? { ...n, read: true } : n));
+  }, []);
+
   const refetchClient = useCallback(() => {
     const token = getAuthToken();
     if (!token) {
@@ -385,9 +400,9 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
       return;
     }
     fetchApiNotifications(token, viewerKey(user))
-      .then(setClientNotes)
+      .then((data) => setClientNotes(applyPendingReads(data)))
       .catch(() => setClientNotes([]));
-  }, [user]);
+  }, [user, applyPendingReads]);
 
   const refetchRestaurant = useCallback(() => {
     const token = getAdminToken();
@@ -397,9 +412,9 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
       return;
     }
     fetchApiRestaurantNotifications(restaurantId, token)
-      .then(setRestaurantNotes)
+      .then((data) => setRestaurantNotes(applyPendingReads(data)))
       .catch(() => setRestaurantNotes([]));
-  }, []);
+  }, [applyPendingReads]);
 
   const refetchAll = useCallback(() => {
     refetchClient();
@@ -488,7 +503,9 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
         setAllRead([id]);
         const token = note.ownerKey ? getAuthToken() : getAdminToken();
         if (!token) return;
-        void markApiNotificationRead(id, token).catch(() => refetchAll());
+        void markApiNotificationRead(id, token)
+          .then(() => pendingReadIds.current.delete(id))
+          .catch(() => refetchAll());
       },
       markManyRead: (ids) => {
         if (ids.length === 0) return;
@@ -499,12 +516,18 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
         const adminToken = getAdminToken();
         const restaurantId = getManagedRestaurantId();
         if (byOwner.length > 0 && clientToken) {
-          void markManyApiNotificationsRead(byOwner, clientToken).catch(() => refetchAll());
+          void markManyApiNotificationsRead(byOwner, clientToken)
+            .then(() => {
+              for (const id of byOwner) pendingReadIds.current.delete(id);
+            })
+            .catch(() => refetchAll());
         }
         if (byRestaurant.length > 0 && adminToken && restaurantId) {
-          void markManyApiNotificationsRead(byRestaurant, adminToken, restaurantId).catch(() =>
-            refetchAll(),
-          );
+          void markManyApiNotificationsRead(byRestaurant, adminToken, restaurantId)
+            .then(() => {
+              for (const id of byRestaurant) pendingReadIds.current.delete(id);
+            })
+            .catch(() => refetchAll());
         }
       },
     }),
@@ -513,6 +536,7 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
   );
 
   function setAllRead(ids: string[]) {
+    for (const id of ids) pendingReadIds.current.add(id);
     const set = new Set(ids);
     setClientNotes((cur) => cur.map((n) => (set.has(n.id) ? { ...n, read: true } : n)));
     setRestaurantNotes((cur) => cur.map((n) => (set.has(n.id) ? { ...n, read: true } : n)));
