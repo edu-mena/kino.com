@@ -127,7 +127,13 @@ export function StatusBadge({ visual, children }: { visual: StatusVisual; childr
 
 /** Pequena etiqueta neutra (ex.: nº do pedido, data, nº de pessoas) para o
  * slot `meta` do cabeçalho. */
-export function DetailChip({ icon: Icon, children }: { icon?: LucideIcon | undefined; children: ReactNode }) {
+export function DetailChip({
+  icon: Icon,
+  children,
+}: {
+  icon?: LucideIcon | undefined;
+  children: ReactNode;
+}) {
   return (
     <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-surface px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-inset ring-border/60">
       {Icon && <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />}
@@ -140,14 +146,23 @@ export function DetailChip({ icon: Icon, children }: { icon?: LucideIcon | undef
 /* Cabeçalho                                                           */
 /* ------------------------------------------------------------------ */
 
-/** Cabeçalho do card — imagem (ou ícone de reserva) + título + subtítulo +
- * chips, com o badge de estado (e, opcionalmente, outra ação, ex. o popover
- * de contacto) à direita. Em ecrãs estreitos o badge reflui para a linha
- * de baixo em vez de espremer o título. */
+/** Cabeçalho do card — imagem (ou ícone de reserva) + título (restaurante ou
+ * cliente) + data/hora/pessoas + subtítulo + chips, com o badge de estado (e,
+ * opcionalmente, outra ação, ex. o popover de contacto) à direita. Em ecrãs
+ * estreitos o badge reflui para a linha de baixo em vez de espremer o título.
+ *
+ * Data, hora e nº de pessoas aparecem como texto simples, logo por baixo do
+ * título, sem rótulo nem ícone: a data numa linha e, na linha seguinte, a hora
+ * seguida de " - " e das pessoas. Cada parte é opcional (ex.: um pedido de
+ * entrega não tem `people`); a linha da hora só aparece se houver hora ou
+ * pessoas. Os textos já vêm formatados/traduzidos por quem chama. */
 export function DetailHeader({
   image,
   icon: FallbackIcon,
   title,
+  date,
+  time,
+  people,
   subtitle,
   meta,
   status,
@@ -157,6 +172,12 @@ export function DetailHeader({
   /** Ícone mostrado num tile quando não há imagem. */
   icon?: LucideIcon | undefined;
   title: ReactNode;
+  /** Data, já formatada (ex.: "28 set 2026"). */
+  date?: ReactNode;
+  /** Hora, já formatada (ex.: "19:30"). */
+  time?: ReactNode;
+  /** Nº de pessoas, já com a unidade traduzida (ex.: "4 pessoas"). */
+  people?: ReactNode;
   subtitle?: ReactNode;
   /** Linha de chips/factos rápidos por baixo do subtítulo (ver `DetailChip`). */
   meta?: ReactNode;
@@ -182,6 +203,18 @@ export function DetailHeader({
           <h2 className="line-clamp-2 break-words font-display text-lg font-bold leading-snug text-foreground">
             {title}
           </h2>
+          {(date || time || people) && (
+            <div className="mt-0.5 text-sm font-medium tabular-nums text-muted-foreground">
+              {date && <p className="truncate">{date}</p>}
+              {(time || people) && (
+                <p className="truncate">
+                  {time}
+                  {time && people ? " - " : null}
+                  {people}
+                </p>
+              )}
+            </div>
+          )}
           {subtitle && <p className="mt-0.5 truncate text-sm text-muted-foreground">{subtitle}</p>}
           {meta && <div className="mt-2 flex flex-wrap items-center gap-1.5">{meta}</div>}
         </div>
@@ -402,7 +435,9 @@ export function DetailProgress({
                 className={`h-0.5 flex-1 rounded-full ${i === steps.length - 1 ? "bg-transparent" : rightFilled ? "bg-success/50" : "bg-border"}`}
               />
             </div>
-            <span className={`px-0.5 text-center text-[11px] leading-tight ${STEP_LABEL[step.state]}`}>
+            <span
+              className={`px-0.5 text-center text-[11px] leading-tight ${STEP_LABEL[step.state]}`}
+            >
               {step.label}
               <span className="sr-only"> ({STEP_SR[step.state]})</span>
             </span>
