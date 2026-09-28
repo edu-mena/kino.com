@@ -253,9 +253,7 @@ export function DetailHeader({
           </p>
         )}
         {status && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-            {status}
-          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">{status}</div>
         )}
         {subtitle && <p className="mt-1.5 truncate text-sm text-muted-foreground">{subtitle}</p>}
         {meta && <div className="mt-2 flex flex-wrap items-center gap-1.5">{meta}</div>}
