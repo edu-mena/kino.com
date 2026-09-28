@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   CalendarCheck,
-  CalendarClock,
   ChevronLeft,
   FileText,
   MessageSquare,
@@ -9,7 +8,6 @@ import {
   ShieldCheck,
   Star,
   Upload,
-  Users,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -28,6 +26,7 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import {
   DetailHeader,
+  DetailFacts,
   DetailRow,
   DetailSection,
   StatusBadge,
@@ -280,6 +279,13 @@ function Reservas() {
                     <DetailHeader
                       image={active.restaurantImage}
                       title={active.restaurantName}
+                      date={new Date(`${active.date}T12:00:00`).toLocaleDateString("pt-AO", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                      time={active.time}
+                      people={t("reservas.peopleCount", { count: active.peopleCount })}
                       status={
                         <StatusBadge visual={reservationStatusVisual(active.status)}>
                           {statusText(active.status)}
@@ -287,14 +293,8 @@ function Reservas() {
                       }
                     />
 
-                    <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
-                      <DetailRow icon={CalendarClock} label={t("reservas.detailWhen")}>
-                        {active.date} · {active.time}
-                      </DetailRow>
-                      <DetailRow icon={Users} label={t("reservas.detailPeople")}>
-                        {t("reservas.peopleCount", { count: active.peopleCount })}
-                      </DetailRow>
-                      {active.cautionAmount > 0 && (
+                    {active.cautionAmount > 0 && (
+                      <DetailFacts>
                         <DetailRow icon={ShieldCheck} label={t("reservas.detailDeposit")} span>
                           {formatKz(active.cautionAmount)}
                           <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -306,8 +306,8 @@ function Reservas() {
                             </span>
                           )}
                         </DetailRow>
-                      )}
-                    </dl>
+                      </DetailFacts>
+                    )}
 
                     <DetailSection icon={MessageSquare} title={t("reservas.detailRequests")}>
                       <p className="text-sm text-foreground">

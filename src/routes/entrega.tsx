@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import {
   DetailHeader,
+  DetailFacts,
   DetailRow,
   DetailSection,
   DetailTotal,
@@ -86,6 +87,14 @@ function etaTime(order: CartOrder) {
     return hhmm(new Date(order.pickupAt));
   }
   return hhmm(new Date(new Date(order.createdAt).getTime() + order.estimatedMinutes * 60_000));
+}
+
+function etaDate(order: CartOrder) {
+  const eta =
+    order.fulfillmentType === "takeaway" && !order.pickupAsap && order.pickupAt
+      ? new Date(order.pickupAt)
+      : new Date(new Date(order.createdAt).getTime() + order.estimatedMinutes * 60_000);
+  return eta.toLocaleDateString("pt-AO", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function Entrega() {
@@ -263,6 +272,13 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
       <DetailHeader
         image={restaurant?.coverImage}
         title={restaurant?.name ?? "Restaurante"}
+        date={etaDate(order)}
+        time={etaTime(order)}
+        people={
+          order.fulfillmentType === "dinein" && order.partySize
+            ? t("entrega.partySize", { count: order.partySize })
+            : undefined
+        }
         subtitle={restaurant ? `${restaurant.cuisine} · ${restaurant.neighborhood}` : undefined}
         status={
           <StatusBadge visual={orderStatusVisual(order.status)}>
@@ -271,18 +287,9 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         }
       />
 
-      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
+      <DetailFacts>
         <DetailRow icon={MODE_ICON[order.fulfillmentType]} label={t("entrega.deliveryStatus")}>
           {t(`fulfillment.${order.fulfillmentType}`)}
-        </DetailRow>
-
-        <DetailRow
-          icon={Clock}
-          label={order.fulfillmentType === "takeaway" ? t("entrega.pickupTime") : t("entrega.eta")}
-        >
-          {order.fulfillmentType === "takeaway" && order.pickupAsap
-            ? t("entrega.pickupAsap")
-            : `~${etaTime(order)}`}
         </DetailRow>
 
         {order.deliveryAddress && (
@@ -363,7 +370,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
             {order.note}
           </DetailRow>
         )}
-      </dl>
+      </DetailFacts>
 
       {/* Carregar comprovativo — depois de o restaurante fixar um método digital */}
       {(paymentDue || order.paymentProof) && (

@@ -222,7 +222,6 @@ export function DetailHeader({
   status?: ReactNode;
   extra?: ReactNode;
 }) {
-  const hasInline = status || time || people;
   return (
     <div className="flex items-start gap-3.5">
       {image ? (
@@ -244,21 +243,18 @@ export function DetailHeader({
           </h2>
           {extra && <div className="flex shrink-0 items-center gap-2">{extra}</div>}
         </div>
-        {date && (
+        {(date || time || people) && (
           <p className="mt-0.5 truncate text-sm font-medium tabular-nums text-muted-foreground">
             {date}
+            {date && time ? " · " : null}
+            {time}
+            {(date || time) && people ? " · " : null}
+            {people}
           </p>
         )}
-        {hasInline && (
+        {status && (
           <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
             {status}
-            {(time || people) && (
-              <p className="text-sm font-medium tabular-nums text-muted-foreground">
-                {time}
-                {time && people ? " - " : null}
-                {people}
-              </p>
-            )}
           </div>
         )}
         {subtitle && <p className="mt-1.5 truncate text-sm text-muted-foreground">{subtitle}</p>}
