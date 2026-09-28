@@ -2,18 +2,23 @@ import {
   BadgeCheck,
   Bike,
   Check,
+  ChefHat,
   CircleAlert,
   CircleCheck,
   CircleDashed,
   Clock,
+  ConciergeBell,
+  Info,
   Package,
   Receipt,
   TriangleAlert,
+  Truck,
+  UtensilsCrossed,
   X,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import type { CartOrderStatus } from "@/lib/cart";
 
 /**
@@ -21,55 +26,27 @@ import type { CartOrderStatus } from "@/lib/cart";
  * lado do cliente E do restaurante).
  *
  * Princípios de design aplicados:
- *  1. Hierarquia por contraste — o valor é sempre mais forte que o rótulo.
- *  2. Cor com significado — o tom vem do estado (tinta + anel + ÍCONE).
- *  3. Agrupamento (Gestalt) — factos numa grelha, secções em subcards, e um
- *     único elemento "herói": o total.
- *  4. Robustez — textos longos quebram em vez de rebentar o layout.
- *  5. Acessibilidade — landmarks/headings, `aria-hidden` nos ícones
- *     decorativos, `role="status"` no estado, `motion-safe` nas animações.
+ *  1. Hierarquia por contraste — o valor é sempre mais forte que o rótulo
+ *     (rótulo: pequeno, cinza; valor: maior, foreground, semibold).
+ *  2. Progresso visível — o estado do pedido é uma linha de passos (feito /
+ *     agora / por fazer), não uma etiqueta: responde a "em que ponto estou?"
+ *     sem ler texto.
+ *  3. Cor com significado — o tom vem do estado (tinta + anel + ÍCONE), nunca
+ *     só da cor, para não depender de perceção cromática (WCAG 1.4.1).
+ *  4. Agrupamento (Gestalt) — factos num card, secções em subcards com
+ *     cabeçalho próprio, produtos com foto, e um único elemento "herói": o total.
+ *  5. Robustez — textos longos quebram em vez de rebentar o layout; imagens
+ *     partidas caem para um ícone; o cabeçalho reflui em ecrãs estreitos.
+ *  6. Acessibilidade — landmarks/headings, `aria-hidden` nos ícones
+ *     decorativos, `aria-current` no passo atual, `motion-safe` nas animações.
  *
  * Só apresentação — nenhuma lógica de negócio. A API anterior mantém-se
- * 100% compatível: tudo o que foi acrescentado é opcional.
+ * compatível: tudo o que foi acrescentado é opcional.
  */
 
-/* ------------------------------------------------------------------ */
-/* Barra superior (voltar + reclamações)                               */
-/* ------------------------------------------------------------------ */
-
-/** Linha do topo da página de detalhe: botão/link "Voltar" à esquerda e,
- * à direita, o contacto para reclamações — "Reclamações: <contacto>", sem
- * ícone. Em ecrãs muito estreitos o contacto reflui para a linha de baixo,
- * alinhado à direita, em vez de espremer o botão.
- *
- * Uso:
- *   <DetailTopBar
- *     back={<Link to="/pedidos">← Voltar</Link>}
- *     complaintContact={<a href="tel:+244900000000">+244 900 000 000</a>}
- *   />
- */
-export function DetailTopBar({
-  back,
-  complaintContact,
-  complaintLabel = "Reclamações",
-}: {
-  back: ReactNode;
-  /** Telefone/e-mail para reclamações (pode ser um `<a href="tel:…">`). */
-  complaintContact?: ReactNode;
-  complaintLabel?: string | undefined;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-      <div className="shrink-0 text-sm font-medium">{back}</div>
-      {complaintContact && (
-        <p className="ml-auto min-w-0 max-w-full text-xs text-muted-foreground [overflow-wrap:anywhere]">
-          {complaintLabel}:{" "}
-          <span className="font-semibold tabular-nums text-foreground">{complaintContact}</span>
-        </p>
-      )}
-    </div>
-  );
-}
+/** Cor do texto/ícone sobre fundos sólidos `bg-primary` / `bg-destructive`.
+ * Se tiveres o token `primary-foreground`, troca aqui (um só sítio). */
+const ON_SOLID = "text-white";
 
 /* ------------------------------------------------------------------ */
 /* Estado                                                              */
@@ -141,7 +118,9 @@ export function reservationStatusVisual(status: string): StatusVisual {
 }
 
 /** Badge de estado: ícone + texto + anel. `role="status"` para que leitores
- * de ecrã anunciem a mudança quando o estado é atualizado em tempo real. */
+ * de ecrã anunciem a mudança quando o estado é atualizado em tempo real.
+ * Para pedidos em curso prefere `DetailProgress`; o badge fica para estados
+ * finais (recusado, cancelado) e para o estado do restaurante ("Aberto"). */
 export function StatusBadge({ visual, children }: { visual: StatusVisual; children: ReactNode }) {
   return (
     <span
@@ -160,7 +139,8 @@ export function StatusBadge({ visual, children }: { visual: StatusVisual; childr
   );
 }
 
-/** Pequena etiqueta neutra (ex.: nº do pedido) para o slot `meta`. */
+/** Pequena etiqueta neutra (ex.: nº do pedido, "1 item") para o slot `meta`
+ * do cabeçalho ou para o `action` de uma secção. */
 export function DetailChip({
   icon: Icon,
   children,
@@ -177,101 +157,332 @@ export function DetailChip({
 }
 
 /* ------------------------------------------------------------------ */
+/* Imagem com fallback                                                 */
+/* ------------------------------------------------------------------ */
+
+/** Miniatura que nunca deixa um buraco: sem `src`, ou se a imagem falhar a
+ * carregar (URL partido, upload apagado), mostra um tile com ícone — ou nada,
+ * se não houver ícone. `className` traz tamanho e raio. */
+function Thumb({
+  src,
+  Fallback,
+  className,
+  iconClassName,
+}: {
+  src?: string | undefined;
+  Fallback?: LucideIcon | undefined;
+  className: string;
+  iconClassName: string;
+}) {
+  const [failedSrc, setFailedSrc] = useState<string | undefined>(undefined);
+  if (src && failedSrc !== src) {
+    return (
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        onError={() => setFailedSrc(src)}
+        className={`object-cover ring-1 ring-border/60 ${className}`}
+      />
+    );
+  }
+  if (!Fallback) return null;
+  return (
+    <span
+      className={`grid place-items-center bg-primary/10 text-primary ring-1 ring-inset ring-primary/15 ${className}`}
+    >
+      <Fallback className={iconClassName} aria-hidden="true" />
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Cabeçalho                                                           */
 /* ------------------------------------------------------------------ */
 
-/** Cabeçalho do card — imagem (ou ícone) à esquerda; à direita da imagem:
+/** Cabeçalho do card — imagem (ou ícone) + etiqueta de papel + título
+ * (restaurante ou cliente) + data/hora/pessoas + subtítulo + chips, com um
+ * badge à direita (ex.: "Aberto") e, opcionalmente, outra ação (ex. o popover
+ * de contacto). Em ecrãs estreitos o badge reflui para a linha de baixo em
+ * vez de espremer o título.
  *
- *   Nome (restaurante ou cliente)                       [extra]
- *   28 set 2026
- *   [● Estado]  19:30 - 4 pessoas
- *   subtítulo
- *   chips
+ * `eyebrow` diz de quem é o nome ("Restaurante" / "Cliente") — o mesmo card
+ * serve os dois lados, e assim ninguém tem de adivinhar.
  *
- * O estado, a hora (prevista) e o nº de pessoas ficam na MESMA linha, logo
- * abaixo do nome/data e ao lado da imagem; se não couberem, refluem para a
- * linha seguinte em vez de espremer. A hora e as pessoas são texto simples,
- * sem rótulo nem ícone, separados por " - ". Cada parte é opcional. A ação
- * `extra` (ex.: popover de contacto) fica alinhada ao nome, à direita. */
+ * Data, hora e nº de pessoas aparecem como texto simples, logo por baixo do
+ * título, sem rótulo nem ícone: a data numa linha e, na linha seguinte, a hora
+ * seguida de " - " e das pessoas. Cada parte é opcional (ex.: um pedido de
+ * entrega não tem `people`); a linha da hora só aparece se houver hora ou
+ * pessoas. Os textos já vêm formatados/traduzidos por quem chama. */
 export function DetailHeader({
   image,
   icon: FallbackIcon,
+  eyebrow,
   title,
   date,
   time,
   people,
   subtitle,
+  subtitleIcon: SubtitleIcon,
   meta,
   status,
   extra,
 }: {
   image?: string | undefined;
-  /** Ícone mostrado num tile quando não há imagem. */
+  /** Ícone mostrado num tile quando não há imagem (ou ela falha). */
   icon?: LucideIcon | undefined;
+  /** Etiqueta pequena por cima do título (ex.: "Restaurante", "Cliente"). */
+  eyebrow?: ReactNode;
   title: ReactNode;
   /** Data, já formatada (ex.: "28 set 2026"). */
   date?: ReactNode;
-  /** Hora (prevista), já formatada (ex.: "19:30"). */
+  /** Hora, já formatada (ex.: "19:30"). */
   time?: ReactNode;
   /** Nº de pessoas, já com a unidade traduzida (ex.: "4 pessoas"). */
   people?: ReactNode;
   subtitle?: ReactNode;
+  /** Ícone à esquerda do subtítulo (ex.: `MapPin` para a localização). */
+  subtitleIcon?: LucideIcon | undefined;
   /** Linha de chips/factos rápidos por baixo do subtítulo (ver `DetailChip`). */
   meta?: ReactNode;
-  /** Badge de estado (ver `StatusBadge`). */
   status?: ReactNode;
   extra?: ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-3.5">
-      {image ? (
-        <img
+    <div className="flex flex-wrap items-start gap-x-3.5 gap-y-3">
+      <div className="flex min-w-0 flex-1 basis-56 items-start gap-3.5">
+        <Thumb
           src={image}
-          alt=""
-          loading="lazy"
-          className="h-16 w-16 shrink-0 rounded-2xl object-cover shadow-sm ring-1 ring-border/60"
+          Fallback={FallbackIcon}
+          className="h-[72px] w-[72px] shrink-0 rounded-2xl shadow-sm"
+          iconClassName="h-8 w-8"
         />
-      ) : FallbackIcon ? (
-        <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-          <FallbackIcon className="h-7 w-7" aria-hidden="true" />
-        </span>
-      ) : null}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="line-clamp-2 min-w-0 break-words font-display text-lg font-bold leading-snug text-foreground">
+        <div className="min-w-0 flex-1">
+          {eyebrow && (
+            <p className="truncate text-[11px] font-bold uppercase tracking-wider text-primary/70">
+              {eyebrow}
+            </p>
+          )}
+          <h2 className="line-clamp-2 break-words font-display text-xl font-extrabold leading-tight text-primary">
             {title}
           </h2>
-          {extra && <div className="flex shrink-0 items-center gap-2">{extra}</div>}
+          {(date || time || people) && (
+            <div className="mt-1 text-sm font-medium tabular-nums text-muted-foreground">
+              {date && <p className="truncate">{date}</p>}
+              {(time || people) && (
+                <p className="truncate">
+                  {time}
+                  {time && people ? " - " : null}
+                  {people}
+                </p>
+              )}
+            </div>
+          )}
+          {subtitle && (
+            <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+              {SubtitleIcon && <SubtitleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
+              <span className="truncate">{subtitle}</span>
+            </p>
+          )}
+          {meta && <div className="mt-2 flex flex-wrap items-center gap-1.5">{meta}</div>}
         </div>
-        {(date || time || people) && (
-          <p className="mt-0.5 truncate text-sm font-medium tabular-nums text-muted-foreground">
-            {date}
-            {date && time ? " · " : null}
-            {time}
-            {(date || time) && people ? " · " : null}
-            {people}
-          </p>
-        )}
-        {status && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">{status}</div>
-        )}
-        {subtitle && <p className="mt-1.5 truncate text-sm text-muted-foreground">{subtitle}</p>}
-        {meta && <div className="mt-2 flex flex-wrap items-center gap-1.5">{meta}</div>}
       </div>
+      {(status || extra) && (
+        <div className="flex shrink-0 items-center gap-2">
+          {extra}
+          {status}
+        </div>
+      )}
     </div>
   );
+}
+
+/* ------------------------------------------------------------------ */
+/* Progresso                                                           */
+/* ------------------------------------------------------------------ */
+
+export type ProgressStep = {
+  label: string;
+  state: "done" | "current" | "upcoming" | "error";
+  /** Ícone mostrado nos passos "current"/"upcoming" (os "done" mostram ✓). */
+  icon?: LucideIcon | undefined;
+  /** Texto pequeno por baixo do rótulo — a hora em que o passo foi cumprido,
+   * ou "Agora" no passo atual. */
+  caption?: ReactNode;
+};
+
+const STEP_CIRCLE: Record<ProgressStep["state"], string> = {
+  done: `h-9 w-9 bg-primary ${ON_SOLID}`,
+  current: `h-11 w-11 bg-primary ${ON_SOLID} ring-4 ring-primary/20`,
+  upcoming: "h-9 w-9 bg-surface text-muted-foreground ring-1 ring-inset ring-border",
+  error: `h-9 w-9 bg-destructive ${ON_SOLID}`,
+};
+
+const STEP_LABEL: Record<ProgressStep["state"], string> = {
+  done: "font-semibold text-foreground",
+  current: "font-bold text-primary",
+  upcoming: "font-medium text-muted-foreground",
+  error: "font-bold text-destructive",
+};
+
+const STEP_SR: Record<ProgressStep["state"], string> = {
+  done: "concluído",
+  current: "passo atual",
+  upcoming: "por fazer",
+  error: "com problema",
+};
+
+/** Linha de passos do registo (Pendente → Em preparação → Pronto →
+ * Concluído): passos cumpridos a cheio com ✓, o passo atual maior e com
+ * halo, os restantes só em contorno. Puramente visual — quem chama decide os
+ * passos e o estado de cada um (ver `orderProgressSteps` para pedidos).
+ * Usa-se solto, logo abaixo do cabeçalho: já traz o seu próprio fundo. */
+export function DetailProgress({
+  steps,
+  label = "Progresso",
+}: {
+  steps: ProgressStep[];
+  label?: string | undefined;
+}) {
+  return (
+    <ol
+      aria-label={label}
+      className="mt-5 flex items-start rounded-2xl bg-primary/5 px-2 py-4 ring-1 ring-inset ring-primary/10"
+    >
+      {steps.map((step, i) => {
+        const reached = step.state !== "upcoming";
+        const leftFilled = reached && i > 0;
+        const rightFilled = step.state === "done" && i < steps.length - 1;
+        const Icon = step.icon;
+        return (
+          <li
+            key={`${i}-${step.label}`}
+            aria-current={step.state === "current" ? "step" : undefined}
+            className="flex min-w-0 flex-1 flex-col items-center"
+          >
+            {/* Altura fixa: todos os círculos ficam centrados na mesma linha,
+                mesmo com o passo atual maior — as barras nunca "saltam". */}
+            <div className="flex h-11 w-full items-center">
+              <span
+                className={`h-0.5 flex-1 rounded-full ${i === 0 ? "bg-transparent" : leftFilled ? "bg-primary" : "bg-border"}`}
+              />
+              <span
+                className={`grid shrink-0 place-items-center rounded-full ${STEP_CIRCLE[step.state]}`}
+              >
+                {step.state === "done" ? (
+                  <Check className="h-4 w-4" strokeWidth={3} aria-hidden="true" />
+                ) : step.state === "error" ? (
+                  <X className="h-4 w-4" strokeWidth={3} aria-hidden="true" />
+                ) : Icon ? (
+                  <Icon
+                    className={step.state === "current" ? "h-5 w-5" : "h-4 w-4"}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <span aria-hidden="true" className="h-2 w-2 rounded-full bg-current" />
+                )}
+              </span>
+              <span
+                className={`h-0.5 flex-1 rounded-full ${i === steps.length - 1 ? "bg-transparent" : rightFilled ? "bg-primary" : "bg-border"}`}
+              />
+            </div>
+            <span
+              className={`mt-2 px-0.5 text-center text-xs leading-tight ${STEP_LABEL[step.state]}`}
+            >
+              {step.label}
+              <span className="sr-only"> ({STEP_SR[step.state]})</span>
+            </span>
+            {step.caption && (
+              <span
+                className={`mt-0.5 text-center text-[11px] leading-tight tabular-nums ${step.state === "current" ? "font-semibold text-primary" : "text-muted-foreground"}`}
+              >
+                {step.caption}
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/** Fluxo do pedido: `delivery` (Pendente → Em preparação → A caminho →
+ * Entregue) ou `pickup` (Pendente → Em preparação → Pronto → Concluído,
+ * serve takeaway e consumo no local). Só muda o ícone de cada passo; os
+ * rótulos vêm traduzidos de fora. */
+export type OrderFlow = "delivery" | "pickup";
+
+/** Posição de cada estado nos 4 passos. `rejected`/`canceled` não têm
+ * posição — o pedido saiu do fluxo. */
+const ORDER_STEP_INDEX: Record<CartOrderStatus, number | null> = {
+  pending: 0,
+  accepted: 1,
+  onTheWay: 2,
+  ready: 2,
+  delivered: 3,
+  completed: 3,
+  rejected: null,
+  canceled: null,
+};
+
+const ORDER_STEP_ICONS: Record<OrderFlow, readonly LucideIcon[]> = {
+  delivery: [Clock, ChefHat, Truck, CircleCheck],
+  pickup: [Clock, ChefHat, ConciergeBell, CircleCheck],
+};
+
+/** Converte o estado de um pedido nos 4 passos de `DetailProgress`.
+ * Devolve `null` para `rejected`/`canceled` — nesses casos mostra antes um
+ * `StatusBadge` (e, se quiseres, uma `DetailNote`).
+ *
+ *   <DetailProgress steps={orderProgressSteps({
+ *     status: order.status,
+ *     flow: order.mode === "delivery" ? "delivery" : "pickup",
+ *     labels: [t("pendente"), t("emPreparacao"), t("pronto"), t("concluido")],
+ *     captions: [confirmadoAs],       // opcional: hora de cada passo cumprido
+ *     currentCaption: t("agora"),     // opcional: texto do passo atual
+ *   })} /> */
+export function orderProgressSteps({
+  status,
+  flow = "pickup",
+  labels,
+  captions,
+  currentCaption,
+}: {
+  status: CartOrderStatus;
+  flow?: OrderFlow | undefined;
+  /** Rótulos já traduzidos, pela ordem dos 4 passos. */
+  labels: readonly [string, string, string, string];
+  /** Legenda opcional por passo (ex.: hora em que foi cumprido). */
+  captions?: readonly ReactNode[] | undefined;
+  /** Legenda do passo atual quando `captions` não a traz (ex.: "Agora"). */
+  currentCaption?: ReactNode;
+}): ProgressStep[] | null {
+  const index = ORDER_STEP_INDEX[status];
+  if (index === null) return null;
+  const finished = index === labels.length - 1;
+  return labels.map((label, i) => {
+    const state: ProgressStep["state"] =
+      finished || i < index ? "done" : i === index ? "current" : "upcoming";
+    return {
+      label,
+      state,
+      icon: ORDER_STEP_ICONS[flow][i],
+      caption: captions?.[i] ?? (state === "current" ? currentCaption : undefined),
+    };
+  });
 }
 
 /* ------------------------------------------------------------------ */
 /* Factos                                                              */
 /* ------------------------------------------------------------------ */
 
-/** Grelha de factos com um separador no topo, que dá ritmo entre o
- * cabeçalho e o corpo. Opcional: um `<dl className="grid grid-cols-2 gap-x-4
- * gap-y-4">` escrito à mão continua a funcionar tal e qual. */
+/** Card de factos em grelha de 2 colunas — agrupa os dados de contexto
+ * (método, contacto, pagamento...) num bloco com contenção visual. Opcional:
+ * um `<dl className="grid grid-cols-2 gap-x-4 gap-y-4">` escrito à mão
+ * continua a funcionar tal e qual. */
 export function DetailFacts({ children }: { children: ReactNode }) {
   return (
-    <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-border/60 pt-5">
+    <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-5 rounded-2xl border border-border/60 bg-surface/40 p-4">
       {children}
     </dl>
   );
@@ -286,19 +497,23 @@ const ROW_ICON_TONE = {
 
 /** Par rótulo/valor com ícone âncora. O valor tem sempre mais peso que o
  * rótulo (hierarquia), e quebra em qualquer ponto para nunca rebentar a
- * grelha com e-mails ou moradas longas. `tone` destaca um facto crítico
- * (ex.: pagamento em falta) sem mudar a estrutura. */
+ * grelha com e-mails ou moradas longas. `hint` é a frase de apoio por baixo
+ * do valor (ex.: "O restaurante define o método no momento da entrega");
+ * `tone` destaca um facto crítico (ex.: pagamento em falta). Um botão ou uma
+ * caixa (ex.: `DetailAction`) pode ir como segundo filho. */
 export function DetailRow({
   icon: Icon,
   label,
   span,
   tone = "default",
+  hint,
   children,
 }: {
   icon: LucideIcon;
   label: string;
   span?: boolean | undefined;
   tone?: keyof typeof ROW_ICON_TONE | undefined;
+  hint?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -313,7 +528,120 @@ export function DetailRow({
         <dd className="mt-0.5 text-sm font-semibold leading-snug text-foreground [overflow-wrap:anywhere]">
           {children}
         </dd>
+        {hint && (
+          <dd className="mt-0.5 text-xs leading-snug text-muted-foreground [overflow-wrap:anywhere]">
+            {hint}
+          </dd>
+        )}
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Ações e notas                                                       */
+/* ------------------------------------------------------------------ */
+
+const ACTION_VARIANT = {
+  outline: "bg-primary/10 text-primary ring-1 ring-inset ring-primary/25 hover:bg-primary/15",
+  solid: `bg-primary ${ON_SOLID} hover:bg-primary/90`,
+} as const;
+
+/** Botão em pílula para ações do card (ex.: "Falar com o restaurante" no
+ * WhatsApp, "Acompanhar pedido"). Com `href` renderiza um `<a>` (com
+ * `external` abre noutro separador, com `rel` seguro); sem `href`, um
+ * `<button type="button">`. `block` ocupa a largura toda. */
+export function DetailAction({
+  icon: Icon,
+  variant = "outline",
+  block,
+  href,
+  external,
+  onClick,
+  children,
+}: {
+  icon?: LucideIcon | undefined;
+  variant?: keyof typeof ACTION_VARIANT | undefined;
+  block?: boolean | undefined;
+  href?: string | undefined;
+  external?: boolean | undefined;
+  onClick?: (() => void) | undefined;
+  children: ReactNode;
+}) {
+  const className = `inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${block ? "w-full" : ""} ${ACTION_VARIANT[variant]}`;
+  const content = (
+    <>
+      {Icon && <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />}
+      {children}
+    </>
+  );
+  if (href) {
+    return (
+      <a
+        href={href}
+        className={className}
+        {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      >
+        {content}
+      </a>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {content}
+    </button>
+  );
+}
+
+type NoteTone = "neutral" | "success" | "warning" | "danger";
+
+const NOTE_TONE: Record<NoteTone, { box: string; icon: string; Icon: LucideIcon }> = {
+  neutral: { box: "border-border/60 bg-surface/50", icon: "text-muted-foreground", Icon: Info },
+  success: { box: "border-success/25 bg-success/10", icon: "text-success", Icon: CircleCheck },
+  warning: { box: "border-brand/30 bg-brand/10", icon: "text-brand", Icon: TriangleAlert },
+  danger: {
+    box: "border-destructive/30 bg-destructive/10",
+    icon: "text-destructive",
+    Icon: CircleAlert,
+  },
+};
+
+/** Faixa de mensagem com ícone — substitui o texto solto colorido e a caixa
+ * tracejada de rodapé: confirmações ("Comprovativo enviado ao restaurante"),
+ * avisos ("Pedido já aceito — contacte o restaurante para cancelar") e
+ * agradecimentos. `title` opcional a negrito; `action` à direita (ex.:
+ * "Substituir"); `className` sobrepõe a margem (por omissão `mt-4`). */
+export function DetailNote({
+  icon,
+  tone = "neutral",
+  title,
+  action,
+  className = "mt-4",
+  children,
+}: {
+  icon?: LucideIcon | undefined;
+  tone?: NoteTone | undefined;
+  title?: ReactNode;
+  action?: ReactNode;
+  className?: string | undefined;
+  children: ReactNode;
+}) {
+  const t = NOTE_TONE[tone];
+  const Icon = icon ?? t.Icon;
+  return (
+    <div
+      className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm ${t.box} ${className}`}
+    >
+      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${t.icon}`} aria-hidden="true" />
+      <div className="min-w-0 flex-1 leading-snug">
+        {title && <p className="font-semibold text-foreground">{title}</p>}
+        <div className={title ? "text-muted-foreground" : "font-medium text-foreground"}>
+          {children}
+        </div>
+      </div>
+      {action && (
+        <div className="shrink-0 text-xs font-semibold text-muted-foreground">{action}</div>
+      )}
     </div>
   );
 }
@@ -341,11 +669,13 @@ const SECTION_TONE: Record<SectionTone, { box: string; icon: string; fallback?: 
   },
 };
 
-/** Subcard para os blocos secundários (comprovativo, fatura, mapa, estafeta,
- * pedidos especiais...). Cabeçalho próprio com ícone em tile, título legível
- * e slot de ação à direita. Os tons `warning` e `danger` trazem ícone por
- * omissão — o significado nunca depende só da cor. É uma `<section>`
- * etiquetada pelo seu título (`h3`, abaixo do `h2` do cabeçalho). */
+/** Subcard para os blocos secundários (produtos, comprovativo, fatura, mapa,
+ * estafeta, pedidos especiais...). Cabeçalho próprio com ícone em tile,
+ * título legível (sentence case, foreground) e slot de ação à direita — que
+ * também serve para um contador (`<DetailChip>1 item</DetailChip>`). Os tons
+ * `warning` e `danger` trazem ícone por omissão — o significado nunca
+ * depende só da cor. É uma `<section>` etiquetada pelo seu título (`h3`,
+ * abaixo do `h2` do cabeçalho). */
 export function DetailSection({
   icon,
   title,
@@ -388,94 +718,62 @@ export function DetailSection({
 }
 
 /* ------------------------------------------------------------------ */
-/* Progresso (opcional)                                                */
+/* Produtos                                                            */
 /* ------------------------------------------------------------------ */
 
-export type ProgressStep = {
-  label: string;
-  state: "done" | "current" | "upcoming" | "error";
-  /** Ícone mostrado nos passos "current"/"upcoming" (por omissão, um ponto). */
-  icon?: LucideIcon | undefined;
-};
+/** Lista de produtos de um pedido — usa-se dentro de `DetailSection`, com
+ * `DetailProductRow` como filhos. */
+export function DetailProductList({ children }: { children: ReactNode }) {
+  return <ul className="divide-y divide-border/60">{children}</ul>;
+}
 
-const STEP_CIRCLE: Record<ProgressStep["state"], string> = {
-  done: "bg-success/15 text-success ring-success/30",
-  current: "bg-primary/15 text-primary ring-primary/50",
-  upcoming: "bg-surface text-muted-foreground ring-border",
-  error: "bg-destructive/15 text-destructive ring-destructive/30",
-};
-
-const STEP_LABEL: Record<ProgressStep["state"], string> = {
-  done: "font-medium text-foreground",
-  current: "font-bold text-foreground",
-  upcoming: "font-medium text-muted-foreground",
-  error: "font-bold text-destructive",
-};
-
-const STEP_SR: Record<ProgressStep["state"], string> = {
-  done: "concluído",
-  current: "passo atual",
-  upcoming: "por fazer",
-  error: "com problema",
-};
-
-/** Barra de progresso do registo (ex.: Recebido → Aceite → A caminho →
- * Entregue). Puramente visual: quem chama decide os passos e o estado de
- * cada um. Use dentro de `DetailSection` ou solto. */
-export function DetailProgress({
-  steps,
-  label = "Progresso",
+/** Linha de produto: foto do prato + nome + descrição + preço + quantidade.
+ * Sem foto (ou se falhar), mostra um tile com ícone para as linhas
+ * continuarem alinhadas. `children` são as personalizações (ex.: chips
+ * "sem cebola", "+ queijo") por baixo da descrição. */
+export function DetailProductRow({
+  image,
+  name,
+  description,
+  price,
+  quantity,
+  children,
 }: {
-  steps: ProgressStep[];
-  label?: string | undefined;
+  image?: string | undefined;
+  name: ReactNode;
+  /** Ingredientes ou porção, em texto pequeno (máx. 2 linhas). */
+  description?: ReactNode;
+  price: ReactNode;
+  /** Quantidade, já formatada (ex.: "1x"). */
+  quantity?: ReactNode;
+  children?: ReactNode;
 }) {
   return (
-    <ol aria-label={label} className="mt-5 flex items-start">
-      {steps.map((step, i) => {
-        const reached = step.state !== "upcoming";
-        const leftFilled = reached && i > 0;
-        const rightFilled = step.state === "done" && i < steps.length - 1;
-        const Icon = step.icon;
-        return (
-          <li
-            key={`${i}-${step.label}`}
-            aria-current={step.state === "current" ? "step" : undefined}
-            className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
-          >
-            <div className="flex w-full items-center">
-              <span
-                className={`h-0.5 flex-1 rounded-full ${i === 0 ? "bg-transparent" : leftFilled ? "bg-success/50" : "bg-border"}`}
-              />
-              <span
-                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ring-1 ring-inset ${STEP_CIRCLE[step.state]} ${step.state === "current" ? "ring-2" : ""}`}
-              >
-                {step.state === "done" ? (
-                  <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
-                ) : step.state === "error" ? (
-                  <X className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
-                ) : Icon ? (
-                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                ) : (
-                  <span
-                    aria-hidden="true"
-                    className={`h-2 w-2 rounded-full bg-current ${step.state === "current" ? "motion-safe:animate-pulse" : "opacity-40"}`}
-                  />
-                )}
-              </span>
-              <span
-                className={`h-0.5 flex-1 rounded-full ${i === steps.length - 1 ? "bg-transparent" : rightFilled ? "bg-success/50" : "bg-border"}`}
-              />
-            </div>
-            <span
-              className={`px-0.5 text-center text-[11px] leading-tight ${STEP_LABEL[step.state]}`}
-            >
-              {step.label}
-              <span className="sr-only"> ({STEP_SR[step.state]})</span>
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+    <li className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+      <Thumb
+        src={image}
+        Fallback={UtensilsCrossed}
+        className="h-16 w-16 shrink-0 rounded-xl"
+        iconClassName="h-6 w-6"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold leading-snug text-foreground">{name}</p>
+        {description && (
+          <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground">
+            {description}
+          </p>
+        )}
+        {children && <div className="mt-1.5 flex flex-wrap gap-1">{children}</div>}
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
+        <p className="text-sm font-bold tabular-nums text-foreground">{price}</p>
+        {quantity && (
+          <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground ring-1 ring-inset ring-border/60">
+            {quantity}
+          </span>
+        )}
+      </div>
+    </li>
   );
 }
 
