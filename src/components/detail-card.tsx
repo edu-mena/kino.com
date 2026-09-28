@@ -21,20 +21,55 @@ import type { CartOrderStatus } from "@/lib/cart";
  * lado do cliente E do restaurante).
  *
  * Princípios de design aplicados:
- *  1. Hierarquia por contraste — o valor é sempre mais forte que o rótulo
- *     (rótulo: pequeno, cinza, peso médio; valor: maior, foreground, semibold).
- *  2. Cor com significado — o tom vem do estado (tinta + anel + ÍCONE), nunca
- *     só da cor, para não depender de perceção cromática (WCAG 1.4.1).
- *  3. Agrupamento (Gestalt) — factos numa grelha, secções em subcards com
- *     cabeçalho próprio, e um único elemento "herói": o total.
- *  4. Robustez — textos longos (moradas, e-mails) quebram em vez de rebentar
- *     o layout; cabeçalho reflui em ecrãs estreitos.
+ *  1. Hierarquia por contraste — o valor é sempre mais forte que o rótulo.
+ *  2. Cor com significado — o tom vem do estado (tinta + anel + ÍCONE).
+ *  3. Agrupamento (Gestalt) — factos numa grelha, secções em subcards, e um
+ *     único elemento "herói": o total.
+ *  4. Robustez — textos longos quebram em vez de rebentar o layout.
  *  5. Acessibilidade — landmarks/headings, `aria-hidden` nos ícones
  *     decorativos, `role="status"` no estado, `motion-safe` nas animações.
  *
  * Só apresentação — nenhuma lógica de negócio. A API anterior mantém-se
  * 100% compatível: tudo o que foi acrescentado é opcional.
  */
+
+/* ------------------------------------------------------------------ */
+/* Barra superior (voltar + reclamações)                               */
+/* ------------------------------------------------------------------ */
+
+/** Linha do topo da página de detalhe: botão/link "Voltar" à esquerda e,
+ * à direita, o contacto para reclamações — "Reclamações: <contacto>", sem
+ * ícone. Em ecrãs muito estreitos o contacto reflui para a linha de baixo,
+ * alinhado à direita, em vez de espremer o botão.
+ *
+ * Uso:
+ *   <DetailTopBar
+ *     back={<Link to="/pedidos">← Voltar</Link>}
+ *     complaintContact={<a href="tel:+244900000000">+244 900 000 000</a>}
+ *   />
+ */
+export function DetailTopBar({
+  back,
+  complaintContact,
+  complaintLabel = "Reclamações",
+}: {
+  back: ReactNode;
+  /** Telefone/e-mail para reclamações (pode ser um `<a href="tel:…">`). */
+  complaintContact?: ReactNode;
+  complaintLabel?: string | undefined;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+      <div className="shrink-0 text-sm font-medium">{back}</div>
+      {complaintContact && (
+        <p className="ml-auto min-w-0 max-w-full text-xs text-muted-foreground [overflow-wrap:anywhere]">
+          {complaintLabel}:{" "}
+          <span className="font-semibold tabular-nums text-foreground">{complaintContact}</span>
+        </p>
+      )}
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /* Estado                                                              */
@@ -125,8 +160,7 @@ export function StatusBadge({ visual, children }: { visual: StatusVisual; childr
   );
 }
 
-/** Pequena etiqueta neutra (ex.: nº do pedido, data, nº de pessoas) para o
- * slot `meta` do cabeçalho. */
+/** Pequena etiqueta neutra (ex.: nº do pedido) para o slot `meta`. */
 export function DetailChip({
   icon: Icon,
   children,
@@ -146,16 +180,19 @@ export function DetailChip({
 /* Cabeçalho                                                           */
 /* ------------------------------------------------------------------ */
 
-/** Cabeçalho do card — imagem (ou ícone de reserva) + título (restaurante ou
- * cliente) + data/hora/pessoas + subtítulo + chips, com o badge de estado (e,
- * opcionalmente, outra ação, ex. o popover de contacto) à direita. Em ecrãs
- * estreitos o badge reflui para a linha de baixo em vez de espremer o título.
+/** Cabeçalho do card — imagem (ou ícone) à esquerda; à direita da imagem:
  *
- * Data, hora e nº de pessoas aparecem como texto simples, logo por baixo do
- * título, sem rótulo nem ícone: a data numa linha e, na linha seguinte, a hora
- * seguida de " - " e das pessoas. Cada parte é opcional (ex.: um pedido de
- * entrega não tem `people`); a linha da hora só aparece se houver hora ou
- * pessoas. Os textos já vêm formatados/traduzidos por quem chama. */
+ *   Nome (restaurante ou cliente)                       [extra]
+ *   28 set 2026
+ *   [● Estado]  19:30 - 4 pessoas
+ *   subtítulo
+ *   chips
+ *
+ * O estado, a hora (prevista) e o nº de pessoas ficam na MESMA linha, logo
+ * abaixo do nome/data e ao lado da imagem; se não couberem, refluem para a
+ * linha seguinte em vez de espremer. A hora e as pessoas são texto simples,
+ * sem rótulo nem ícone, separados por " - ". Cada parte é opcional. A ação
+ * `extra` (ex.: popover de contacto) fica alinhada ao nome, à direita. */
 export function DetailHeader({
   image,
   icon: FallbackIcon,
@@ -174,57 +211,59 @@ export function DetailHeader({
   title: ReactNode;
   /** Data, já formatada (ex.: "28 set 2026"). */
   date?: ReactNode;
-  /** Hora, já formatada (ex.: "19:30"). */
+  /** Hora (prevista), já formatada (ex.: "19:30"). */
   time?: ReactNode;
   /** Nº de pessoas, já com a unidade traduzida (ex.: "4 pessoas"). */
   people?: ReactNode;
   subtitle?: ReactNode;
   /** Linha de chips/factos rápidos por baixo do subtítulo (ver `DetailChip`). */
   meta?: ReactNode;
+  /** Badge de estado (ver `StatusBadge`). */
   status?: ReactNode;
   extra?: ReactNode;
 }) {
+  const hasInline = status || time || people;
   return (
-    <div className="flex flex-wrap items-start gap-x-3.5 gap-y-3">
-      <div className="flex min-w-0 flex-1 basis-56 items-start gap-3.5">
-        {image ? (
-          <img
-            src={image}
-            alt=""
-            loading="lazy"
-            className="h-16 w-16 shrink-0 rounded-2xl object-cover shadow-sm ring-1 ring-border/60"
-          />
-        ) : FallbackIcon ? (
-          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-            <FallbackIcon className="h-7 w-7" aria-hidden="true" />
-          </span>
-        ) : null}
-        <div className="min-w-0 flex-1">
-          <h2 className="line-clamp-2 break-words font-display text-lg font-bold leading-snug text-foreground">
+    <div className="flex items-start gap-3.5">
+      {image ? (
+        <img
+          src={image}
+          alt=""
+          loading="lazy"
+          className="h-16 w-16 shrink-0 rounded-2xl object-cover shadow-sm ring-1 ring-border/60"
+        />
+      ) : FallbackIcon ? (
+        <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
+          <FallbackIcon className="h-7 w-7" aria-hidden="true" />
+        </span>
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="line-clamp-2 min-w-0 break-words font-display text-lg font-bold leading-snug text-foreground">
             {title}
           </h2>
-          {(date || time || people) && (
-            <div className="mt-0.5 text-sm font-medium tabular-nums text-muted-foreground">
-              {date && <p className="truncate">{date}</p>}
-              {(time || people) && (
-                <p className="truncate">
-                  {time}
-                  {time && people ? " - " : null}
-                  {people}
-                </p>
-              )}
-            </div>
-          )}
-          {subtitle && <p className="mt-0.5 truncate text-sm text-muted-foreground">{subtitle}</p>}
-          {meta && <div className="mt-2 flex flex-wrap items-center gap-1.5">{meta}</div>}
+          {extra && <div className="flex shrink-0 items-center gap-2">{extra}</div>}
         </div>
+        {date && (
+          <p className="mt-0.5 truncate text-sm font-medium tabular-nums text-muted-foreground">
+            {date}
+          </p>
+        )}
+        {hasInline && (
+          <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+            {status}
+            {(time || people) && (
+              <p className="text-sm font-medium tabular-nums text-muted-foreground">
+                {time}
+                {time && people ? " - " : null}
+                {people}
+              </p>
+            )}
+          </div>
+        )}
+        {subtitle && <p className="mt-1.5 truncate text-sm text-muted-foreground">{subtitle}</p>}
+        {meta && <div className="mt-2 flex flex-wrap items-center gap-1.5">{meta}</div>}
       </div>
-      {(status || extra) && (
-        <div className="flex shrink-0 items-center gap-2">
-          {extra}
-          {status}
-        </div>
-      )}
     </div>
   );
 }
@@ -310,10 +349,9 @@ const SECTION_TONE: Record<SectionTone, { box: string; icon: string; fallback?: 
 
 /** Subcard para os blocos secundários (comprovativo, fatura, mapa, estafeta,
  * pedidos especiais...). Cabeçalho próprio com ícone em tile, título legível
- * (sentence case, foreground) e slot de ação à direita. Os tons `warning`
- * e `danger` trazem ícone por omissão — o significado nunca depende só da
- * cor. É uma `<section>` etiquetada pelo seu título (`h3`, abaixo do `h2`
- * do cabeçalho). */
+ * e slot de ação à direita. Os tons `warning` e `danger` trazem ícone por
+ * omissão — o significado nunca depende só da cor. É uma `<section>`
+ * etiquetada pelo seu título (`h3`, abaixo do `h2` do cabeçalho). */
 export function DetailSection({
   icon,
   title,
@@ -389,8 +427,7 @@ const STEP_SR: Record<ProgressStep["state"], string> = {
 
 /** Barra de progresso do registo (ex.: Recebido → Aceite → A caminho →
  * Entregue). Puramente visual: quem chama decide os passos e o estado de
- * cada um. Boa prática de apps de entrega — responde à pergunta "em que
- * ponto estou?" sem ler texto. Use dentro de `DetailSection` ou solto. */
+ * cada um. Use dentro de `DetailSection` ou solto. */
 export function DetailProgress({
   steps,
   label = "Progresso",
