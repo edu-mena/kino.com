@@ -1218,7 +1218,8 @@ export const en: Dictionary = {
       aboutTitleLabel: "Title",
       aboutDescriptionLabel: "Description",
       heroLabel: "Featured image or video",
-      heroHelp: "Shown at the top of the /sobre page, right below the title. Leave blank to show nothing.",
+      heroHelp:
+        "Shown at the top of the /sobre page, right below the title. Leave blank to show nothing.",
 
       saveButton: "Save changes",
       savedToast: "Content updated.",
