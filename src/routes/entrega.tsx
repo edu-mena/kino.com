@@ -5,18 +5,30 @@ import {
   ChevronRight,
   Clock,
   FileText,
+  MapPin,
+  MessageSquare,
   Package,
   Phone,
   Receipt,
+  ShieldCheck,
   ShoppingBag,
   Star,
   Trash2,
   Upload,
   Utensils,
+  Wallet,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
+import {
+  DetailHeader,
+  DetailRow,
+  DetailSection,
+  DetailTotal,
+  StatusBadge,
+  orderStatusVisual,
+} from "@/components/detail-card";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
@@ -36,19 +48,6 @@ import { orderStatusLabel } from "@/lib/order-status";
 import { getPaymentMethod } from "@/lib/mock-data";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { useTranslation } from "@/i18n";
-
-/** Um facto do resumo do pedido — label + valor, sem ícone (mesmo desenho
- * compacto já usado no detalhe do painel do restaurante, ver `AdminField`
- * em `admin-stats.tsx`). `span` ocupa as duas colunas da grelha, para
- * valores mais longos (morada, pagamento, nota) não ficarem espremidos. */
-function Field({ label, span, children }: { label: string; span?: boolean; children: ReactNode }) {
-  return (
-    <div className={`min-w-0 ${span ? "col-span-2" : ""}`}>
-      <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1 font-medium text-foreground">{children}</dd>
-    </div>
-  );
-}
 
 const MODE_ICON: Record<FulfillmentType, typeof Bike> = {
   delivery: Bike,
@@ -261,59 +260,51 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         <ChevronLeft className="h-4 w-4" /> {t("common.back")}
       </button>
 
-      <div className="flex items-center gap-3">
-        {restaurant && (
-          <img
-            src={restaurant.coverImage}
-            alt=""
-            className="h-12 w-12 shrink-0 rounded-xl object-cover"
-          />
-        )}
-        <div className="min-w-0">
-          <h2 className="truncate font-display text-xl font-bold text-primary">
-            {restaurant?.name ?? "Restaurante"}
-          </h2>
-          {restaurant && (
-            <p className="truncate text-xs text-muted-foreground">
-              {restaurant.cuisine} · {restaurant.neighborhood}
-            </p>
-          )}
-        </div>
-      </div>
+      <DetailHeader
+        image={restaurant?.coverImage}
+        title={restaurant?.name ?? "Restaurante"}
+        subtitle={restaurant ? `${restaurant.cuisine} · ${restaurant.neighborhood}` : undefined}
+        status={
+          <StatusBadge visual={orderStatusVisual(order.status)}>
+            {orderStatusLabel(order.status, t)}
+          </StatusBadge>
+        }
+      />
 
       <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
-        <Field label={t("entrega.deliveryStatus")}>
-          {t(`fulfillment.${order.fulfillmentType}`)} · {orderStatusLabel(order.status, t)}
-        </Field>
+        <DetailRow icon={MODE_ICON[order.fulfillmentType]} label={t("entrega.deliveryStatus")}>
+          {t(`fulfillment.${order.fulfillmentType}`)}
+        </DetailRow>
 
-        <Field
+        <DetailRow
+          icon={Clock}
           label={order.fulfillmentType === "takeaway" ? t("entrega.pickupTime") : t("entrega.eta")}
         >
           {order.fulfillmentType === "takeaway" && order.pickupAsap
             ? t("entrega.pickupAsap")
             : `~${etaTime(order)}`}
-        </Field>
+        </DetailRow>
 
         {order.deliveryAddress && (
-          <Field label={t("entrega.deliverTo")} span>
+          <DetailRow icon={MapPin} label={t("entrega.deliverTo")} span>
             {order.deliveryAddress.label} — {order.deliveryAddress.line1}
-          </Field>
+          </DetailRow>
         )}
 
         {order.fulfillmentType === "takeaway" && restaurant && (
-          <Field label={t("entrega.modeLabel")} span>
+          <DetailRow icon={ShoppingBag} label={t("entrega.modeLabel")} span>
             {t("entrega.pickupHere", { name: restaurant.name })}
-          </Field>
+          </DetailRow>
         )}
 
         {order.fulfillmentType === "dinein" && (
-          <Field label={t("entrega.dineInHere")}>
+          <DetailRow icon={Utensils} label={t("entrega.dineInHere")}>
             {order.partySize ? t("entrega.partySize", { count: order.partySize }) : "—"}
-          </Field>
+          </DetailRow>
         )}
 
         {courier && (
-          <Field label={t("entrega.courierTitle")} span>
+          <DetailRow icon={Bike} label={t("entrega.courierTitle")} span>
             {courier.name} · {t(`entrega.veh.${courier.vehicle}`)}
             <a
               href={`tel:${courier.phone.replace(/\s/g, "")}`}
@@ -322,18 +313,18 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
               <Phone className="h-3.5 w-3.5 shrink-0" />
               {courier.phone}
             </a>
-          </Field>
+          </DetailRow>
         )}
 
         {restaurant && (
-          <Field label={t("entrega.complaintContact")}>
+          <DetailRow icon={Phone} label={t("entrega.complaintContact")}>
             <a href={`tel:${restaurant.phone.replace(/\s/g, "")}`} className="hover:underline">
               {restaurant.phone}
             </a>
-          </Field>
+          </DetailRow>
         )}
 
-        <Field label={t("entrega.paymentRequired")} span>
+        <DetailRow icon={Wallet} label={t("entrega.paymentRequired")} span>
           {order.paymentMethod ? (
             <>
               <span className="block font-semibold">
@@ -359,25 +350,24 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           ) : (
             <span className="font-normal text-muted-foreground">{t("entrega.paymentPending")}</span>
           )}
-        </Field>
+        </DetailRow>
 
         {order.cautionRequired ? (
-          <Field label={t("entrega.cautionRequired")}>{formatKz(order.cautionRequired)}</Field>
+          <DetailRow icon={ShieldCheck} label={t("entrega.cautionRequired")}>
+            {formatKz(order.cautionRequired)}
+          </DetailRow>
         ) : null}
 
         {order.note && (
-          <Field label={t("entrega.observationLabel")} span>
+          <DetailRow icon={MessageSquare} label={t("entrega.observationLabel")} span>
             {order.note}
-          </Field>
+          </DetailRow>
         )}
       </dl>
 
       {/* Carregar comprovativo — depois de o restaurante fixar um método digital */}
       {(paymentDue || order.paymentProof) && (
-        <div className="mt-5 rounded-xl border border-border p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            {t("entrega.proofTitle")}
-          </p>
+        <DetailSection icon={Upload} title={t("entrega.proofTitle")}>
           {order.paymentProof ? (
             <div className="mt-2 space-y-2">
               <button
@@ -435,7 +425,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
               </label>
             </>
           )}
-        </div>
+        </DetailSection>
       )}
 
       {/* Fatura emitida pelo restaurante — o cliente só vê, não carrega */}
@@ -443,11 +433,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         (order.status !== "pending" &&
           order.status !== "rejected" &&
           order.status !== "canceled")) && (
-        <div className="mt-5 rounded-xl border border-border p-4">
-          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            <Receipt className="h-3.5 w-3.5" />
-            {t("entrega.invoiceTitle")}
-          </p>
+        <DetailSection icon={Receipt} title={t("entrega.invoiceTitle")}>
           {order.invoice ? (
             <div className="mt-2 space-y-1.5">
               <button
@@ -490,14 +476,11 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
               {t("entrega.invoicePending")}
             </p>
           )}
-        </div>
+        </DetailSection>
       )}
 
-      <div className="mt-5 border-t border-border pt-4">
-        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          {t("entrega.products")}
-        </p>
-        <ul className="mt-2 space-y-2">
+      <DetailSection icon={Package} title={t("entrega.products")}>
+        <ul className="space-y-2">
           {order.lines.map((line) => {
             const name = lineName(line);
             if (!name) return null;
@@ -525,7 +508,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
             );
           })}
         </ul>
-      </div>
+      </DetailSection>
 
       {(order.promoCode || isDelivery || order.reservationCredit) && (
         <div className="mt-4 space-y-1 border-t border-border pt-4 text-sm">
@@ -571,14 +554,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         </div>
       )}
 
-      <div
-        className={`mt-4 flex items-center justify-between border-t border-border pt-4 text-base ${
-          order.promoCode || isDelivery ? "border-t-0 pt-1" : ""
-        }`}
-      >
-        <span className="font-bold">{t("entrega.amount")}</span>
-        <span className="font-extrabold text-primary">{formatKz(orderTotal(order))}</span>
-      </div>
+      <DetailTotal label={t("entrega.amount")} value={formatKz(orderTotal(order))} />
 
       {canReview && (
         <button

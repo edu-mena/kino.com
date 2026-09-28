@@ -1,6 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarCheck, ChevronLeft, FileText, Star, Upload, X } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  CalendarCheck,
+  CalendarClock,
+  ChevronLeft,
+  FileText,
+  MessageSquare,
+  Receipt,
+  ShieldCheck,
+  Star,
+  Upload,
+  Users,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import {
@@ -14,6 +26,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/empty-state";
+import {
+  DetailHeader,
+  DetailRow,
+  DetailSection,
+  StatusBadge,
+  reservationStatusVisual,
+} from "@/components/detail-card";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
@@ -258,33 +277,25 @@ function Reservas() {
                       <ChevronLeft className="h-4 w-4" /> {t("common.back")}
                     </button>
 
-                    <div className="flex items-center gap-3">
-                      <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-surface">
-                        <img
-                          src={active.restaurantImage}
-                          alt={active.restaurantName}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <h2 className="min-w-0 flex-1 truncate font-display text-lg font-bold text-primary">
-                        {active.restaurantName}
-                      </h2>
-                      <span
-                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusTone(active.status)}`}
-                      >
-                        {statusText(active.status)}
-                      </span>
-                    </div>
+                    <DetailHeader
+                      image={active.restaurantImage}
+                      title={active.restaurantName}
+                      status={
+                        <StatusBadge visual={reservationStatusVisual(active.status)}>
+                          {statusText(active.status)}
+                        </StatusBadge>
+                      }
+                    />
 
-                    <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
-                      <Field label={t("reservas.detailWhen")}>
+                    <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
+                      <DetailRow icon={CalendarClock} label={t("reservas.detailWhen")}>
                         {active.date} · {active.time}
-                      </Field>
-                      <Field label={t("reservas.detailPeople")}>
+                      </DetailRow>
+                      <DetailRow icon={Users} label={t("reservas.detailPeople")}>
                         {t("reservas.peopleCount", { count: active.peopleCount })}
-                      </Field>
+                      </DetailRow>
                       {active.cautionAmount > 0 && (
-                        <Field label={t("reservas.detailDeposit")}>
+                        <DetailRow icon={ShieldCheck} label={t("reservas.detailDeposit")} span>
                           {formatKz(active.cautionAmount)}
                           <span className="mt-0.5 block text-xs text-muted-foreground">
                             {cautionStatusText(active.cautionStatus)}
@@ -294,26 +305,20 @@ function Reservas() {
                               {t("reservas.promoApplied", { code: active.promoCode })}
                             </span>
                           )}
-                        </Field>
+                        </DetailRow>
                       )}
                     </dl>
 
-                    <div className="mt-4 border-t border-border pt-4">
-                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                        {t("reservas.detailRequests")}
-                      </p>
-                      <p className="mt-1.5 rounded-lg bg-surface p-3 text-sm text-foreground">
+                    <DetailSection icon={MessageSquare} title={t("reservas.detailRequests")}>
+                      <p className="text-sm text-foreground">
                         {active.specialRequests || t("reservas.noRequests")}
                       </p>
-                    </div>
+                    </DetailSection>
 
                     {/* Comprovativo de pagamento da caução */}
                     {active.cautionAmount > 0 &&
                       (active.paymentProof || active.cautionStatus === "Pendente") && (
-                        <div className="mt-4 border-t border-border pt-4">
-                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                            {t("reservas.proofTitle")}
-                          </p>
+                        <DetailSection icon={Upload} title={t("reservas.proofTitle")}>
                           {active.paymentProof ? (
                             <div className="mt-2 space-y-2">
                               <button
@@ -366,7 +371,7 @@ function Reservas() {
                               </label>
                             </>
                           )}
-                        </div>
+                        </DetailSection>
                       )}
 
                     {/* Fatura emitida pelo restaurante — o cliente só vê, não carrega.
@@ -375,10 +380,7 @@ function Reservas() {
                     {(active.invoice ||
                       active.status === "Confirmada" ||
                       active.status === "Não compareceu") && (
-                      <div className="mt-4 border-t border-border pt-4">
-                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                          {t("reservas.invoiceTitle")}
-                        </p>
+                      <DetailSection icon={Receipt} title={t("reservas.invoiceTitle")}>
                         {active.invoice ? (
                           <div className="mt-2 space-y-2">
                             <button
@@ -417,7 +419,7 @@ function Reservas() {
                             {t("reservas.invoicePending")}
                           </p>
                         )}
-                      </div>
+                      </DetailSection>
                     )}
 
                     {(active.status === "Pendente" ||
@@ -499,14 +501,5 @@ function Reservas() {
         />
       )}
     </PageShell>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-foreground">{children}</dd>
-    </div>
   );
 }
