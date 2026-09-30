@@ -58,6 +58,7 @@ function AdminNotificacoes() {
               items={list}
               scope="restaurant"
               emptyText={t("notifications.empty")}
+              groupByDate
             />
           </div>
         )}

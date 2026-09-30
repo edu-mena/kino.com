@@ -32,6 +32,7 @@ import {
   StatusBadge,
   reservationStatusVisual,
 } from "@/components/detail-card";
+import { ClientListFilters, FilteredEmpty, RecencyHeading } from "@/components/list-recency";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
@@ -41,6 +42,13 @@ import { formatKz } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { viewerKey } from "@/lib/customer";
 import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
+import {
+  EMPTY_CLIENT_LIST_FILTER,
+  localDay,
+  matchesClientListFilter,
+  type ClientListFilter,
+} from "@/lib/list-filter";
+import { groupByRecency, modifiedAt } from "@/lib/recency-groups";
 import { useReservations } from "@/lib/reservations";
 import { useTranslation } from "@/i18n";
 
@@ -134,6 +142,25 @@ function Reservas() {
     if (preselect) setActiveId(preselect);
   }, [preselect]);
   const active = reservations.find((r) => r.id === activeId) ?? null;
+
+  // Filtros (restaurante + data) e separadores por data de modificação. O
+  // filtro de data usa o dia DA reserva — é a data que cada linha mostra.
+  const [filter, setFilter] = useState<ClientListFilter>(EMPTY_CLIENT_LIST_FILTER);
+  const filterRestaurants = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const r of reservations)
+      if (!byId.has(r.restaurantId)) byId.set(r.restaurantId, r.restaurantName);
+    return [...byId]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [reservations]);
+  const groups = useMemo(() => {
+    const rows = reservations
+      .filter((r) => matchesClientListFilter(filter, r.restaurantId, localDay(r.date)))
+      .map((r) => ({ r, at: modifiedAt(r) }))
+      .sort((a, b) => b.at.getTime() - a.at.getTime());
+    return groupByRecency(rows, (x) => x.at);
+  }, [reservations, filter]);
   // Só para ler a janela de cancelamento pós-confirmação configurada pelo
   // restaurante (`reservationCancellationWindowMinutes`) — as reservas em
   // si já vêm com `restaurantName`/`restaurantImage` denormalizados, sem
@@ -221,37 +248,53 @@ function Reservas() {
           <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
             {/* Lista */}
             <div className={`min-w-0 ${activeId !== null ? "hidden lg:block" : "block"}`}>
-              <div className="space-y-3">
-                {reservations.map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => setActiveId(r.id)}
-                    className={`card-soft grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 p-4 text-left transition-colors hover:border-brand ${
-                      activeId === r.id ? "border-brand" : ""
-                    }`}
-                  >
-                    <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-surface">
-                      <img
-                        src={r.restaurantImage}
-                        alt={r.restaurantName}
-                        className="h-full w-full object-cover"
-                      />
+              <div className="space-y-4">
+                <ClientListFilters
+                  restaurants={filterRestaurants}
+                  value={filter}
+                  onChange={setFilter}
+                />
+                {groups.length === 0 && (
+                  <FilteredEmpty onClear={() => setFilter(EMPTY_CLIENT_LIST_FILTER)} />
+                )}
+                {groups.map((group) => (
+                  <section key={group.bucket}>
+                    <RecencyHeading bucket={group.bucket} className="mb-2 px-1" />
+                    <div className="space-y-3">
+                      {group.items.map(({ r }) => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => setActiveId(r.id)}
+                          className={`card-soft grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 p-4 text-left transition-colors hover:border-brand ${
+                            activeId === r.id ? "border-brand" : ""
+                          }`}
+                        >
+                          <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-surface">
+                            <img
+                              src={r.restaurantImage}
+                              alt={r.restaurantName}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate font-display text-base font-bold">
+                              {r.restaurantName}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {r.date} · {r.time} ·{" "}
+                              {t("reservas.peopleCount", { count: r.peopleCount })}
+                            </p>
+                          </div>
+                          <span
+                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusTone(r.status)}`}
+                          >
+                            {statusText(r.status)}
+                          </span>
+                        </button>
+                      ))}
                     </div>
-                    <div className="min-w-0">
-                      <p className="truncate font-display text-base font-bold">
-                        {r.restaurantName}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {r.date} · {r.time} · {t("reservas.peopleCount", { count: r.peopleCount })}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusTone(r.status)}`}
-                    >
-                      {statusText(r.status)}
-                    </span>
-                  </button>
+                  </section>
                 ))}
               </div>
               <p className="mt-4 text-center text-xs text-muted-foreground">

@@ -30,6 +30,7 @@ import {
   StatusBadge,
   orderStatusVisual,
 } from "@/components/detail-card";
+import { ClientListFilters, FilteredEmpty, RecencyHeading } from "@/components/list-recency";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
@@ -47,6 +48,12 @@ import { formatKz } from "@/lib/format";
 import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
 import { orderStatusLabel } from "@/lib/order-status";
 import { getPaymentMethod } from "@/lib/mock-data";
+import {
+  EMPTY_CLIENT_LIST_FILTER,
+  matchesClientListFilter,
+  type ClientListFilter,
+} from "@/lib/list-filter";
+import { groupByRecency, modifiedAt } from "@/lib/recency-groups";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { useTranslation } from "@/i18n";
 
@@ -117,6 +124,27 @@ function Entrega() {
   const active = orders.find((o) => o.id === activeId) ?? null;
   const { t } = useTranslation();
 
+  // Filtros (restaurante + data) e separadores por data de modificação — a
+  // lista vai da modificação mais recente para a mais antiga.
+  const [filter, setFilter] = useState<ClientListFilter>(EMPTY_CLIENT_LIST_FILTER);
+  const orderRestaurantName = (o: CartOrder) =>
+    o.restaurantName || getRestaurant(o.restaurantId)?.name || "Restaurante";
+  const filterRestaurants = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const o of orders)
+      if (!byId.has(o.restaurantId)) byId.set(o.restaurantId, orderRestaurantName(o));
+    return [...byId]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [orders]);
+  const groups = useMemo(() => {
+    const rows = orders
+      .map((o) => ({ o, at: modifiedAt(o) }))
+      .filter(({ o, at }) => matchesClientListFilter(filter, o.restaurantId, at))
+      .sort((a, b) => b.at.getTime() - a.at.getTime());
+    return groupByRecency(rows, (r) => r.at);
+  }, [orders, filter]);
+
   return (
     <PageShell>
       <PageHeading
@@ -141,37 +169,53 @@ function Entrega() {
                 </Link>
               </div>
             ) : (
-              <div className="card-soft divide-y divide-border">
-                {orders.map((order) => {
-                  const restaurant = getRestaurant(order.restaurantId);
-                  const itemCount = order.lines.reduce((sum, l) => sum + l.qty, 0);
-                  const ModeIcon = MODE_ICON[order.fulfillmentType];
-                  return (
-                    <button
-                      key={order.id}
-                      type="button"
-                      onClick={() => setActiveId(order.id)}
-                      className={`group grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 text-left transition-colors hover:bg-surface ${
-                        activeId === order.id ? "bg-surface" : ""
-                      }`}
-                    >
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-                        <ModeIcon className="h-4 w-4" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-bold">
-                          {order.restaurantName || restaurant?.name || "Restaurante"}
-                        </span>
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {t(`fulfillment.${order.fulfillmentType}`)} · {itemCount}{" "}
-                          {itemCount === 1 ? t("entrega.itemSingular") : t("entrega.itemPlural")} ·{" "}
-                          {orderStatusLabel(order.status, t)}
-                        </span>
-                      </span>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-                    </button>
-                  );
-                })}
+              <div className="space-y-4">
+                <ClientListFilters
+                  restaurants={filterRestaurants}
+                  value={filter}
+                  onChange={setFilter}
+                />
+                {groups.length === 0 && (
+                  <FilteredEmpty onClear={() => setFilter(EMPTY_CLIENT_LIST_FILTER)} />
+                )}
+                {groups.map((group) => (
+                  <section key={group.bucket}>
+                    <RecencyHeading bucket={group.bucket} className="mb-2 px-1" />
+                    <div className="card-soft divide-y divide-border">
+                      {group.items.map(({ o: order }) => {
+                        const itemCount = order.lines.reduce((sum, l) => sum + l.qty, 0);
+                        const ModeIcon = MODE_ICON[order.fulfillmentType];
+                        return (
+                          <button
+                            key={order.id}
+                            type="button"
+                            onClick={() => setActiveId(order.id)}
+                            className={`group grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 text-left transition-colors hover:bg-surface ${
+                              activeId === order.id ? "bg-surface" : ""
+                            }`}
+                          >
+                            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+                              <ModeIcon className="h-4 w-4" />
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-bold">
+                                {orderRestaurantName(order)}
+                              </span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {t(`fulfillment.${order.fulfillmentType}`)} · {itemCount}{" "}
+                                {itemCount === 1
+                                  ? t("entrega.itemSingular")
+                                  : t("entrega.itemPlural")}{" "}
+                                · {orderStatusLabel(order.status, t)}
+                              </span>
+                            </span>
+                            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
               </div>
             )}
           </div>

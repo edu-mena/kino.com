@@ -23,7 +23,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   AdminField,
@@ -39,6 +39,7 @@ import {
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
 import { LoyaltyBadge, LoyaltyCustomerPopover } from "@/components/loyalty-badge";
 import { LocationMap } from "@/components/location-map";
+import { RecencyHeading } from "@/components/list-recency";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -71,6 +72,7 @@ import { hasRealBackend } from "@/lib/api-client";
 import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
 import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
+import { parseIsoDate, recencyBucket } from "@/lib/recency-groups";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/pedidos")({
@@ -220,6 +222,7 @@ function AdminPedidos() {
   const debouncedQuery = useDebouncedValue(query);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
   const [sortKey, setSortKey] = useState<SortKey>("priority");
+  const dateSorted = sortKey === "recent" || sortKey === "old";
   const [activeId, setActiveId] = useState<string | null>(preselect ?? null);
   useEffect(() => {
     if (preselect) setActiveId(preselect);
@@ -707,100 +710,118 @@ function AdminPedidos() {
 
                       {/* ~5 registos visíveis, resto com scroll vertical */}
                       <div className="max-h-[21rem] overflow-y-auto">
-                        {list.map((o, i) => (
-                          <button
-                            key={o.id}
-                            type="button"
-                            onClick={() => setActiveId(o.id)}
-                            className={`mb-[5px] grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-[20rem] px-5 py-2.5 text-left transition-colors last:mb-0 ${
-                              activeId === o.id
-                                ? "bg-primary/10"
-                                : i % 2 === 1
-                                  ? "bg-surface/70 hover:bg-primary/5"
-                                  : "hover:bg-primary/5"
-                            }`}
-                          >
-                            <span className="min-w-0">
-                              <span className="flex items-center gap-1.5">
-                                <span className="truncate text-sm font-semibold text-foreground">
-                                  {o.customerName ||
-                                    o.deliveryAddress?.label ||
-                                    t("adminPedidos.customerFallback")}
-                                </span>
-                                {(() => {
-                                  const tier = loyaltyOf({
-                                    email: o.customerEmail,
-                                    phone: o.customerPhone,
-                                    name: o.customerName,
-                                  })?.tier;
-                                  return isPremiumTier(tier) ? <LoyaltyBadge tier={tier} /> : null;
-                                })()}
-                              </span>
-                              <span className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
-                                {o.deliveryAddress ? (
-                                  <>
-                                    <MapPin className="h-3 w-3 shrink-0" />
-                                    {o.deliveryAddress.label} · {o.deliveryAddress.line1}
-                                  </>
-                                ) : (
-                                  <>
-                                    <Package className="h-3 w-3 shrink-0" />
-                                    {t(`fulfillment.${o.fulfillmentType}`)}
-                                  </>
-                                )}
-                              </span>
-                              <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
-                                <span className="rounded-full bg-surface px-1.5 py-0.5 text-muted-foreground">
-                                  {t(`fulfillment.${o.fulfillmentType}`)}
-                                </span>
-                                {o.fulfillmentType === "delivery" &&
-                                  (() => {
-                                    const a = assessDelivery(o);
-                                    return (
-                                      <span
-                                        className={`rounded-full px-1.5 py-0.5 ${deliveryChipTone[a.level]}`}
-                                      >
-                                        {t("adminPedidos.distanceKm", { km: a.km })}
-                                      </span>
-                                    );
-                                  })()}
-                                {o.status === "pending" &&
-                                  minutesSince(o.createdAt, now) >= PENDING_SLA_MIN && (
-                                    <span className="rounded-full bg-destructive/15 px-1.5 py-0.5 font-bold text-destructive">
-                                      {t("adminPedidos.waitingMin", {
-                                        min: minutesSince(o.createdAt, now),
-                                      })}
-                                    </span>
-                                  )}
-                                {courierForOrder(o.id) && (
-                                  <span className="flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 font-medium text-primary">
-                                    <Bike className="h-3 w-3" />
-                                    {firstName(courierForOrder(o.id)!.name)}
-                                  </span>
-                                )}
-                                {o.promoCode && (
-                                  <span className="rounded-full bg-success/15 px-1.5 py-0.5 font-bold text-success">
-                                    {o.promoCode}
-                                  </span>
-                                )}
-                                <span className="text-muted-foreground">
-                                  {t("adminPedidos.itemsCount", { count: itemCount(o) })}
-                                </span>
-                              </span>
-                            </span>
-                            <span className="text-right text-xs font-semibold text-foreground">
-                              {formatKz(orderTotal(o))}
-                            </span>
-                            <span className="flex items-center gap-1 pl-3">
-                              <span
-                                className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${statusTone[o.status]}`}
+                        {list.map((o, i) => {
+                          // Separador "Hoje/Ontem/…" só com ordenação por data — com
+                          // prioridade/valor a ordem não é cronológica e os grupos
+                          // repetir-se-iam.
+                          const bucket = dateSorted
+                            ? recencyBucket(parseIsoDate(o.createdAt))
+                            : null;
+                          const prev = list[i - 1];
+                          const showHeading =
+                            bucket !== null &&
+                            (!prev || recencyBucket(parseIsoDate(prev.createdAt)) !== bucket);
+                          return (
+                            <Fragment key={o.id}>
+                              {showHeading && (
+                                <RecencyHeading bucket={bucket} className="px-5 pb-1.5 pt-2" />
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setActiveId(o.id)}
+                                className={`mb-[5px] grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-[20rem] px-5 py-2.5 text-left transition-colors last:mb-0 ${
+                                  activeId === o.id
+                                    ? "bg-primary/10"
+                                    : i % 2 === 1
+                                      ? "bg-surface/70 hover:bg-primary/5"
+                                      : "hover:bg-primary/5"
+                                }`}
                               >
-                                {statusLabels[o.status]}
-                              </span>
-                              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            </span>
-                          </button>
-                        ))}
+                                <span className="min-w-0">
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="truncate text-sm font-semibold text-foreground">
+                                      {o.customerName ||
+                                        o.deliveryAddress?.label ||
+                                        t("adminPedidos.customerFallback")}
+                                    </span>
+                                    {(() => {
+                                      const tier = loyaltyOf({
+                                        email: o.customerEmail,
+                                        phone: o.customerPhone,
+                                        name: o.customerName,
+                                      })?.tier;
+                                      return isPremiumTier(tier) ? (
+                                        <LoyaltyBadge tier={tier} />
+                                      ) : null;
+                                    })()}
+                                  </span>
+                                  <span className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
+                                    {o.deliveryAddress ? (
+                                      <>
+                                        <MapPin className="h-3 w-3 shrink-0" />
+                                        {o.deliveryAddress.label} · {o.deliveryAddress.line1}
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Package className="h-3 w-3 shrink-0" />
+                                        {t(`fulfillment.${o.fulfillmentType}`)}
+                                      </>
+                                    )}
+                                  </span>
+                                  <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
+                                    <span className="rounded-full bg-surface px-1.5 py-0.5 text-muted-foreground">
+                                      {t(`fulfillment.${o.fulfillmentType}`)}
+                                    </span>
+                                    {o.fulfillmentType === "delivery" &&
+                                      (() => {
+                                        const a = assessDelivery(o);
+                                        return (
+                                          <span
+                                            className={`rounded-full px-1.5 py-0.5 ${deliveryChipTone[a.level]}`}
+                                          >
+                                            {t("adminPedidos.distanceKm", { km: a.km })}
+                                          </span>
+                                        );
+                                      })()}
+                                    {o.status === "pending" &&
+                                      minutesSince(o.createdAt, now) >= PENDING_SLA_MIN && (
+                                        <span className="rounded-full bg-destructive/15 px-1.5 py-0.5 font-bold text-destructive">
+                                          {t("adminPedidos.waitingMin", {
+                                            min: minutesSince(o.createdAt, now),
+                                          })}
+                                        </span>
+                                      )}
+                                    {courierForOrder(o.id) && (
+                                      <span className="flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 font-medium text-primary">
+                                        <Bike className="h-3 w-3" />
+                                        {firstName(courierForOrder(o.id)!.name)}
+                                      </span>
+                                    )}
+                                    {o.promoCode && (
+                                      <span className="rounded-full bg-success/15 px-1.5 py-0.5 font-bold text-success">
+                                        {o.promoCode}
+                                      </span>
+                                    )}
+                                    <span className="text-muted-foreground">
+                                      {t("adminPedidos.itemsCount", { count: itemCount(o) })}
+                                    </span>
+                                  </span>
+                                </span>
+                                <span className="text-right text-xs font-semibold text-foreground">
+                                  {formatKz(orderTotal(o))}
+                                </span>
+                                <span className="flex items-center gap-1 pl-3">
+                                  <span
+                                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${statusTone[o.status]}`}
+                                  >
+                                    {statusLabels[o.status]}
+                                  </span>
+                                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                </span>
+                              </button>
+                            </Fragment>
+                          );
+                        })}
                         {list.length === 0 && (
                           <p className="p-8 text-center text-sm text-muted-foreground">
                             {t("adminPedidos.emptyNoResults")}

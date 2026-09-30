@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { RecencyHeading } from "@/components/list-recency";
 import { RestaurantRecommendationsDialog } from "@/components/restaurant-recommendations-dialog";
 import { declineApiFollowInvite, muteApiFollowInvites } from "@/data/api-profile-views";
 import { useRestaurants } from "@/data/use-restaurants-query";
@@ -10,6 +11,7 @@ import { getAuthToken } from "@/lib/auth";
 import { declineMockInvite, muteMockInvite } from "@/lib/follow-invites";
 import { useFollows } from "@/lib/follows";
 import { notificationText, useNotifications, type LukuNotification } from "@/lib/notifications";
+import { groupByRecency, parseIsoDate } from "@/lib/recency-groups";
 
 /** Destino de navegação por `kind`/`scope` — única fonte da verdade, também
  * usada para agrupar badges por separador (ver `useUnreadByKind`). `kind
@@ -31,10 +33,13 @@ export function NotificationList({
   scope,
   emptyText,
   onNavigate,
+  groupByDate = false,
 }: {
   items: LukuNotification[];
   scope: "client" | "restaurant";
   emptyText: string;
+  /** Separadores "Hoje", "Ontem"… (páginas de histórico; o sino não usa). */
+  groupByDate?: boolean;
   /** Chamado ao navegar a partir de uma notificação — o sino usa isto para se fechar. */
   onNavigate?: () => void;
 }) {
@@ -91,129 +96,143 @@ export function NotificationList({
     return <p className="px-4 py-8 text-center text-sm text-muted-foreground">{emptyText}</p>;
   }
 
+  const renderItem = (n: LukuNotification) => {
+    const name = restaurantById.get(n.restaurantId)?.name ?? "";
+    const to = targetFor(scope, n.kind);
+    // Pedido recusado — o resto da app já trata isto (ver
+    // `order-builder-card.tsx`/`restaurantes_.$id.tsx`), a notificação
+    // é só mais um sítio de onde chegar às mesmas sugestões.
+    const showRecommend = scope === "client" && n.kind === "order" && n.status === "rejected";
+    const isInvite = scope === "client" && n.event === "followInvite";
+    const body = (
+      <>
+        <span className="flex items-start gap-2">
+          {!n.read && (
+            <span
+              className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand"
+              aria-hidden="true"
+            />
+          )}
+          <span
+            className={`block min-w-0 text-sm ${
+              n.read ? "text-muted-foreground" : "font-semibold text-foreground"
+            }`}
+          >
+            {notificationText(t, n, name)}
+          </span>
+        </span>
+        <span className="mt-0.5 block pl-3.5 text-[11px] text-muted-foreground">{fmt(n.at)}</span>
+      </>
+    );
+    return (
+      <li key={n.id}>
+        {n.kind === "restaurant" && n.restaurantId ? (
+          <Link
+            to="/restaurantes/$id"
+            params={{ id: n.restaurantId }}
+            onClick={onNavigate}
+            className="block px-4 py-2.5 hover:bg-surface"
+          >
+            {body}
+          </Link>
+        ) : to === "/entrega" ? (
+          <Link
+            to="/entrega"
+            search={{ pedido: n.refId }}
+            onClick={onNavigate}
+            className="block px-4 py-2.5 hover:bg-surface"
+          >
+            {body}
+          </Link>
+        ) : to === "/reservas" ? (
+          <Link
+            to="/reservas"
+            search={{ reserva: n.refId }}
+            onClick={onNavigate}
+            className="block px-4 py-2.5 hover:bg-surface"
+          >
+            {body}
+          </Link>
+        ) : to === "/admin/pedidos" ? (
+          <Link
+            to="/admin/pedidos"
+            search={{ pedido: n.refId }}
+            onClick={onNavigate}
+            className="block px-4 py-2.5 hover:bg-surface"
+          >
+            {body}
+          </Link>
+        ) : to === "/admin/reservas" ? (
+          <Link
+            to="/admin/reservas"
+            search={{ reserva: n.refId }}
+            onClick={onNavigate}
+            className="block px-4 py-2.5 hover:bg-surface"
+          >
+            {body}
+          </Link>
+        ) : (
+          <div className="px-4 py-2.5">{body}</div>
+        )}
+        {isInvite && !n.read && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2.5 pl-[1.625rem] text-xs font-semibold">
+            {!isFollowing(n.restaurantId) && (
+              <button
+                type="button"
+                onClick={() => answerInvite(n, "follow")}
+                className="rounded-lg bg-primary px-3 py-1 text-primary-foreground hover:bg-primary/90"
+              >
+                {t("notifications.followInviteAccept")}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => answerInvite(n, "decline")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {t("notifications.followInviteDecline")}
+            </button>
+            <button
+              type="button"
+              onClick={() => answerInvite(n, "mute")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {t("notifications.followInviteMute")}
+            </button>
+          </div>
+        )}
+        {showRecommend && (
+          <button
+            type="button"
+            onClick={() => setRecFor(n)}
+            className="block px-4 pb-2.5 pl-[1.625rem] text-xs font-semibold text-primary hover:underline"
+          >
+            {t("restaurantRecommendations.seeAlternatives")}
+          </button>
+        )}
+      </li>
+    );
+  };
+
+  const groups = groupByDate
+    ? groupByRecency(
+        [...items].sort((a, b) => parseIsoDate(b.at).getTime() - parseIsoDate(a.at).getTime()),
+        (n) => parseIsoDate(n.at),
+      )
+    : null;
+
   return (
     <>
-      <ul className="divide-y divide-border">
-        {items.map((n) => {
-          const name = restaurantById.get(n.restaurantId)?.name ?? "";
-          const to = targetFor(scope, n.kind);
-          // Pedido recusado — o resto da app já trata isto (ver
-          // `order-builder-card.tsx`/`restaurantes_.$id.tsx`), a notificação
-          // é só mais um sítio de onde chegar às mesmas sugestões.
-          const showRecommend = scope === "client" && n.kind === "order" && n.status === "rejected";
-          const isInvite = scope === "client" && n.event === "followInvite";
-          const body = (
-            <>
-              <span className="flex items-start gap-2">
-                {!n.read && (
-                  <span
-                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand"
-                    aria-hidden="true"
-                  />
-                )}
-                <span
-                  className={`block min-w-0 text-sm ${
-                    n.read ? "text-muted-foreground" : "font-semibold text-foreground"
-                  }`}
-                >
-                  {notificationText(t, n, name)}
-                </span>
-              </span>
-              <span className="mt-0.5 block pl-3.5 text-[11px] text-muted-foreground">
-                {fmt(n.at)}
-              </span>
-            </>
-          );
-          return (
-            <li key={n.id}>
-              {n.kind === "restaurant" && n.restaurantId ? (
-                <Link
-                  to="/restaurantes/$id"
-                  params={{ id: n.restaurantId }}
-                  onClick={onNavigate}
-                  className="block px-4 py-2.5 hover:bg-surface"
-                >
-                  {body}
-                </Link>
-              ) : to === "/entrega" ? (
-                <Link
-                  to="/entrega"
-                  search={{ pedido: n.refId }}
-                  onClick={onNavigate}
-                  className="block px-4 py-2.5 hover:bg-surface"
-                >
-                  {body}
-                </Link>
-              ) : to === "/reservas" ? (
-                <Link
-                  to="/reservas"
-                  search={{ reserva: n.refId }}
-                  onClick={onNavigate}
-                  className="block px-4 py-2.5 hover:bg-surface"
-                >
-                  {body}
-                </Link>
-              ) : to === "/admin/pedidos" ? (
-                <Link
-                  to="/admin/pedidos"
-                  search={{ pedido: n.refId }}
-                  onClick={onNavigate}
-                  className="block px-4 py-2.5 hover:bg-surface"
-                >
-                  {body}
-                </Link>
-              ) : to === "/admin/reservas" ? (
-                <Link
-                  to="/admin/reservas"
-                  search={{ reserva: n.refId }}
-                  onClick={onNavigate}
-                  className="block px-4 py-2.5 hover:bg-surface"
-                >
-                  {body}
-                </Link>
-              ) : (
-                <div className="px-4 py-2.5">{body}</div>
-              )}
-              {isInvite && !n.read && (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2.5 pl-[1.625rem] text-xs font-semibold">
-                  {!isFollowing(n.restaurantId) && (
-                    <button
-                      type="button"
-                      onClick={() => answerInvite(n, "follow")}
-                      className="rounded-lg bg-primary px-3 py-1 text-primary-foreground hover:bg-primary/90"
-                    >
-                      {t("notifications.followInviteAccept")}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => answerInvite(n, "decline")}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    {t("notifications.followInviteDecline")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => answerInvite(n, "mute")}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    {t("notifications.followInviteMute")}
-                  </button>
-                </div>
-              )}
-              {showRecommend && (
-                <button
-                  type="button"
-                  onClick={() => setRecFor(n)}
-                  className="block px-4 pb-2.5 pl-[1.625rem] text-xs font-semibold text-primary hover:underline"
-                >
-                  {t("restaurantRecommendations.seeAlternatives")}
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      {groups ? (
+        groups.map((group) => (
+          <section key={group.bucket} className="border-b border-border last:border-b-0">
+            <RecencyHeading bucket={group.bucket} className="bg-surface/60 px-4 py-2" />
+            <ul className="divide-y divide-border">{group.items.map(renderItem)}</ul>
+          </section>
+        ))
+      ) : (
+        <ul className="divide-y divide-border">{items.map(renderItem)}</ul>
+      )}
 
       {recFor && recRestaurant && (
         <RestaurantRecommendationsDialog

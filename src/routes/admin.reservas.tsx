@@ -19,10 +19,11 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
 import { LoyaltyBadge, LoyaltyCustomerPopover } from "@/components/loyalty-badge";
+import { RecencyHeading } from "@/components/list-recency";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { ReservationFloorPlan } from "@/components/reservation-floor-plan";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -36,6 +37,7 @@ import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useTables } from "@/lib/tables";
+import { parseIsoDate, recencyBucket } from "@/lib/recency-groups";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export const Route = createFileRoute("/admin/reservas")({
@@ -107,6 +109,7 @@ function AdminReservas() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("upcoming");
   const [sortKey, setSortKey] = useState<SortKey>("prioridade");
+  const dateSorted = sortKey === "recent";
   const [onlyConflicts, setOnlyConflicts] = useState(false);
   const [conflictOpen, setConflictOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(preselect ?? null);
@@ -604,60 +607,77 @@ function AdminReservas() {
 
                       {/* ~5 registos visíveis, resto com scroll vertical */}
                       <div className="max-h-[21rem] overflow-y-auto">
-                        {list.map((r, i) => (
-                          <button
-                            key={r.id}
-                            type="button"
-                            onClick={() => setActiveId(r.id)}
-                            className={`mb-[5px] grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-[20rem] px-6 py-3 text-left transition-colors last:mb-0 ${
-                              activeId === r.id
-                                ? "bg-primary/10"
-                                : i % 2 === 1
-                                  ? "bg-surface/70 hover:bg-primary/5"
-                                  : "hover:bg-primary/5"
-                            }`}
-                          >
-                            <span className="min-w-0">
-                              <span className="flex items-center gap-1.5">
-                                <span className="truncate text-sm font-semibold text-foreground">
-                                  {r.customerName}
-                                </span>
-                                {(() => {
-                                  const tier = loyaltyOf({
-                                    email: r.customerEmail,
-                                    phone: r.customerPhone,
-                                    name: r.customerName,
-                                  })?.tier;
-                                  return isPremiumTier(tier) ? <LoyaltyBadge tier={tier} /> : null;
-                                })()}
-                              </span>
-                              <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                                <Users className="h-3 w-3 shrink-0" />
-                                {r.peopleCount} {t("adminReservas.people")}
-                              </span>
-                            </span>
-                            <span className="text-right text-xs text-foreground">
-                              <span className="block font-medium capitalize">
-                                {fmtDate(r.date)}
-                              </span>
-                              <span className="text-muted-foreground">{r.time}</span>
-                            </span>
-                            <span className="flex items-center gap-1 pl-3">
-                              {conflicts.has(r.id) && (
-                                <TriangleAlert
-                                  className="h-3.5 w-3.5 shrink-0 text-brand"
-                                  aria-label={t("adminReservas.conflictBadge")}
-                                />
+                        {list.map((r, i) => {
+                          // Separador "Hoje/Ontem/…" só em "Mais recentes" (ordem
+                          // cronológica de criação) — em "prioridade" repetir-se-ia.
+                          const bucket = dateSorted
+                            ? recencyBucket(parseIsoDate(r.createdAt))
+                            : null;
+                          const prev = list[i - 1];
+                          const showHeading =
+                            bucket !== null &&
+                            (!prev || recencyBucket(parseIsoDate(prev.createdAt)) !== bucket);
+                          return (
+                            <Fragment key={r.id}>
+                              {showHeading && (
+                                <RecencyHeading bucket={bucket} className="px-6 pb-1.5 pt-2" />
                               )}
-                              <span
-                                className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${displayStatus(r).tone}`}
+                              <button
+                                type="button"
+                                onClick={() => setActiveId(r.id)}
+                                className={`mb-[5px] grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-[20rem] px-6 py-3 text-left transition-colors last:mb-0 ${
+                                  activeId === r.id
+                                    ? "bg-primary/10"
+                                    : i % 2 === 1
+                                      ? "bg-surface/70 hover:bg-primary/5"
+                                      : "hover:bg-primary/5"
+                                }`}
                               >
-                                {displayStatus(r).label}
-                              </span>
-                              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            </span>
-                          </button>
-                        ))}
+                                <span className="min-w-0">
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="truncate text-sm font-semibold text-foreground">
+                                      {r.customerName}
+                                    </span>
+                                    {(() => {
+                                      const tier = loyaltyOf({
+                                        email: r.customerEmail,
+                                        phone: r.customerPhone,
+                                        name: r.customerName,
+                                      })?.tier;
+                                      return isPremiumTier(tier) ? (
+                                        <LoyaltyBadge tier={tier} />
+                                      ) : null;
+                                    })()}
+                                  </span>
+                                  <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Users className="h-3 w-3 shrink-0" />
+                                    {r.peopleCount} {t("adminReservas.people")}
+                                  </span>
+                                </span>
+                                <span className="text-right text-xs text-foreground">
+                                  <span className="block font-medium capitalize">
+                                    {fmtDate(r.date)}
+                                  </span>
+                                  <span className="text-muted-foreground">{r.time}</span>
+                                </span>
+                                <span className="flex items-center gap-1 pl-3">
+                                  {conflicts.has(r.id) && (
+                                    <TriangleAlert
+                                      className="h-3.5 w-3.5 shrink-0 text-brand"
+                                      aria-label={t("adminReservas.conflictBadge")}
+                                    />
+                                  )}
+                                  <span
+                                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${displayStatus(r).tone}`}
+                                  >
+                                    {displayStatus(r).label}
+                                  </span>
+                                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                </span>
+                              </button>
+                            </Fragment>
+                          );
+                        })}
                         {list.length === 0 && (
                           <p className="p-8 text-center text-sm text-muted-foreground">
                             {t("adminReservas.emptyNoResults")}
