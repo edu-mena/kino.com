@@ -6,6 +6,7 @@ use App\Jobs\SendPushNotificationJob;
 use App\Models\Courier;
 use App\Models\Notification;
 use App\Models\Order;
+use App\Support\NotificationActor;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
 /**
@@ -64,6 +65,9 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
     private function notify(Order $order, string $event, array $onlyFor = ['restaurant', 'customer']): void
     {
         $snapshot = $this->snapshotFor($order);
+        // Quem fez a ação não é avisado dela própria: a notificação desse
+        // lado fica gravada (histórico) mas já lida, e sem push.
+        $actor = NotificationActor::side($order->user_id);
 
         if (in_array('restaurant', $onlyFor, true)) {
             $restaurantNotification = Notification::query()->create([
@@ -72,14 +76,17 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
                 'ref_id' => $order->id,
                 'event' => $event,
                 'status_snapshot' => $snapshot,
+                'read_at' => $actor === 'restaurant' ? now() : null,
             ]);
 
             // Push para toda a equipa do restaurante — mais do que um membro
             // pode ter o telemóvel/browser com a subscrição ativa (ver
             // PushNotificationService, é um no-op silencioso para quem não
             // tem nenhuma subscrição guardada).
-            foreach ($order->restaurant->staff as $staffUser) {
-                SendPushNotificationJob::dispatch($staffUser, $restaurantNotification);
+            if ($actor !== 'restaurant') {
+                foreach ($order->restaurant->staff as $staffUser) {
+                    SendPushNotificationJob::dispatch($staffUser, $restaurantNotification);
+                }
             }
         }
 
@@ -90,9 +97,12 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
                 'ref_id' => $order->id,
                 'event' => $event,
                 'status_snapshot' => $snapshot,
+                'read_at' => $actor === 'customer' ? now() : null,
             ]);
 
-            SendPushNotificationJob::dispatch($order->user, $customerNotification);
+            if ($actor !== 'customer') {
+                SendPushNotificationJob::dispatch($order->user, $customerNotification);
+            }
         }
     }
 

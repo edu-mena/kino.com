@@ -3,6 +3,7 @@ import { getRestaurant } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
 import { useRestaurantDetail } from "@/data/use-restaurants-query";
 import { ApiError, apiFetch, hasRealBackend } from "@/lib/api-client";
+import { forgetPushOnLogout } from "@/lib/push-notifications";
 
 const TOKEN_KEY = "luku_admin_token";
 const RESTAURANT_ID_KEY = "luku_admin_restaurant";
@@ -242,7 +243,11 @@ export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(BORROWED_KEY);
     setManagedRestaurantId(null);
     window.dispatchEvent(new Event("luku:menu-changed"));
-    if (!token || borrowed || !hasRealBackend) return; // token emprestado, ou demo — não revoga
+    if (!token || !hasRealBackend) return;
+    // Antes de revogar a sessão: este dispositivo deixa de receber o push do
+    // painel (depois do logout o token já não serviria para o apagar).
+    await forgetPushOnLogout(token, "restaurant");
+    if (borrowed) return; // token emprestado (operador) — não revoga
     try {
       await apiFetch("/auth/logout", { method: "POST", token });
     } catch {

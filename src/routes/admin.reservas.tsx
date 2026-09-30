@@ -39,6 +39,7 @@ import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useTables } from "@/lib/tables";
 import { parseIsoDate, recencyBucket } from "@/lib/recency-groups";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { useMarkKindReadOnView } from "@/lib/notifications";
 
 export const Route = createFileRoute("/admin/reservas")({
   head: () => ({ meta: [{ title: "Reservas — Painel Luku.com" }] }),
@@ -97,6 +98,8 @@ function weekStart(d: Date) {
 function AdminReservas() {
   const { reserva: preselect } = Route.useSearch();
   const { restaurant } = useRestaurantAdmin();
+  // Ver a lista conta como visto: o badge deste separador desce.
+  useMarkKindReadOnView("restaurant", "reservation", restaurant?.id);
   // Clientes Gold/Platina (ver @/lib/loyalty) — selo na lista e ficha rápida no detalhe.
   const loyaltyOf = useRestaurantLoyalty(restaurant?.id);
   const { reservations, updateReservationStatus, setInvoice, confirmCaution, assignTable } =

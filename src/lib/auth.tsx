@@ -2,6 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ApiError, apiFetch, hasRealBackend } from "@/lib/api-client";
 import { requestGoogleAuthorizationCode, requestGoogleIdToken } from "@/lib/google-identity";
+import { forgetPushOnLogout } from "@/lib/push-notifications";
 
 export type AuthUser = {
   id: string;
@@ -148,6 +149,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(TOKEN_KEY);
     setUser(null);
     if (!token) return;
+    // Antes de revogar a sessão: este dispositivo deixa de receber o push
+    // desta conta (depois do logout o token já não serviria para o apagar).
+    await forgetPushOnLogout(token, "client");
     // Best-effort — mesmo que a chamada falhe (backend em baixo, token já
     // expirado), a sessão local já foi limpa acima.
     try {

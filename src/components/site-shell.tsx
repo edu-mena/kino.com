@@ -30,7 +30,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCart } from "@/lib/cart";
 import { useLocation } from "@/lib/location";
 import { useAuth } from "@/lib/auth";
 import { useUnreadByKind } from "@/lib/notifications";
@@ -154,8 +153,11 @@ function LocationSelect() {
   );
 }
 
+/** Atalho "Entregas" do header — o número são as novidades de pedidos por
+ * ler (como os separadores), não o total de pedidos: esse só crescia e
+ * nunca voltava a descer. */
 function CartButton() {
-  const { count } = useCart();
+  const { orders: count } = useUnreadByKind("client");
   const { t } = useTranslation();
   return (
     <Link
@@ -473,7 +475,6 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
 }
 
 export function MobileTabBar() {
-  const { count } = useCart();
   const unread = useUnreadByKind("client");
   const { t } = useTranslation();
   return (
@@ -482,7 +483,7 @@ export function MobileTabBar() {
         {tabs.map((tab) => {
           const badge =
             tab.to === "/entrega"
-              ? Math.max(count, unread.orders)
+              ? unread.orders
               : tab.to === "/reservas"
                 ? unread.reservations
                 : 0;

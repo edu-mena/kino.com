@@ -20,6 +20,10 @@ type ApiNotification = {
 
 function mapApiNotification(n: ApiNotification, ownerKey?: string): LukuNotification {
   return {
+    // Feed do cliente vs. do painel — o backend já separa (uma linha por
+    // lado); isto só impede que se misturem quando a mesma pessoa tem as
+    // duas sessões abertas no mesmo browser.
+    audience: ownerKey ? "client" : "restaurant",
     id: n.id,
     kind: n.kind,
     refId: n.refId ?? "",

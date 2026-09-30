@@ -74,6 +74,7 @@ import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { parseIsoDate, recencyBucket } from "@/lib/recency-groups";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { useMarkKindReadOnView } from "@/lib/notifications";
 
 export const Route = createFileRoute("/admin/pedidos")({
   head: () => ({ meta: [{ title: "Pedidos — Painel Luku.com" }] }),
@@ -176,6 +177,8 @@ function weekStart(d: Date) {
 function AdminPedidos() {
   const { pedido: preselect } = Route.useSearch();
   const { restaurant } = useRestaurantAdmin();
+  // Ver a lista conta como visto: o badge deste separador desce.
+  useMarkKindReadOnView("restaurant", "order", restaurant?.id);
   // Clientes Gold/Platina (ver @/lib/loyalty) — selo na lista e ficha rápida no detalhe.
   const loyaltyOf = useRestaurantLoyalty(restaurant?.id);
   const deliveryPolicy = useDeliveryPolicy();

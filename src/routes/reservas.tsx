@@ -50,6 +50,7 @@ import {
 } from "@/lib/list-filter";
 import { groupByRecency, modifiedAt } from "@/lib/recency-groups";
 import { useReservations } from "@/lib/reservations";
+import { useMarkKindReadOnView } from "@/lib/notifications";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/reservas")({
@@ -129,6 +130,8 @@ function Reservas() {
     [allReservations, mineKey, now],
   );
   const { t } = useTranslation();
+  // Ver a lista conta como visto: o badge deste separador desce.
+  useMarkKindReadOnView("client", "reservation");
   const statusText = (s: string) => (STATUS_KEY[s] ? t(`reservas.${STATUS_KEY[s]}`) : s);
   const statusTone = (s: string) => STATUS_TONE[s] ?? "bg-brand/15 text-brand";
   const cautionStatusText = (s: string) =>

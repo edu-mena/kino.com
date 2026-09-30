@@ -111,6 +111,13 @@ export type LukuNotification = {
   /** `ownerKey` do pedido/reserva de origem — o sino do cliente só mostra as
    * do próprio (conta ou convidado). Ausente para registos da seed. */
   ownerKey?: string;
+  /** Quem fez a ação (só no modo demo — com backend real, o servidor já
+   * grava a notificação de quem agiu como lida). Ver `scopeNotifications`. */
+  actor?: "customer" | "restaurant";
+  /** A que lado pertence: como no backend, cada evento gera uma notificação
+   * para o cliente e outra para o restaurante, cada uma com o seu "lida".
+   * Ausente em notificações antigas da demo (partilhadas pelos dois). */
+  audience?: "client" | "restaurant";
   at: string;
   read: boolean;
 };
@@ -131,13 +138,29 @@ export function scopeNotifications(
   scope: "client" | "restaurant",
   opts: { restaurantId?: string; ownerKey?: string },
 ): LukuNotification[] {
-  return scope === "restaurant" && opts.restaurantId
-    ? all.filter((n) => n.restaurantId === opts.restaurantId)
-    : all.filter((n) => n.ownerKey === opts.ownerKey);
+  const scoped =
+    scope === "restaurant" && opts.restaurantId
+      ? all.filter((n) => n.restaurantId === opts.restaurantId && n.audience !== "client")
+      : all.filter((n) => n.ownerKey === opts.ownerKey && n.audience !== "restaurant");
+  // Ação própria (o cliente criou/cancelou; o restaurante aceitou/recusou):
+  // fica no histórico, mas nunca como novidade — não conta nos badges, não
+  // aparece no sino e não toca som.
+  const self = scope === "client" ? "customer" : "restaurant";
+  return scoped.map((n) => (n.actor === self && !n.read ? { ...n, read: true } : n));
+}
+
+/** Quem fez a transição, no modo demo: criar e cancelar são do cliente;
+ * tudo o resto (aceitar, recusar, pronto, entregue, anular…) é do
+ * restaurante. */
+function mockActor(event: string, status: string): "customer" | "restaurant" {
+  if (event === "orderNew" || event === "reservationNew") return "customer";
+  if (status === "canceled" || status === "Cancelada") return "customer";
+  return "restaurant";
 }
 
 const NotificationsContext = createContext<NotificationsValue | null>(null);
-const CAP = 50;
+// 100 (não 50): na demo cada evento gera uma notificação por lado.
+const CAP = 100;
 
 function load(): LukuNotification[] {
   if (typeof window === "undefined") return [];
@@ -243,11 +266,19 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
         const snapshot = { itemCount: o.lines.length, total: orderTotal(o) };
         if (was === undefined) {
           fresh.push(
-            makeNote("order", o.id, o.restaurantId, "orderNew", o.status, snapshot, o.ownerKey),
+            ...notesFor("order", o.id, o.restaurantId, "orderNew", o.status, snapshot, o.ownerKey),
           );
         } else if (was !== o.status) {
           fresh.push(
-            makeNote("order", o.id, o.restaurantId, "orderStatus", o.status, snapshot, o.ownerKey),
+            ...notesFor(
+              "order",
+              o.id,
+              o.restaurantId,
+              "orderStatus",
+              o.status,
+              snapshot,
+              o.ownerKey,
+            ),
           );
         }
       }
@@ -271,7 +302,7 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
         const snapshot = { peopleCount: r.peopleCount, date: r.date, time: r.time };
         if (was === undefined) {
           fresh.push(
-            makeNote(
+            ...notesFor(
               "reservation",
               r.id,
               r.restaurantId,
@@ -283,7 +314,7 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
           );
         } else if (was !== r.status) {
           fresh.push(
-            makeNote(
+            ...notesFor(
               "reservation",
               r.id,
               r.restaurantId,
@@ -300,6 +331,29 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
     resvSnap.current = next;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reservations, reservationsHydrated]);
+
+  /** Uma notificação para o restaurante e, se o pedido/reserva tiver dono
+   * (conta ou convidado), outra para o cliente — cada lado marca a sua como
+   * lida sem apagar a novidade do outro. */
+  function notesFor(
+    kind: LukuNotification["kind"],
+    refId: string,
+    restaurantId: string,
+    event: string,
+    status: string,
+    snapshot?: NotificationSnapshot,
+    ownerKey?: string,
+  ): LukuNotification[] {
+    const base = makeNote(kind, refId, restaurantId, event, status, snapshot, ownerKey);
+    const forRestaurant: LukuNotification = {
+      ...base,
+      id: `${base.id}-r`,
+      audience: "restaurant",
+    };
+    return ownerKey
+      ? [forRestaurant, { ...base, id: `${base.id}-c`, audience: "client" }]
+      : [forRestaurant];
+  }
 
   function makeNote(
     kind: LukuNotification["kind"],
@@ -325,6 +379,7 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
       status,
       ...(snapshot ? { snapshot } : {}),
       ...(ownerKey ? { ownerKey } : {}),
+      actor: mockActor(event, status),
       at: new Date().toISOString(),
       read: false,
     };
@@ -343,7 +398,16 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
     if (newOnes.length === 0) return;
     for (const n of newOnes) knownIds.current.add(n.id);
     setAll((cur) => mergeNotifications(cur, newOnes));
-    for (const n of newOnes) toast(noteText(n));
+    // Na demo, a mesma aba pode ser o cliente ou o painel — o papel sai da
+    // página aberta. Nunca avisar quem acabou de fazer a ação.
+    const tabIsRestaurant = /^\/(admin|sistema)(\/|$)/.test(window.location.pathname);
+    const self = tabIsRestaurant ? "restaurant" : "customer";
+    const audience = tabIsRestaurant ? "restaurant" : "client";
+    for (const n of newOnes) {
+      if (n.actor === self) continue;
+      if (n.audience && n.audience !== audience) continue;
+      toast(noteText(n));
+    }
   }
 
   const value = useMemo<NotificationsValue>(
@@ -362,14 +426,37 @@ function MockNotificationsProvider({ children }: { children: ReactNode }) {
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }
 
-const POLL_MS = 30_000;
+/** Com tempo real (Reverb) configurado, o poll é só uma rede de segurança;
+ * sem ele, é o único caminho — por isso bem mais curto. */
+const REALTIME_CONFIGURED = Boolean(import.meta.env["VITE_REVERB_APP_KEY"]);
+const POLL_MS = REALTIME_CONFIGURED ? 30_000 : 10_000;
+
+/** Evento em tempo real → notificação local, para aparecer JÁ no sino/badge
+ * (o refetch completo que se segue só confirma). */
+function fromRealtime(
+  payload: RealtimeNotificationPayload,
+  audience: "client" | "restaurant",
+  ownerKey: string | undefined,
+): LukuNotification {
+  return {
+    id: payload.id,
+    kind: payload.kind,
+    refId: payload.refId ?? "",
+    restaurantId: payload.restaurantId ?? "",
+    event: payload.event,
+    status: payload.status,
+    ...(payload.snapshot ? { snapshot: payload.snapshot as NotificationSnapshot } : {}),
+    ...(ownerKey ? { ownerKey } : {}),
+    audience,
+    at: payload.createdAt,
+    read: payload.readAt != null,
+  };
+}
 
 /** Com backend real, não há diffing local nenhum — o servidor já cria a
- * notificação certa no evento (ver Observers em backend/app/Observers).
- * Sem WebSocket/broadcast ligado ainda (Reverb corre no Fly mas nenhum
- * evento transmite por ele hoje), a atualização é por poll período + focus,
- * não instantânea — aceitável para um sino, o toast "em tempo real" de
- * verdade já existe via push (ver @/lib/push-notifications). */
+ * notificação certa no evento (ver Observers em backend/app/Observers) e
+ * transmite-a por Reverb (`NotificationCreated`). O evento entra logo no
+ * estado; o poll + regresso à app cobrem ligações perdidas. */
 function RealNotificationsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const managedRestaurantId = useManagedRestaurantId();
@@ -424,6 +511,12 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refetchAll();
     const onFocus = () => refetchAll();
+    // No telemóvel (browser ou app nativa), voltar à app raramente dispara
+    // `focus` — `visibilitychange` sim. Sem isto, o sino só atualizava no
+    // próximo ciclo do poll depois de reabrir a app.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refetchAll();
+    };
     const onStorage = (e: StorageEvent) => {
       // Login/logout do painel (`getAdminToken`) ou da conta (`getAuthToken`)
       // não disparam re-render sozinhos aqui — reagir ao `storage` cobre
@@ -434,10 +527,12 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
     const interval = window.setInterval(refetchAll, POLL_MS);
     window.addEventListener("focus", onFocus);
     window.addEventListener("storage", onStorage);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.clearInterval(interval);
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("storage", onStorage);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [refetchAll]);
 
@@ -447,7 +542,18 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
   // fazerem o próprio refetch — mesma ideia do `storage` já usado para
   // sincronizar entre abas, agora entre o servidor e a app.
   useEffect(() => {
-    const onEvent = (payload: RealtimeNotificationPayload) => {
+    const upsert = (list: LukuNotification[], note: LukuNotification) =>
+      list.some((n) => n.id === note.id) ? list : [note, ...list];
+
+    // Mostra a notificação de imediato a partir do próprio evento; o
+    // refetch a seguir só confirma (e apanha o que se tenha perdido).
+    const onClientEvent = (payload: RealtimeNotificationPayload) => {
+      setClientNotes((cur) => upsert(cur, fromRealtime(payload, "client", viewerKey(user))));
+      refetchAll();
+      window.dispatchEvent(new CustomEvent(REALTIME_NOTIFICATION_EVENT, { detail: payload }));
+    };
+    const onRestaurantEvent = (payload: RealtimeNotificationPayload) => {
+      setRestaurantNotes((cur) => upsert(cur, fromRealtime(payload, "restaurant", undefined)));
       refetchAll();
       window.dispatchEvent(new CustomEvent(REALTIME_NOTIFICATION_EVENT, { detail: payload }));
     };
@@ -455,7 +561,9 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
     const cleanups: Array<() => void> = [];
     const clientToken = getAuthToken();
     if (clientToken && user) {
-      cleanups.push(subscribeToNotifications(clientToken, { type: "user", id: user.id }, onEvent));
+      cleanups.push(
+        subscribeToNotifications(clientToken, { type: "user", id: user.id }, onClientEvent),
+      );
     }
     const adminToken = getAdminToken();
     if (adminToken && managedRestaurantId) {
@@ -463,7 +571,7 @@ function RealNotificationsProvider({ children }: { children: ReactNode }) {
         subscribeToNotifications(
           adminToken,
           { type: "restaurant", id: managedRestaurantId },
-          onEvent,
+          onRestaurantEvent,
         ),
       );
     }
@@ -549,6 +657,53 @@ export function useNotifications() {
   const ctx = useContext(NotificationsContext);
   if (!ctx) throw new Error("useNotifications must be used inside NotificationsProvider");
   return ctx;
+}
+
+/**
+ * Marca como lidas as notificações de um tipo enquanto a página dele está
+ * aberta e visível (`/entrega`, `/reservas`, `/admin/pedidos`,
+ * `/admin/reservas`) — o badge desse separador desce assim que se vê a
+ * lista. Antes só descia clicando em cada notificação no sino. Numa aba em
+ * segundo plano não marca nada: só conta como visto o que está no ecrã.
+ */
+export function useMarkKindReadOnView(
+  scope: "client" | "restaurant",
+  kind: "order" | "reservation",
+  restaurantId?: string,
+): void {
+  const { all, markManyRead } = useNotifications();
+  const { user } = useAuth();
+  const [visible, setVisible] = useState(
+    () => typeof document === "undefined" || document.visibilityState === "visible",
+  );
+
+  useEffect(() => {
+    const onChange = () => setVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", onChange);
+    return () => document.removeEventListener("visibilitychange", onChange);
+  }, []);
+
+  const unreadIds = useMemo(
+    () =>
+      // Painel ainda sem restaurante carregado: sem isto o filtro caía no do
+      // cliente e marcava como lidas notificações que não são deste ecrã.
+      scope === "restaurant" && !restaurantId
+        ? []
+        : scopeNotifications(all, scope, {
+            ...(restaurantId ? { restaurantId } : {}),
+            ownerKey: viewerKey(user),
+          })
+            .filter((n) => n.kind === kind && !n.read)
+            .map((n) => n.id),
+    [all, scope, kind, restaurantId, user],
+  );
+  const key = unreadIds.join(",");
+
+  useEffect(() => {
+    if (visible && unreadIds.length > 0) markManyRead(unreadIds);
+    // `key` resume `unreadIds` — evita repetir por uma lista igual recriada.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, key]);
 }
 
 export type UnreadByKind = {

@@ -55,6 +55,7 @@ import {
 } from "@/lib/list-filter";
 import { groupByRecency, modifiedAt } from "@/lib/recency-groups";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
+import { useMarkKindReadOnView } from "@/lib/notifications";
 import { useTranslation } from "@/i18n";
 
 const MODE_ICON: Record<FulfillmentType, typeof Bike> = {
@@ -123,6 +124,8 @@ function Entrega() {
   }, [preselect]);
   const active = orders.find((o) => o.id === activeId) ?? null;
   const { t } = useTranslation();
+  // Ver a lista conta como visto: o badge deste separador desce.
+  useMarkKindReadOnView("client", "order");
 
   // Filtros (restaurante + data) e separadores por data de modificação — a
   // lista vai da modificação mais recente para a mais antiga.

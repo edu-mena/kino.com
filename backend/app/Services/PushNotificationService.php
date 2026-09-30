@@ -222,6 +222,10 @@ class PushNotificationService
             // CANAL (definido lá, uma vez, na app), nunca este aqui —
             // incluído mesmo assim como fallback em versões mais antigas.
             ->withAndroidConfig(AndroidConfig::fromArray([
+                // Alta prioridade: com a app em segundo plano/telemóvel em
+                // repouso (Doze), mensagens "normal" podem ser adiadas
+                // minutos — pedidos e reservas têm de chegar já.
+                'priority' => 'high',
                 'notification' => [
                     'channel_id' => 'luku_default',
                     'sound' => 'notification_luku',

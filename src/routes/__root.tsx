@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Outlet, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+  Outlet,
+  createRootRouteWithContext,
+  HeadContent,
+  Scripts,
+  useRouter,
+} from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
 // Só faz algo com VITE_SHARED_MOCK_URL definida (ambiente de teste local
@@ -115,6 +121,25 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    // App nativa: tocar numa notificação push (recebida com a app em
+    // segundo plano ou fechada) abre o ecrã certo — o pedido/reserva a que
+    // diz respeito. No-op na web (lá é o service worker que trata o toque).
+    let stop: (() => void) | undefined;
+    let cancelled = false;
+    void import("../lib/push-notifications").then(({ listenForNativePushTaps }) =>
+      listenForNativePushTaps((url) => router.history.push(url)).then((cleanup) => {
+        if (cancelled) cleanup();
+        else stop = cleanup;
+      }),
+    );
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [router]);
 
   useEffect(() => {
     // Na app nativa (Android/iOS), o WebView por definição desenha por

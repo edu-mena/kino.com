@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Jobs\SendPushNotificationJob;
 use App\Models\Notification;
 use App\Models\Reservation;
+use App\Support\NotificationActor;
 
 /** Ver OrderObserver — mesmo raciocínio, para reservas. */
 class ReservationObserver
@@ -35,6 +36,9 @@ class ReservationObserver
     private function notify(Reservation $reservation, string $event, array $onlyFor = ['restaurant', 'customer']): void
     {
         $snapshot = $this->snapshotFor($reservation);
+        // Quem fez a ação não é avisado dela própria: a notificação desse
+        // lado fica gravada (histórico) mas já lida, e sem push.
+        $actor = NotificationActor::side($reservation->user_id);
 
         if (in_array('restaurant', $onlyFor, true)) {
             $restaurantNotification = Notification::query()->create([
@@ -43,10 +47,13 @@ class ReservationObserver
                 'ref_id' => $reservation->id,
                 'event' => $event,
                 'status_snapshot' => $snapshot,
+                'read_at' => $actor === 'restaurant' ? now() : null,
             ]);
 
-            foreach ($reservation->restaurant->staff as $staffUser) {
-                SendPushNotificationJob::dispatch($staffUser, $restaurantNotification);
+            if ($actor !== 'restaurant') {
+                foreach ($reservation->restaurant->staff as $staffUser) {
+                    SendPushNotificationJob::dispatch($staffUser, $restaurantNotification);
+                }
             }
         }
 
@@ -57,9 +64,12 @@ class ReservationObserver
                 'ref_id' => $reservation->id,
                 'event' => $event,
                 'status_snapshot' => $snapshot,
+                'read_at' => $actor === 'customer' ? now() : null,
             ]);
 
-            SendPushNotificationJob::dispatch($reservation->user, $customerNotification);
+            if ($actor !== 'customer') {
+                SendPushNotificationJob::dispatch($reservation->user, $customerNotification);
+            }
         }
     }
 

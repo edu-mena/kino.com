@@ -23,19 +23,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
-import { useCart } from "@/lib/cart";
 import { useUnreadByKind } from "@/lib/notifications";
 import { useTranslation } from "@/i18n";
 
-/** Contagem do badge por destino — `/entrega` combina pedidos ativos (já
- * existia) com notificações de pedido por ler (novo, Fase N4); `/reservas`
- * só tinha o segundo, não tinha badge nenhum até agora. */
-function badgeCountFor(
-  to: string,
-  count: number,
-  unread: { orders: number; reservations: number },
-): number {
-  if (to === "/entrega") return Math.max(count, unread.orders);
+/** Contagem do badge por destino: só novidades por ler (notificações de
+ * pedido/reserva). Antes `/entrega` usava o maior entre isso e o TOTAL de
+ * pedidos do utilizador — que só crescia, por isso o número nunca descia. */
+function badgeCountFor(to: string, unread: { orders: number; reservations: number }): number {
+  if (to === "/entrega") return unread.orders;
   if (to === "/reservas") return unread.reservations;
   return 0;
 }
@@ -80,7 +75,6 @@ const navItemClass =
  * continua com a sua própria versão, sem estas mudanças.
  */
 export function LeftSidebar() {
-  const { count } = useCart();
   const unread = useUnreadByKind("client");
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -100,7 +94,7 @@ export function LeftSidebar() {
 
       <nav data-tour="nav-menu" className="flex flex-1 flex-col gap-2 overflow-y-auto">
         {desktopNavItems.map((tab) => {
-          const badge = badgeCountFor(tab.to, count, unread);
+          const badge = badgeCountFor(tab.to, unread);
           return (
             <Link
               key={tab.to}

@@ -4,8 +4,9 @@ import { useMemo } from "react";
 import { AdminPageHeading } from "@/components/admin-shell";
 import { EmptyState } from "@/components/empty-state";
 import { NotificationList } from "@/components/notification-list";
+import { PushToggle } from "@/components/push-toggle";
 import { scopeNotifications, useNotifications } from "@/lib/notifications";
-import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/admin/notificacoes")({
@@ -50,6 +51,10 @@ function AdminNotificacoes() {
       />
 
       <div className="mx-auto mt-8 max-w-2xl px-4 md:px-6">
+        {/* Push com a app/browser fechado para a equipa do restaurante —
+            antes só o cliente (em /perfil) conseguia ativar, por isso os
+            restaurantes nunca recebiam pedidos novos em segundo plano. */}
+        <PushToggle token={getAdminToken()} scope="restaurant" className="card-soft mb-4 p-4" />
         {list.length === 0 ? (
           <EmptyState icon={Bell} description={t("notifications.empty")} />
         ) : (
