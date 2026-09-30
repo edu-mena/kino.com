@@ -260,7 +260,21 @@ Ativa o toggle de notificações em `/perfil` dentro da app — deve pedir
 permissão do sistema e, se aceite, registar o token (`POST
 /device-tokens`, `platform: "android"`). Cria/atualiza um pedido desse
 utilizador (via `/admin/pedidos` de outro dispositivo/browser, por
-exemplo) para confirmar que a notificação chega ao telemóvel.
+exemplo) para confirmar que a notificação chega ao telemóvel. O painel do
+restaurante tem o seu próprio interruptor, em `/admin/notificacoes`.
+
+Se não chegar nada, o envio falha em silêncio por falta de configuração —
+este comando diz o quê (VAPID, credencial Firebase, fila, dispositivos) e
+envia um push de teste a uma conta, sem depender do worker:
+
+```sh
+php artisan push:check cliente@exemplo.com
+```
+
+Lembrete: com `QUEUE_CONNECTION=redis`, os pushes normais só saem com
+`php artisan queue:work` a correr. Ações feitas pela própria conta (criar
+ou cancelar o próprio pedido, aceitar no painel) não geram push para quem
+as fez — só para o outro lado.
 
 ### 6. Som próprio da notificação (canal `luku_default`)
 
