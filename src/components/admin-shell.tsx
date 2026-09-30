@@ -413,3 +413,38 @@ export function AdminPageHeading({
     </div>
   );
 }
+
+/**
+ * Fundo de parede do restaurante (`/admin/perfil` → "Wallpaper"), fixo atrás
+ * de toda a página em opacidade total. `-z-10` fica abaixo do conteúdo; o
+ * `AdminShellContent` não pinta fundo opaco de propósito para isto se ver.
+ *
+ * `veil`: nas páginas cujo título (`AdminPageHeading`) fica diretamente
+ * sobre o fundo — e não dentro de cartões opacos como no Perfil — um véu na
+ * cor de fundo, mais denso em cima, mantém o texto legível sobre qualquer
+ * imagem.
+ */
+export function RestaurantWallpaper({
+  src,
+  veil = false,
+}: {
+  src: string | undefined;
+  veil?: boolean;
+}) {
+  if (!src) return null;
+  return (
+    <>
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
+        style={{ backgroundImage: `url(${src})` }}
+      />
+      {veil && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-background/90 via-background/60 to-background/30"
+        />
+      )}
+    </>
+  );
+}

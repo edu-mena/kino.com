@@ -1,6 +1,6 @@
-import { Download, Minus, Plus, RotateCcw } from "lucide-react";
-import { useRef, useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { ChevronLeft, ChevronRight, Download, Minus, Plus, RotateCcw, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useTranslation } from "@/i18n";
 
 const MIN_SCALE = 1;
@@ -27,6 +27,10 @@ function dist(a: { clientX: number; clientY: number }, b: { clientX: number; cli
  * dentro de uma WebView embutida (app nativa) não é garantido em todas as
  * versões de Android, há sempre um link "abrir/transferir" por baixo — abre
  * no leitor de PDF do próprio telemóvel, que sempre tem zoom.
+ *
+ * Galeria (opcional, `gallery`): setas ‹ ›, teclas ←/→, deslizar (sem zoom)
+ * e contador "3 / 8" — usado na galeria da página do restaurante. Sem
+ * `gallery`, comporta-se exatamente como antes (uma só imagem).
  */
 export function MediaLightbox({
   open,
@@ -34,12 +38,14 @@ export function MediaLightbox({
   src,
   title,
   isPdf,
+  gallery,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   src: string | null | undefined;
   title: string;
   isPdf?: boolean;
+  gallery?: { index: number; count: number; onIndexChange: (index: number) => void };
 }) {
   const { t } = useTranslation();
   const [scale, setScale] = useState(1);
@@ -50,10 +56,28 @@ export function MediaLightbox({
     origin: { x: number; y: number };
   } | null>(null);
   const pinchRef = useRef<{ dist: number; scale: number } | null>(null);
+  const swipeRef = useRef<{ startX: number; startY: number } | null>(null);
 
   const reset = () => {
     setScale(1);
     setPos({ x: 0, y: 0 });
+  };
+
+  // Cada imagem da galeria começa sem zoom.
+  useEffect(() => {
+    setScale(1);
+    setPos({ x: 0, y: 0 });
+  }, [src]);
+
+  const hasPrev = !!gallery && gallery.index > 0;
+  const hasNext = !!gallery && gallery.index < gallery.count - 1;
+  const goPrev = () => hasPrev && gallery.onIndexChange(gallery.index - 1);
+  const goNext = () => hasNext && gallery.onIndexChange(gallery.index + 1);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (!gallery) return;
+    if (e.key === "ArrowLeft") goPrev();
+    else if (e.key === "ArrowRight") goNext();
   };
 
   const onOpenChangeInner = (next: boolean) => {
@@ -76,7 +100,12 @@ export function MediaLightbox({
   const onDoubleClick = () => zoomTo(scale > 1 ? 1 : 2.5);
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (isPdf || scale <= 1) return;
+    if (isPdf) return;
+    if (scale <= 1) {
+      // Sem zoom, arrastar na horizontal muda de imagem (só em galeria).
+      if (gallery) swipeRef.current = { startX: e.clientX, startY: e.clientY };
+      return;
+    }
     dragRef.current = { startX: e.clientX, startY: e.clientY, origin: pos };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -85,12 +114,25 @@ export function MediaLightbox({
     const { startX, startY, origin } = dragRef.current;
     setPos({ x: origin.x + (e.clientX - startX), y: origin.y + (e.clientY - startY) });
   };
-  const onPointerUp = () => {
+  const onPointerUp = (e: React.PointerEvent) => {
     dragRef.current = null;
+    const swipe = swipeRef.current;
+    swipeRef.current = null;
+    if (!swipe || pinchRef.current) return;
+    const dx = e.clientX - swipe.startX;
+    const dy = e.clientY - swipe.startY;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx > 0) goPrev();
+    else goNext();
+  };
+  const onPointerLeave = () => {
+    dragRef.current = null;
+    swipeRef.current = null;
   };
 
   const onTouchStart = (e: React.TouchEvent) => {
     if (isPdf || e.touches.length !== 2) return;
+    swipeRef.current = null;
     const [a, b] = [e.touches[0], e.touches[1]];
     if (!a || !b) return;
     pinchRef.current = { dist: dist(a, b), scale };
@@ -113,12 +155,20 @@ export function MediaLightbox({
     <Dialog open={open} onOpenChange={onOpenChangeInner}>
       <DialogContent
         hideCloseButton
+        onKeyDown={onKeyDown}
         className="left-0 top-0 flex h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden border-none bg-black/95 p-0 sm:rounded-none lg:left-1/2 lg:top-1/2 lg:h-[88vh] lg:w-[min(90vw,56rem)] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-[1.5rem]"
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
 
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-          <p className="min-w-0 truncate text-sm font-semibold text-white">{title}</p>
+          <p className="min-w-0 truncate text-sm font-semibold text-white">
+            {title}
+            {gallery && gallery.count > 1 && (
+              <span className="ml-2 font-medium text-white/60">
+                {gallery.index + 1} / {gallery.count}
+              </span>
+            )}
+          </p>
           <div className="flex shrink-0 items-center gap-1.5">
             {!isPdf && (
               <>
@@ -161,6 +211,12 @@ export function MediaLightbox({
             >
               <Download className="h-4 w-4" />
             </a>
+            <DialogClose
+              aria-label={t("mediaLightbox.close")}
+              className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </DialogClose>
           </div>
         </div>
 
@@ -176,14 +232,14 @@ export function MediaLightbox({
           </div>
         ) : (
           <div
-            className="min-h-0 flex-1 touch-none select-none overflow-hidden"
+            className="relative min-h-0 flex-1 touch-none select-none overflow-hidden"
             style={{ cursor: scale > 1 ? "grab" : "zoom-in" }}
             onWheel={onWheel}
             onDoubleClick={onDoubleClick}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
-            onPointerLeave={onPointerUp}
+            onPointerLeave={onPointerLeave}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
@@ -195,6 +251,28 @@ export function MediaLightbox({
               className="h-full w-full object-contain transition-transform duration-150 ease-out"
               style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})` }}
             />
+            {hasPrev && (
+              <button
+                type="button"
+                onClick={goPrev}
+                onPointerDown={(e) => e.stopPropagation()}
+                aria-label={t("mediaLightbox.previous")}
+                className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition-colors hover:bg-black/70"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            )}
+            {hasNext && (
+              <button
+                type="button"
+                onClick={goNext}
+                onPointerDown={(e) => e.stopPropagation()}
+                aria-label={t("mediaLightbox.next")}
+                className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition-colors hover:bg-black/70"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            )}
           </div>
         )}
       </DialogContent>

@@ -32,6 +32,20 @@ function pinIcon(L: typeof LType, dim = false) {
   });
 }
 
+/**
+ * O Leaflet põe z-index 400–1000 nos seus painéis/controlos. Sem um stacking
+ * context próprio, esses valores competem com o resto da página e o mapa
+ * aparece por cima de dropdowns (Select/Popover), do header e da tabbar.
+ * `isolation: isolate` + `zIndex: 0` confinam-nos ao contentor do mapa.
+ */
+const MAP_CONTAINER_STYLE = {
+  borderRadius: "var(--radius-2xl)",
+  overflow: "hidden",
+  position: "relative",
+  zIndex: 0,
+  isolation: "isolate",
+} as const;
+
 export type MapPoint = { id: string; lat: number; lng: number; label: string };
 
 export function LocationMap({
@@ -185,7 +199,7 @@ export function LocationMap({
     <div className={className}>
       <div
         ref={containerRef}
-        style={{ height, width: "100%", borderRadius: "var(--radius-2xl)", overflow: "hidden" }}
+        style={{ height, width: "100%", ...MAP_CONTAINER_STYLE }}
         aria-label={t("locationMap.aria")}
         role="img"
       />
@@ -283,7 +297,7 @@ export function LocationPicker({
     <div
       ref={containerRef}
       className={className}
-      style={{ height, width: "100%", borderRadius: "var(--radius-2xl)", overflow: "hidden" }}
+      style={{ height, width: "100%", ...MAP_CONTAINER_STYLE }}
     />
   );
 }

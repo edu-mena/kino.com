@@ -91,8 +91,14 @@ function defaultPickupTime(): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-export function OrderBuilderCard() {
+export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolean } = {}) {
   const { t } = useTranslation();
+  // No mobile a `MobileTabBar` (fixa, ~4.5rem + safe-area) ocupa o fundo do
+  // ecrã — o cartão sobe acima dela para não tapar os separadores. Do `md`
+  // para cima não há tabbar, fica na posição de sempre.
+  const positionClass = aboveTabBar
+    ? "bottom-[calc(4.75rem+env(safe-area-inset-bottom))] md:bottom-[calc(1rem+env(safe-area-inset-bottom))]"
+    : "bottom-[calc(1rem+env(safe-area-inset-bottom))]";
   const { restaurantId, lines, updateQty, discard } = useBill();
   const { addOrder } = useCart();
   const { user } = useAuth();
@@ -156,7 +162,9 @@ export function OrderBuilderCard() {
     // `null` quando não há mesmo lista (acima). A carregar ou falhado, o
     // cliente continua a ver que tem algo pendente.
     return (
-      <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-[1.5rem] bg-neutral-900 p-4 text-primary-foreground shadow-xl">
+      <div
+        className={`${positionClass} fixed right-4 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-[1.5rem] bg-neutral-900 p-4 text-primary-foreground shadow-xl`}
+      >
         <span className="flex items-center gap-2 font-display text-sm font-bold">
           <Receipt className="h-4 w-4 shrink-0" />
           {restaurantQuery.isError
@@ -304,7 +312,9 @@ export function OrderBuilderCard() {
   };
 
   return (
-    <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-[1.5rem] bg-neutral-900 text-primary-foreground shadow-xl">
+    <div
+      className={`${positionClass} fixed right-4 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-[1.5rem] bg-neutral-900 text-primary-foreground shadow-xl`}
+    >
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
@@ -326,7 +336,7 @@ export function OrderBuilderCard() {
         // nota, promo…) podia crescer mais alto do que o ecrã e deixar o
         // botão de enviar fora de vista — o mesmo problema que tinha o
         // diálogo que isto substituiu (ver comentário no topo do ficheiro).
-        <div className="max-h-[min(32rem,70dvh)] overflow-y-auto border-t border-primary-foreground/20 p-4 pt-3">
+        <div className="max-h-[min(32rem,62dvh)] overflow-y-auto md:max-h-[min(32rem,70dvh)] border-t border-primary-foreground/20 p-4 pt-3">
           {step === "list" ? (
             <>
               <ul className="max-h-36 space-y-2 overflow-y-auto">

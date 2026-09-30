@@ -2062,7 +2062,8 @@ export const pt = {
     submitError: "Não foi possível enviar o pedido. Tenta novamente.",
     dialogTitle: "Recebemos o seu pedido!",
     dialogDescription:
-      "Enviámos uma confirmação para {email}. A nossa equipa analisa o pedido e avisa assim que o seu restaurante for aprovado na Luku.",
+      "Vamos analisar o pedido e enviar um email para {email} com os passos para continuar.",
+    dialogContinue: "Continuar",
   },
   cadastro: {
     backHome: "Voltar ao início",
@@ -2394,6 +2395,7 @@ export const pt = {
       "As avaliações são deixadas depois de um pedido entregue ou de uma reserva cumprida.",
     tabMenu: "Cardápio",
     tabGallery: "Galeria",
+    openGalleryImage: "Ver imagem em ecrã inteiro",
     viewGalleryCta: "Ver galeria",
     viewMenuCta: "Ver cardápio",
     viewStory: "Ver story",
@@ -2411,6 +2413,9 @@ export const pt = {
     download: "Transferir",
     pdfFallbackHint: "O PDF não aparece bem aqui?",
     pdfFallbackLink: "Abra-o à parte.",
+    close: "Fechar",
+    previous: "Imagem anterior",
+    next: "Imagem seguinte",
   },
   imageUploadField: {
     defaultLabel: "Imagem",

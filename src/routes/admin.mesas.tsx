@@ -3,7 +3,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Armchair, PartyPopper, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AdminPageHeading, PlanGate, RestaurantGate } from "@/components/admin-shell";
+import {
+  AdminPageHeading,
+  PlanGate,
+  RestaurantGate,
+  RestaurantWallpaper,
+} from "@/components/admin-shell";
 import { KpiTile } from "@/components/admin-stats";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -228,6 +233,7 @@ function AdminMesas() {
 
   return (
     <div className="pb-16">
+      <RestaurantWallpaper src={restaurant?.wallpaper} veil />
       <AdminPageHeading
         eyebrow={t("adminMesas.eyebrow")}
         title={t("adminMesas.title")}

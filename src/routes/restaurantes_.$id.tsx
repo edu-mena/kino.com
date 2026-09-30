@@ -16,6 +16,7 @@ import icon from "@/assets/icon.png";
 import { FollowBar } from "@/components/follow-button";
 import { OwnLoyaltyStatus } from "@/components/loyalty-badge";
 import { LocationMap } from "@/components/location-map";
+import { MediaLightbox } from "@/components/media-lightbox";
 import { MenuBrowser } from "@/components/menu-browser";
 import { ReservationDialog } from "@/components/reservation-dialog";
 import { RestaurantRecommendationsDialog } from "@/components/restaurant-recommendations-dialog";
@@ -131,6 +132,11 @@ function RestaurantDetail() {
     })),
   ];
   const hasMedia = mediaItems.length > 0;
+  // Só as imagens abrem em ecrã inteiro (os vídeos já têm controlos próprios,
+  // incluindo o ecrã inteiro nativo) — o índice é dentro desta lista.
+  const galleryImageSrcs = mediaItems.filter((m) => m.type === "image").map((m) => m.src);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const lightboxSrc = lightboxIndex != null ? galleryImageSrcs[lightboxIndex] : undefined;
   const activeTab = hasMedia ? contentTab : "menu";
 
   const paused = !status.available;
@@ -333,13 +339,20 @@ function RestaurantDetail() {
                         className="aspect-video w-full rounded-xl border border-border bg-surface object-cover"
                       />
                     ) : (
-                      <img
+                      <button
                         key={m.key}
-                        src={m.src}
-                        alt={t("restaurantDetail.tabGallery")}
-                        loading="lazy"
-                        className="aspect-video w-full rounded-xl border border-border bg-surface object-cover"
-                      />
+                        type="button"
+                        onClick={() => setLightboxIndex(galleryImageSrcs.indexOf(m.src))}
+                        aria-label={t("restaurantDetail.openGalleryImage")}
+                        className="group block cursor-zoom-in overflow-hidden rounded-xl border border-border bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        <img
+                          src={m.src}
+                          alt={t("restaurantDetail.tabGallery")}
+                          loading="lazy"
+                          className="aspect-video w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        />
+                      </button>
                     );
                   })}
                 </div>
@@ -614,6 +627,21 @@ function RestaurantDetail() {
           onClose={() => setStoryOpen(false)}
         />
       )}
+      <MediaLightbox
+        open={lightboxSrc != null}
+        onOpenChange={(open) => !open && setLightboxIndex(null)}
+        src={lightboxSrc}
+        title={restaurant.name}
+        {...(lightboxIndex != null
+          ? {
+              gallery: {
+                index: lightboxIndex,
+                count: galleryImageSrcs.length,
+                onIndexChange: setLightboxIndex,
+              },
+            }
+          : {})}
+      />
     </PageShell>
   );
 }

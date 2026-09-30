@@ -22,7 +22,7 @@ import {
   TrendArea,
   TrendBadge,
 } from "@/components/admin-stats";
-import { AdminPageHeading, PlanGate } from "@/components/admin-shell";
+import { AdminPageHeading, PlanGate, RestaurantWallpaper } from "@/components/admin-shell";
 import { LoyaltyBadge } from "@/components/loyalty-badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -254,6 +254,7 @@ function AdminClientes() {
 
   return (
     <div className="pb-16">
+      <RestaurantWallpaper src={restaurant?.wallpaper} veil />
       <AdminPageHeading eyebrow={t("adminClientes.eyebrow")} title={t("adminClientes.title")} />
 
       <PlanGate feature="customers">

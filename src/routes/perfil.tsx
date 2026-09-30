@@ -19,6 +19,7 @@ import { CompanyFormDialog } from "@/components/company-form-dialog";
 import { OwnPremiumRestaurants } from "@/components/loyalty-badge";
 import { PageShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
+import { LanguageFlag } from "@/components/language-flag";
 import { UseCurrentLocationField } from "@/components/use-current-location-field";
 import {
   Dialog,
@@ -65,7 +66,7 @@ const languages = [
   { value: "pt", label: "Português" },
   { value: "en", label: "English" },
   { value: "fr", label: "Français" },
-];
+] as const;
 
 const menu = [
   {
@@ -216,7 +217,10 @@ function Perfil() {
               <SelectContent>
                 {languages.map((l) => (
                   <SelectItem key={l.value} value={l.value}>
-                    {l.label}
+                    <span className="flex items-center gap-2">
+                      <LanguageFlag code={l.value} />
+                      {l.label}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

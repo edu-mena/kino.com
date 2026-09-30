@@ -2081,7 +2081,8 @@ export const fr: Dictionary = {
     submitError: "Impossible d'envoyer la demande. Réessaie.",
     dialogTitle: "Nous avons reçu votre demande !",
     dialogDescription:
-      "Nous avons envoyé une confirmation à {email}. Notre équipe examine la demande et vous prévient dès que votre restaurant est approuvé sur Luku.",
+      "Nous allons examiner votre demande et envoyer un email à {email} avec les étapes pour continuer.",
+    dialogContinue: "Continuer",
   },
   cadastro: {
     backHome: "Retour à l'accueil",
@@ -2415,6 +2416,7 @@ export const fr: Dictionary = {
     reviewsAfterOrder: "Les avis se laissent après une commande livrée ou une réservation honorée.",
     tabMenu: "Carte",
     tabGallery: "Galerie",
+    openGalleryImage: "Voir l'image en plein écran",
     viewGalleryCta: "Voir la galerie",
     viewMenuCta: "Voir le menu",
     viewStory: "Voir la story",
@@ -2432,6 +2434,9 @@ export const fr: Dictionary = {
     download: "Télécharger",
     pdfFallbackHint: "Le PDF ne s'affiche pas bien ?",
     pdfFallbackLink: "Ouvrez-le séparément.",
+    close: "Fermer",
+    previous: "Image précédente",
+    next: "Image suivante",
   },
   imageUploadField: {
     defaultLabel: "Image",

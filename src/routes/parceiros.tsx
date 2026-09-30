@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ArrowRight,
@@ -106,6 +106,8 @@ const EMPTY_FORM: FormState = {
 
 function Parceiros() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const goToLogin = () => void navigate({ to: "/admin/entrar" });
 
   // Sem "outra" na lista — o SearchableSelect já deixa escrever qualquer
   // categoria que não esteja aqui (ver `customLabel` abaixo), então esse
@@ -197,19 +199,16 @@ function Parceiros() {
     setStep((s) => Math.max(s - 1, 0));
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  // Um único <form> para os 4 passos — Enter num <input> de qualquer passo
+  // dispara `onSubmit`. Aqui só avança de passo; nunca envia. O envio real
+  // é exclusivamente o clique explícito no botão "Enviar" (`submitApplication`).
+  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Um único <form> para os 4 passos — carregar Enter num <input> de
-    // qualquer passo (ex: telefone, morada) dispara este onSubmit mesmo
-    // sem o utilizador ter chegado ao botão final, submetendo a
-    // candidatura cedo demais (incompleta) sem ele perceber; ao continuar
-    // o assistente normalmente a seguir e submeter "a sério" no fim, ficam
-    // DUAS candidaturas para a mesma pessoa. Enter só deve avançar de
-    // passo, nunca submeter, exceto já no último.
-    if (step !== steps.length - 1) {
-      goNext();
-      return;
-    }
+    if (step < steps.length - 1) goNext();
+  };
+
+  const submitApplication = async () => {
+    if (submitting || submitted) return;
     if (!isStepValid(0) || !isStepValid(1) || !isStepValid(2)) {
       // Não deve acontecer (cada passo já bloqueou o avanço), mas se o
       // utilizador chegou aqui por outra via, volta ao primeiro passo com
@@ -335,7 +334,7 @@ function Parceiros() {
 
         <section className="mt-6">
           <form
-            onSubmit={handleSubmit}
+            onSubmit={handleFormSubmit}
             className="rounded-[2rem] border border-border bg-card p-6 sm:p-10"
           >
             {step === 0 && (
@@ -585,8 +584,16 @@ function Parceiros() {
                   <ArrowLeft className="h-4 w-4" /> {t("parceiros.back")}
                 </button>
               )}
+              {/* `key` distinta em cada botão: sem ela o React reaproveita o
+                  MESMO <button> ao passar do passo 3 para a revisão e só lhe
+                  troca o `type` para "submit" antes de o browser concluir o
+                  clique em "Continuar" — o formulário era enviado sozinho ao
+                  chegar à última etapa (1.º email) e de novo no clique final
+                  (2.º email). O botão final também é `type="button"`: envia
+                  só pelo `onClick`, nunca por submit implícito. */}
               {step < steps.length - 1 ? (
                 <button
+                  key="next"
                   type="button"
                   onClick={goNext}
                   className="flex flex-1 items-center justify-center gap-1 rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
@@ -595,8 +602,10 @@ function Parceiros() {
                 </button>
               ) : (
                 <button
-                  type="submit"
-                  disabled={submitting}
+                  key="submit"
+                  type="button"
+                  onClick={() => void submitApplication()}
+                  disabled={submitting || submitted}
                   className="flex-1 rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
                 >
                   {submitting ? t("parceiros.submitting") : t("parceiros.submit")}
@@ -612,7 +621,10 @@ function Parceiros() {
           </form>
         </section>
 
-        <Dialog open={submitted} onOpenChange={setSubmitted}>
+        {/* Fechar (X, Esc, clique fora) ou "Continuar" levam sempre ao login
+            de restaurante — o pedido já foi enviado, este ecrã não tem mais
+            nada a fazer e não pode ficar parado na última etapa. */}
+        <Dialog open={submitted} onOpenChange={(open) => !open && goToLogin()}>
           <DialogContent className="max-w-sm rounded-[2rem] border-none bg-card p-8 text-center">
             <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary">
               <CheckCircle2 className="h-7 w-7" />
@@ -623,6 +635,13 @@ function Parceiros() {
             <DialogDescription className="text-sm text-muted-foreground">
               {t("parceiros.dialogDescription", { email: form.email })}
             </DialogDescription>
+            <button
+              type="button"
+              onClick={goToLogin}
+              className="mt-6 w-full rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              {t("parceiros.dialogContinue")}
+            </button>
           </DialogContent>
         </Dialog>
       </div>

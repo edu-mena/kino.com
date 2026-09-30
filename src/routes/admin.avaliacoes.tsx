@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { MessageSquareReply, Pencil, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AdminPageHeading } from "@/components/admin-shell";
+import { AdminPageHeading, RestaurantWallpaper } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { setReviewReply } from "@/data/reviews-store";
@@ -144,6 +144,7 @@ function AdminAvaliacoes() {
 
   return (
     <div className="pb-16">
+      <RestaurantWallpaper src={restaurant?.wallpaper} veil />
       <AdminPageHeading
         eyebrow={t("adminAvaliacoes.eyebrow")}
         title={t("adminAvaliacoes.title")}

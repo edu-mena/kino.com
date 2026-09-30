@@ -32,7 +32,7 @@ import { formatDistanceToNow } from "date-fns";
 import { enUS, fr as frLocale, ptBR } from "date-fns/locale";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { RestaurantGate } from "@/components/admin-shell";
+import { RestaurantGate, RestaurantWallpaper } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
 import { ImageCropper } from "@/components/image-cropper";
 import { ImageUploadField } from "@/components/image-upload-field";
@@ -553,13 +553,7 @@ function AdminPerfil() {
           não perdem legibilidade nenhuma. Substitui a antiga imagem de capa
           no topo do cartão: em vez de um banner com foto, os elementos
           (nome, chips, ações) ficam sobre este fundo. */}
-      {heroWallpaper && (
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroWallpaper})` }}
-        />
-      )}
+      <RestaurantWallpaper src={heroWallpaper} />
       <div className="mx-auto mt-8 max-w-[1792px] space-y-6 px-4 md:px-6">
         {/* ---------- Cartão do restaurante ---------- */}
         <div className="card-soft overflow-hidden p-5 sm:p-6">

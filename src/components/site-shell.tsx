@@ -21,6 +21,7 @@ import { LeftSidebar, tabs } from "./left-sidebar";
 import { Logo } from "./logo";
 import { NavBadge } from "./nav-badge";
 import { NotificationsBell } from "./notifications-bell";
+import { LanguageFlag } from "./language-flag";
 import { OrderBuilderCard } from "./order-builder-card";
 import {
   DropdownMenu,
@@ -429,12 +430,13 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
                   onClick={() => setLanguage(opt.value)}
                   aria-pressed={language === opt.value}
                   className={cn(
-                    "rounded-full px-3 py-1.5 text-xs font-bold transition-colors",
+                    "flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-bold transition-colors",
                     language === opt.value
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
+                  <LanguageFlag code={opt.value} />
                   {opt.label}
                 </button>
               ))}
@@ -605,7 +607,7 @@ export function PageShell({
         {footer === undefined ? isLoggedIn ? null : <SiteFooter /> : footer}
       </div>
       {showMobileTabBar && <MobileTabBar />}
-      {isLoggedIn && <OrderBuilderCard />}
+      {isLoggedIn && <OrderBuilderCard aboveTabBar={showMobileTabBar} />}
     </div>
   );
 }
