@@ -14,3 +14,31 @@ export function haversineKm(a: [number, number], b: [number, number]): number {
 export function formatKm(km: number): string {
   return km < 10 ? km.toFixed(1) : String(Math.round(km));
 }
+
+/**
+ * Ajuste fino do pino: mantém `point` a no máximo `maxMeters` de `anchor`
+ * (a posição que a morada escolhida devolveu). Fora do raio, puxa-o de volta
+ * para a borda, na mesma direção. Interpolação linear em lat/lng — exata o
+ * suficiente para raios de centenas de metros.
+ */
+export function clampToRadius(
+  anchor: { lat: number; lng: number },
+  point: { lat: number; lng: number },
+  maxMeters: number,
+): { point: { lat: number; lng: number }; clamped: boolean } {
+  const meters = haversineKm([anchor.lat, anchor.lng], [point.lat, point.lng]) * 1000;
+  if (meters <= maxMeters) return { point, clamped: false };
+  const t = maxMeters / meters;
+  return {
+    point: {
+      lat: Number((anchor.lat + (point.lat - anchor.lat) * t).toFixed(6)),
+      lng: Number((anchor.lng + (point.lng - anchor.lng) * t).toFixed(6)),
+    },
+    clamped: true,
+  };
+}
+
+/** Link universal "Como chegar" do Google Maps — abre a app Google Maps no telemóvel. */
+export function googleDirectionsUrl(to: { lat: number; lng: number }): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${to.lat},${to.lng}`;
+}

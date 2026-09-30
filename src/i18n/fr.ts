@@ -2486,6 +2486,16 @@ export const fr: Dictionary = {
     distanceAway: "À {km} km de vous",
     directions: "Itinéraire",
     locateError: "Impossible d'obtenir votre position.",
+    pinClamped: "Le repère ne peut être ajusté qu'à {m} m de l'adresse choisie.",
+    pinAnchoredHint:
+      "Repère placé à l'adresse choisie — vous pouvez l'ajuster jusqu'à {m} m (ex. : l'entrée).",
+  },
+  addressAutocomplete: {
+    searching: "Recherche d'adresses...",
+    noResults: "Aucune adresse trouvée — essayez le quartier ou la rue.",
+    error: "Impossible de rechercher des adresses pour le moment.",
+    poweredBy: "Suggestions de Google",
+    pickFromList: "Choisissez l'adresse dans la liste pour marquer l'endroit exact sur la carte.",
   },
   adminMesas: {
     eyebrow: "Salle",

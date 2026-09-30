@@ -2463,8 +2463,17 @@ export const pt = {
     locate: "A minha localização",
     you: "Você está aqui",
     distanceAway: "A {km} km de si",
-    directions: "Ver rota",
+    directions: "Como chegar",
     locateError: "Não foi possível obter a sua localização.",
+    pinClamped: "O pino só pode ser afinado até {m} m da morada escolhida.",
+    pinAnchoredHint: "Pino na morada escolhida — pode afiná-lo até {m} m (ex.: a entrada).",
+  },
+  addressAutocomplete: {
+    searching: "A procurar moradas...",
+    noResults: "Nenhuma morada encontrada — tente com o bairro ou a rua.",
+    error: "Não foi possível procurar moradas agora.",
+    poweredBy: "Sugestões do Google",
+    pickFromList: "Escolha a morada na lista para marcar o local exato no mapa.",
   },
   adminMesas: {
     eyebrow: "Sala",

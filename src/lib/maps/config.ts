@@ -30,6 +30,10 @@ export const mapsProvider: MapsProvider = rawProvider === "google" ? "google" : 
 export const googleMapsBrowserKey =
   (import.meta.env["VITE_GOOGLE_MAPS_API_KEY"] as string | undefined)?.trim() || "";
 
+/** Map ID para marcadores "Advanced"; `DEMO_MAP_ID` serve só em desenvolvimento. */
+export const googleMapsMapId =
+  (import.meta.env["VITE_GOOGLE_MAPS_MAP_ID"] as string | undefined)?.trim() || "DEMO_MAP_ID";
+
 /** Base do backend-proxy de geocoding/rotas (sem barra final). */
 export const mapsApiBase = (
   (import.meta.env["VITE_MAPS_API_BASE"] as string | undefined)?.trim() || ""

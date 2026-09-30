@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { LocationPicker } from "@/components/location-map";
 import {
   Select,
@@ -25,8 +26,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { deriveRestaurantCoords } from "@/data/restaurant-coordinates";
+import { deriveRestaurantCoords, PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
 import { apiFetch, ApiError, hasRealBackend } from "@/lib/api-client";
+import { isGoogleMapsEnabled, type LatLng } from "@/lib/maps";
+import { DEFAULT_PIN_RADIUS_METERS } from "@/lib/maps/map-ui";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 
@@ -150,6 +153,10 @@ function Parceiros() {
   // província recentra automaticamente para lá (conveniência); depois de
   // mexido manualmente, a escolha do candidato nunca é sobrescrita sozinha.
   const [locationTouched, setLocationTouched] = useState(false);
+  // Posição devolvida pela morada escolhida no autocomplete (Google). Com
+  // ela, o pino só pode ser afinado até DEFAULT_PIN_RADIUS_METERS dela; sem
+  // Google configurado fica sempre `null` e o mapa funciona como antes.
+  const [addressAnchor, setAddressAnchor] = useState<LatLng | null>(null);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -179,7 +186,13 @@ function Parceiros() {
       case 1:
         return form.ownerName.trim() !== "" && form.email.trim() !== "" && form.phone.trim() !== "";
       case 2:
-        return form.province !== "" && form.address.trim() !== "";
+        // Com Google, a morada tem de vir da lista de sugestões — é o que
+        // garante que o pino corresponde ao que foi escrito.
+        return (
+          form.province !== "" &&
+          form.address.trim() !== "" &&
+          (!isGoogleMapsEnabled || addressAnchor !== null)
+        );
       default:
         return true;
     }
@@ -451,14 +464,38 @@ function Parceiros() {
                   </SelectContent>
                 </Select>
 
-                <div className="relative sm:col-span-2">
-                  <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
+                <div className="space-y-1.5 sm:col-span-2">
+                  <AddressAutocomplete
                     value={form.address}
-                    onChange={(e) => update("address", e.target.value)}
+                    onChange={(text) => {
+                      update("address", text);
+                      // Texto mudado à mão já não é a morada escolhida.
+                      setAddressAnchor(null);
+                    }}
+                    onSelect={(result) => {
+                      const province = ANGOLA_PROVINCES.find((p) => p === result.province);
+                      setForm((prev) => ({
+                        ...prev,
+                        address: result.formattedAddress,
+                        lat: result.point.lat,
+                        lng: result.point.lng,
+                        ...(province ? { province } : {}),
+                      }));
+                      setAddressAnchor(result.point);
+                      setLocationTouched(true);
+                    }}
+                    near={form.province ? PROVINCE_CENTERS[form.province] : undefined}
                     placeholder={t("parceiros.addressPlaceholder")}
-                    className={inputWithIconClass}
+                    inputClassName={inputWithIconClass}
+                    leadingIcon={
+                      <MapPin className="pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    }
                   />
+                  {isGoogleMapsEnabled && !addressAnchor && (
+                    <p className="text-xs text-muted-foreground">
+                      {t("addressAutocomplete.pickFromList")}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5 sm:col-span-2">
@@ -466,7 +503,7 @@ function Parceiros() {
                     <span className="text-sm font-semibold text-foreground">
                       {t("adminPerfil.mapLabel")}
                     </span>
-                    {form.province && (
+                    {form.province && !addressAnchor && (
                       <button
                         type="button"
                         onClick={() => {
@@ -485,10 +522,17 @@ function Parceiros() {
                       setForm((prev) => ({ ...prev, lat: next.lat, lng: next.lng }));
                       setLocationTouched(true);
                     }}
+                    anchor={addressAnchor}
+                    onClamped={() =>
+                      toast.info(t("locationMap.pinClamped", { m: DEFAULT_PIN_RADIUS_METERS }))
+                    }
                     height={240}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t("adminPerfil.mapPickHint")} · {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
+                    {addressAnchor
+                      ? t("locationMap.pinAnchoredHint", { m: DEFAULT_PIN_RADIUS_METERS })
+                      : t("adminPerfil.mapPickHint")}{" "}
+                    · {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
                   </p>
                 </div>
 

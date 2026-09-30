@@ -36,6 +36,7 @@ import { RestaurantGate, RestaurantWallpaper } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
 import { ImageCropper } from "@/components/image-cropper";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { LocationMap, LocationPicker } from "@/components/location-map";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,6 +70,8 @@ import { defaultWeeklyHours, formatWeeklyHours, isOpenNow, nextOpenAt } from "@/
 import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { ApiError, hasRealBackend } from "@/lib/api-client";
+import { isGoogleMapsEnabled, type LatLng } from "@/lib/maps";
+import { DEFAULT_PIN_RADIUS_METERS } from "@/lib/maps/map-ui";
 
 export const Route = createFileRoute("/admin/perfil")({
   head: () => ({ meta: [{ title: "Restaurante — Painel Luku.com" }] }),
@@ -302,6 +305,10 @@ function AdminPerfil() {
     lat: -8.839,
     lng: 13.2894,
   });
+  // Com Google: o pino só se afina até DEFAULT_PIN_RADIUS_METERS desta
+  // âncora — a localização já guardada, ou a morada escolhida no
+  // autocomplete. Para mudar de sítio a sério, escolhe-se outra morada.
+  const [addressAnchor, setAddressAnchor] = useState<LatLng | null>(null);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [hours, setHours] = useState<WeeklyHours>(defaultWeeklyHours);
@@ -337,6 +344,11 @@ function AdminPerfil() {
       restaurant.lat != null && restaurant.lng != null
         ? { lat: restaurant.lat, lng: restaurant.lng }
         : deriveRestaurantCoords(restaurant.id, restaurant.neighborhood),
+    );
+    setAddressAnchor(
+      isGoogleMapsEnabled && restaurant.lat != null && restaurant.lng != null
+        ? { lat: restaurant.lat, lng: restaurant.lng }
+        : null,
     );
     setPhone(restaurant.phone);
     setEmail(restaurant.email);
@@ -666,10 +678,16 @@ function AdminPerfil() {
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="rest-address">{t("adminPerfil.addressLabel")}</Label>
-                    <Input
-                      id="rest-address"
+                    <AddressAutocomplete
                       value={address}
-                      onChange={(e) => setAddress(e.target.value)}
+                      onChange={setAddress}
+                      onSelect={(result) => {
+                        setAddress(result.formattedAddress);
+                        setCoords(result.point);
+                        setAddressAnchor(result.point);
+                      }}
+                      near={coords}
+                      id="rest-address"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -708,20 +726,34 @@ function AdminPerfil() {
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <Label>{t("adminPerfil.mapLabel")}</Label>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCoords(deriveRestaurantCoords(restaurant.id, neighborhood.trim()))
-                      }
-                      className="text-xs font-semibold text-primary hover:underline"
-                    >
-                      {t("adminPerfil.useProvinceCenter")}
-                    </button>
+                    {!addressAnchor && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCoords(deriveRestaurantCoords(restaurant.id, neighborhood.trim()))
+                        }
+                        className="text-xs font-semibold text-primary hover:underline"
+                      >
+                        {t("adminPerfil.useProvinceCenter")}
+                      </button>
+                    )}
                   </div>
-                  <LocationPicker value={coords} onChange={setCoords} height={280} />
+                  <LocationPicker
+                    value={coords}
+                    onChange={setCoords}
+                    anchor={addressAnchor}
+                    onClamped={() =>
+                      toast.info(t("locationMap.pinClamped", { m: DEFAULT_PIN_RADIUS_METERS }))
+                    }
+                    height={280}
+                  />
                   <p className="text-xs text-muted-foreground">
-                    {t("adminPerfil.mapPickHint")} · {coords.lat.toFixed(5)},{" "}
-                    {coords.lng.toFixed(5)}
+                    {addressAnchor
+                      ? t("locationMap.pinAnchoredHint", { m: DEFAULT_PIN_RADIUS_METERS })
+                      : isGoogleMapsEnabled
+                        ? t("addressAutocomplete.pickFromList")
+                        : t("adminPerfil.mapPickHint")}{" "}
+                    · {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
                   </p>
                 </div>
               </div>

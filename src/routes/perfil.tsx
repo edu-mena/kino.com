@@ -19,7 +19,9 @@ import { CompanyFormDialog } from "@/components/company-form-dialog";
 import { OwnPremiumRestaurants } from "@/components/loyalty-badge";
 import { PageShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { LanguageFlag } from "@/components/language-flag";
+import { LocationPicker } from "@/components/location-map";
 import { UseCurrentLocationField } from "@/components/use-current-location-field";
 import {
   Dialog,
@@ -46,6 +48,7 @@ import { useCompanies } from "@/lib/companies";
 import { usePreferences } from "@/lib/preferences";
 import { usePushSubscription } from "@/lib/push-notifications";
 import { openAppSettings } from "@/lib/native-permissions";
+import { DEFAULT_PIN_RADIUS_METERS } from "@/lib/maps/map-ui";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/perfil")({
@@ -129,6 +132,9 @@ function Perfil() {
   const [newAlias, setNewAlias] = useState("");
   const [newAddress, setNewAddress] = useState("");
   const [newCoords, setNewCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Morada escolhida nas sugestões Google — mostra o mapa para afinar o pino
+  // (até DEFAULT_PIN_RADIUS_METERS dela, ex.: o portão certo).
+  const [newAnchor, setNewAnchor] = useState<{ lat: number; lng: number } | null>(null);
   const [useLocationOpen, setUseLocationOpen] = useState(false);
 
   const handleLogout = () => {
@@ -170,6 +176,7 @@ function Perfil() {
     setNewAlias("");
     setNewAddress("");
     setNewCoords(null);
+    setNewAnchor(null);
     setUseLocationOpen(false);
     setAddAddressOpen(false);
   };
@@ -400,18 +407,41 @@ function Perfil() {
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="address-line">{t("perfil.addressLabel")}</Label>
-                      <Input
+                      <AddressAutocomplete
                         id="address-line"
                         value={newAddress}
-                        onChange={(e) => setNewAddress(e.target.value)}
+                        onChange={setNewAddress}
+                        onSelect={(result) => {
+                          setNewCoords(result.point);
+                          setNewAnchor(result.point);
+                          setUseLocationOpen(false);
+                        }}
                         placeholder={t("perfil.addressPlaceholder")}
-                        required
                       />
                     </div>
+                    {newAnchor && newCoords && !useLocationOpen && (
+                      <div className="space-y-1.5">
+                        <LocationPicker
+                          value={newCoords}
+                          onChange={setNewCoords}
+                          anchor={newAnchor}
+                          onClamped={() =>
+                            toast.info(
+                              t("locationMap.pinClamped", { m: DEFAULT_PIN_RADIUS_METERS }),
+                            )
+                          }
+                          height={180}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {t("locationMap.pinAnchoredHint", { m: DEFAULT_PIN_RADIUS_METERS })}
+                        </p>
+                      </div>
+                    )}
                     {useLocationOpen ? (
                       <UseCurrentLocationField
                         onConfirm={({ lat, lng, line1 }) => {
                           setNewCoords({ lat, lng });
+                          setNewAnchor(null);
                           if (line1) setNewAddress(line1);
                           setUseLocationOpen(false);
                         }}

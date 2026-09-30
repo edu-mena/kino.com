@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { LocationPicker } from "@/components/location-map";
 import { useTranslation } from "@/i18n";
 import { useLocation } from "@/lib/location";
-import { getMapsClient } from "@/lib/maps";
+import { toast } from "sonner";
+import { getMapsClient, isGoogleMapsEnabled } from "@/lib/maps";
+import { DEFAULT_PIN_RADIUS_METERS } from "@/lib/maps/map-ui";
 import { isNativeApp } from "@/lib/native-permissions";
 
 type Point = { lat: number; lng: number };
@@ -31,6 +33,9 @@ export function UseCurrentLocationField({
   const { t } = useTranslation();
   const { deviceCoords, deviceLocationStatus, requestDeviceLocation } = useLocation();
   const [point, setPoint] = useState<Point | null>(null);
+  // Com Google: o pino fica preso a DEFAULT_PIN_RADIUS_METERS do ponto que o
+  // GPS devolveu — afina-se a entrada, não se muda de bairro.
+  const [anchor, setAnchor] = useState<Point | null>(null);
   const [addressPreview, setAddressPreview] = useState("");
   const [province, setProvince] = useState<string | undefined>(undefined);
   const [geocoding, setGeocoding] = useState(false);
@@ -58,6 +63,7 @@ export function UseCurrentLocationField({
     if (deviceLocationStatus === "granted" && deviceCoords && !point) {
       const next = { lat: deviceCoords[0], lng: deviceCoords[1] };
       setPoint(next);
+      if (isGoogleMapsEnabled) setAnchor(next);
       runReverseGeocode(next);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -97,7 +103,13 @@ export function UseCurrentLocationField({
 
   return (
     <div className="space-y-2 rounded-xl border border-border p-3">
-      <LocationPicker value={point} onChange={handlePointChange} height={180} />
+      <LocationPicker
+        value={point}
+        onChange={handlePointChange}
+        anchor={anchor}
+        onClamped={() => toast.info(t("locationMap.pinClamped", { m: DEFAULT_PIN_RADIUS_METERS }))}
+        height={180}
+      />
       <p className="text-xs text-muted-foreground">
         {geocoding ? t("useLocation.geocoding") : addressPreview || t("useLocation.noAddress")}
       </p>
@@ -106,6 +118,7 @@ export function UseCurrentLocationField({
           type="button"
           onClick={() => {
             setPoint(null);
+            setAnchor(null);
             onCancel?.();
           }}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\DeliveryPolicyController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\FavoriteMenuItemController;
 use App\Http\Controllers\Api\V1\FollowController;
+use App\Http\Controllers\Api\V1\MapsController;
 use App\Http\Controllers\Api\V1\MenuItemController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OfferController;
@@ -80,6 +81,14 @@ Route::prefix('system-access')->group(function () {
         Route::get('blocked-ips', [SystemAccessController::class, 'index']);
         Route::delete('blocked-ips/{blockedIp}', [SystemAccessController::class, 'destroy']);
     });
+});
+
+// Mapas — proxy da Google Maps Platform (ver MapsController). Público:
+// convidados também veem distância/ETA.
+Route::prefix('maps')->middleware('throttle:maps')->group(function () {
+    Route::get('geocode', [MapsController::class, 'geocode']);
+    Route::get('reverse-geocode', [MapsController::class, 'reverseGeocode']);
+    Route::post('route', [MapsController::class, 'route']);
 });
 
 // Leitura pública — sem auth (ver plano, "read-heavy" na Fase 1).

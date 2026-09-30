@@ -41,6 +41,15 @@ return [
     // Console) porque o Google Sign-In nativo emite id_tokens com `aud` =
     // client_id da plataforma que gerou o login, não um único client_id
     // partilhado — ver GoogleOAuthService::verifyIdToken().
+    // Proxy de mapas (ver GoogleMapsService) — chave de SERVIDOR com
+    // Geocoding API + Routes API ativas, restrita por IP do servidor. Nunca a
+    // mesma chave de browser do frontend (VITE_GOOGLE_MAPS_API_KEY).
+    'google_maps' => [
+        'server_key' => env('GOOGLE_MAPS_SERVER_KEY') ?: null,
+        'region' => 'ao',
+        'language' => 'pt',
+    ],
+
     'google' => [
         'web_client_id' => env('GOOGLE_WEB_CLIENT_ID'),
         'android_client_id' => env('GOOGLE_ANDROID_CLIENT_ID'),

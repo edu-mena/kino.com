@@ -2453,8 +2453,18 @@ export const en: Dictionary = {
     locate: "My location",
     you: "You are here",
     distanceAway: "{km} km from you",
-    directions: "Directions",
+    directions: "Get directions",
     locateError: "Couldn't get your location.",
+    pinClamped: "The pin can only be adjusted up to {m} m from the chosen address.",
+    pinAnchoredHint:
+      "Pin set at the chosen address — you can fine-tune it up to {m} m (e.g. the entrance).",
+  },
+  addressAutocomplete: {
+    searching: "Searching addresses...",
+    noResults: "No address found — try the neighbourhood or street.",
+    error: "Couldn't search addresses right now.",
+    poweredBy: "Suggestions by Google",
+    pickFromList: "Pick the address from the list to mark the exact spot on the map.",
   },
   adminMesas: {
     eyebrow: "Room",
