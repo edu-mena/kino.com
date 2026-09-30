@@ -18,3 +18,15 @@ test('push:check aponta o que falta e avisa sem dispositivos registados', functi
         ->expectsOutputToContain('não tem nenhum dispositivo registado')
         ->assertSuccessful();
 });
+
+test('push:check aceita a credencial Firebase como JSON na própria variável (produção)', function () {
+    config([
+        'firebase.default' => 'app',
+        'firebase.projects.app.credentials' => '{"type":"service_account","project_id":"luku-b4934"}',
+    ]);
+
+    $this->artisan('push:check')
+        ->doesntExpectOutputToContain('FALTA (caminho')
+        ->expectsOutputToContain('ficheiro ou JSON da conta de serviço): OK')
+        ->assertSuccessful();
+});

@@ -67,11 +67,15 @@ Artisan::command('push:check {email? : Conta a quem enviar um push de teste}', f
 
     $vapid = config('services.vapid.public_key') && config('services.vapid.private_key');
     $firebasePath = (string) config('firebase.projects.'.config('firebase.default').'.credentials');
-    $firebaseFile = $firebasePath !== '' && (is_file($firebasePath) || is_file(base_path($firebasePath)));
+    // Caminho para o ficheiro (dev) OU o próprio JSON na variável (produção,
+    // ex.: `fly secrets set FIREBASE_CREDENTIALS="$(cat chave.json)"`) — o
+    // pacote kreait aceita os dois.
+    $firebaseFile = $firebasePath !== '' && (str_starts_with(ltrim($firebasePath), '{')
+        || is_file($firebasePath) || is_file(base_path($firebasePath)));
     $queue = (string) config('queue.default');
 
     $this->line('Web Push (VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY): '.$ok((bool) $vapid));
-    $this->line('Android (FIREBASE_CREDENTIALS → ficheiro JSON da conta de serviço): '.$ok($firebaseFile)
+    $this->line('Android (FIREBASE_CREDENTIALS: ficheiro ou JSON da conta de serviço): '.$ok($firebaseFile)
         .($firebasePath !== '' && ! $firebaseFile ? " (caminho definido mas o ficheiro não existe: {$firebasePath})" : ''));
     $this->line("Fila: {$queue}".($queue === 'sync'
         ? ' (envio imediato, sem worker)'
