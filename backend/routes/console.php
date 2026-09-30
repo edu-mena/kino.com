@@ -11,6 +11,8 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
+use Kreait\Firebase\Contract\Messaging as FirebaseMessaging;
+use Minishlink\WebPush\WebPush;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -77,6 +79,30 @@ Artisan::command('push:check {email? : Conta a quem enviar um push de teste}', f
     $this->line('Web Push (VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY): '.$ok((bool) $vapid));
     $this->line('Android (FIREBASE_CREDENTIALS: ficheiro ou JSON da conta de serviço): '.$ok($firebaseFile)
         .($firebasePath !== '' && ! $firebaseFile ? " (caminho definido mas o ficheiro não existe: {$firebasePath})" : ''));
+    // Configuração presente não chega: criar o cliente pode falhar em runtime
+    // (ex.: a biblioteca Web Push exige a extensão GMP ou BCMath — sem ela o
+    // envio desistia EM SILÊNCIO e isto dizia "OK"; caso real em produção).
+    if ($vapid) {
+        try {
+            new WebPush(['VAPID' => [
+                'subject' => config('services.vapid.subject'),
+                'publicKey' => config('services.vapid.public_key'),
+                'privateKey' => config('services.vapid.private_key'),
+            ]]);
+            $this->line('Web Push — cliente de envio: <info>OK</info>');
+        } catch (Throwable $e) {
+            $this->line('Web Push — cliente de envio: <error>FALHA</error> '.$e->getMessage());
+        }
+    }
+    if ($firebaseFile) {
+        try {
+            app(FirebaseMessaging::class);
+            $this->line('Android — cliente FCM: <info>OK</info>');
+        } catch (Throwable $e) {
+            $this->line('Android — cliente FCM: <error>FALHA</error> '.$e->getMessage());
+        }
+    }
+
     $this->line("Fila: {$queue}".($queue === 'sync'
         ? ' (envio imediato, sem worker)'
         : ' — o push só sai com um worker a correr (Horizon no docker compose, ou php artisan queue:work)'));
