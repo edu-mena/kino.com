@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { NotificationList } from "@/components/notification-list";
 import { PushToggle } from "@/components/push-toggle";
 import { scopeNotifications, useNotifications } from "@/lib/notifications";
-import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { getAdminToken, isOperatorAdminSession, useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/admin/notificacoes")({
@@ -54,7 +54,16 @@ function AdminNotificacoes() {
         {/* Push com a app/browser fechado para a equipa do restaurante —
             antes só o cliente (em /perfil) conseguia ativar, por isso os
             restaurantes nunca recebiam pedidos novos em segundo plano. */}
-        <PushToggle token={getAdminToken()} scope="restaurant" className="card-soft mb-4 p-4" />
+        {isOperatorAdminSession() ? (
+          // Operador a ver o painel: o push ficaria registado na conta DELE,
+          // e os avisos do restaurante vão para a equipa do restaurante —
+          // ativar aqui nunca faria chegar nada (caso real em produção).
+          <p className="card-soft mb-4 p-4 text-xs text-muted-foreground">
+            {t("notifications.pushOperatorSession")}
+          </p>
+        ) : (
+          <PushToggle token={getAdminToken()} scope="restaurant" className="card-soft mb-4 p-4" />
+        )}
         {list.length === 0 ? (
           <EmptyState icon={Bell} description={t("notifications.empty")} />
         ) : (

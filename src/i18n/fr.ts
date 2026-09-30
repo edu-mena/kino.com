@@ -2281,6 +2281,8 @@ export const fr: Dictionary = {
     empty: "Aucune notification.",
     seeAll: "Voir toutes les notifications",
     historyDescription: "Tout l'historique — lues et non lues.",
+    pushOperatorSession:
+      "Vous êtes dans ce panneau en tant qu'opérateur système — les notifications push de ce restaurant vont à son équipe. Pour les recevoir sur cet appareil, connectez-vous avec le compte du restaurant sur /admin/entrar.",
     orderNew: "Nouvelle commande chez {name}",
     orderNewDetailed: "Nouvelle commande chez {name} · {itemCount} article(s) · {total}",
     orderStatus: "Votre commande chez {name} a été mise à jour",

@@ -2250,6 +2250,8 @@ export const en: Dictionary = {
     empty: "No notifications.",
     seeAll: "See all notifications",
     historyDescription: "The full history — read and unread.",
+    pushOperatorSession:
+      "You're in this panel as a system operator — this restaurant's push notifications go to its own team. To receive them on this device, sign in with the restaurant's account at /admin/entrar.",
     orderNew: "New order at {name}",
     orderNewDetailed: "New order at {name} · {itemCount} item(s) · {total}",
     orderStatus: "Your order at {name} was updated",

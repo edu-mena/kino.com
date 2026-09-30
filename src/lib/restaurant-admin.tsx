@@ -20,6 +20,19 @@ export function getAdminToken(): string | null {
     return null;
   }
 }
+
+/** `true` quando o painel está aberto por um operador de sistema (entrou a
+ * partir de `/sistema`, com o token do próprio operador — ver
+ * `enterAsOperator`). Nesse modo, o que se registar em nome da sessão fica
+ * na conta do operador, não na do restaurante. */
+export function isOperatorAdminSession(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(BORROWED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 /** Id (uuid) do restaurante gerido pelo token acima — mesmo padrão/uso:
  * consumido por `SubscriptionsProvider` (raiz), que precisa de saber a
  * subscrição do PRÓPRIO restaurante do painel `/admin` mas não pode usar

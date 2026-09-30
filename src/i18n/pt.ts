@@ -2260,6 +2260,8 @@ export const pt = {
     empty: "Sem notificações.",
     seeAll: "Ver todas as notificações",
     historyDescription: "Todo o histórico — lidas e não lidas.",
+    pushOperatorSession:
+      "Está neste painel como operador de sistema — as notificações push deste restaurante vão para a equipa dele. Para as receber neste aparelho, entre com a conta do restaurante em /admin/entrar.",
     orderNew: "Novo pedido em {name}",
     orderNewDetailed: "Novo pedido em {name} · {itemCount} item(ns) · {total}",
     orderStatus: "O seu pedido em {name} foi atualizado",
