@@ -2743,6 +2743,7 @@ export const fr: Dictionary = {
     noResults: "Aucun résultat avec ces filtres.",
   },
   detailCard: {
+    tableBooking: "Réservation de table",
     restaurant: "Restaurant",
     customer: "Client",
     progressAria: "Progression de la commande",
@@ -2775,5 +2776,7 @@ export const fr: Dictionary = {
     rejectedTitle: "Le restaurant a refusé cette commande",
     canceledTitle: "Commande annulée",
     documents: "Documents",
+    docToSend: "À envoyer",
+    docWaiting: "En attente",
   },
 };

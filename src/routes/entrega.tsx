@@ -24,6 +24,7 @@ import {
   DetailAction,
   DetailChip,
   DetailContactButtons,
+  DetailDocuments,
   DetailHeader,
   DetailFacts,
   DetailNote,
@@ -37,6 +38,7 @@ import {
   orderProgressSteps,
   orderStatusVisual,
   type BreakdownLine,
+  type DetailDocument,
 } from "@/components/detail-card";
 import { ClientListFilters, FilteredEmpty, RecencyHeading } from "@/components/list-recency";
 import { MediaLightbox } from "@/components/media-lightbox";
@@ -384,6 +386,141 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         ]
       : []),
   ];
+  // Modo sem rótulo, no lugar da província: "No local · 2 pessoa(s)",
+  // "Take away · Assim que estiver pronto", "Entrega · ~12:30".
+  const modeLine = [
+    t(`fulfillment.${order.fulfillmentType}`),
+    order.fulfillmentType === "dinein" && order.partySize
+      ? t("entrega.partySize", { count: order.partySize })
+      : order.fulfillmentType === "takeaway"
+        ? order.pickupAsap || !order.pickupAt
+          ? t("entrega.pickupAsap")
+          : etaTime(order)
+        : order.fulfillmentType === "delivery"
+          ? `~${etaTime(order)}`
+          : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const showInvoice =
+    !!order.invoice ||
+    (order.status !== "pending" && order.status !== "rejected" && order.status !== "canceled");
+  const documents: DetailDocument[] = [
+    ...(paymentDue || order.paymentProof
+      ? [
+          {
+            key: "proof",
+            icon: Upload,
+            title: t("entrega.proofTitle"),
+            status: order.paymentProof ? t("entrega.proofSent") : t("detailCard.docToSend"),
+            tone: order.paymentProof ? ("done" as const) : ("action" as const),
+            content: order.paymentProof ? (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setProofLightboxOpen(true)}
+                  aria-label={t("entrega.proofViewAria")}
+                  className="block w-full"
+                >
+                  {proofIsPdf ? (
+                    <span className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                      <FileText className="h-5 w-5 shrink-0 text-primary" />
+                      {t("entrega.proofPdfLabel")}
+                    </span>
+                  ) : (
+                    <img
+                      src={order.paymentProof}
+                      alt=""
+                      className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                    />
+                  )}
+                </button>
+                {paymentDue && (
+                  <button
+                    type="button"
+                    onClick={() => setPaymentProof(order.id, null)}
+                    className="text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive"
+                  >
+                    {t("entrega.proofReplace")}
+                  </button>
+                )}
+                <MediaLightbox
+                  open={proofLightboxOpen}
+                  onOpenChange={setProofLightboxOpen}
+                  src={order.paymentProof}
+                  isPdf={proofIsPdf}
+                  title={t("entrega.proofTitle")}
+                />
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">{t("entrega.proofHint")}</p>
+                <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-full border border-dashed border-primary/50 px-4 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/5">
+                  <Upload className="h-4 w-4" />
+                  {proofUploading ? t("entrega.proofUploading") : t("entrega.proofUpload")}
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    disabled={proofUploading}
+                    onChange={onProofFile}
+                  />
+                </label>
+              </>
+            ),
+          },
+        ]
+      : []),
+    ...(showInvoice
+      ? [
+          {
+            key: "invoice",
+            icon: Receipt,
+            title: t("entrega.invoiceTitle"),
+            status: order.invoice
+              ? t(
+                  order.invoiceType === "nif"
+                    ? "entrega.invoiceIssuedNif"
+                    : "entrega.invoiceIssued",
+                )
+              : t("detailCard.docWaiting"),
+            tone: order.invoice ? ("done" as const) : ("pending" as const),
+            content: order.invoice ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setInvoiceLightboxOpen(true)}
+                  aria-label={t("entrega.invoiceViewAria")}
+                  className="block w-full"
+                >
+                  {invoiceIsPdf ? (
+                    <span className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                      <FileText className="h-5 w-5 shrink-0 text-primary" />
+                      {t("entrega.invoicePdfLabel")}
+                    </span>
+                  ) : (
+                    <img
+                      src={order.invoice}
+                      alt=""
+                      className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                    />
+                  )}
+                </button>
+                <MediaLightbox
+                  open={invoiceLightboxOpen}
+                  onOpenChange={setInvoiceLightboxOpen}
+                  src={order.invoice}
+                  isPdf={invoiceIsPdf}
+                  title={t("entrega.invoiceTitle")}
+                />
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">{t("entrega.invoicePending")}</p>
+            ),
+          },
+        ]
+      : []),
+  ];
   const active = order.status !== "delivered" && order.status !== "completed";
   const finishedOrClosed = !active || order.status === "rejected" || order.status === "canceled";
 
@@ -400,10 +537,19 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
       {/* 1 · Quem e em que estado */}
       <DetailHeader
         image={restaurant?.coverImage}
+        imageSize="lg"
         eyebrow={t("detailCard.restaurant")}
-        title={restaurant?.name ?? order.restaurantName ?? "Restaurante"}
-        subtitle={restaurant?.neighborhood}
-        subtitleIcon={MapPin}
+        title={
+          <Link
+            to="/restaurantes/$id"
+            params={{ id: order.restaurantId }}
+            className="hover:underline focus-visible:underline focus-visible:outline-none"
+          >
+            {restaurant?.name ?? order.restaurantName ?? "Restaurante"}
+          </Link>
+        }
+        subtitle={modeLine}
+        subtitleIcon={MODE_ICON[order.fulfillmentType]}
         meta={
           <DetailChip icon={Receipt}>
             {t("detailCard.orderRef", { ref: orderShortId(order.id) })} · {etaDate(order)}
@@ -474,31 +620,26 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
 
       {/* 4 · Factos */}
       <DetailFacts>
-        <DetailRow
-          icon={MODE_ICON[order.fulfillmentType]}
-          label={t("entrega.modeLabel")}
-          hint={
-            order.fulfillmentType === "dinein" && order.partySize
-              ? t("entrega.partySize", { count: order.partySize })
-              : order.fulfillmentType === "takeaway"
-                ? order.pickupAsap || !order.pickupAt
-                  ? t("entrega.pickupAsap")
-                  : `${t("entrega.pickupTime")}: ${etaTime(order)}`
-                : undefined
-          }
-        >
-          {t(`fulfillment.${order.fulfillmentType}`)}
-        </DetailRow>
-
+        {/* Pagamento e caução exigidos numa só linha — são a mesma pergunta
+            ("quanto e como pago?"). */}
         <DetailRow
           icon={Wallet}
           label={t("entrega.paymentRequired")}
+          span
           hint={
-            order.paymentMethod
-              ? requiredPayment?.digital && !needsProof && !order.paymentProof
-                ? t("entrega.digitalPaymentHint")
-                : undefined
-              : t("entrega.paymentPending")
+            <>
+              {!order.paymentMethod
+                ? t("entrega.paymentPending")
+                : requiredPayment?.digital && !needsProof && !order.paymentProof
+                  ? t("entrega.digitalPaymentHint")
+                  : null}
+              {order.cautionRequired ? (
+                <span className="mt-0.5 flex items-center gap-1 font-semibold text-foreground">
+                  <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+                  {t("entrega.cautionRequired")}: {formatKz(order.cautionRequired)}
+                </span>
+              ) : null}
+            </>
           }
         >
           {order.paymentMethod ? (requiredPayment?.label ?? order.paymentMethod) : "—"}
@@ -523,12 +664,6 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           </DetailRow>
         )}
 
-        {order.cautionRequired ? (
-          <DetailRow icon={ShieldCheck} label={t("entrega.cautionRequired")}>
-            {formatKz(order.cautionRequired)}
-          </DetailRow>
-        ) : null}
-
         {order.note && (
           <DetailRow icon={MessageSquare} label={t("entrega.observationLabel")} span>
             {order.note}
@@ -536,8 +671,21 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         )}
       </DetailFacts>
 
-      {/* 5 · O que foi pedido */}
+      {/* 5 · Quanto custa — o detalhe fica recolhido */}
+      <DetailTotal
+        label={t("entrega.amount")}
+        value={formatKz(orderTotal(order))}
+        breakdown={breakdown.length > 1 ? breakdown : undefined}
+        showBreakdownLabel={t("detailCard.showBreakdown")}
+        hideBreakdownLabel={t("detailCard.hideBreakdown")}
+      />
+
+      {/* 6 · Comprovativo e fatura lado a lado — o conteúdo abre por baixo */}
+      <DetailDocuments items={documents} />
+
+      {/* 7 · O que foi pedido — minimizável, depois do valor e dos documentos */}
       <DetailSection
+        collapsible
         icon={ShoppingBag}
         title={t("detailCard.products")}
         action={<DetailChip>{t("detailCard.itemsCount", { count: itemCount })}</DetailChip>}
@@ -569,101 +717,6 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           })}
         </DetailProductList>
       </DetailSection>
-
-      {/* 6 · Quanto custa — o detalhe fica recolhido */}
-      <DetailTotal
-        label={t("entrega.amount")}
-        value={formatKz(orderTotal(order))}
-        breakdown={breakdown.length > 1 ? breakdown : undefined}
-        showBreakdownLabel={t("detailCard.showBreakdown")}
-        hideBreakdownLabel={t("detailCard.hideBreakdown")}
-      />
-
-      {/* 7 · Documentos já existentes — recolhidos */}
-      {order.paymentProof && (
-        <DetailSection
-          collapsible
-          icon={Upload}
-          title={t("entrega.proofTitle")}
-          description={t("entrega.proofSent")}
-        >
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => setProofLightboxOpen(true)}
-              aria-label={t("entrega.proofViewAria")}
-              className="block w-full"
-            >
-              {proofIsPdf ? (
-                <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                  <FileText className="h-5 w-5 shrink-0 text-primary" />
-                  {t("entrega.proofPdfLabel")}
-                </span>
-              ) : (
-                <img
-                  src={order.paymentProof}
-                  alt=""
-                  className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
-                />
-              )}
-            </button>
-            {paymentDue && (
-              <button
-                type="button"
-                onClick={() => setPaymentProof(order.id, null)}
-                className="text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive"
-              >
-                {t("entrega.proofReplace")}
-              </button>
-            )}
-            <MediaLightbox
-              open={proofLightboxOpen}
-              onOpenChange={setProofLightboxOpen}
-              src={order.paymentProof}
-              isPdf={proofIsPdf}
-              title={t("entrega.proofTitle")}
-            />
-          </div>
-        </DetailSection>
-      )}
-
-      {order.invoice && (
-        <DetailSection
-          collapsible
-          icon={Receipt}
-          title={t("entrega.invoiceTitle")}
-          description={t(
-            order.invoiceType === "nif" ? "entrega.invoiceIssuedNif" : "entrega.invoiceIssued",
-          )}
-        >
-          <button
-            type="button"
-            onClick={() => setInvoiceLightboxOpen(true)}
-            aria-label={t("entrega.invoiceViewAria")}
-            className="block w-full"
-          >
-            {invoiceIsPdf ? (
-              <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                <FileText className="h-5 w-5 shrink-0 text-primary" />
-                {t("entrega.invoicePdfLabel")}
-              </span>
-            ) : (
-              <img
-                src={order.invoice}
-                alt=""
-                className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
-              />
-            )}
-          </button>
-          <MediaLightbox
-            open={invoiceLightboxOpen}
-            onOpenChange={setInvoiceLightboxOpen}
-            src={order.invoice}
-            isPdf={invoiceIsPdf}
-            title={t("entrega.invoiceTitle")}
-          />
-        </DetailSection>
-      )}
 
       {/* 8 · Ações finais */}
       {canReview && (

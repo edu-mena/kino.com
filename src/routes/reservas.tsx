@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  Armchair,
   CalendarCheck,
   CalendarDays,
   ChevronLeft,
   Clock,
   FileText,
   Gift,
-  MapPin,
   MessageSquare,
   Receipt,
   ShieldCheck,
@@ -31,8 +31,8 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import {
   DetailAction,
-  DetailChip,
   DetailContactButtons,
+  DetailDocuments,
   DetailHeader,
   DetailFacts,
   DetailRow,
@@ -347,17 +347,25 @@ function Reservas() {
                     {/* 1 · Onde e em que estado */}
                     <DetailHeader
                       image={active.restaurantImage}
+                      imageSize="lg"
                       eyebrow={t("detailCard.restaurant")}
-                      title={active.restaurantName}
-                      subtitle={activeRestaurant?.neighborhood}
-                      subtitleIcon={MapPin}
-                      meta={
-                        active.package ? (
-                          <DetailChip icon={Gift}>
-                            {active.package.title ?? active.package.packageTypeName}
-                          </DetailChip>
-                        ) : undefined
+                      title={
+                        <Link
+                          to="/restaurantes/$id"
+                          params={{ id: active.restaurantId }}
+                          className="hover:underline focus-visible:underline focus-visible:outline-none"
+                        >
+                          {active.restaurantName}
+                        </Link>
                       }
+                      // No lugar da província, o tipo de reserva (como o modo
+                      // nos pedidos): "Reserva de mesa" ou o nome do pacote.
+                      subtitle={
+                        active.package
+                          ? (active.package.title ?? active.package.packageTypeName)
+                          : t("detailCard.tableBooking")
+                      }
+                      subtitleIcon={active.package ? Gift : Armchair}
                       status={
                         <StatusBadge visual={reservationStatusVisual(active.status)}>
                           {statusText(active.status)}
@@ -440,78 +448,101 @@ function Reservas() {
                       </DetailFacts>
                     )}
 
-                    {/* 5 · Documentos já existentes — recolhidos */}
-                    {active.paymentProof && (
-                      <DetailSection
-                        collapsible
-                        icon={Upload}
-                        title={t("reservas.proofTitle")}
-                        description={t("reservas.proofSent")}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setProofLightboxOpen(true)}
-                          aria-label={t("reservas.proofViewAria")}
-                          className="block w-full"
-                        >
-                          {proofIsPdf ? (
-                            <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                              <FileText className="h-5 w-5 shrink-0 text-primary" />
-                              {t("reservas.proofPdfLabel")}
-                            </span>
-                          ) : (
-                            <img
-                              src={active.paymentProof}
-                              alt=""
-                              className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
-                            />
-                          )}
-                        </button>
-                        <MediaLightbox
-                          open={proofLightboxOpen}
-                          onOpenChange={setProofLightboxOpen}
-                          src={active.paymentProof}
-                          isPdf={proofIsPdf}
-                          title={t("reservas.proofTitle")}
-                        />
-                      </DetailSection>
-                    )}
-
-                    {active.invoice && (
-                      <DetailSection
-                        collapsible
-                        icon={Receipt}
-                        title={t("reservas.invoiceTitle")}
-                        description={t("reservas.invoiceIssued")}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setInvoiceLightboxOpen(true)}
-                          aria-label={t("reservas.invoiceViewAria")}
-                          className="block w-full"
-                        >
-                          {invoiceIsPdf ? (
-                            <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                              <FileText className="h-5 w-5 shrink-0 text-primary" />
-                              {t("reservas.invoicePdfLabel")}
-                            </span>
-                          ) : (
-                            <img
-                              src={active.invoice}
-                              alt=""
-                              className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
-                            />
-                          )}
-                        </button>
-                        <MediaLightbox
-                          open={invoiceLightboxOpen}
-                          onOpenChange={setInvoiceLightboxOpen}
-                          src={active.invoice}
-                          isPdf={invoiceIsPdf}
-                          title={t("reservas.invoiceTitle")}
-                        />
-                      </DetailSection>
-                    )}
+                    {/* 5 · Comprovativo e fatura lado a lado — o conteúdo abre por baixo */}
+                    <DetailDocuments
+                      items={[
+                        ...(active.paymentProof
+                          ? [
+                              {
+                                key: "proof",
+                                icon: Upload,
+                                title: t("reservas.proofTitle"),
+                                status: t("reservas.proofSent"),
+                                tone: "done" as const,
+                                content: (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => setProofLightboxOpen(true)}
+                                      aria-label={t("reservas.proofViewAria")}
+                                      className="block w-full"
+                                    >
+                                      {proofIsPdf ? (
+                                        <span className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                          <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                          {t("reservas.proofPdfLabel")}
+                                        </span>
+                                      ) : (
+                                        <img
+                                          src={active.paymentProof}
+                                          alt=""
+                                          className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                        />
+                                      )}
+                                    </button>
+                                    <MediaLightbox
+                                      open={proofLightboxOpen}
+                                      onOpenChange={setProofLightboxOpen}
+                                      src={active.paymentProof}
+                                      isPdf={proofIsPdf}
+                                      title={t("reservas.proofTitle")}
+                                    />
+                                  </>
+                                ),
+                              },
+                            ]
+                          : []),
+                        ...(active.invoice ||
+                        active.status === "Confirmada" ||
+                        active.status === "Não compareceu"
+                          ? [
+                              {
+                                key: "invoice",
+                                icon: Receipt,
+                                title: t("reservas.invoiceTitle"),
+                                status: active.invoice
+                                  ? t("reservas.invoiceIssued")
+                                  : t("detailCard.docWaiting"),
+                                tone: active.invoice ? ("done" as const) : ("pending" as const),
+                                content: active.invoice ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => setInvoiceLightboxOpen(true)}
+                                      aria-label={t("reservas.invoiceViewAria")}
+                                      className="block w-full"
+                                    >
+                                      {invoiceIsPdf ? (
+                                        <span className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                          <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                          {t("reservas.invoicePdfLabel")}
+                                        </span>
+                                      ) : (
+                                        <img
+                                          src={active.invoice}
+                                          alt=""
+                                          className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                        />
+                                      )}
+                                    </button>
+                                    <MediaLightbox
+                                      open={invoiceLightboxOpen}
+                                      onOpenChange={setInvoiceLightboxOpen}
+                                      src={active.invoice}
+                                      isPdf={invoiceIsPdf}
+                                      title={t("reservas.invoiceTitle")}
+                                    />
+                                  </>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground">
+                                    {t("reservas.invoicePending")}
+                                  </p>
+                                ),
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
 
                     {/* 6 · Contacto e ações finais */}
                     {activeRestaurant?.phone &&

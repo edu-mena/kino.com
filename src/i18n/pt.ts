@@ -2719,6 +2719,7 @@ export const pt = {
     noResults: "Nada encontrado com estes filtros.",
   },
   detailCard: {
+    tableBooking: "Reserva de mesa",
     restaurant: "Restaurante",
     customer: "Cliente",
     progressAria: "Progresso do pedido",
@@ -2750,5 +2751,7 @@ export const pt = {
     rejectedTitle: "O restaurante recusou este pedido",
     canceledTitle: "Pedido cancelado",
     documents: "Documentos",
+    docToSend: "Por enviar",
+    docWaiting: "A aguardar",
   },
 };

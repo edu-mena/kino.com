@@ -230,7 +230,11 @@ export function DetailHeader({
   meta,
   status,
   extra,
+  imageSize = "md",
 }: {
+  /** `lg` (96px) quando a imagem identifica o sítio (restaurante); `md`
+   * (72px) para o resto. */
+  imageSize?: "md" | "lg" | undefined;
   image?: string | undefined;
   /** Ícone mostrado num tile quando não há imagem (ou ela falha). */
   icon?: LucideIcon | undefined;
@@ -257,7 +261,7 @@ export function DetailHeader({
         <Thumb
           src={image}
           Fallback={FallbackIcon}
-          className="h-[72px] w-[72px] shrink-0 rounded-2xl shadow-sm"
+          className={`shrink-0 rounded-2xl shadow-sm ${imageSize === "lg" ? "h-24 w-24" : "h-[72px] w-[72px]"}`}
           iconClassName="h-8 w-8"
         />
         <div className="min-w-0 flex-1">
@@ -974,5 +978,83 @@ export function DetailContactButtons({
         <MessageCircle className="h-4 w-4" aria-hidden="true" />
       </a>
     </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Documentos                                                          */
+/* ------------------------------------------------------------------ */
+
+export type DetailDocument = {
+  key: string;
+  icon: LucideIcon;
+  title: string;
+  /** Estado curto por baixo do título (ex.: "Enviado", "A aguardar"). */
+  status: ReactNode;
+  /** `done` = verde; `pending` = neutro; `action` = precisa de algo (laranja). */
+  tone?: "done" | "pending" | "action" | undefined;
+  /** O que o documento guarda — aparece por baixo das colunas ao clicar. */
+  content: ReactNode;
+};
+
+const DOC_STATUS_TONE = {
+  done: "text-success",
+  pending: "text-muted-foreground",
+  action: "text-brand",
+} as const;
+
+/** Comprovativo e fatura lado a lado, em duas colunas: cada um mostra só o
+ * título e o estado; clicar num abre o que ele guarda logo por baixo das
+ * colunas (e fecha o outro). Com um só documento, ocupa a largura toda. */
+export function DetailDocuments({ items }: { items: DetailDocument[] }) {
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const panelId = useId();
+  if (items.length === 0) return null;
+  const open = items.find((i) => i.key === openKey);
+  return (
+    <div className="mt-4">
+      <div className={`grid gap-3 ${items.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+        {items.map((item) => {
+          const selected = item.key === openKey;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setOpenKey((k) => (k === item.key ? null : item.key))}
+              aria-expanded={selected}
+              aria-controls={panelId}
+              className={`flex min-w-0 items-center gap-2.5 rounded-2xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                selected
+                  ? "border-primary/40 bg-primary/5 ring-1 ring-inset ring-primary/20"
+                  : "border-border/60 bg-surface/50 hover:border-primary/30"
+              }`}
+            >
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <item.icon className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-foreground">
+                  {item.title}
+                </span>
+                <span
+                  className={`block truncate text-xs font-medium ${DOC_STATUS_TONE[item.tone ?? "pending"]}`}
+                >
+                  {item.status}
+                </span>
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${selected ? "rotate-180" : ""}`}
+                aria-hidden="true"
+              />
+            </button>
+          );
+        })}
+      </div>
+      {open && (
+        <div id={panelId} className="mt-3 rounded-2xl border border-border/60 bg-surface/40 p-4">
+          {open.content}
+        </div>
+      )}
+    </div>
   );
 }
