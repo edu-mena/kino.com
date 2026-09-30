@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -36,6 +37,12 @@ class MediaUploadService
 
     private const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8MB
 
+    /** Validade dos URLs assinados dos documentos — longa o suficiente para
+     * um painel aberto (que refaz o pedido periodicamente) não ficar com
+     * imagens partidas, curta o suficiente para um URL reencaminhado deixar
+     * de abrir no mesmo dia. */
+    private const DOCUMENT_URL_TTL_MINUTES = 120;
+
     private const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100MB — bruto, antes do ffmpeg recomprimir
 
     public function storeImage(UploadedFile $file, string $purpose, string $ownerSegment): string
@@ -61,8 +68,14 @@ class MediaUploadService
         return Storage::disk('r2')->url($path);
     }
 
-    /** Como `storeImage`, mas aceita imagem OU PDF — fatura emitida pelo
-     * restaurante (ver DOCUMENT_PURPOSES). */
+    /**
+     * Comprovativo de pagamento / fatura (imagem OU PDF) — dados pessoais e
+     * bancários, por isso NUNCA no bucket público (auditoria de segurança,
+     * Fase 2): vai para o disco `filesystems.documents_disk` (bucket R2
+     * privado em produção) e devolve o PATH, não um URL. Quem guarda o path
+     * (colunas `payment_proof_url`/`invoice_url`, nome histórico) serve-o
+     * sempre por `documentUrl()`, que assina um URL temporário.
+     */
     public function storeDocument(UploadedFile $file, string $purpose, string $ownerSegment): string
     {
         if (! in_array($purpose, self::DOCUMENT_PURPOSES, true)) {
@@ -81,9 +94,52 @@ class MediaUploadService
         $extension = $file->extension() ?: ($mime === 'application/pdf' ? 'pdf' : 'jpg');
         $path = "{$purpose}/{$ownerSegment}/".Str::uuid().".{$extension}";
 
-        Storage::disk('r2')->put($path, file_get_contents($file->getRealPath()), 'public');
+        $this->documentsDisk()->put($path, file_get_contents($file->getRealPath()));
 
-        return Storage::disk('r2')->url($path);
+        return $path;
+    }
+
+    /**
+     * URL para mostrar um documento guardado por `storeDocument()` — assinado,
+     * válido DOCUMENT_URL_TTL_MINUTES. Só é chamado ao serializar um
+     * pedido/reserva para quem já passou a autorização (dono, convidado com
+     * guest_token, staff do restaurante).
+     *
+     * Valores antigos (antes da Fase 2) são URLs públicos completos — ficam
+     * como estão até `documents:privatize` os mover para o bucket privado.
+     */
+    public function documentUrl(?string $stored): ?string
+    {
+        if (! $stored) {
+            return null;
+        }
+
+        if (str_starts_with($stored, 'http://') || str_starts_with($stored, 'https://')) {
+            return $stored;
+        }
+
+        return $this->documentsDisk()->temporaryUrl($stored, now()->addMinutes(self::DOCUMENT_URL_TTL_MINUTES));
+    }
+
+    /** Apaga um documento substituído (path privado ou URL público antigo). */
+    public function deleteDocument(?string $stored): void
+    {
+        if (! $stored) {
+            return;
+        }
+
+        if (str_starts_with($stored, 'http://') || str_starts_with($stored, 'https://')) {
+            $this->deleteByUrl($stored);
+
+            return;
+        }
+
+        $this->documentsDisk()->delete($stored);
+    }
+
+    public function documentsDisk(): FilesystemAdapter
+    {
+        return Storage::disk(config('filesystems.documents_disk'));
     }
 
     /**

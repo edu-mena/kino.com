@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Reservation;
+use App\Services\MediaUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,6 +12,8 @@ class ReservationResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        // Comprovativo/fatura: URL assinado de curta duração (bucket privado —
+        // ver MediaUploadService::documentUrl), nunca um link permanente.
         return [
             'id' => $this->uuid,
             'restaurantId' => $this->whenLoaded('restaurant', fn () => $this->restaurant->uuid),
@@ -42,9 +45,9 @@ class ReservationResource extends JsonResource
             'statusUpdatedAt' => $this->status_updated_at?->toIso8601String(),
             'tableId' => $this->whenLoaded('table', fn () => $this->table?->uuid),
             'specialRequests' => $this->special_requests,
-            'paymentProofUrl' => $this->payment_proof_url,
+            'paymentProofUrl' => app(MediaUploadService::class)->documentUrl($this->payment_proof_url),
             'paymentProofAt' => $this->payment_proof_at?->toIso8601String(),
-            'invoiceUrl' => $this->invoice_url,
+            'invoiceUrl' => app(MediaUploadService::class)->documentUrl($this->invoice_url),
             'invoiceAt' => $this->invoice_at?->toIso8601String(),
             'promoCode' => $this->promo_code,
             'promoLabel' => $this->promo_label,

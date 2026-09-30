@@ -6,11 +6,14 @@ use App\Models\BlockedIp;
 use App\Models\DeviceToken;
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\MediaUploadService;
 use App\Services\PushNotificationService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
 use Kreait\Firebase\Contract\Messaging as FirebaseMessaging;
 use Minishlink\WebPush\WebPush;
 
@@ -143,3 +146,50 @@ Artisan::command('push:check {email? : Conta a quem enviar um push de teste}', f
     app(PushNotificationService::class)->sendForNotification($user, $test);
     $this->info("Push de teste enviado para {$email} ({$platforms->implode(', ')}). Se não chegar, ver storage/logs/laravel.log (linhas 'fcm:'/'web-push:').");
 })->purpose('Verificar a configuração do push e enviar um push de teste');
+
+/*
+ * Auditoria de segurança, Fase 2 — move os comprovativos/faturas enviados
+ * ANTES do bucket privado (URL público permanente na CDN) para o disco de
+ * documentos privado, e apaga a cópia pública. Idempotente: só toca em
+ * valores que ainda são URLs da CDN. Escreve direto na tabela (não via
+ * model) para os Observers não dispararem notificações de "novo
+ * comprovativo" a clientes/restaurantes.
+ */
+Artisan::command('documents:privatize {--dry-run : Só lista o que seria movido}', function () {
+    $publicBase = rtrim((string) config('filesystems.disks.r2.url'), '/').'/';
+    $public = Storage::disk('r2');
+    $private = app(MediaUploadService::class)->documentsDisk();
+    $dryRun = (bool) $this->option('dry-run');
+    $moved = $missing = 0;
+
+    foreach (['orders', 'reservations'] as $table) {
+        foreach (['payment_proof_url', 'invoice_url'] as $column) {
+            DB::table($table)->where($column, 'like', $publicBase.'%')->orderBy('id')
+                ->each(function ($row) use ($table, $column, $publicBase, $public, $private, $dryRun, &$moved, &$missing) {
+                    $path = substr($row->{$column}, strlen($publicBase));
+
+                    if (! $public->exists($path)) {
+                        $missing++;
+                        $this->warn("{$table}#{$row->id} {$column}: ficheiro já não existe no bucket público ({$path}) — ignorado.");
+
+                        return;
+                    }
+
+                    $this->line("{$table}#{$row->id} {$column}: {$path}");
+                    if ($dryRun) {
+                        $moved++;
+
+                        return;
+                    }
+
+                    $private->put($path, $public->get($path));
+                    DB::table($table)->where('id', $row->id)->update([$column => $path]);
+                    $public->delete($path);
+                    $moved++;
+                });
+        }
+    }
+
+    $verb = $dryRun ? 'a mover' : 'movidos';
+    $this->info("{$moved} documento(s) {$verb} para o disco privado; {$missing} em falta.");
+})->purpose('Mover comprovativos/faturas antigos do bucket público para o privado');

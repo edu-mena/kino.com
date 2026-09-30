@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
@@ -28,6 +29,13 @@ abstract class TestCase extends BaseTestCase
             );
         }
 
-        return parent::setUpTraits();
+        $traits = parent::setUpTraits();
+
+        // Documentos privados (comprovativos/faturas) nunca tocam num
+        // bucket real em teste — mesmo nos testes que não os usam de
+        // propósito (um Observer/Resource pode gerar URL assinado).
+        Storage::fake(config('filesystems.documents_disk'));
+
+        return $traits;
     }
 }

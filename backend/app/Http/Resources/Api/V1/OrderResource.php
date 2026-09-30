@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Order;
+use App\Services\MediaUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,6 +12,8 @@ class OrderResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        // Comprovativo/fatura: URL assinado de curta duração (bucket privado —
+        // ver MediaUploadService::documentUrl), nunca um link permanente.
         return [
             'id' => $this->uuid,
             'restaurantId' => $this->whenLoaded('restaurant', fn () => $this->restaurant->uuid),
@@ -58,9 +61,9 @@ class OrderResource extends JsonResource
             'promoLabel' => $this->promo_label,
             'promoPercentOff' => $this->promo_percent_off,
             'promoFreeDelivery' => $this->promo_free_delivery,
-            'paymentProofUrl' => $this->payment_proof_url,
+            'paymentProofUrl' => app(MediaUploadService::class)->documentUrl($this->payment_proof_url),
             'paymentProofAt' => $this->payment_proof_at?->toIso8601String(),
-            'invoiceUrl' => $this->invoice_url,
+            'invoiceUrl' => app(MediaUploadService::class)->documentUrl($this->invoice_url),
             'invoiceType' => $this->invoice_type,
             'invoiceAt' => $this->invoice_at?->toIso8601String(),
             // Pedido do cliente por fatura com NIF (ver StoreOrderRequest) +

@@ -245,8 +245,13 @@ class OrderController extends Controller
         $this->assertOwnerOrGuest($request, $order);
         $request->validate(['proof' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:8192']]);
 
-        $url = $uploads->storeDocument($request->file('proof'), 'payment-proof', $order->uuid);
-        $order->update(['payment_proof_url' => $url, 'payment_proof_at' => now()]);
+        // Path privado, não URL (ver MediaUploadService::storeDocument) — a
+        // coluna mantém o nome histórico `_url`. O anterior é apagado: um
+        // comprovativo substituído não deve ficar esquecido no bucket.
+        $previous = $order->payment_proof_url;
+        $path = $uploads->storeDocument($request->file('proof'), 'payment-proof', $order->uuid);
+        $order->update(['payment_proof_url' => $path, 'payment_proof_at' => now()]);
+        $uploads->deleteDocument($previous);
 
         return new OrderResource($order);
     }
@@ -261,12 +266,14 @@ class OrderController extends Controller
             'type' => ['sometimes', 'in:normal,nif'],
         ]);
 
-        $url = $uploads->storeDocument($request->file('invoice'), 'invoice', $order->uuid);
+        $previous = $order->invoice_url;
+        $path = $uploads->storeDocument($request->file('invoice'), 'invoice', $order->uuid);
         $order->update([
-            'invoice_url' => $url,
+            'invoice_url' => $path,
             'invoice_type' => $data['type'] ?? 'normal',
             'invoice_at' => now(),
         ]);
+        $uploads->deleteDocument($previous);
 
         return new OrderResource($order);
     }

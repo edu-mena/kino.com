@@ -211,8 +211,11 @@ class ReservationController extends Controller
         $this->assertOwnerOrGuest($request, $reservation);
         $request->validate(['proof' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:8192']]);
 
-        $url = $uploads->storeDocument($request->file('proof'), 'payment-proof', $reservation->uuid);
-        $reservation->update(['payment_proof_url' => $url, 'payment_proof_at' => now()]);
+        // Path privado, não URL — ver OrderController::storePaymentProof.
+        $previous = $reservation->payment_proof_url;
+        $path = $uploads->storeDocument($request->file('proof'), 'payment-proof', $reservation->uuid);
+        $reservation->update(['payment_proof_url' => $path, 'payment_proof_at' => now()]);
+        $uploads->deleteDocument($previous);
 
         return new ReservationResource($reservation);
     }
@@ -243,8 +246,10 @@ class ReservationController extends Controller
         $this->authorize('manageOperations', $reservation->restaurant);
         $request->validate(['invoice' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:8192']]);
 
-        $url = $uploads->storeDocument($request->file('invoice'), 'invoice', $reservation->uuid);
-        $reservation->update(['invoice_url' => $url, 'invoice_at' => now()]);
+        $previous = $reservation->invoice_url;
+        $path = $uploads->storeDocument($request->file('invoice'), 'invoice', $reservation->uuid);
+        $reservation->update(['invoice_url' => $path, 'invoice_at' => now()]);
+        $uploads->deleteDocument($previous);
 
         return new ReservationResource($reservation);
     }
