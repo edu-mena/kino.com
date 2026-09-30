@@ -83,7 +83,7 @@ Route::prefix('system-access')->group(function () {
     });
 });
 
-// Mapas — proxy da Google Maps Platform (ver MapsController). Público:
+// Mapas — proxy OpenStreetMap: Photon + OSRM (ver MapsController). Público:
 // convidados também veem distância/ETA.
 Route::prefix('maps')->middleware('throttle:maps')->group(function () {
     Route::get('geocode', [MapsController::class, 'geocode']);

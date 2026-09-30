@@ -4,7 +4,7 @@ import { LocationPicker } from "@/components/location-map";
 import { useTranslation } from "@/i18n";
 import { useLocation } from "@/lib/location";
 import { toast } from "sonner";
-import { getMapsClient, isGoogleMapsEnabled } from "@/lib/maps";
+import { getMapsClient } from "@/lib/maps";
 import { DEFAULT_PIN_RADIUS_METERS } from "@/lib/maps/map-ui";
 import { isNativeApp } from "@/lib/native-permissions";
 
@@ -33,7 +33,7 @@ export function UseCurrentLocationField({
   const { t } = useTranslation();
   const { deviceCoords, deviceLocationStatus, requestDeviceLocation } = useLocation();
   const [point, setPoint] = useState<Point | null>(null);
-  // Com Google: o pino fica preso a DEFAULT_PIN_RADIUS_METERS do ponto que o
+  // O pino fica preso a DEFAULT_PIN_RADIUS_METERS do ponto que o
   // GPS devolveu — afina-se a entrada, não se muda de bairro.
   const [anchor, setAnchor] = useState<Point | null>(null);
   const [addressPreview, setAddressPreview] = useState("");
@@ -63,7 +63,7 @@ export function UseCurrentLocationField({
     if (deviceLocationStatus === "granted" && deviceCoords && !point) {
       const next = { lat: deviceCoords[0], lng: deviceCoords[1] };
       setPoint(next);
-      if (isGoogleMapsEnabled) setAnchor(next);
+      setAnchor(next);
       runReverseGeocode(next);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

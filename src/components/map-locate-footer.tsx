@@ -11,10 +11,16 @@ import { formatKm, googleDirectionsUrl } from "@/lib/geo";
 export function MapLocateFooter({
   target,
   distanceKm,
+  durationMin = null,
+  byRoad = false,
   locateError,
 }: {
   target: { lat: number; lng: number };
   distanceKm: number | null;
+  /** Tempo de condução sem trânsito (OSRM), quando há rota real. */
+  durationMin?: number | null;
+  /** `true` = distância por estrada; `false` = linha reta. */
+  byRoad?: boolean;
   locateError: boolean;
 }) {
   const { t } = useTranslation();
@@ -22,7 +28,15 @@ export function MapLocateFooter({
     <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
       {distanceKm != null && (
         <span className="font-semibold text-foreground">
-          {t("locationMap.distanceAway", { km: formatKm(distanceKm) })}
+          {t(byRoad ? "locationMap.distanceByRoad" : "locationMap.distanceAway", {
+            km: formatKm(distanceKm),
+          })}
+          {byRoad && durationMin != null && (
+            <span className="font-normal text-muted-foreground">
+              {" · "}
+              {t("locationMap.driveMinutes", { min: Math.max(1, Math.round(durationMin)) })}
+            </span>
+          )}
         </span>
       )}
       <a

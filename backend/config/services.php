@@ -41,13 +41,14 @@ return [
     // Console) porque o Google Sign-In nativo emite id_tokens com `aud` =
     // client_id da plataforma que gerou o login, não um único client_id
     // partilhado — ver GoogleOAuthService::verifyIdToken().
-    // Proxy de mapas (ver GoogleMapsService) — chave de SERVIDOR com
-    // Geocoding API + Routes API ativas, restrita por IP do servidor. Nunca a
-    // mesma chave de browser do frontend (VITE_GOOGLE_MAPS_API_KEY).
-    'google_maps' => [
-        'server_key' => env('GOOGLE_MAPS_SERVER_KEY') ?: null,
-        'region' => 'ao',
-        'language' => 'pt',
+    // Proxy de mapas (ver OsmMapsService) — serviços OpenStreetMap
+    // gratuitos, sem chave: Photon (moradas) e OSRM (rotas). As instâncias
+    // públicas pedem uso moderado e um User-Agent identificável; com volume,
+    // apontar para instâncias próprias (ambos correm em Docker).
+    'maps' => [
+        'geocoder_url' => env('MAPS_GEOCODER_URL') ?: 'https://photon.komoot.io',
+        'routing_url' => env('MAPS_ROUTING_URL') ?: 'https://router.project-osrm.org',
+        'user_agent' => env('MAPS_USER_AGENT') ?: 'Luku/1.0 (+https://luku.ao)',
     ],
 
     'google' => [

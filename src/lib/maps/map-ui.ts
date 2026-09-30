@@ -1,6 +1,5 @@
 /**
- * Peças partilhadas pelos dois renderizadores de mapa (Leaflet/OSM e Google)
- * — ver `@/components/location-map`, que escolhe um deles.
+ * Peças partilhadas pelos mapas (Leaflet/OSM) — ver `@/components/location-map`.
  */
 
 export type MapPoint = { id: string; lat: number; lng: number; label: string };
@@ -28,7 +27,7 @@ export type LocationPickerProps = {
    * num sítio que nada tem a ver com a morada escrita.
    */
   anchor?: { lat: number; lng: number } | null | undefined;
-  maxRadiusMeters?: number;
+  maxRadiusMeters?: number | undefined;
   /** Chamado quando um arrasto/clique fora do raio foi puxado de volta. */
   onClamped?: () => void;
 };

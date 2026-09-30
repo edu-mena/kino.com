@@ -167,8 +167,8 @@ function RestaurantDetail() {
       ? { lat: restaurant.lat, lng: restaurant.lng }
       : null;
 
-  // Distância atrás do contrato `@/lib/maps`: hoje é haversine (aproximada);
-  // com `VITE_MAPS_PROVIDER=google` + backend passa a distância de rota real.
+  // Distância atrás do contrato `@/lib/maps`: aproximação em linha reta de
+  // imediato, trocada pela distância por estrada (OSRM) quando chega.
   const travel = useTravelEstimate(restaurantPoint, userPoint);
   const distanceKm = travel.result?.distanceKm ?? null;
 

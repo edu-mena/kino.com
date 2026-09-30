@@ -28,8 +28,7 @@ import {
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { deriveRestaurantCoords, PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
 import { apiFetch, ApiError, hasRealBackend } from "@/lib/api-client";
-import { isGoogleMapsEnabled, type LatLng } from "@/lib/maps";
-import { DEFAULT_PIN_RADIUS_METERS } from "@/lib/maps/map-ui";
+import type { LatLng } from "@/lib/maps";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 
@@ -153,10 +152,17 @@ function Parceiros() {
   // província recentra automaticamente para lá (conveniência); depois de
   // mexido manualmente, a escolha do candidato nunca é sobrescrita sozinha.
   const [locationTouched, setLocationTouched] = useState(false);
-  // Posição devolvida pela morada escolhida no autocomplete (Google). Com
-  // ela, o pino só pode ser afinado até DEFAULT_PIN_RADIUS_METERS dela; sem
-  // Google configurado fica sempre `null` e o mapa funciona como antes.
-  const [addressAnchor, setAddressAnchor] = useState<LatLng | null>(null);
+  // Morada escolhida na lista de sugestões (OpenStreetMap): o pino só pode
+  // ser afinado dentro do raio dela (150 m para um local exato; mais para
+  // uma rua/bairro inteiro) — não dá para o pôr num sítio que nada tem a ver
+  // com a morada escrita.
+  const [addressAnchor, setAddressAnchor] = useState<{
+    point: LatLng;
+    radiusMeters: number;
+  } | null>(null);
+  // Serviço de moradas em baixo → não bloquear o candidato; volta ao mapa
+  // livre de antes.
+  const [geocoderDown, setGeocoderDown] = useState(false);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -186,12 +192,12 @@ function Parceiros() {
       case 1:
         return form.ownerName.trim() !== "" && form.email.trim() !== "" && form.phone.trim() !== "";
       case 2:
-        // Com Google, a morada tem de vir da lista de sugestões — é o que
-        // garante que o pino corresponde ao que foi escrito.
+        // A morada tem de vir da lista de sugestões — é o que garante que o
+        // pino corresponde ao que foi escrito (exceto com o serviço em baixo).
         return (
           form.province !== "" &&
           form.address.trim() !== "" &&
-          (!isGoogleMapsEnabled || addressAnchor !== null)
+          (geocoderDown || addressAnchor !== null)
         );
       default:
         return true;
@@ -472,7 +478,7 @@ function Parceiros() {
                       // Texto mudado à mão já não é a morada escolhida.
                       setAddressAnchor(null);
                     }}
-                    onSelect={(result) => {
+                    onSelect={({ result, radiusMeters }) => {
                       const province = ANGOLA_PROVINCES.find((p) => p === result.province);
                       setForm((prev) => ({
                         ...prev,
@@ -481,9 +487,10 @@ function Parceiros() {
                         lng: result.point.lng,
                         ...(province ? { province } : {}),
                       }));
-                      setAddressAnchor(result.point);
+                      setAddressAnchor({ point: result.point, radiusMeters });
                       setLocationTouched(true);
                     }}
+                    onUnavailable={() => setGeocoderDown(true)}
                     near={form.province ? PROVINCE_CENTERS[form.province] : undefined}
                     placeholder={t("parceiros.addressPlaceholder")}
                     inputClassName={inputWithIconClass}
@@ -491,7 +498,7 @@ function Parceiros() {
                       <MapPin className="pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     }
                   />
-                  {isGoogleMapsEnabled && !addressAnchor && (
+                  {!geocoderDown && !addressAnchor && (
                     <p className="text-xs text-muted-foreground">
                       {t("addressAutocomplete.pickFromList")}
                     </p>
@@ -522,15 +529,18 @@ function Parceiros() {
                       setForm((prev) => ({ ...prev, lat: next.lat, lng: next.lng }));
                       setLocationTouched(true);
                     }}
-                    anchor={addressAnchor}
+                    anchor={addressAnchor?.point}
+                    maxRadiusMeters={addressAnchor?.radiusMeters}
                     onClamped={() =>
-                      toast.info(t("locationMap.pinClamped", { m: DEFAULT_PIN_RADIUS_METERS }))
+                      toast.info(
+                        t("locationMap.pinClamped", { m: addressAnchor?.radiusMeters ?? 0 }),
+                      )
                     }
                     height={240}
                   />
                   <p className="text-xs text-muted-foreground">
                     {addressAnchor
-                      ? t("locationMap.pinAnchoredHint", { m: DEFAULT_PIN_RADIUS_METERS })
+                      ? t("locationMap.pinAnchoredHint", { m: addressAnchor.radiusMeters })
                       : t("adminPerfil.mapPickHint")}{" "}
                     · {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
                   </p>

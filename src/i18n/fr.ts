@@ -2484,6 +2484,8 @@ export const fr: Dictionary = {
     locate: "Ma position",
     you: "Vous êtes ici",
     distanceAway: "À {km} km de vous",
+    distanceByRoad: "À {km} km de vous par la route",
+    driveMinutes: "~{min} min en voiture sans trafic",
     directions: "Itinéraire",
     locateError: "Impossible d'obtenir votre position.",
     pinClamped: "Le repère ne peut être ajusté qu'à {m} m de l'adresse choisie.",
@@ -2494,7 +2496,8 @@ export const fr: Dictionary = {
     searching: "Recherche d'adresses...",
     noResults: "Aucune adresse trouvée — essayez le quartier ou la rue.",
     error: "Impossible de rechercher des adresses pour le moment.",
-    poweredBy: "Suggestions de Google",
+    poweredBy: "Adresses © OpenStreetMap",
+    tooVague: "Trop vague — choisissez la rue, le quartier ou le lieu.",
     pickFromList: "Choisissez l'adresse dans la liste pour marquer l'endroit exact sur la carte.",
   },
   adminMesas: {

@@ -19,10 +19,8 @@ export type TravelEstimate = {
 /**
  * Estimativa de deslocação entre dois pontos, atrás do contrato de `MapsClient`.
  *
- * Hoje devolve a aproximação local de forma síncrona (sem "loading", SSR-safe).
- * Quando `VITE_MAPS_PROVIDER=google` + `VITE_MAPS_API_BASE` estiverem
- * definidos, o mesmo hook passa a devolver distância/tempo reais (com
- * trânsito) — os ecrãs não mudam.
+ * Devolve logo a aproximação local (síncrona, SSR-safe) e troca-a pela
+ * rota real por estrada (OSRM) quando esta chega.
  */
 export function useTravelEstimate(
   from: LatLng | null | undefined,

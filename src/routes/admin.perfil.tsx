@@ -70,7 +70,7 @@ import { defaultWeeklyHours, formatWeeklyHours, isOpenNow, nextOpenAt } from "@/
 import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { ApiError, hasRealBackend } from "@/lib/api-client";
-import { isGoogleMapsEnabled, type LatLng } from "@/lib/maps";
+import type { LatLng } from "@/lib/maps";
 import { DEFAULT_PIN_RADIUS_METERS } from "@/lib/maps/map-ui";
 
 export const Route = createFileRoute("/admin/perfil")({
@@ -305,10 +305,14 @@ function AdminPerfil() {
     lat: -8.839,
     lng: 13.2894,
   });
-  // Com Google: o pino só se afina até DEFAULT_PIN_RADIUS_METERS desta
-  // âncora — a localização já guardada, ou a morada escolhida no
-  // autocomplete. Para mudar de sítio a sério, escolhe-se outra morada.
-  const [addressAnchor, setAddressAnchor] = useState<LatLng | null>(null);
+  // O pino só se afina dentro do raio desta âncora — a localização já
+  // guardada (150 m) ou a morada escolhida nas sugestões. Para mudar de
+  // sítio a sério, escolhe-se outra morada. `null` = mapa livre (sem
+  // localização guardada, ou serviço de moradas em baixo).
+  const [addressAnchor, setAddressAnchor] = useState<{
+    point: LatLng;
+    radiusMeters: number;
+  } | null>(null);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [hours, setHours] = useState<WeeklyHours>(defaultWeeklyHours);
@@ -346,8 +350,11 @@ function AdminPerfil() {
         : deriveRestaurantCoords(restaurant.id, restaurant.neighborhood),
     );
     setAddressAnchor(
-      isGoogleMapsEnabled && restaurant.lat != null && restaurant.lng != null
-        ? { lat: restaurant.lat, lng: restaurant.lng }
+      restaurant.lat != null && restaurant.lng != null
+        ? {
+            point: { lat: restaurant.lat, lng: restaurant.lng },
+            radiusMeters: DEFAULT_PIN_RADIUS_METERS,
+          }
         : null,
     );
     setPhone(restaurant.phone);
@@ -681,11 +688,12 @@ function AdminPerfil() {
                     <AddressAutocomplete
                       value={address}
                       onChange={setAddress}
-                      onSelect={(result) => {
+                      onSelect={({ result, radiusMeters }) => {
                         setAddress(result.formattedAddress);
                         setCoords(result.point);
-                        setAddressAnchor(result.point);
+                        setAddressAnchor({ point: result.point, radiusMeters });
                       }}
+                      onUnavailable={() => setAddressAnchor(null)}
                       near={coords}
                       id="rest-address"
                     />
@@ -741,18 +749,19 @@ function AdminPerfil() {
                   <LocationPicker
                     value={coords}
                     onChange={setCoords}
-                    anchor={addressAnchor}
+                    anchor={addressAnchor?.point}
+                    maxRadiusMeters={addressAnchor?.radiusMeters}
                     onClamped={() =>
-                      toast.info(t("locationMap.pinClamped", { m: DEFAULT_PIN_RADIUS_METERS }))
+                      toast.info(
+                        t("locationMap.pinClamped", { m: addressAnchor?.radiusMeters ?? 0 }),
+                      )
                     }
                     height={280}
                   />
                   <p className="text-xs text-muted-foreground">
                     {addressAnchor
-                      ? t("locationMap.pinAnchoredHint", { m: DEFAULT_PIN_RADIUS_METERS })
-                      : isGoogleMapsEnabled
-                        ? t("addressAutocomplete.pickFromList")
-                        : t("adminPerfil.mapPickHint")}{" "}
+                      ? t("locationMap.pinAnchoredHint", { m: addressAnchor.radiusMeters })
+                      : t("adminPerfil.mapPickHint")}{" "}
                     · {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
                   </p>
                 </div>

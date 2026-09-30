@@ -2453,6 +2453,8 @@ export const en: Dictionary = {
     locate: "My location",
     you: "You are here",
     distanceAway: "{km} km from you",
+    distanceByRoad: "{km} km from you by road",
+    driveMinutes: "~{min} min drive without traffic",
     directions: "Get directions",
     locateError: "Couldn't get your location.",
     pinClamped: "The pin can only be adjusted up to {m} m from the chosen address.",
@@ -2463,7 +2465,8 @@ export const en: Dictionary = {
     searching: "Searching addresses...",
     noResults: "No address found — try the neighbourhood or street.",
     error: "Couldn't search addresses right now.",
-    poweredBy: "Suggestions by Google",
+    poweredBy: "Addresses © OpenStreetMap",
+    tooVague: "Too vague — pick the street, neighbourhood or place.",
     pickFromList: "Pick the address from the list to mark the exact spot on the map.",
   },
   adminMesas: {

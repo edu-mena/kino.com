@@ -1,49 +1,47 @@
 /**
- * Configuração do fornecedor de mapas — mesmo padrão de `@/lib/image-cdn`:
- * ativa-se por variável de ambiente e, sem ela, o comportamento é o atual
- * (Leaflet + OpenStreetMap + distância em linha reta). Nada de tráfego para
- * a Google sem uma escolha explícita.
+ * Configuração dos mapas — 100% gratuita, sem chaves (OpenStreetMap):
  *
- * Variáveis (ver `.env.example`):
+ * - Mapa: Leaflet + tiles OSM.
+ * - Moradas (autocomplete, geocoding, reverse): Photon (komoot), feito
+ *   para pesquisa enquanto se escreve, com dados OSM de Angola.
+ * - Rotas: OSRM (distância/tempo por estrada + traçado; sem trânsito).
  *
- *   VITE_MAPS_PROVIDER=google
- *     Liga o caminho Google. Sem isto → "leaflet" (atual).
+ * Os serviços públicos gratuitos pedem uso moderado. Cada URL é
+ * configurável para, quando o volume crescer, apontar para instâncias
+ * próprias (Photon/OSRM correm em Docker, sem custo de licença) sem mexer
+ * no código. Variáveis (ver `.env.example`):
  *
- *   VITE_GOOGLE_MAPS_API_KEY=...
- *     Chave *de browser* da Google Maps Platform, restrita por referrer.
- *     Usada só para RENDERIZAR o mapa (Maps JavaScript API / tiles).
- *
- *   VITE_MAPS_API_BASE=https://api.luku.com/maps
- *     Base do nosso backend-proxy que fala com Geocoding / Routes /
- *     Distance Matrix. A chave *de servidor* vive lá, nunca no cliente.
- *     Enquanto não existir, o cliente Google lança erro claro e o app
- *     recai no cálculo local — ver `google-client.ts`.
+ *   VITE_GEOCODER_URL   — Photon. Omissão: https://photon.komoot.io
+ *   VITE_ROUTING_URL    — OSRM.   Omissão: https://router.project-osrm.org
+ *   VITE_MAP_TILES_URL  — tiles.  Omissão: tiles do OpenStreetMap
+ *   VITE_MAPS_API_BASE  — proxy do nosso backend (<api>/maps): rotas passam
+ *                         por lá (cache + identificação do cliente), em vez
+ *                         de irem direto ao OSRM público.
  */
 
-export type MapsProvider = "leaflet" | "google";
+export type MapsProvider = "local" | "osm";
 
-const rawProvider = (import.meta.env["VITE_MAPS_PROVIDER"] as string | undefined)?.toLowerCase();
+const env = (name: string) =>
+  ((import.meta.env[name] as string | undefined)?.trim() || "").replace(/\/$/, "");
 
-export const mapsProvider: MapsProvider = rawProvider === "google" ? "google" : "leaflet";
+export const geocoderUrl = env("VITE_GEOCODER_URL") || "https://photon.komoot.io";
 
-/** Chave de browser para renderizar o mapa Google (restrita por referrer). */
-export const googleMapsBrowserKey =
-  (import.meta.env["VITE_GOOGLE_MAPS_API_KEY"] as string | undefined)?.trim() || "";
+export const routingUrl = env("VITE_ROUTING_URL") || "https://router.project-osrm.org";
 
-/** Map ID para marcadores "Advanced"; `DEMO_MAP_ID` serve só em desenvolvimento. */
-export const googleMapsMapId =
-  (import.meta.env["VITE_GOOGLE_MAPS_MAP_ID"] as string | undefined)?.trim() || "DEMO_MAP_ID";
+export const mapTilesUrl =
+  (import.meta.env["VITE_MAP_TILES_URL"] as string | undefined)?.trim() ||
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
-/** Base do backend-proxy de geocoding/rotas (sem barra final). */
-export const mapsApiBase = (
-  (import.meta.env["VITE_MAPS_API_BASE"] as string | undefined)?.trim() || ""
-).replace(/\/$/, "");
+export const mapTilesAttribution =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
-/** O mapa deve ser desenhado com a Google (precisa de provider + chave de browser). */
-export const isGoogleMapsEnabled = mapsProvider === "google" && googleMapsBrowserKey.length > 0;
+/** Base do backend-proxy de mapas (sem barra final). */
+export const mapsApiBase = env("VITE_MAPS_API_BASE");
 
-/** Há backend para geocoding/rotas reais. Enquanto `false`, usa-se o cálculo local. */
 export const isMapsBackendConfigured = mapsApiBase.length > 0;
 
-/** Geocoding/rotas reais disponíveis: provider Google + backend-proxy montado. */
-export const isRealRoutingAvailable = mapsProvider === "google" && isMapsBackendConfigured;
+/**
+ * Angola (com Cabinda) — [minLon, minLat, maxLon, maxLat]. Restringe as
+ * sugestões de morada ao país.
+ */
+export const ANGOLA_BBOX = [11.6, -18.1, 24.1, -4.3] as const;

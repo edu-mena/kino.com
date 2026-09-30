@@ -85,15 +85,15 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(20)->by($request->ip());
         });
 
-        // Upload de imagem/vídeo — protege storage/fila de abuso.
-        // Mapas (geocoding/rotas): cada pedido que falha a cache custa
-        // dinheiro na Google — limite por utilizador ou IP.
+        // Mapas (moradas/rotas): as instâncias OSM públicas pedem uso
+        // moderado — limite por utilizador ou IP (a cache faz o resto).
         RateLimiter::for('maps', function (Request $request) {
             $owner = $request->user('sanctum')?->id ?? $request->ip();
 
             return Limit::perMinute(60)->by('maps:'.$owner);
         });
 
+        // Upload de imagem/vídeo — protege storage/fila de abuso.
         RateLimiter::for('uploads', function (Request $request) {
             $owner = $request->user()?->id ?? $request->ip();
 

@@ -2463,6 +2463,8 @@ export const pt = {
     locate: "A minha localização",
     you: "Você está aqui",
     distanceAway: "A {km} km de si",
+    distanceByRoad: "A {km} km de si por estrada",
+    driveMinutes: "~{min} min de carro sem trânsito",
     directions: "Como chegar",
     locateError: "Não foi possível obter a sua localização.",
     pinClamped: "O pino só pode ser afinado até {m} m da morada escolhida.",
@@ -2472,7 +2474,8 @@ export const pt = {
     searching: "A procurar moradas...",
     noResults: "Nenhuma morada encontrada — tente com o bairro ou a rua.",
     error: "Não foi possível procurar moradas agora.",
-    poweredBy: "Sugestões do Google",
+    poweredBy: "Moradas © OpenStreetMap",
+    tooVague: "Morada vaga demais — escolha a rua, o bairro ou o local.",
     pickFromList: "Escolha a morada na lista para marcar o local exato no mapa.",
   },
   adminMesas: {

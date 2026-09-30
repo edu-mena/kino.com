@@ -1,37 +1,37 @@
 import { Loader2, MapPin } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "@/i18n";
-import { isGoogleMapsEnabled } from "@/lib/maps/config";
-import {
-  fetchAddressSuggestions,
-  newAutocompleteSession,
-  resolveSuggestion,
-  type AddressSuggestion,
-} from "@/lib/maps/google-js";
+import { fetchAddressSuggestions, type AddressSuggestion } from "@/lib/maps/photon";
 import type { GeocodeResult, LatLng } from "@/lib/maps/types";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { cn } from "@/lib/utils";
 
-/**
- * Campo de morada com sugestões da Google (Places API New), restritas a
- * Angola. Escolher uma sugestão devolve (`onSelect`) as coordenadas reais,
- * a morada formatada e a província — é isso que posiciona o pino no mapa,
- * em vez de o utilizador ter de o arrastar à mão.
- *
- * Sem Google configurado (`isGoogleMapsEnabled` falso: demo/dev) é
- * exatamente o `<input>` de antes — nada muda nesses ambientes.
- *
- * Sessão de autocomplete: um token por "procura" (do primeiro carácter até
- * escolher) — a Google cobra a sessão como um único pedido de detalhes.
- */
 /** Por omissão, o mesmo aspeto do `<Input>` do UI kit. */
 const INPUT_KIT_CLASS =
   "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm";
 
+export type AddressSelection = {
+  result: GeocodeResult;
+  /** Raio (m) até onde o pino pode ser afinado a partir de `result.point`. */
+  radiusMeters: number;
+};
+
+/**
+ * Campo de morada com sugestões reais de Angola (Photon/OpenStreetMap —
+ * gratuito, sem chave). Escolher uma sugestão devolve (`onSelect`) as
+ * coordenadas, a morada formatada, a província e o raio de afinação — é
+ * isso que posiciona o pino no mapa, em vez de o arrastar à mão.
+ *
+ * Resultados vagos (cidade/província inteira) não contam como escolha: pede
+ * uma rua ou local. Se o serviço de moradas falhar, `onUnavailable` avisa o
+ * formulário (para não bloquear quem precisa de avançar) e o campo continua
+ * a aceitar texto livre.
+ */
 export function AddressAutocomplete({
   value,
   onChange,
   onSelect,
+  onUnavailable,
   placeholder,
   inputClassName = INPUT_KIT_CLASS,
   leadingIcon,
@@ -42,7 +42,8 @@ export function AddressAutocomplete({
   value: string;
   /** Texto livre (cada tecla) — escrever depois de escolher invalida a escolha. */
   onChange: (text: string) => void;
-  onSelect: (result: GeocodeResult) => void;
+  onSelect: (selection: AddressSelection) => void;
+  onUnavailable?: () => void;
   placeholder?: string;
   inputClassName?: string;
   /** Ícone absoluto à esquerda (o input deve ter o padding correspondente). */
@@ -57,16 +58,17 @@ export function AddressAutocomplete({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [vague, setVague] = useState(false);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [highlight, setHighlight] = useState(0);
-  const sessionRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   // Depois de escolher, o texto muda para a morada formatada — isso não deve
   // disparar nova procura.
   const skipNextRef = useRef(false);
-  const debounced = useDebouncedValue(value, 250);
+  const onUnavailableRef = useRef(onUnavailable);
+  onUnavailableRef.current = onUnavailable;
+  const debounced = useDebouncedValue(value, 300);
 
   useEffect(() => {
-    if (!isGoogleMapsEnabled) return;
     if (skipNextRef.current) {
       skipNextRef.current = false;
       return;
@@ -77,65 +79,39 @@ export function AddressAutocomplete({
       setLoading(false);
       return;
     }
-    let cancelled = false;
+    const controller = new AbortController();
     setLoading(true);
     setError(false);
-    void (async () => {
-      try {
-        sessionRef.current ??= await newAutocompleteSession();
-        const list = await fetchAddressSuggestions(q, sessionRef.current, near);
-        if (cancelled) return;
+    fetchAddressSuggestions(q, near, controller.signal)
+      .then((list) => {
         setSuggestions(list);
         setHighlight(0);
-      } catch {
-        if (!cancelled) {
-          setSuggestions([]);
-          setError(true);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setSuggestions([]);
+        setError(true);
+        onUnavailableRef.current?.();
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounced]);
 
-  const choose = async (s: AddressSuggestion) => {
-    setOpen(false);
-    setLoading(true);
-    try {
-      const result = await resolveSuggestion(s);
-      if (result) {
-        skipNextRef.current = true;
-        onChange(result.formattedAddress);
-        onSelect(result);
-      }
-    } catch {
-      setError(true);
-    } finally {
-      sessionRef.current = null;
-      setSuggestions([]);
-      setLoading(false);
+  const choose = (s: AddressSuggestion) => {
+    if (s.radiusMeters === null) {
+      setVague(true);
+      return;
     }
+    setVague(false);
+    setOpen(false);
+    skipNextRef.current = true;
+    onChange(s.result.formattedAddress);
+    onSelect({ result: s.result, radiusMeters: s.radiusMeters });
+    setSuggestions([]);
   };
-
-  if (!isGoogleMapsEnabled) {
-    return (
-      <div className="relative">
-        {leadingIcon}
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className={inputClassName}
-          autoFocus={autoFocus}
-          id={id}
-        />
-      </div>
-    );
-  }
 
   const q = value.trim();
   const showPanel = open && q.length >= 3;
@@ -147,6 +123,7 @@ export function AddressAutocomplete({
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
+          setVague(false);
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
@@ -166,7 +143,7 @@ export function AddressAutocomplete({
             // Nunca deixar o Enter submeter o formulário à volta com a lista aberta.
             e.preventDefault();
             const s = suggestions[highlight];
-            if (s) void choose(s);
+            if (s) choose(s);
           } else if (e.key === "Escape") {
             setOpen(false);
           }
@@ -187,6 +164,11 @@ export function AddressAutocomplete({
 
       {showPanel && (
         <div className="absolute inset-x-0 top-full z-50 mt-1.5 overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-lg">
+          {vague && (
+            <p className="border-b border-border bg-brand/10 px-4 py-2 text-xs font-medium text-brand">
+              {t("addressAutocomplete.tooVague")}
+            </p>
+          )}
           {suggestions.length > 0 ? (
             <ul id={listId} role="listbox" className="max-h-64 overflow-y-auto p-1.5">
               {suggestions.map((s, i) => (
@@ -196,7 +178,7 @@ export function AddressAutocomplete({
                     // `mousedown` antes do `blur` do input — senão o painel
                     // fechava antes de o clique chegar aqui.
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => void choose(s)}
+                    onClick={() => choose(s)}
                     onMouseEnter={() => setHighlight(i)}
                     className={cn(
                       "flex w-full items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors",

@@ -48,7 +48,6 @@ import { useCompanies } from "@/lib/companies";
 import { usePreferences } from "@/lib/preferences";
 import { usePushSubscription } from "@/lib/push-notifications";
 import { openAppSettings } from "@/lib/native-permissions";
-import { DEFAULT_PIN_RADIUS_METERS } from "@/lib/maps/map-ui";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/perfil")({
@@ -132,9 +131,12 @@ function Perfil() {
   const [newAlias, setNewAlias] = useState("");
   const [newAddress, setNewAddress] = useState("");
   const [newCoords, setNewCoords] = useState<{ lat: number; lng: number } | null>(null);
-  // Morada escolhida nas sugestões Google — mostra o mapa para afinar o pino
-  // (até DEFAULT_PIN_RADIUS_METERS dela, ex.: o portão certo).
-  const [newAnchor, setNewAnchor] = useState<{ lat: number; lng: number } | null>(null);
+  // Morada escolhida nas sugestões — mostra o mapa para afinar o pino
+  // dentro do raio dela (ex.: o portão certo).
+  const [newAnchor, setNewAnchor] = useState<{
+    point: { lat: number; lng: number };
+    radiusMeters: number;
+  } | null>(null);
   const [useLocationOpen, setUseLocationOpen] = useState(false);
 
   const handleLogout = () => {
@@ -411,9 +413,9 @@ function Perfil() {
                         id="address-line"
                         value={newAddress}
                         onChange={setNewAddress}
-                        onSelect={(result) => {
+                        onSelect={({ result, radiusMeters }) => {
                           setNewCoords(result.point);
-                          setNewAnchor(result.point);
+                          setNewAnchor({ point: result.point, radiusMeters });
                           setUseLocationOpen(false);
                         }}
                         placeholder={t("perfil.addressPlaceholder")}
@@ -424,16 +426,15 @@ function Perfil() {
                         <LocationPicker
                           value={newCoords}
                           onChange={setNewCoords}
-                          anchor={newAnchor}
+                          anchor={newAnchor.point}
+                          maxRadiusMeters={newAnchor.radiusMeters}
                           onClamped={() =>
-                            toast.info(
-                              t("locationMap.pinClamped", { m: DEFAULT_PIN_RADIUS_METERS }),
-                            )
+                            toast.info(t("locationMap.pinClamped", { m: newAnchor.radiusMeters }))
                           }
                           height={180}
                         />
                         <p className="text-xs text-muted-foreground">
-                          {t("locationMap.pinAnchoredHint", { m: DEFAULT_PIN_RADIUS_METERS })}
+                          {t("locationMap.pinAnchoredHint", { m: newAnchor.radiusMeters })}
                         </p>
                       </div>
                     )}

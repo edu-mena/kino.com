@@ -4,6 +4,9 @@ import "leaflet/dist/leaflet.css";
 import { MapLocateFooter } from "@/components/map-locate-footer";
 import { useTranslation } from "@/i18n";
 import { clampToRadius, haversineKm } from "@/lib/geo";
+import { getMapsClient } from "@/lib/maps/client";
+import { mapTilesAttribution, mapTilesUrl } from "@/lib/maps/config";
+import { decodePolyline } from "@/lib/maps/osrm";
 import {
   DEFAULT_PIN_RADIUS_METERS,
   LUANDA,
@@ -16,14 +19,11 @@ import {
 import { getDevicePosition } from "@/lib/native-permissions";
 
 /**
- * Mapa Leaflet + OpenStreetMap — o renderizador sem chave Google (demo,
- * desenvolvimento). Só arranca no cliente (`import("leaflet")` dinâmico
- * dentro do efeito) — a app faz SSR. O pino é um `divIcon` com SVG inline.
- * Escolhido por `@/components/location-map`.
+ * Mapa Leaflet + OpenStreetMap (gratuito, sem chave). Só arranca no cliente
+ * (`import("leaflet")` dinâmico dentro do efeito) — a app faz SSR. O pino é
+ * um `divIcon` com SVG inline. Exposto como `LocationMap`/`LocationPicker`
+ * por `@/components/location-map`.
  */
-
-const OSM_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 function pinIcon(L: typeof LType, dim = false) {
   return L.divIcon({
@@ -52,6 +52,8 @@ export function LeafletLocationMap({
   tRef.current = t;
 
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [durationMin, setDurationMin] = useState<number | null>(null);
+  const [byRoad, setByRoad] = useState(false);
   const [locateError, setLocateError] = useState(false);
 
   const key =
@@ -60,6 +62,8 @@ export function LeafletLocationMap({
 
   useEffect(() => {
     setDistanceKm(null);
+    setDurationMin(null);
+    setByRoad(false);
     setLocateError(false);
 
     let map: LType.Map | undefined;
@@ -68,7 +72,7 @@ export function LeafletLocationMap({
     void import("leaflet").then(({ default: L }) => {
       if (cancelled || !containerRef.current) return;
       map = L.map(containerRef.current, { scrollWheelZoom, attributionControl: true });
-      L.tileLayer(OSM_URL, { attribution: OSM_ATTR, maxZoom: 19 }).addTo(map);
+      L.tileLayer(mapTilesUrl, { attribution: mapTilesAttribution, maxZoom: 19 }).addTo(map);
 
       const latlngs: LType.LatLngExpression[] = [];
       for (const p of points) {
@@ -116,6 +120,8 @@ export function LeafletLocationMap({
           })
             .addTo(map)
             .bindPopup(tRef.current("locationMap.you"));
+          // Linha reta (tracejada) de imediato; troca pela rota real por
+          // estrada (OSRM) assim que esta chega.
           line = L.polyline([me, [target.lat, target.lng]], {
             color: YOU_COLOR,
             weight: 2,
@@ -123,7 +129,27 @@ export function LeafletLocationMap({
           }).addTo(map);
           map.fitBounds(L.latLngBounds([me, [target.lat, target.lng]]).pad(0.3));
           setDistanceKm(haversineKm(me, [target.lat, target.lng]));
+          setDurationMin(null);
+          setByRoad(false);
           setLocateError(false);
+
+          void getMapsClient()
+            .route({ from: { lat: me[0], lng: me[1] }, to: { lat: target.lat, lng: target.lng } })
+            .then((route) => {
+              if (cancelled || !map || !route.polyline) return;
+              const path = decodePolyline(route.polyline).map(
+                (p) => [p.lat, p.lng] as [number, number],
+              );
+              line?.remove();
+              line = L.polyline(path, { color: YOU_COLOR, weight: 4, opacity: 0.85 }).addTo(map);
+              map.fitBounds(line.getBounds().pad(0.15));
+              setDistanceKm(route.distanceKm);
+              setDurationMin(route.durationMin);
+              setByRoad(true);
+            })
+            .catch(() => {
+              // Sem rota (serviço em baixo) — fica a linha reta e a distância aproximada.
+            });
         });
       };
 
@@ -169,7 +195,13 @@ export function LeafletLocationMap({
         role="img"
       />
       {enableLocate && single && (
-        <MapLocateFooter target={single} distanceKm={distanceKm} locateError={locateError} />
+        <MapLocateFooter
+          target={single}
+          distanceKm={distanceKm}
+          durationMin={durationMin}
+          byRoad={byRoad}
+          locateError={locateError}
+        />
       )}
     </div>
   );
@@ -210,7 +242,7 @@ export function LeafletLocationPicker({
       if (cancelled || !containerRef.current) return;
       map = L.map(containerRef.current).setView([value.lat, value.lng], 15);
       mapRef.current = map;
-      L.tileLayer(OSM_URL, { attribution: OSM_ATTR, maxZoom: 19 }).addTo(map);
+      L.tileLayer(mapTilesUrl, { attribution: mapTilesAttribution, maxZoom: 19 }).addTo(map);
 
       const marker = L.marker([value.lat, value.lng], {
         icon: pinIcon(L),

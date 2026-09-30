@@ -5,7 +5,8 @@ import type { LatLng } from "./types";
 
 /**
  * Implementação sem rede — o comportamento atual do app, agora atrás do
- * mesmo contrato que o cliente Google vai cumprir.
+ * mesmo contrato do cliente OSM (Photon/OSRM) — usada como recuo quando
+ * esses serviços falham, e para o valor imediato (síncrono) das rotas.
  *
  * - `geocode`  → procura o nome de uma província e devolve o seu centro.
  * - `route`    → distância haversine + velocidade média urbana. Sem ruas,
@@ -44,7 +45,7 @@ export function geocodeSync(query: string): GeocodeResult | null {
     point: { lat: c.lat, lng: c.lng },
     formattedAddress: query,
     province,
-    provider: "leaflet",
+    provider: "local",
     approximate: true,
   };
 }
@@ -54,7 +55,7 @@ export function routeSync(req: RouteRequest): RouteResult {
   return {
     distanceKm,
     durationMin: Math.max(1, Math.round((distanceKm / AVG_URBAN_SPEED_KMH) * 60)),
-    provider: "leaflet",
+    provider: "local",
     approximate: true,
   };
 }
@@ -69,7 +70,7 @@ export const localMapsClient: MapsClient = {
       point: { lat: c.lat, lng: c.lng },
       formattedAddress: province,
       province,
-      provider: "leaflet" as const,
+      provider: "local" as const,
       approximate: true,
     });
   },
