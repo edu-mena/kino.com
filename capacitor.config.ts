@@ -16,17 +16,22 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const serverUrl = process.env.CAP_SERVER_URL?.trim();
 
+const isDevHttpServer = !!serverUrl?.startsWith("http://");
+
 const config: CapacitorConfig = {
   appId: "com.luku.app",
   appName: "Luku",
   webDir: "capacitor/www",
   android: {
-    // Necessário quando `CAP_SERVER_URL` é http:// (servidor de dev na LAN).
-    allowMixedContent: true,
+    // Só com servidor de dev http:// na LAN. Em produção (https://luku.ao)
+    // fica desligado: conteúdo http numa página https podia ser trocado por
+    // quem estiver na mesma rede e ler a sessão (auditoria de segurança,
+    // Fase 5).
+    allowMixedContent: isDevHttpServer,
   },
   server: {
     androidScheme: "https",
-    ...(serverUrl ? { url: serverUrl, cleartext: serverUrl.startsWith("http://") } : {}),
+    ...(serverUrl ? { url: serverUrl, cleartext: isDevHttpServer } : {}),
   },
 };
 

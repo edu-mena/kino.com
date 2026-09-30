@@ -340,6 +340,11 @@ Dentro de `<manifest>`, junto de `INTERNET`:
 Sem as duas de localização, o pedido de permissão nem chega a aparecer
 (era o que acontecia antes: o manifest só tinha `INTERNET`).
 
+No `<application>`, **`android:allowBackup="false"`** (o `cap add android`
+gera `true`): a sessão da conta vive no armazenamento da WebView, e com
+backup ligado ia parar às cópias de segurança do telemóvel (Google Drive,
+`adb backup`) — auditoria de segurança, Fase 5.
+
 ### iOS — `ios/App/App/Info.plist`
 
 ```xml
