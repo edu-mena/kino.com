@@ -1048,7 +1048,7 @@ function AdminPedidos() {
 
                                 {/* 3 · O que fazer já */}
                                 {inFlow && (
-                                  <section className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                                  <section className="mt-5 border-t border-border/60 pt-5">
                                     <p className="text-[11px] font-bold uppercase tracking-wider text-primary/70">
                                       {t("detailCard.nextStep")}
                                     </p>
@@ -1476,7 +1476,7 @@ function AdminPedidos() {
                                       ) : (
                                         <>
                                           {active.invoiceCompany && (
-                                            <div className="mb-2 rounded-xl border border-brand/40 bg-brand/5 p-3 text-xs">
+                                            <div className="mb-2 rounded-xl bg-brand/10 p-3 text-xs">
                                               <p className="font-bold text-foreground">
                                                 {t("adminPedidos.invoiceCompanyTitle")}
                                               </p>

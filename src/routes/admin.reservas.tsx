@@ -811,7 +811,7 @@ function AdminReservas() {
 
                                 {/* 3 · O que decidir já */}
                                 {showActions ? (
-                                  <section className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                                  <section className="mt-5 border-t border-border/60 pt-5">
                                     <p className="text-[11px] font-bold uppercase tracking-wider text-primary/70">
                                       {t("detailCard.nextStep")}
                                     </p>

@@ -548,7 +548,7 @@ function Reservas() {
                     {activeRestaurant?.phone &&
                       (active.status === "Pendente" || active.status === "Confirmada") &&
                       active.date >= todayStr && (
-                        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-surface/40 px-4 py-3">
+                        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-5">
                           <span className="min-w-0 text-sm">
                             <span className="block text-xs text-muted-foreground">
                               {t("entrega.complaintContact")}

@@ -152,7 +152,7 @@ export function DetailChip({
   children: ReactNode;
 }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-surface px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-inset ring-border/60">
+    <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-surface px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
       {Icon && <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />}
       <span className="truncate">{children}</span>
     </span>
@@ -352,10 +352,7 @@ export function DetailProgress({
   label?: string | undefined;
 }) {
   return (
-    <ol
-      aria-label={label}
-      className="mt-5 flex items-start rounded-2xl bg-primary/5 px-2 py-4 ring-1 ring-inset ring-primary/10"
-    >
+    <ol aria-label={label} className="mt-6 flex items-start">
       {steps.map((step, i) => {
         const reached = step.state !== "upcoming";
         const leftFilled = reached && i > 0;
@@ -489,17 +486,19 @@ export function orderProgressSteps({
  * continua a funcionar tal e qual. */
 export function DetailFacts({ children }: { children: ReactNode }) {
   return (
-    <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-5 rounded-2xl border border-border/60 bg-surface/40 p-4">
+    <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-border/60 pt-5">
       {children}
     </dl>
   );
 }
 
+/** Cor do ícone da linha — cinza por omissão; só um facto com significado
+ * (pagamento em falta, fora da zona…) ganha cor. */
 const ROW_ICON_TONE = {
-  default: "bg-primary/10 text-primary",
-  brand: "bg-brand/15 text-brand",
-  success: "bg-success/15 text-success",
-  danger: "bg-destructive/15 text-destructive",
+  default: "text-muted-foreground",
+  brand: "text-brand",
+  success: "text-success",
+  danger: "text-destructive",
 } as const;
 
 /** Par rótulo/valor com ícone âncora. O valor tem sempre mais peso que o
@@ -524,12 +523,8 @@ export function DetailRow({
   children: ReactNode;
 }) {
   return (
-    <div className={`flex min-w-0 items-start gap-3 ${span ? "col-span-full" : ""}`}>
-      <span
-        className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${ROW_ICON_TONE[tone]}`}
-      >
-        <Icon className="h-4 w-4" aria-hidden="true" />
-      </span>
+    <div className={`flex min-w-0 items-start gap-2.5 ${span ? "col-span-full" : ""}`}>
+      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${ROW_ICON_TONE[tone]}`} aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
         <dd className="mt-0.5 text-sm font-semibold leading-snug text-foreground [overflow-wrap:anywhere]">
@@ -602,12 +597,14 @@ export function DetailAction({
 
 type NoteTone = "neutral" | "success" | "warning" | "danger";
 
+/** Nota neutra = só ícone e texto (informação, não alerta). As restantes
+ * têm um fundo suave porque a cor ali É o significado — mas nunca borda. */
 const NOTE_TONE: Record<NoteTone, { box: string; icon: string; Icon: LucideIcon }> = {
-  neutral: { box: "border-border/60 bg-surface/50", icon: "text-muted-foreground", Icon: Info },
-  success: { box: "border-success/25 bg-success/10", icon: "text-success", Icon: CircleCheck },
-  warning: { box: "border-brand/30 bg-brand/10", icon: "text-brand", Icon: TriangleAlert },
+  neutral: { box: "", icon: "text-muted-foreground", Icon: Info },
+  success: { box: "rounded-xl bg-success/10 px-3.5 py-3", icon: "text-success", Icon: CircleCheck },
+  warning: { box: "rounded-xl bg-brand/10 px-3.5 py-3", icon: "text-brand", Icon: TriangleAlert },
   danger: {
-    box: "border-destructive/30 bg-destructive/10",
+    box: "rounded-xl bg-destructive/10 px-3.5 py-3",
     icon: "text-destructive",
     Icon: CircleAlert,
   },
@@ -636,9 +633,7 @@ export function DetailNote({
   const t = NOTE_TONE[tone];
   const Icon = icon ?? t.Icon;
   return (
-    <div
-      className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm ${t.box} ${className}`}
-    >
+    <div className={`flex items-start gap-2.5 text-sm ${t.box} ${className}`}>
       <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${t.icon}`} aria-hidden="true" />
       <div className="min-w-0 flex-1 leading-snug">
         {title && <p className="font-semibold text-foreground">{title}</p>}
@@ -659,19 +654,22 @@ export function DetailNote({
 
 type SectionTone = "default" | "warning" | "danger";
 
+/** Secção normal = sem caixa: só o título e uma linha fina por cima,
+ * dentro da mesma superfície do card. Caixa (fundo suave, sem borda) só
+ * para o que pede atenção — aviso ou perigo. */
 const SECTION_TONE: Record<SectionTone, { box: string; icon: string; fallback?: LucideIcon }> = {
   default: {
-    box: "border-border/60 bg-surface/50",
-    icon: "bg-primary/10 text-primary",
+    box: "mt-5 border-t border-border/60 pt-5",
+    icon: "text-muted-foreground",
   },
   warning: {
-    box: "border-brand/30 bg-brand/5",
-    icon: "bg-brand/15 text-brand",
+    box: "mt-4 rounded-2xl bg-brand/10 p-4",
+    icon: "text-brand",
     fallback: TriangleAlert,
   },
   danger: {
-    box: "border-destructive/30 bg-destructive/5",
-    icon: "bg-destructive/15 text-destructive",
+    box: "mt-4 rounded-2xl bg-destructive/10 p-4",
+    icon: "text-destructive",
     fallback: CircleAlert,
   },
 };
@@ -720,11 +718,7 @@ export function DetailSection({
   const heading = (
     <>
       {Icon && (
-        <span
-          className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${solid ? `bg-white/15 ${ON_SOLID}` : t.icon}`}
-        >
-          <Icon className="h-4 w-4" aria-hidden="true" />
-        </span>
+        <Icon className={`h-4 w-4 shrink-0 ${solid ? ON_SOLID : t.icon}`} aria-hidden="true" />
       )}
       <span className="min-w-0 flex-1 text-left">
         <span
@@ -744,7 +738,7 @@ export function DetailSection({
   return (
     <section
       aria-labelledby={id}
-      className={`mt-4 rounded-2xl border p-4 transition-colors ${solid ? "border-primary bg-primary" : t.box}`}
+      className={`transition-colors ${solid ? "mt-5 rounded-2xl bg-primary p-4" : t.box}`}
     >
       <h3 className="flex items-center gap-3">
         {collapsible ? (
@@ -752,7 +746,7 @@ export function DetailSection({
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
-            className={`-m-1 flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 ${solid ? "hover:bg-white/10 focus-visible:ring-white/60" : "hover:bg-surface/80 focus-visible:ring-primary/40"}`}
+            className={`-m-1 flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 ${solid ? "hover:bg-white/10 focus-visible:ring-white/60" : "hover:bg-surface/80 focus-visible:ring-primary/40"}`}
           >
             {heading}
             <ChevronDown
@@ -761,7 +755,7 @@ export function DetailSection({
             />
           </button>
         ) : (
-          <span className="flex min-w-0 flex-1 items-center gap-3">{heading}</span>
+          <span className="flex min-w-0 flex-1 items-center gap-2.5">{heading}</span>
         )}
         {action && <span className="shrink-0">{action}</span>}
       </h3>
@@ -871,12 +865,10 @@ export function DetailTotal({
   const [open, setOpen] = useState(false);
   const hasBreakdown = !!breakdown && breakdown.length > 0;
   return (
-    <div className="mt-5 rounded-2xl bg-primary/10 p-4 ring-1 ring-inset ring-primary/20">
+    <div className="mt-5 rounded-2xl bg-primary/[0.07] p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
-            <Icon className="h-5 w-5" aria-hidden="true" />
-          </span>
+          <Icon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">{label}</p>
             {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
@@ -901,7 +893,7 @@ export function DetailTotal({
         </p>
       </div>
       {hasBreakdown && open && (
-        <dl className="mt-3 space-y-1.5 border-t border-primary/15 pt-3 text-sm">
+        <dl className="mt-3 space-y-1.5 border-t border-primary/10 pt-3 text-sm">
           {breakdown.map((line, i) => (
             <div
               key={i}
@@ -931,7 +923,7 @@ export function DetailSchedule({
   items: { icon: LucideIcon; label: string; value: ReactNode }[];
 }) {
   return (
-    <dl className="mt-5 grid grid-cols-3 divide-x divide-primary/10 rounded-2xl bg-primary/5 py-3.5 ring-1 ring-inset ring-primary/10">
+    <dl className="mt-6 grid grid-cols-3 divide-x divide-border/60">
       {items.map(({ icon: Icon, label, value }) => (
         <div key={label} className="flex min-w-0 flex-col items-center gap-1 px-2 text-center">
           <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
@@ -1043,12 +1035,10 @@ export function DetailDocuments({ items }: { items: DetailDocument[] }) {
               className={`flex min-w-0 items-center gap-2.5 rounded-2xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                 selected
                   ? "border-primary/40 bg-primary/5 ring-1 ring-inset ring-primary/20"
-                  : "border-border/60 bg-surface/50 hover:border-primary/30"
+                  : "border-border/70 hover:border-primary/40 hover:bg-surface/60"
               }`}
             >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                <item.icon className="h-4 w-4" aria-hidden="true" />
-              </span>
+              <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-foreground">
                   {item.title}
@@ -1068,7 +1058,7 @@ export function DetailDocuments({ items }: { items: DetailDocument[] }) {
         })}
       </div>
       {open && (
-        <div id={panelId} className="mt-3 rounded-2xl border border-border/60 bg-surface/40 p-4">
+        <div id={panelId} className="mt-3">
           {open.content}
         </div>
       )}

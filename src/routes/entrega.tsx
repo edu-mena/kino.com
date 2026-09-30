@@ -595,7 +595,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           })}
         >
           {payDestination && (
-            <div className="rounded-xl bg-card px-3 py-2.5 text-xs ring-1 ring-inset ring-border/60">
+            <div className="rounded-xl bg-card px-3 py-2.5 text-xs">
               <span className="font-bold uppercase tracking-wide text-muted-foreground">
                 {t("entrega.payToLabel")}
               </span>
