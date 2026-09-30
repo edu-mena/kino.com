@@ -13,6 +13,15 @@ const TOKEN_KEY = "luku_system_token";
 
 type ApiOperator = { id: string; name: string; email: string };
 
+/** Resposta do 1º passo (senha certa) — o token só vem depois do 2FA
+ * (backend TwoFactorController). `setup` = conta ainda sem 2FA, tem de o
+ * ativar antes de entrar. */
+export type TwoFactorStep = { twoFactor: "required" | "setup"; challenge: string };
+
+export type TwoFactorSetup = { secret: string; otpauthUrl: string };
+
+type SessionPayload = { token: string; user: ApiOperator };
+
 type SystemAdminValue = {
   operator: SystemOperator | null;
   /** Token Sanctum do operador — exposto para o caso raro de "entrar no
@@ -26,7 +35,22 @@ type SystemAdminValue = {
   /** false até a sessão guardada ser validada — evita o `SystemShell`
    * redirecionar para `/sistema/entrar` antes disso. */
   hydrated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  /** 1º passo — devolve o challenge para o 2FA, nunca abre sessão. */
+  login: (email: string, password: string) => Promise<TwoFactorStep>;
+  /** Conta sem 2FA: pede o segredo/QR para a app de autenticação. */
+  setupTwoFactor: (challenge: string) => Promise<TwoFactorSetup>;
+  /** Ativa o 2FA com o 1º código. NÃO abre a sessão logo: devolve os
+   * códigos de recuperação (única vez que existem em claro) e uma função
+   * para abrir a sessão depois de o operador os guardar. */
+  confirmTwoFactor: (
+    challenge: string,
+    code: string,
+  ) => Promise<{ recoveryCodes: string[]; startSession: () => void }>;
+  /** Conta com 2FA: código da app OU código de recuperação — abre sessão. */
+  verifyTwoFactor: (
+    challenge: string,
+    input: { code: string } | { recoveryCode: string },
+  ) => Promise<{ recoveryCodesLeft: number | undefined }>;
   logout: () => Promise<void>;
 };
 
@@ -65,18 +89,53 @@ export function SystemAdminProvider({ children }: { children: ReactNode }) {
       .finally(() => setHydrated(true));
   }, []);
 
+  const startSession = ({ token: newToken, user }: SessionPayload) => {
+    localStorage.setItem(TOKEN_KEY, newToken);
+    setToken(newToken);
+    setOperator(user);
+  };
+
   const login = async (email: string, password: string) => {
     // Endpoint dedicado (não /auth/login) — auditoria + email de alerta +
     // bloqueio de IP em cada tentativa, ver backend AuthController::
     // systemLogin. Superfície mais sensível da API, isolada de propósito.
-    const { data } = await apiFetch<{ data: { token: string; user: ApiOperator } }>(
-      "/auth/system/login",
-      { method: "POST", body: { email, password } },
-    );
+    const { data } = await apiFetch<{ data: TwoFactorStep }>("/auth/system/login", {
+      method: "POST",
+      body: { email, password },
+    });
+    return data;
+  };
 
-    localStorage.setItem(TOKEN_KEY, data.token);
-    setToken(data.token);
-    setOperator(data.user);
+  const setupTwoFactor = async (challenge: string) => {
+    const { data } = await apiFetch<{ data: TwoFactorSetup }>("/auth/system/2fa/setup", {
+      method: "POST",
+      body: { challenge },
+    });
+    return data;
+  };
+
+  const confirmTwoFactor = async (challenge: string, code: string) => {
+    const { data } = await apiFetch<{ data: SessionPayload & { recoveryCodes: string[] } }>(
+      "/auth/system/2fa/confirm",
+      { method: "POST", body: { challenge, code } },
+    );
+    return { recoveryCodes: data.recoveryCodes, startSession: () => startSession(data) };
+  };
+
+  const verifyTwoFactor = async (
+    challenge: string,
+    input: { code: string } | { recoveryCode: string },
+  ) => {
+    const body =
+      "code" in input
+        ? { challenge, code: input.code }
+        : { challenge, recovery_code: input.recoveryCode };
+    const { data } = await apiFetch<{ data: SessionPayload & { recoveryCodesLeft?: number } }>(
+      "/auth/system/2fa/verify",
+      { method: "POST", body },
+    );
+    startSession(data);
+    return { recoveryCodesLeft: data.recoveryCodesLeft };
   };
 
   const logout = async () => {
@@ -93,7 +152,18 @@ export function SystemAdminProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <SystemAdminContext.Provider value={{ operator, token, hydrated, login, logout }}>
+    <SystemAdminContext.Provider
+      value={{
+        operator,
+        token,
+        hydrated,
+        login,
+        setupTwoFactor,
+        confirmTwoFactor,
+        verifyTwoFactor,
+        logout,
+      }}
+    >
       {children}
     </SystemAdminContext.Provider>
   );

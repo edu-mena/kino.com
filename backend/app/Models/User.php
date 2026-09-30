@@ -30,7 +30,7 @@ class User extends Authenticatable
         'google_id', 'password', 'email_verified_at', 'last_login_at',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
 
     protected function casts(): array
     {
@@ -38,7 +38,18 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
             'password' => 'hashed',
+            // 2FA do operador de sistema (ver TwoFactorService) — cifrados
+            // com a APP_KEY; os códigos de recuperação são guardados como
+            // hashes bcrypt, nunca em claro.
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->two_factor_secret !== null && $this->two_factor_confirmed_at !== null;
     }
 
     public function restaurantUsers(): HasMany

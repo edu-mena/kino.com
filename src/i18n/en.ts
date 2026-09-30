@@ -901,6 +901,7 @@ export const en: Dictionary = {
     doneDescription: "Your password has been changed. You can sign in with it now.",
     goToAdmin: "Sign in to restaurant panel",
     goToSistema: "Sign in to system administration",
+    requirements: "At least 12 characters, with letters and numbers.",
   },
   sistema: {
     shellBadge: "System",
@@ -936,6 +937,28 @@ export const en: Dictionary = {
       errorToast: "Couldn't sign in. Check the email and password.",
       backHome: "Back home",
       notice: "Restricted to Luku platform operators.",
+      twoFactor: {
+        verifyDescription: "Enter the 6-digit code from your authenticator app.",
+        recoveryDescription: "Enter one of your recovery codes. Each code only works once.",
+        codePlaceholder: "6-digit code",
+        recoveryPlaceholder: "Recovery code",
+        verify: "Verify",
+        useRecovery: "I can't access the app — use a recovery code",
+        useApp: "Use the app code",
+        recoveryLeft: "You signed in with a recovery code. {count} left.",
+        setupTitle: "Turn on two-step verification",
+        setupDescription:
+          "Required for system accounts. Scan the QR code with an authenticator app (Google Authenticator, Authy, 1Password…) and enter the code it shows.",
+        manualKey: "No camera? Enter this key in the app:",
+        activate: "Activate and sign in",
+        recoveryTitle: "Save your recovery codes",
+        recoveryCodesDescription:
+          "If you lose your phone, these codes are the only way in. Each works once. Keep them in a password manager — they won't be shown again.",
+        copy: "Copy codes",
+        copied: "Codes copied.",
+        savedConfirm: "I've saved the codes somewhere safe.",
+        continue: "Continue to the panel",
+      },
     },
     index: {
       eyebrow: "System",

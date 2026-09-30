@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupportTicketController;
 use App\Http\Controllers\Api\V1\SystemAccessController;
 use App\Http\Controllers\Api\V1\SystemStatsController;
+use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\UploadController;
 use App\Http\Controllers\Api\V1\UserPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -58,6 +59,17 @@ Route::prefix('auth')->group(function () {
     // email (dentro do próprio método, não é middleware).
     Route::post('system/login', [AuthController::class, 'systemLogin'])
         ->middleware(['ip.not-blocked', 'throttle:system-auth']);
+
+    // Segundo passo (2FA obrigatório) — mesmo isolamento do login acima.
+    // Sem auth:sanctum: ainda não há token, só o `challenge` que o
+    // systemLogin devolve depois da senha certa (ver TwoFactorController).
+    Route::middleware(['ip.not-blocked', 'throttle:system-auth'])->prefix('system/2fa')->group(function () {
+        Route::post('setup', [TwoFactorController::class, 'setup']);
+        Route::post('confirm', [TwoFactorController::class, 'confirm']);
+        Route::post('verify', [TwoFactorController::class, 'verify']);
+    });
+    Route::post('system/2fa/recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])
+        ->middleware(['auth:sanctum', 'ip.not-blocked', 'throttle:system-auth']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('refresh', [AuthController::class, 'refresh']);
@@ -238,10 +250,10 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
 | rotas (misturam ações públicas, de staff, e de operador na mesma área).
 */
 Route::post('partner-applications', [PartnerApplicationController::class, 'store'])
-    ->middleware('throttle:auth'); // formulário público — mesmo limite anti-spam do auth
+    ->middleware('throttle:public-forms'); // formulário público — limite anti-spam só por IP
 
 Route::post('contact-messages', [ContactMessageController::class, 'store'])
-    ->middleware('throttle:auth'); // formulário público de /contacto — mesmo limite anti-spam
+    ->middleware('throttle:public-forms'); // formulário público de /contacto — limite anti-spam só por IP
 
 Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::get('partner-applications', [PartnerApplicationController::class, 'index']);

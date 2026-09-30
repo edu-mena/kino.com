@@ -7,7 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
-test('operador autentica com sucesso via /auth/system/login e recebe alerta por email', function () {
+test('senha certa de operador devolve um challenge 2FA (nunca token) e alerta por email', function () {
     Mail::fake();
     User::factory()->systemOperator()->create(['email' => 'operador@luku.ao']);
 
@@ -16,7 +16,10 @@ test('operador autentica com sucesso via /auth/system/login e recebe alerta por 
         'password' => 'password',
     ]);
 
-    $response->assertOk()->assertJsonPath('data.user.role', 'system_operator');
+    $response->assertOk()
+        ->assertJsonPath('data.twoFactor', 'setup')
+        ->assertJsonMissingPath('data.token');
+    expect(strlen($response->json('data.challenge')))->toBe(64);
     expect(SystemSecurityEvent::query()->where('event', 'login_attempt')->where('outcome', 'success')->count())
         ->toBe(1);
     Mail::assertQueued(SystemSecurityAlertMail::class);
@@ -73,7 +76,7 @@ test('5 falhas seguidas do mesmo IP bloqueiam esse IP automaticamente', function
 
     // A 6ª tentativa (mesmo com password CORRETA) nunca chega a autenticar
     // — 401 se o bloqueio de IP intercetou primeiro, 429 se foi o rate
-    // limiter (`system-auth`, 5/min) a bater primeiro; qual dos dois
+    // limiter (`system-auth`, 10/min) a bater primeiro; qual dos dois
     // depende só da ordem de prioridade interna do Laravel entre
     // middleware, não é o que este teste quer fixar — o que importa é que
     // nenhum dos dois deixa passar.
@@ -142,6 +145,11 @@ test('o mailable de alerta renderiza sem erro (page_view, sucesso, falha e auto-
     ['login_attempt', 'success', false],
     ['login_attempt', 'failed', false],
     ['login_attempt', 'failed', true],
+    ['two_factor', 'success', false],
+    ['two_factor', 'failed', false],
+    ['two_factor', 'failed', true],
+    ['two_factor_enabled', 'success', false],
+    ['recovery_codes_regenerated', 'success', false],
 ]);
 
 test('só system_operator autenticado gere a lista de IPs bloqueados', function () {

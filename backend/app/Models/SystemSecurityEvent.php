@@ -20,7 +20,9 @@ class SystemSecurityEvent extends Model
     {
         return static::query()
             ->where('ip', $ip)
-            ->where('event', 'login_attempt')
+            // Código 2FA errado conta como senha errada — sem isto, quem já
+            // tivesse a senha podia tentar códigos sem nunca ser bloqueado.
+            ->whereIn('event', ['login_attempt', 'two_factor'])
             ->where('outcome', 'failed')
             ->where('created_at', '>=', now()->subMinutes(30))
             ->count();

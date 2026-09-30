@@ -8,11 +8,36 @@
 O endereço **{{ $event->ip }}** foi bloqueado automaticamente depois de
 **{{ $recentFailedAttempts }}** tentativas de login falhadas em pouco tempo.
 Já não consegue chegar ao login de sistema.
-@elseif($event->event === 'login_attempt')
-# {{ $event->outcome === 'success' ? '✅ Login de sistema bem-sucedido' : '⚠️ Tentativa de login falhada' }}
+@elseif($event->event === 'login_attempt' && $event->outcome === 'success')
+# 🔑 Senha correta — a aguardar código 2FA
 
-Alguém {{ $event->outcome === 'success' ? 'entrou' : 'tentou entrar' }} no
-painel de sistema da Luku.
+Alguém pôs a senha certa de uma conta de sistema. Ainda não entrou: falta o
+código da app de autenticação. **Se não foi você, a senha vazou** — bloqueie
+este IP e altere a senha já.
+@elseif($event->event === 'login_attempt')
+# ⚠️ Tentativa de login falhada
+
+Alguém tentou entrar no painel de sistema da Luku com uma senha errada.
+@elseif($event->event === 'two_factor' && $event->outcome === 'success')
+# ✅ Login de sistema concluído
+
+Alguém entrou no painel de sistema da Luku (senha + código 2FA).
+@elseif($event->event === 'two_factor')
+# ⚠️ Código 2FA errado
+
+Alguém com a senha certa de uma conta de sistema errou o código da app de
+autenticação. **Se não foi você, a senha vazou** — altere-a já.
+@elseif($event->event === 'two_factor_enabled')
+# 🔐 2FA ativado
+
+A autenticação de dois fatores foi ativada numa conta de sistema. Se não
+foi você, alguém com a senha dessa conta ligou-a à própria app — bloqueie
+este IP e contacte a equipa técnica.
+@elseif($event->event === 'recovery_codes_regenerated')
+# 🔐 Códigos de recuperação regenerados
+
+Foram gerados novos códigos de recuperação 2FA numa conta de sistema — os
+anteriores deixaram de funcionar.
 @else
 # 👀 Acesso à página de login de sistema
 

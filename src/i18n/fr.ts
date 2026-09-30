@@ -913,6 +913,7 @@ export const fr: Dictionary = {
     doneDescription: "Votre mot de passe a été modifié. Vous pouvez déjà vous connecter avec.",
     goToAdmin: "Se connecter au panneau du restaurant",
     goToSistema: "Se connecter à l'administration système",
+    requirements: "Au moins 12 caractères, avec des lettres et des chiffres.",
   },
   sistema: {
     shellBadge: "Système",
@@ -948,6 +949,30 @@ export const fr: Dictionary = {
       errorToast: "Connexion impossible. Vérifiez l'email et le mot de passe.",
       backHome: "Retour à l'accueil",
       notice: "Réservé aux opérateurs de la plateforme Luku.",
+      twoFactor: {
+        verifyDescription:
+          "Saisissez le code à 6 chiffres de votre application d'authentification.",
+        recoveryDescription:
+          "Saisissez l'un de vos codes de récupération. Chaque code ne fonctionne qu'une fois.",
+        codePlaceholder: "Code à 6 chiffres",
+        recoveryPlaceholder: "Code de récupération",
+        verify: "Vérifier",
+        useRecovery: "Je n'ai pas accès à l'application — utiliser un code de récupération",
+        useApp: "Utiliser le code de l'application",
+        recoveryLeft: "Connecté avec un code de récupération. Il en reste {count}.",
+        setupTitle: "Activez la vérification en deux étapes",
+        setupDescription:
+          "Obligatoire pour les comptes système. Scannez le QR code avec une application d'authentification (Google Authenticator, Authy, 1Password…) et saisissez le code affiché.",
+        manualKey: "Pas de caméra ? Saisissez cette clé dans l'application :",
+        activate: "Activer et se connecter",
+        recoveryTitle: "Conservez vos codes de récupération",
+        recoveryCodesDescription:
+          "Si vous perdez votre téléphone, ces codes sont le seul moyen d'accéder. Chacun fonctionne une fois. Gardez-les dans un gestionnaire de mots de passe — ils ne seront plus affichés.",
+        copy: "Copier les codes",
+        copied: "Codes copiés.",
+        savedConfirm: "J'ai conservé les codes en lieu sûr.",
+        continue: "Continuer vers le panneau",
+      },
     },
     index: {
       eyebrow: "Système",

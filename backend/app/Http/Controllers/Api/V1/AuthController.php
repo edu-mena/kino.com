@@ -2,28 +2,28 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Api\V1\Concerns\IssuesAuthTokens;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\GoogleCallbackRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
 use App\Http\Resources\Api\V1\UserResource;
-use App\Mail\SystemSecurityAlertMail;
-use App\Models\BlockedIp;
-use App\Models\SystemSecurityEvent;
 use App\Models\User;
 use App\Services\GoogleOAuthService;
+use App\Services\SystemSecurityMonitor;
+use App\Services\TwoFactorService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use RuntimeException;
 
 class AuthController extends Controller
 {
+    use IssuesAuthTokens;
+
     /**
      * Login de CLIENTE — só Google OAuth real (ver plano). Aceita web
      * (authorization-code) e mobile nativo (id_token direto do SDK).
@@ -79,8 +79,12 @@ class AuthController extends Controller
             ->where('email', $request->string('email'))
             ->first();
 
-        // Mensagem genérica — não revela se o email existe (ver plano).
-        if (! $user || ! Hash::check($request->string('password'), $user->password)) {
+        // Mensagem genérica — não revela se o email existe (ver plano). O
+        // Hash::check corre SEMPRE (contra um hash descartável quando o
+        // email não existe): sem isso a resposta para um email inexistente
+        // era visivelmente mais rápida e revelava quais emails têm conta.
+        $passwordOk = Hash::check($request->string('password'), $user?->password ?? self::dummyHash());
+        if (! $user || ! $passwordOk) {
             return response()->json(['message' => 'Credenciais inválidas.'], 401);
         }
 
@@ -105,36 +109,14 @@ class AuthController extends Controller
      * - a rota já passa por `ip.not-blocked` antes de chegar aqui (ver
      *   routes/api_v1.php) — um IP já bloqueado nem chega a esta função.
      */
-    public function systemLogin(LoginRequest $request): JsonResponse
+    public function systemLogin(LoginRequest $request, SystemSecurityMonitor $monitor, TwoFactorService $twoFactor): JsonResponse
     {
-        $ip = (string) $request->ip();
         $email = $request->string('email')->toString();
 
         $user = User::query()->where('role', 'system_operator')->where('email', $email)->first();
-        $success = (bool) ($user && Hash::check($request->string('password'), $user->password));
+        $success = Hash::check($request->string('password'), $user?->password ?? self::dummyHash()) && $user !== null;
 
-        $event = SystemSecurityEvent::query()->create([
-            'ip' => $ip,
-            'user_agent' => (string) $request->userAgent(),
-            'event' => 'login_attempt',
-            'outcome' => $success ? 'success' : 'failed',
-            'email_attempted' => $email,
-        ]);
-
-        $recentFails = SystemSecurityEvent::recentFailedLoginAttempts($ip);
-        $autoBlocked = false;
-
-        if (! $success && $recentFails >= 5) {
-            BlockedIp::query()->firstOrCreate(
-                ['ip' => $ip],
-                ['reason' => 'auto:too_many_failed_attempts', 'blocked_at' => now()],
-            );
-            Cache::forget("blocked-ip:{$ip}");
-            $autoBlocked = true;
-        }
-
-        Mail::to(config('mail.security_alert_address'))
-            ->queue(new SystemSecurityAlertMail($event, $recentFails, $autoBlocked));
+        $monitor->record($request, 'login_attempt', $success ? 'success' : 'failed', $email);
 
         if (! $success) {
             // Mesma mensagem genérica de sempre — o operador legítimo não
@@ -142,9 +124,19 @@ class AuthController extends Controller
             return response()->json(['message' => 'Credenciais inválidas.'], 401);
         }
 
-        $user->update(['last_login_at' => now()]);
+        // 2FA obrigatório (auditoria de segurança, Fase 1): a senha certa já
+        // não chega para receber token — só um challenge para o segundo
+        // passo (TwoFactorController). Conta sem 2FA ativado tem de o
+        // ativar agora, antes de qualquer acesso ao painel.
+        $mode = $user->hasTwoFactorEnabled() ? 'required' : 'setup';
 
-        return $this->issueTokenResponse($request, $user);
+        return response()->json([
+            'data' => [
+                'twoFactor' => $mode,
+                'challenge' => $twoFactor->createChallenge($user, $mode),
+                'expiresInMinutes' => TwoFactorService::CHALLENGE_TTL_MINUTES,
+            ],
+        ]);
     }
 
     /** Revoga o token atual e emite um novo (Sanctum não tem refresh nativo
@@ -152,6 +144,11 @@ class AuthController extends Controller
     public function refresh(Request $request): JsonResponse
     {
         $user = $request->user();
+
+        // Sessão de operador dura 12h e acaba aí: renovar sem passar pelo
+        // 2FA de novo anularia o próprio limite (ver IssuesAuthTokens).
+        abort_if($user->isSystemOperator(), 403, 'A sessão de sistema não pode ser renovada — entre de novo.');
+
         $deviceName = $request->user()->currentAccessToken()->name;
         $request->user()->currentAccessToken()->delete();
 
@@ -223,30 +220,12 @@ class AuthController extends Controller
         return response()->json(['message' => 'Senha alterada com sucesso.', 'role' => $role]);
     }
 
-    /**
-     * Central de emissão de token — chamada por todo login (Google, staff,
-     * operador) e por `refresh()`. Carrega sempre `restaurantUsers.restaurant`
-     * antes de construir o `UserResource`: sem isto, `UserResource` usa
-     * `whenLoaded('restaurantUsers')` e devolve `restaurants` completamente
-     * ausente (não vazio) — o frontend do painel de restaurante lê
-     * `data.user.restaurants[0]` logo a seguir ao login, então um staff a
-     * entrar via `login()` via aqui via ficava sem conseguir gerir NENHUM
-     * restaurante, mesmo tendo um — só `me()` carregava isto antes, este
-     * bug nunca apareceu nos testes porque nenhum verificava
-     * `data.user.restaurants` no login, só o `role`. Inofensivo/barato para
-     * customer/operador (a relação fica vazia).
-     */
-    private function issueTokenResponse(Request $request, User $user, ?string $deviceName = null): JsonResponse
+    /** Hash bcrypt descartável (calculado uma vez por processo) — para o
+     * Hash::check correr com o mesmo custo quando o email não existe. */
+    private static function dummyHash(): string
     {
-        $deviceName ??= (string) $request->input('device_name', 'default');
-        $token = $user->createToken($deviceName, [$user->role]);
-        $user->loadMissing('restaurantUsers.restaurant');
+        static $hash = null;
 
-        return response()->json([
-            'data' => [
-                'token' => $token->plainTextToken,
-                'user' => new UserResource($user),
-            ],
-        ]);
+        return $hash ??= Hash::make('luku-dummy-password-for-constant-time');
     }
 }

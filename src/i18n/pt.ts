@@ -904,6 +904,7 @@ export const pt = {
     doneDescription: "A sua senha foi alterada. Já pode entrar com ela.",
     goToAdmin: "Entrar no painel do restaurante",
     goToSistema: "Entrar na administração de sistema",
+    requirements: "Pelo menos 12 caracteres, com letras e números.",
   },
   sistema: {
     shellBadge: "Sistema",
@@ -939,6 +940,29 @@ export const pt = {
       errorToast: "Não foi possível entrar. Verifica o email e a senha.",
       backHome: "Voltar ao início",
       notice: "Área reservada aos operadores da plataforma Luku.",
+      twoFactor: {
+        verifyDescription: "Introduza o código de 6 dígitos da sua app de autenticação.",
+        recoveryDescription:
+          "Introduza um dos seus códigos de recuperação. Cada código só funciona uma vez.",
+        codePlaceholder: "Código de 6 dígitos",
+        recoveryPlaceholder: "Código de recuperação",
+        verify: "Verificar",
+        useRecovery: "Não tenho acesso à app — usar código de recuperação",
+        useApp: "Usar o código da app",
+        recoveryLeft: "Entrou com um código de recuperação. Restam {count}.",
+        setupTitle: "Ative a verificação em dois passos",
+        setupDescription:
+          "Obrigatória para contas de sistema. Leia o código QR com uma app de autenticação (Google Authenticator, Authy, 1Password…) e introduza o código que ela mostra.",
+        manualKey: "Sem câmara? Introduza esta chave na app:",
+        activate: "Ativar e entrar",
+        recoveryTitle: "Guarde os seus códigos de recuperação",
+        recoveryCodesDescription:
+          "Se perder o telemóvel, estes códigos são a única forma de entrar. Cada um funciona uma vez. Guarde-os num gestor de senhas — não voltam a ser mostrados.",
+        copy: "Copiar códigos",
+        copied: "Códigos copiados.",
+        savedConfirm: "Guardei os códigos num lugar seguro.",
+        continue: "Continuar para o painel",
+      },
     },
     index: {
       eyebrow: "Sistema",

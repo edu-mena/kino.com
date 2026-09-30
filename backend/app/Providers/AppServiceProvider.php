@@ -7,6 +7,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,6 +33,17 @@ class AppServiceProvider extends ServiceProvider
             return "{$frontendUrl}/definir-senha?token={$token}&email=".urlencode($user->email);
         });
 
+        // Política de senha de staff/operador (auditoria de segurança, Fase
+        // 1) — única via de definir senha é o reset (ver ResetPasswordRequest).
+        // `uncompromised()` consulta a Have I Been Pwned por k-anonimato (só
+        // os 5 primeiros caracteres do SHA-1 saem do servidor) — só em
+        // produção, para os testes nunca dependerem de rede externa.
+        Password::defaults(function () {
+            $rule = Password::min(12)->letters()->numbers();
+
+            return $this->app->isProduction() ? $rule->uncompromised() : $rule;
+        });
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(120)->by($request->ip());
         });
@@ -40,7 +52,24 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('auth', function (Request $request) {
             $email = (string) $request->input('email', $request->ip());
 
-            return Limit::perMinute(5)->by($email.'|'.$request->ip());
+            return [
+                Limit::perMinute(5)->by($email.'|'.$request->ip()),
+                // Por email, independente do IP: sem isto um ataque
+                // distribuído (muitos IPs) contra UMA conta nunca batia no
+                // limite acima, que é por par email|IP.
+                Limit::perHour(20)->by('auth-email:'.strtolower($email)),
+            ];
+        });
+
+        // Formulários públicos (contacto, candidatura de parceiro) — só por
+        // IP: o `auth` acima é chaveado por email|IP, e aqui o email é
+        // escolhido por quem envia, logo trocá-lo a cada pedido contornava
+        // o limite por completo.
+        RateLimiter::for('public-forms', function (Request $request) {
+            return [
+                Limit::perMinute(3)->by('forms:'.$request->ip()),
+                Limit::perHour(20)->by('forms-h:'.$request->ip()),
+            ];
         });
 
         // Login de sistema + notify de visita à página — bem mais apertado
@@ -51,10 +80,15 @@ class AppServiceProvider extends ServiceProvider
         // EnsureIpNotBlocked/AuthController::systemLogin, que bloqueia o IP
         // de vez depois de falhas repetidas — isto aqui é só a primeira
         // linha de defesa, mais rápida que esperar 5 falhas).
+        //
+        // 10/min (era 5) desde o 2FA: um login honesto já faz 4 pedidos
+        // (notify, senha, QR, código) e um código mal escrito punha o
+        // operador legítimo em 429. Não enfraquece a defesa — a partir de 5
+        // falhas (senha OU código) o IP é bloqueado de vez de qualquer forma.
         RateLimiter::for('system-auth', function (Request $request) {
             return [
-                Limit::perMinute(5)->by($request->ip()),
-                Limit::perHour(20)->by($request->ip()),
+                Limit::perMinute(10)->by($request->ip()),
+                Limit::perHour(30)->by($request->ip()),
             ];
         });
 

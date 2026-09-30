@@ -40,8 +40,14 @@ class SystemSecurityAlertMail extends Mailable implements ShouldQueue
     {
         $subject = match (true) {
             $this->autoBlocked => "🚫 IP bloqueado automaticamente — {$this->event->ip}",
-            $this->event->event === 'login_attempt' && $this->event->outcome === 'success' => "✅ Login de sistema bem-sucedido — {$this->event->ip}",
+            // Senha certa já não é um login completo (2FA obrigatório) — mas
+            // continua a merecer alerta: se não foi o operador, a senha vazou.
+            $this->event->event === 'login_attempt' && $this->event->outcome === 'success' => "🔑 Senha de sistema correta, a aguardar código 2FA — {$this->event->ip}",
             $this->event->event === 'login_attempt' => "⚠️ Tentativa de login de sistema falhada — {$this->event->ip}",
+            $this->event->event === 'two_factor' && $this->event->outcome === 'success' => "✅ Login de sistema concluído (2FA) — {$this->event->ip}",
+            $this->event->event === 'two_factor' => "⚠️ Código 2FA errado no login de sistema — {$this->event->ip}",
+            $this->event->event === 'two_factor_enabled' => "🔐 2FA ativado numa conta de sistema — {$this->event->ip}",
+            $this->event->event === 'recovery_codes_regenerated' => "🔐 Códigos de recuperação 2FA regenerados — {$this->event->ip}",
             default => "👀 Acesso à página de login de sistema — {$this->event->ip}",
         };
 

@@ -46,6 +46,13 @@ function DefinirSenha() {
       toast.error(t("definirSenha.mismatchError"));
       return;
     }
+    // Mesma política do backend (Password::defaults, AppServiceProvider) —
+    // avisa antes do pedido; o backend continua a ser a regra final
+    // (incluindo senhas que já apareceram em fugas de dados).
+    if (password.length < 12 || !/[a-z]/i.test(password) || !/\d/.test(password)) {
+      toast.error(t("definirSenha.requirements"));
+      return;
+    }
     setLoading(true);
     try {
       const res = await apiFetch<{
@@ -127,7 +134,7 @@ function DefinirSenha() {
                 <input
                   type="password"
                   required
-                  minLength={8}
+                  minLength={12}
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -140,7 +147,7 @@ function DefinirSenha() {
                 <input
                   type="password"
                   required
-                  minLength={8}
+                  minLength={12}
                   autoComplete="new-password"
                   value={confirmation}
                   onChange={(e) => setConfirmation(e.target.value)}
@@ -148,6 +155,7 @@ function DefinirSenha() {
                   className="w-full rounded-xl border border-border bg-card py-3.5 pl-11 pr-4 text-sm text-foreground outline-none focus:border-primary"
                 />
               </div>
+              <p className="text-xs text-muted-foreground">{t("definirSenha.requirements")}</p>
 
               <button
                 type="submit"
