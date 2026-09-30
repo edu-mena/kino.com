@@ -73,3 +73,23 @@ test('token android/ios exige o campo token, não subscription', function () {
 test('exige autenticação', function () {
     $this->postJson('/api/v1/device-tokens', ['platform' => 'web'])->assertStatus(401);
 });
+
+test('aceita uma subscrição web push de tamanho real (mais de 255 caracteres)', function () {
+    $user = User::factory()->create();
+    // Formato e tamanho reais do Chrome/FCM — antes o INSERT rebentava com
+    // 500 (coluna varchar(255)) e ativar as notificações dava sempre erro.
+    $subscription = [
+        'endpoint' => 'https://fcm.googleapis.com/fcm/send/'.str_repeat('c75EUsivLJc:APA91bHF9CWh_X5dHWZYb64fpTQxd9g', 4),
+        'keys' => [
+            'p256dh' => 'BO_bJEJJwJwkBhwI-jJ_HbFzrIEq19G0MgluosCvbrgSRO16BAJhDaGplbB8ZW5BU3yTnLH4BtuNvGGx8JDdRcs',
+            'auth' => 'GwZgWvR-dE0fY8NX36QGUw',
+        ],
+    ];
+    expect(strlen(json_encode($subscription)))->toBeGreaterThan(255);
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/device-tokens', ['platform' => 'web', 'subscription' => $subscription])
+        ->assertStatus(204);
+
+    expect(DeviceToken::query()->where('user_id', $user->id)->count())->toBe(1);
+});
