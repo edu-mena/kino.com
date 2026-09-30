@@ -38,6 +38,7 @@ import { computeRestaurantStatus } from "@/lib/restaurant-status";
 import { useSubscriptions } from "@/lib/subscriptions";
 import { useTranslation } from "@/i18n";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { isNativeApp } from "@/lib/native-permissions";
 
 export const Route = createFileRoute("/restaurantes")({
   head: () => ({
@@ -204,7 +205,9 @@ function Restaurantes() {
               {deviceLocationStatus === "loading"
                 ? t("restaurantes.locateLoading")
                 : deviceLocationStatus === "denied"
-                  ? t("restaurantes.locateDenied")
+                  ? isNativeApp()
+                    ? t("useLocation.deniedNative")
+                    : t("restaurantes.locateDenied")
                   : t("restaurantes.locateCta")}
             </span>
           </button>

@@ -3,6 +3,7 @@ import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { hasRealBackend } from "@/lib/api-client";
 import type { SavedAddress } from "@/data/types";
 import { useAddresses } from "./addresses";
+import { getDevicePosition } from "./native-permissions";
 
 // Com backend real, um utilizador novo começa sem moradas guardadas — as
 // 3 moradas de exemplo (Casa/Trabalho/Universidade) só fazem sentido sem
@@ -57,20 +58,20 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [deviceCoords, setDeviceCoords] = useState<[number, number] | null>(null);
   const [deviceLocationStatus, setDeviceLocationStatus] = useState<DeviceLocationStatus>("idle");
 
+  // Browser: `navigator.geolocation`. App nativa: pede a permissão ao SO e,
+  // se já estava negada de vez, abre as definições da app (ver
+  // `@/lib/native-permissions`). GPS desligado/timeout continua a mostrar-se
+  // como "denied", como antes.
   const requestDeviceLocation = () => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setDeviceLocationStatus("unsupported");
-      return;
-    }
     setDeviceLocationStatus("loading");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setDeviceCoords([pos.coords.latitude, pos.coords.longitude]);
+    void getDevicePosition().then((result) => {
+      if (result.ok) {
+        setDeviceCoords(result.coords);
         setDeviceLocationStatus("granted");
-      },
-      () => setDeviceLocationStatus("denied"),
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
-    );
+      } else {
+        setDeviceLocationStatus(result.reason === "unsupported" ? "unsupported" : "denied");
+      }
+    });
   };
 
   const value: LocationValue = {

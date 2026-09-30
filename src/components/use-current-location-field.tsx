@@ -4,6 +4,7 @@ import { LocationPicker } from "@/components/location-map";
 import { useTranslation } from "@/i18n";
 import { useLocation } from "@/lib/location";
 import { getMapsClient } from "@/lib/maps";
+import { isNativeApp } from "@/lib/native-permissions";
 
 type Point = { lat: number; lng: number };
 
@@ -85,7 +86,7 @@ export function UseCurrentLocationField({
           {deviceLocationStatus === "loading"
             ? t("useLocation.loading")
             : deviceLocationStatus === "denied"
-              ? t("useLocation.denied")
+              ? t(isNativeApp() ? "useLocation.deniedNative" : "useLocation.denied")
               : deviceLocationStatus === "unsupported"
                 ? t("useLocation.unsupported")
                 : t("useLocation.cta")}

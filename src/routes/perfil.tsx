@@ -45,6 +45,7 @@ import { getAuthToken, useAuth } from "@/lib/auth";
 import { useCompanies } from "@/lib/companies";
 import { usePreferences } from "@/lib/preferences";
 import { usePushSubscription } from "@/lib/push-notifications";
+import { openAppSettings } from "@/lib/native-permissions";
 import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/perfil")({
@@ -135,7 +136,15 @@ function Perfil() {
     navigate({ to: "/entrar" });
   };
 
+  // App nativa com a permissão já negada: o SO não volta a perguntar, por
+  // isso o toque no interruptor abre as definições da app para a ativar lá.
+  const pushBlockedNative = pushSubscription.native && pushSubscription.permission === "denied";
+
   const handlePushToggle = async (checked: boolean) => {
+    if (checked && pushBlockedNative) {
+      void openAppSettings();
+      return;
+    }
     try {
       if (checked) {
         const result = await pushSubscription.subscribe();
@@ -282,14 +291,19 @@ function Perfil() {
                       <div className="min-w-0">
                         <p className="text-sm font-semibold">{t("perfil.pushLabel")}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {pushSubscription.permission === "denied"
-                            ? t("perfil.pushDeniedHint")
-                            : t("perfil.pushDescription")}
+                          {pushBlockedNative
+                            ? t("perfil.pushDeniedNativeHint")
+                            : pushSubscription.permission === "denied"
+                              ? t("perfil.pushDeniedHint")
+                              : t("perfil.pushDescription")}
                         </p>
                       </div>
                       <Switch
                         checked={pushSubscription.subscribed}
-                        disabled={pushSubscription.busy || pushSubscription.permission === "denied"}
+                        disabled={
+                          pushSubscription.busy ||
+                          (pushSubscription.permission === "denied" && !pushBlockedNative)
+                        }
                         onCheckedChange={handlePushToggle}
                       />
                     </div>

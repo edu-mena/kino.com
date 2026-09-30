@@ -17,6 +17,7 @@ export const fr: Dictionary = {
     cta: "Utiliser ma position actuelle",
     loading: "Récupération de votre position...",
     denied: "Autorisation de localisation refusée — activez-la sur votre téléphone et réessayez.",
+    deniedNative: "Localisation bloquée — touchez pour ouvrir les réglages et l'autoriser.",
     unsupported: "Cet appareil ne prend pas en charge la localisation.",
     geocoding: "Calcul de l'adresse...",
     noAddress:
@@ -291,6 +292,7 @@ export const fr: Dictionary = {
     pushLabel: "Notifications push sur cet appareil",
     pushDescription: "Avertit même avec la Luku fermée — commandes, réservations, etc.",
     pushDeniedHint: "Bloquées dans les réglages du navigateur — autorisez-les là d'abord.",
+    pushDeniedNativeHint: "Bloquées — touchez pour ouvrir les réglages.",
     pushDeniedError:
       "Permission de notifications refusée — autorisez-la dans les réglages du navigateur.",
     pushEnabledToast: "Notifications push activées.",

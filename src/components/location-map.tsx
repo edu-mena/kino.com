@@ -3,6 +3,7 @@ import type * as LType from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useTranslation } from "@/i18n";
 import { formatKm, haversineKm } from "@/lib/geo";
+import { getDevicePosition } from "@/lib/native-permissions";
 
 /**
  * Mapa Leaflet + OpenStreetMap. Só arranca no cliente (`import("leaflet")`
@@ -123,38 +124,34 @@ export function LocationMap({
       let youMarker: LType.CircleMarker | undefined;
       let line: LType.Polyline | undefined;
       const runLocate = () => {
-        if (typeof navigator === "undefined" || !navigator.geolocation) {
-          setLocateError(true);
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            if (cancelled || !map) return;
-            const me: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-            youMarker?.remove();
-            line?.remove();
-            youMarker = L.circleMarker(me, {
-              radius: 7,
-              weight: 3,
-              color: YOU_COLOR,
-              fillColor: YOU_COLOR,
-              fillOpacity: 1,
-            })
-              .addTo(map)
-              .bindPopup(tRef.current("locationMap.you"));
-            line = L.polyline([me, [target.lat, target.lng]], {
-              color: YOU_COLOR,
-              weight: 2,
-              dashArray: "6 6",
-            }).addTo(map);
-            map.fitBounds(L.latLngBounds([me, [target.lat, target.lng]]).pad(0.3));
-            setMePos(me);
-            setDistanceKm(haversineKm(me, [target.lat, target.lng]));
-            setLocateError(false);
-          },
-          () => setLocateError(true),
-          { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
-        );
+        void getDevicePosition().then((result) => {
+          if (cancelled || !map) return;
+          if (!result.ok) {
+            setLocateError(true);
+            return;
+          }
+          const me = result.coords;
+          youMarker?.remove();
+          line?.remove();
+          youMarker = L.circleMarker(me, {
+            radius: 7,
+            weight: 3,
+            color: YOU_COLOR,
+            fillColor: YOU_COLOR,
+            fillOpacity: 1,
+          })
+            .addTo(map)
+            .bindPopup(tRef.current("locationMap.you"));
+          line = L.polyline([me, [target.lat, target.lng]], {
+            color: YOU_COLOR,
+            weight: 2,
+            dashArray: "6 6",
+          }).addTo(map);
+          map.fitBounds(L.latLngBounds([me, [target.lat, target.lng]]).pad(0.3));
+          setMePos(me);
+          setDistanceKm(haversineKm(me, [target.lat, target.lng]));
+          setLocateError(false);
+        });
       };
 
       const control = new L.Control({ position: "topright" });

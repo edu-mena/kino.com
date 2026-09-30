@@ -302,6 +302,41 @@ o `AndroidConfig`/`ApnsConfig` por mensagem, e a credencial Apple em si.
 
 ---
 
+## Permissões (localização, notificações) e "abrir definições"
+
+A app usa `@capacitor/geolocation` para pedir a localização ao SO e
+`capacitor-native-settings` para, quando uma permissão já foi negada de vez
+(o SO deixa de mostrar o pedido), abrir diretamente o ecrã de definições
+da app ao tocar em "usar a minha localização" / no interruptor de
+notificações em `/perfil`. Código: `src/lib/native-permissions.ts`.
+
+`android/` e `ios/` não estão no git — em cada máquina:
+
+### Android — `android/app/src/main/AndroidManifest.xml`
+
+Dentro de `<manifest>`, junto de `INTERNET`:
+
+```xml
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-feature android:name="android.hardware.location.gps" android:required="false" />
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+```
+
+Sem as duas de localização, o pedido de permissão nem chega a aparecer
+(era o que acontecia antes: o manifest só tinha `INTERNET`).
+
+### iOS — `ios/App/App/Info.plist`
+
+```xml
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>A Luku usa a sua localização para mostrar restaurantes perto de si e preencher a morada de entrega.</string>
+```
+
+Sem esta chave o iOS recusa o pedido de localização sem mostrar nada.
+
+Depois: `npm run cap:sync`.
+
 ## Partilhar um documento PARA a app (comprovativo/fatura)
 
 Permite que a Luku apareça na folha de partilha nativa do telemóvel — ex.

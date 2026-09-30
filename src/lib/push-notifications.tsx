@@ -106,6 +106,22 @@ export function usePushSubscription(token: string | null) {
     });
   }, [webSupported]);
 
+  // Na app nativa, o utilizador pode ter ido às definições do SO ativar as
+  // notificações (ver `openAppSettings`) — ao voltar à app, relê a permissão
+  // para o toggle em `/perfil` refletir logo o novo estado.
+  useEffect(() => {
+    if (!native) return;
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      void import("@capacitor/push-notifications").then(async ({ PushNotifications }) => {
+        const status = await PushNotifications.checkPermissions();
+        setPermission(normalizeNativePermission(status.receive));
+      });
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [native]);
+
   const subscribeNative = useCallback(async (): Promise<NotificationPermission | "unsupported"> => {
     const { Capacitor } = await import("@capacitor/core");
     const { PushNotifications } = await import("@capacitor/push-notifications");
@@ -217,5 +233,5 @@ export function usePushSubscription(token: string | null) {
     }
   }, [supported, native, unsubscribeNative, token]);
 
-  return { supported, permission, subscribed, busy, subscribe, unsubscribe };
+  return { supported, native, permission, subscribed, busy, subscribe, unsubscribe };
 }
