@@ -683,9 +683,11 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
       {/* 6 · Comprovativo e fatura lado a lado — o conteúdo abre por baixo */}
       <DetailDocuments items={documents} />
 
-      {/* 7 · O que foi pedido — minimizável, depois do valor e dos documentos */}
+      {/* 7 · O que foi pedido — começa aberto; minimizado fica a verde */}
       <DetailSection
         collapsible
+        defaultOpen
+        solidWhenCollapsed
         icon={ShoppingBag}
         title={t("detailCard.products")}
         action={<DetailChip>{t("detailCard.itemsCount", { count: itemCount })}</DetailChip>}

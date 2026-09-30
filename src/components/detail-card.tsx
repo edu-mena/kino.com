@@ -691,6 +691,7 @@ export function DetailSection({
   tone = "default",
   collapsible = false,
   defaultOpen = false,
+  solidWhenCollapsed = false,
   children,
 }: {
   icon?: LucideIcon | undefined;
@@ -705,6 +706,9 @@ export function DetailSection({
    * primeiro o que importa (divulgação progressiva). */
   collapsible?: boolean | undefined;
   defaultOpen?: boolean | undefined;
+  /** Minimizada, a secção fica a cheio na cor principal — continua bem
+   * visível (ex.: produtos do pedido) em vez de desaparecer no fundo. */
+  solidWhenCollapsed?: boolean | undefined;
   children: ReactNode;
 }) {
   const id = useId();
@@ -712,34 +716,47 @@ export function DetailSection({
   const t = SECTION_TONE[tone];
   const Icon = icon ?? t.fallback;
   const expanded = !collapsible || open;
+  const solid = collapsible && solidWhenCollapsed && !open;
   const heading = (
     <>
       {Icon && (
-        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${t.icon}`}>
+        <span
+          className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${solid ? `bg-white/15 ${ON_SOLID}` : t.icon}`}
+        >
           <Icon className="h-4 w-4" aria-hidden="true" />
         </span>
       )}
       <span className="min-w-0 flex-1 text-left">
-        <span id={id} className="block text-sm font-semibold leading-snug text-foreground">
+        <span
+          id={id}
+          className={`block text-sm font-semibold leading-snug ${solid ? ON_SOLID : "text-foreground"}`}
+        >
           {title}
         </span>
-        {description && <span className="block text-xs text-muted-foreground">{description}</span>}
+        {description && (
+          <span className={`block text-xs ${solid ? "text-white/80" : "text-muted-foreground"}`}>
+            {description}
+          </span>
+        )}
       </span>
     </>
   );
   return (
-    <section aria-labelledby={id} className={`mt-4 rounded-2xl border p-4 ${t.box}`}>
+    <section
+      aria-labelledby={id}
+      className={`mt-4 rounded-2xl border p-4 transition-colors ${solid ? "border-primary bg-primary" : t.box}`}
+    >
       <h3 className="flex items-center gap-3">
         {collapsible ? (
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
-            className="-m-1 flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1 transition-colors hover:bg-surface/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className={`-m-1 flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 ${solid ? "hover:bg-white/10 focus-visible:ring-white/60" : "hover:bg-surface/80 focus-visible:ring-primary/40"}`}
           >
             {heading}
             <ChevronDown
-              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+              className={`h-4 w-4 shrink-0 transition-transform ${solid ? ON_SOLID : "text-muted-foreground"} ${open ? "rotate-180" : ""}`}
               aria-hidden="true"
             />
           </button>
