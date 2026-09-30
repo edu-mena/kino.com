@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
+import { AccountDataActions } from "@/components/account-data-actions";
 import { CompanyFormDialog } from "@/components/company-form-dialog";
 import { OwnPremiumRestaurants } from "@/components/loyalty-badge";
 import { PageShell } from "@/components/site-shell";
@@ -289,6 +290,8 @@ function Perfil() {
                 </div>
               </DialogContent>
             </Dialog>
+
+            <AccountDataActions />
 
             <button
               type="button"

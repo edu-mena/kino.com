@@ -314,6 +314,22 @@ export const en: Dictionary = {
     savedCompanies: "Saved companies",
     addCompany: "Add company",
     logout: "Log out",
+    accountData: {
+      exportLabel: "Download my data",
+      exportDescription: "Everything Luku keeps about you, in one file",
+      exportError: "Couldn't download your data. Please try again.",
+      deleteLabel: "Delete account",
+      deleteDescription: "Deletes your account and personal data",
+      deleteTitle: "Delete your account?",
+      deleteWarning:
+        "This can't be undone. Your account, addresses, companies, favourites and preferences are deleted. Orders and reservations stay with the restaurant only, without your name, phone, email or address.",
+      confirmWord: "DELETE",
+      confirmPrompt: "To confirm, type {word}:",
+      deleteConfirm: "Delete my account",
+      deleting: "Deleting…",
+      deleted: "Your account has been deleted.",
+      deleteError: "Couldn't delete the account. Please try again.",
+    },
   },
   companyForm: {
     title: "New company",

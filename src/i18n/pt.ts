@@ -321,6 +321,22 @@ export const pt = {
     savedCompanies: "Empresas guardadas",
     addCompany: "Adicionar empresa",
     logout: "Terminar sessão",
+    accountData: {
+      exportLabel: "Descarregar os meus dados",
+      exportDescription: "Tudo o que a Luku guarda sobre si, num ficheiro",
+      exportError: "Não foi possível descarregar os seus dados. Tente de novo.",
+      deleteLabel: "Apagar conta",
+      deleteDescription: "Apaga a conta e os seus dados pessoais",
+      deleteTitle: "Apagar a sua conta?",
+      deleteWarning:
+        "Isto não pode ser desfeito. A conta, moradas, empresas, favoritos e preferências são apagados. Os pedidos e reservas ficam só para o restaurante, sem o seu nome, telefone, email nem morada.",
+      confirmWord: "APAGAR",
+      confirmPrompt: "Para confirmar, escreva {word}:",
+      deleteConfirm: "Apagar a minha conta",
+      deleting: "A apagar…",
+      deleted: "A sua conta foi apagada.",
+      deleteError: "Não foi possível apagar a conta. Tente de novo.",
+    },
   },
   companyForm: {
     title: "Nova empresa",

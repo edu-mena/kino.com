@@ -17,6 +17,7 @@ import { Route as CardapioRouteImport } from './routes/cardapio'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
+import { Route as EliminarContaRouteImport } from './routes/eliminar-conta'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as EntregaRouteImport } from './routes/entrega'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
@@ -103,6 +104,11 @@ const ContactoRoute = ContactoRouteImport.update({
 const DefinirSenhaRoute = DefinirSenhaRouteImport.update({
   id: '/definir-senha',
   path: '/definir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EliminarContaRoute = EliminarContaRouteImport.update({
+  id: '/eliminar-conta',
+  path: '/eliminar-conta',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntrarRoute = EntrarRouteImport.update({
@@ -350,6 +356,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
   '/definir-senha': typeof DefinirSenhaRoute
+  '/eliminar-conta': typeof EliminarContaRoute
   '/entrar': typeof EntrarRoute
   '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
@@ -406,6 +413,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
   '/definir-senha': typeof DefinirSenhaRoute
+  '/eliminar-conta': typeof EliminarContaRoute
   '/entrar': typeof EntrarRoute
   '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
@@ -463,6 +471,7 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/contacto': typeof ContactoRoute
   '/definir-senha': typeof DefinirSenhaRoute
+  '/eliminar-conta': typeof EliminarContaRoute
   '/entrar': typeof EntrarRoute
   '/entrega': typeof EntregaRoute
   '/favoritos': typeof FavoritosRoute
@@ -522,6 +531,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/contacto'
     | '/definir-senha'
+    | '/eliminar-conta'
     | '/entrar'
     | '/entrega'
     | '/favoritos'
@@ -578,6 +588,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/contacto'
     | '/definir-senha'
+    | '/eliminar-conta'
     | '/entrar'
     | '/entrega'
     | '/favoritos'
@@ -634,6 +645,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/contacto'
     | '/definir-senha'
+    | '/eliminar-conta'
     | '/entrar'
     | '/entrega'
     | '/favoritos'
@@ -692,6 +704,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   ContactoRoute: typeof ContactoRoute
   DefinirSenhaRoute: typeof DefinirSenhaRoute
+  EliminarContaRoute: typeof EliminarContaRoute
   EntrarRoute: typeof EntrarRoute
   EntregaRoute: typeof EntregaRoute
   FavoritosRoute: typeof FavoritosRoute
@@ -774,6 +787,13 @@ declare module '@tanstack/react-router' {
       path: '/definir-senha'
       fullPath: '/definir-senha'
       preLoaderRoute: typeof DefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/eliminar-conta': {
+      id: '/eliminar-conta'
+      path: '/eliminar-conta'
+      fullPath: '/eliminar-conta'
+      preLoaderRoute: typeof EliminarContaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entrar': {
@@ -1180,6 +1200,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   ContactoRoute: ContactoRoute,
   DefinirSenhaRoute: DefinirSenhaRoute,
+  EliminarContaRoute: EliminarContaRoute,
   EntrarRoute: EntrarRoute,
   EntregaRoute: EntregaRoute,
   FavoritosRoute: FavoritosRoute,

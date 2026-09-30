@@ -26,6 +26,12 @@ type AuthContextType = {
    * cliente (ver plano de backend: sem email/senha para este papel). */
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  /** Descarrega um JSON com tudo o que a Luku guarda sobre a conta
+   * (backend AccountController::export — direito de acesso, Lei 22/11). */
+  exportData: () => Promise<void>;
+  /** Apaga a conta de vez (backend AccountDeletionService) e limpa a sessão
+   * local. Pedidos/reservas ficam para o restaurante, anonimizados. */
+  deleteAccount: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -161,6 +167,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const exportData = async () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    const { data } = await apiFetch<{ data: unknown }>("/me/export", { token });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "luku-os-meus-dados.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const deleteAccount = async () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    // Primeiro o push deste dispositivo (precisa do token ainda válido); o
+    // backend apaga os device tokens da conta de qualquer forma.
+    await forgetPushOnLogout(token, "client");
+    await apiFetch("/me", { method: "DELETE", token, body: { confirm: true } });
+    localStorage.removeItem(TOKEN_KEY);
+    setUser(null);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -169,6 +199,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         loginWithGoogle,
         logout,
+        exportData,
+        deleteAccount,
       }}
     >
       {children}

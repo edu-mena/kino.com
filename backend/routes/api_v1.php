@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\ContactMessageController;
@@ -77,6 +78,13 @@ Route::prefix('auth')->group(function () {
         Route::post('logout-all', [AuthController::class, 'logoutAll']);
         Route::get('me', [AuthController::class, 'me']);
     });
+});
+
+// Direitos do titular dos dados (auditoria de segurança, Fase 3) — ver os
+// próprios dados e apagar a conta (ver AccountController).
+Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
+    Route::get('me/export', [AccountController::class, 'export']);
+    Route::delete('me', [AccountController::class, 'destroy']);
 });
 
 // Segurança do login de sistema (ver SystemAccessController) — `notify` é

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 
 class SystemSecurityEvent extends Model
 {
-    use HasFactory;
+    use HasFactory, MassPrunable;
 
     protected $fillable = ['ip', 'user_agent', 'event', 'outcome', 'email_attempted'];
 
@@ -26,5 +28,17 @@ class SystemSecurityEvent extends Model
             ->where('outcome', 'failed')
             ->where('created_at', '>=', now()->subMinutes(30))
             ->count();
+    }
+
+    /*
+     * Retenção de dados (auditoria de segurança, Fase 3 / Lei n.º 22/11 —
+     * não guardar dados pessoais mais tempo do que o necessário). Corre no
+     * `model:prune` diário (routes/console.php).
+     */
+    public function prunable(): Builder
+    {
+        // Auditoria de acessos ao login de sistema — 12 meses chegam para
+        // investigar um incidente; IPs e user-agents são dados pessoais.
+        return static::query()->where('created_at', '<', now()->subMonths(12));
     }
 }

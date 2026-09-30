@@ -317,6 +317,22 @@ export const fr: Dictionary = {
     savedCompanies: "Entreprises enregistrées",
     addCompany: "Ajouter une entreprise",
     logout: "Se déconnecter",
+    accountData: {
+      exportLabel: "Télécharger mes données",
+      exportDescription: "Tout ce que Luku conserve sur vous, dans un fichier",
+      exportError: "Impossible de télécharger vos données. Réessayez.",
+      deleteLabel: "Supprimer le compte",
+      deleteDescription: "Supprime votre compte et vos données personnelles",
+      deleteTitle: "Supprimer votre compte ?",
+      deleteWarning:
+        "Action irréversible. Le compte, les adresses, entreprises, favoris et préférences sont supprimés. Les commandes et réservations restent uniquement au restaurant, sans votre nom, téléphone, e-mail ni adresse.",
+      confirmWord: "SUPPRIMER",
+      confirmPrompt: "Pour confirmer, écrivez {word} :",
+      deleteConfirm: "Supprimer mon compte",
+      deleting: "Suppression…",
+      deleted: "Votre compte a été supprimé.",
+      deleteError: "Impossible de supprimer le compte. Réessayez.",
+    },
   },
   companyForm: {
     title: "Nouvelle entreprise",

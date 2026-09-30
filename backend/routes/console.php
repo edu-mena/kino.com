@@ -5,7 +5,10 @@ use App\Jobs\SendRestaurantDailyDigestsJob;
 use App\Models\BlockedIp;
 use App\Models\DeviceToken;
 use App\Models\Notification;
+use App\Models\Order;
+use App\Models\Reservation;
 use App\Models\User;
+use App\Services\AccountDeletionService;
 use App\Services\MediaUploadService;
 use App\Services\PushNotificationService;
 use Illuminate\Foundation\Inspiring;
@@ -193,3 +196,52 @@ Artisan::command('documents:privatize {--dry-run : Só lista o que seria movido}
     $verb = $dryRun ? 'a mover' : 'movidos';
     $this->info("{$moved} documento(s) {$verb} para o disco privado; {$missing} em falta.");
 })->purpose('Mover comprovativos/faturas antigos do bucket público para o privado');
+
+// Retenção de dados (auditoria de segurança, Fase 3) — prazos em cada model
+// (`prunable()`: notificações, visitas ao perfil, idempotência, auditoria de
+// sistema, mensagens de contacto, candidaturas recusadas).
+Schedule::command('model:prune')->dailyAt('03:30')->onOneServer();
+
+/*
+ * Anonimiza pedidos/reservas de CONVIDADOS já terminados há mais de
+ * `privacy.guest_retention_days` — desligado enquanto esse prazo não estiver
+ * definido (ver config/privacy.php). Query builder: sem Observers/notificações.
+ */
+Artisan::command('privacy:anonymize-guests {--dry-run : Só conta o que seria anonimizado}', function () {
+    $days = config('privacy.guest_retention_days');
+    if (! $days) {
+        $this->info('Desligado (PRIVACY_GUEST_RETENTION_DAYS não definido).');
+
+        return;
+    }
+
+    $before = now()->subDays((int) $days);
+    $name = AccountDeletionService::ANONYMOUS_NAME;
+
+    $orders = Order::query()->whereNull('user_id')->where('customer_name', '!=', $name)
+        ->whereIn('status', ['delivered', 'completed', 'rejected', 'canceled'])
+        ->where('updated_at', '<', $before);
+    // Terminada = recusada/cancelada/anulada, ou confirmada com a data já
+    // passada — o OR fica agrupado, para o prazo valer para ambos os ramos.
+    $reservations = Reservation::query()->whereNull('user_id')->where('customer_name', '!=', $name)
+        ->where('updated_at', '<', $before)
+        ->where(fn ($q) => $q->whereIn('status', ['declined', 'canceled', 'voided'])
+            ->orWhere(fn ($q) => $q->where('status', 'confirmed')->where('date', '<', $before->toDateString())));
+
+    if ($this->option('dry-run')) {
+        $this->info("{$orders->count()} pedido(s) e {$reservations->count()} reserva(s) seriam anonimizados.");
+
+        return;
+    }
+
+    $o = $orders->update([
+        'customer_name' => $name, 'customer_phone' => '', 'customer_email' => null,
+        'delivery_address_snapshot' => null, 'note' => null,
+    ]);
+    $r = $reservations->update([
+        'customer_name' => $name, 'customer_phone' => '', 'customer_email' => null, 'special_requests' => null,
+    ]);
+    $this->info("{$o} pedido(s) e {$r} reserva(s) de convidados anonimizados.");
+})->purpose('Anonimizar dados de convidados em pedidos/reservas antigos (retenção)');
+
+Schedule::command('privacy:anonymize-guests')->dailyAt('03:45')->onOneServer();

@@ -25,7 +25,7 @@ function Privacidade() {
       <PageHeading eyebrow="Legal" title="Política de Privacidade" />
 
       <LegalDocument
-        updatedAt="13 de setembro de 2026"
+        updatedAt="30 de setembro de 2026"
         intro={
           <p>
             Esta política explica que dados a Luku recolhe quando usa o site ou as apps, para que
@@ -59,7 +59,9 @@ function Privacidade() {
           <p>
             A Luku não processa pagamentos — por isso <strong>nunca</strong> recolhemos número de
             cartão, dados bancários, ou qualquer credencial de pagamento. Comprovativos de pagamento
-            que envie ficam visíveis apenas ao restaurante do pedido em causa.
+            que envie (e as faturas que o restaurante lhe emite) ficam em armazenamento privado,
+            visíveis apenas a si e ao restaurante do pedido em causa, e só através de links
+            temporários que deixam de funcionar ao fim de poucas horas.
           </p>
         </LegalSection>
 
@@ -89,23 +91,37 @@ function Privacidade() {
           <p>Nunca vendemos os seus dados a terceiros nem os usamos para publicidade externa.</p>
         </LegalSection>
 
-        <LegalSection title="5. Onde ficam guardados">
+        <LegalSection title="5. Onde ficam guardados e por quanto tempo">
           <p>
             Os seus dados ficam numa base de dados própria da Luku, protegida por acesso autenticado
             — nunca em folhas de cálculo soltas nem partilhadas por email.
+          </p>
+          <p>
+            Enquanto tiver conta, guardamos o que é preciso para o Serviço funcionar. Alguns dados
+            são apagados automaticamente mais cedo: notificações lidas ao fim de 6 meses (as não
+            lidas ao fim de 12), o registo das visitas a perfis de restaurantes ao fim de 90 dias,
+            mensagens enviadas pela página de Contacto e registos de segurança ao fim de 12 meses, e
+            candidaturas de restaurantes recusadas ao fim de 6 meses.
           </p>
         </LegalSection>
 
         <LegalSection title="6. Os seus direitos">
           <p>
-            Pode pedir para ver que dados temos sobre si, corrigi-los, ou pedir a eliminação da sua
-            conta e dos dados associados — escrevendo para{" "}
+            No seu{" "}
+            <Link to="/perfil" className="font-semibold text-primary hover:underline">
+              Perfil
+            </Link>{" "}
+            pode, a qualquer momento e sem pedir a ninguém, <strong>descarregar</strong> tudo o que
+            a Luku guarda sobre si e <strong>apagar a sua conta</strong> (ver{" "}
+            <Link to="/eliminar-conta" className="font-semibold text-primary hover:underline">
+              como apagar a conta
+            </Link>
+            ). Para corrigir dados ou qualquer outro pedido, escreva para{" "}
             <a href="mailto:ola@luku.ao" className="font-semibold text-primary hover:underline">
               ola@luku.ao
             </a>
-            . Alguma informação (ex.: histórico de pedidos já concluídos) pode ter de ser mantida
-            por mais tempo quando exigido por lei fiscal/comercial angolana, mesmo depois de pedir a
-            eliminação da conta.
+            . Ao apagar a conta, os pedidos e reservas já feitos ficam no histórico do restaurante
+            (registo contabilístico/fiscal), mas sem o seu nome, contacto, morada nem notas.
           </p>
         </LegalSection>
 

@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Models\Concerns\HasPublicUuid;
 use App\Observers\NotificationObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -17,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[ObservedBy(NotificationObserver::class)]
 class Notification extends Model
 {
-    use HasFactory, HasPublicUuid;
+    use HasFactory, HasPublicUuid, MassPrunable;
 
     protected $table = 'notifications';
 
@@ -65,5 +67,18 @@ class Notification extends Model
     public function statusValue(): string
     {
         return (string) ($this->snapshot()['status'] ?? $this->status_snapshot);
+    }
+
+    /*
+     * Retenção de dados (auditoria de segurança, Fase 3 / Lei n.º 22/11 —
+     * não guardar dados pessoais mais tempo do que o necessário). Corre no
+     * `model:prune` diário (routes/console.php).
+     */
+    public function prunable(): Builder
+    {
+        // Lidas: 6 meses. Nunca lidas: 12 (ninguém volta a elas depois disso).
+        return static::query()->where(fn ($q) => $q
+            ->where(fn ($q) => $q->whereNotNull('read_at')->where('created_at', '<', now()->subMonths(6)))
+            ->orWhere('created_at', '<', now()->subMonths(12)));
     }
 }
