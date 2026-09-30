@@ -1,13 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   CalendarCheck,
+  CalendarDays,
   ChevronLeft,
+  Clock,
   FileText,
+  Gift,
+  MapPin,
   MessageSquare,
   Receipt,
   ShieldCheck,
   Star,
   Upload,
+  Users,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -25,9 +30,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/empty-state";
 import {
+  DetailAction,
+  DetailChip,
+  DetailContactButtons,
   DetailHeader,
   DetailFacts,
   DetailRow,
+  DetailSchedule,
   DetailSection,
   StatusBadge,
   reservationStatusVisual,
@@ -176,6 +185,19 @@ function Reservas() {
     cancelWindowMinutes > 0 &&
     !!active.statusUpdatedAt &&
     now - new Date(active.statusUpdatedAt).getTime() <= cancelWindowMinutes * 60_000;
+  // Falta enviar o comprovativo da caução — é a ação que o cliente tem de
+  // fazer, por isso sobe para logo a seguir à data/hora.
+  const needsCautionProof =
+    !!active &&
+    active.cautionAmount > 0 &&
+    !active.paymentProof &&
+    active.cautionStatus === "Pendente" &&
+    (active.status === "Pendente" || active.status === "Confirmada");
+  const canRate =
+    !!active &&
+    active.status === "Confirmada" &&
+    active.date < todayStr &&
+    !isRefReviewed(`reservation:${active.id}`);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [review, setReview] = useState<{ id: string; restaurantId: string; name: string } | null>(
     null,
@@ -322,16 +344,20 @@ function Reservas() {
                       <ChevronLeft className="h-4 w-4" /> {t("common.back")}
                     </button>
 
+                    {/* 1 · Onde e em que estado */}
                     <DetailHeader
                       image={active.restaurantImage}
+                      eyebrow={t("detailCard.restaurant")}
                       title={active.restaurantName}
-                      date={new Date(`${active.date}T12:00:00`).toLocaleDateString("pt-AO", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                      time={active.time}
-                      people={t("reservas.peopleCount", { count: active.peopleCount })}
+                      subtitle={activeRestaurant?.neighborhood}
+                      subtitleIcon={MapPin}
+                      meta={
+                        active.package ? (
+                          <DetailChip icon={Gift}>
+                            {active.package.title ?? active.package.packageTypeName}
+                          </DetailChip>
+                        ) : undefined
+                      }
                       status={
                         <StatusBadge visual={reservationStatusVisual(active.status)}>
                           {statusText(active.status)}
@@ -339,156 +365,185 @@ function Reservas() {
                       }
                     />
 
-                    {active.cautionAmount > 0 && (
-                      <DetailFacts>
-                        <DetailRow icon={ShieldCheck} label={t("reservas.detailDeposit")} span>
-                          {formatKz(active.cautionAmount)}
-                          <span className="mt-0.5 block text-xs text-muted-foreground">
-                            {cautionStatusText(active.cautionStatus)}
-                          </span>
-                          {active.promoCode && (
-                            <span className="mt-0.5 block text-xs font-semibold text-success">
-                              {t("reservas.promoApplied", { code: active.promoCode })}
-                            </span>
-                          )}
-                        </DetailRow>
-                      </DetailFacts>
-                    )}
+                    {/* 2 · Quando e quantos — o que se procura primeiro */}
+                    <DetailSchedule
+                      items={[
+                        {
+                          icon: CalendarDays,
+                          label: t("detailCard.date"),
+                          value: new Date(`${active.date}T12:00:00`).toLocaleDateString("pt-AO", {
+                            weekday: "short",
+                            day: "2-digit",
+                            month: "short",
+                          }),
+                        },
+                        { icon: Clock, label: t("detailCard.time"), value: active.time },
+                        {
+                          icon: Users,
+                          label: t("detailCard.people"),
+                          value: active.peopleCount,
+                        },
+                      ]}
+                    />
 
-                    <DetailSection icon={MessageSquare} title={t("reservas.detailRequests")}>
-                      <p className="text-sm text-foreground">
-                        {active.specialRequests || t("reservas.noRequests")}
-                      </p>
-                    </DetailSection>
-
-                    {/* Comprovativo de pagamento da caução */}
-                    {active.cautionAmount > 0 &&
-                      (active.paymentProof || active.cautionStatus === "Pendente") && (
-                        <DetailSection icon={Upload} title={t("reservas.proofTitle")}>
-                          {active.paymentProof ? (
-                            <div className="mt-2 space-y-2">
-                              <button
-                                type="button"
-                                onClick={() => setProofLightboxOpen(true)}
-                                aria-label={t("reservas.proofViewAria")}
-                                className="block w-full"
-                              >
-                                {proofIsPdf ? (
-                                  <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                                    <FileText className="h-5 w-5 shrink-0 text-primary" />
-                                    {t("reservas.proofPdfLabel")}
-                                  </span>
-                                ) : (
-                                  <img
-                                    src={active.paymentProof}
-                                    alt=""
-                                    className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
-                                  />
-                                )}
-                              </button>
-                              <span className="block text-xs font-semibold text-success">
-                                {t("reservas.proofSent")}
-                              </span>
-                              <MediaLightbox
-                                open={proofLightboxOpen}
-                                onOpenChange={setProofLightboxOpen}
-                                src={active.paymentProof}
-                                isPdf={proofIsPdf}
-                                title={t("reservas.proofTitle")}
-                              />
-                            </div>
-                          ) : (
-                            <>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {t("reservas.proofHint")}
-                              </p>
-                              <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 px-4 py-3 text-xs font-bold text-primary transition-colors hover:bg-primary/5">
-                                <Upload className="h-4 w-4" />
-                                {proofUploading
-                                  ? t("reservas.proofUploading")
-                                  : t("reservas.proofUpload")}
-                                <input
-                                  type="file"
-                                  accept="image/*,application/pdf"
-                                  className="hidden"
-                                  disabled={proofUploading}
-                                  onChange={onProofFile}
-                                />
-                              </label>
-                            </>
-                          )}
-                        </DetailSection>
-                      )}
-
-                    {/* Fatura emitida pelo restaurante — o cliente só vê, não carrega.
-                        Combina o consumo e a caução; numa reserva "não compareceu",
-                        é só a caução. */}
-                    {(active.invoice ||
-                      active.status === "Confirmada" ||
-                      active.status === "Não compareceu") && (
-                      <DetailSection icon={Receipt} title={t("reservas.invoiceTitle")}>
-                        {active.invoice ? (
-                          <div className="mt-2 space-y-2">
-                            <button
-                              type="button"
-                              onClick={() => setInvoiceLightboxOpen(true)}
-                              aria-label={t("reservas.invoiceViewAria")}
-                              className="block w-full"
-                            >
-                              {invoiceIsPdf ? (
-                                <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                                  <FileText className="h-5 w-5 shrink-0 text-primary" />
-                                  {t("reservas.invoicePdfLabel")}
-                                </span>
-                              ) : (
-                                <img
-                                  src={active.invoice}
-                                  alt=""
-                                  className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
-                                />
-                              )}
-                            </button>
-                            <span className="block text-xs font-semibold text-success">
-                              {t("reservas.invoiceIssued")}
-                            </span>
-                            <MediaLightbox
-                              open={invoiceLightboxOpen}
-                              onOpenChange={setInvoiceLightboxOpen}
-                              src={active.invoice}
-                              isPdf={invoiceIsPdf}
-                              title={t("reservas.invoiceTitle")}
-                            />
-                          </div>
-                        ) : (
-                          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <CalendarCheck className="h-3.5 w-3.5 shrink-0" />
-                            {t("reservas.invoicePending")}
-                          </p>
-                        )}
+                    {/* 3 · O que falta fazer — pagar a caução */}
+                    {needsCautionProof && (
+                      <DetailSection
+                        tone="warning"
+                        icon={ShieldCheck}
+                        title={t("detailCard.cautionTitle")}
+                        description={t("detailCard.cautionBody")}
+                      >
+                        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90">
+                          <Upload className="h-4 w-4" />
+                          {proofUploading
+                            ? t("reservas.proofUploading")
+                            : t("reservas.proofUpload")}
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            className="hidden"
+                            disabled={proofUploading}
+                            onChange={onProofFile}
+                          />
+                        </label>
                       </DetailSection>
                     )}
 
-                    {(active.status === "Pendente" ||
-                      canCancelConfirmed ||
-                      (active.status === "Confirmada" &&
-                        active.date < todayStr &&
-                        !isRefReviewed(`reservation:${active.id}`))) && (
-                      <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-5">
-                        {(active.status === "Pendente" || canCancelConfirmed) && (
-                          <button
-                            type="button"
-                            onClick={() => setConfirmCancelId(active.id)}
-                            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                    {/* 4 · Factos — só o que existe */}
+                    {(active.cautionAmount > 0 || active.specialRequests) && (
+                      <DetailFacts>
+                        {active.cautionAmount > 0 && (
+                          <DetailRow
+                            icon={ShieldCheck}
+                            label={t("reservas.detailDeposit")}
+                            span
+                            hint={
+                              <>
+                                {cautionStatusText(active.cautionStatus)}
+                                {active.promoCode && (
+                                  <span className="block font-semibold text-success">
+                                    {t("reservas.promoApplied", { code: active.promoCode })}
+                                  </span>
+                                )}
+                              </>
+                            }
                           >
-                            <X className="h-3.5 w-3.5" />
-                            {t("reservas.cancel")}
-                          </button>
+                            {formatKz(active.cautionAmount)}
+                          </DetailRow>
                         )}
-                        {active.status === "Confirmada" &&
-                          active.date < todayStr &&
-                          !isRefReviewed(`reservation:${active.id}`) && (
-                            <button
-                              type="button"
+                        {active.specialRequests && (
+                          <DetailRow icon={MessageSquare} label={t("reservas.detailRequests")} span>
+                            {active.specialRequests}
+                          </DetailRow>
+                        )}
+                      </DetailFacts>
+                    )}
+
+                    {/* 5 · Documentos já existentes — recolhidos */}
+                    {active.paymentProof && (
+                      <DetailSection
+                        collapsible
+                        icon={Upload}
+                        title={t("reservas.proofTitle")}
+                        description={t("reservas.proofSent")}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setProofLightboxOpen(true)}
+                          aria-label={t("reservas.proofViewAria")}
+                          className="block w-full"
+                        >
+                          {proofIsPdf ? (
+                            <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                              <FileText className="h-5 w-5 shrink-0 text-primary" />
+                              {t("reservas.proofPdfLabel")}
+                            </span>
+                          ) : (
+                            <img
+                              src={active.paymentProof}
+                              alt=""
+                              className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                            />
+                          )}
+                        </button>
+                        <MediaLightbox
+                          open={proofLightboxOpen}
+                          onOpenChange={setProofLightboxOpen}
+                          src={active.paymentProof}
+                          isPdf={proofIsPdf}
+                          title={t("reservas.proofTitle")}
+                        />
+                      </DetailSection>
+                    )}
+
+                    {active.invoice && (
+                      <DetailSection
+                        collapsible
+                        icon={Receipt}
+                        title={t("reservas.invoiceTitle")}
+                        description={t("reservas.invoiceIssued")}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setInvoiceLightboxOpen(true)}
+                          aria-label={t("reservas.invoiceViewAria")}
+                          className="block w-full"
+                        >
+                          {invoiceIsPdf ? (
+                            <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                              <FileText className="h-5 w-5 shrink-0 text-primary" />
+                              {t("reservas.invoicePdfLabel")}
+                            </span>
+                          ) : (
+                            <img
+                              src={active.invoice}
+                              alt=""
+                              className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                            />
+                          )}
+                        </button>
+                        <MediaLightbox
+                          open={invoiceLightboxOpen}
+                          onOpenChange={setInvoiceLightboxOpen}
+                          src={active.invoice}
+                          isPdf={invoiceIsPdf}
+                          title={t("reservas.invoiceTitle")}
+                        />
+                      </DetailSection>
+                    )}
+
+                    {/* 6 · Contacto e ações finais */}
+                    {activeRestaurant?.phone &&
+                      (active.status === "Pendente" || active.status === "Confirmada") &&
+                      active.date >= todayStr && (
+                        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-surface/40 px-4 py-3">
+                          <span className="min-w-0 text-sm">
+                            <span className="block text-xs text-muted-foreground">
+                              {t("entrega.complaintContact")}
+                            </span>
+                            <span className="font-semibold text-foreground">
+                              {activeRestaurant.phone}
+                            </span>
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <DetailContactButtons
+                              phone={activeRestaurant.phone}
+                              callLabel={t("detailCard.call")}
+                              whatsappLabel={t("detailCard.whatsapp")}
+                            />
+                          </span>
+                        </div>
+                      )}
+
+                    {(active.status === "Pendente" || canCancelConfirmed || canRate) && (
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        {canRate && (
+                          <div className="flex-1">
+                            <DetailAction
+                              variant="solid"
+                              block
+                              icon={Star}
                               onClick={() =>
                                 setReview({
                                   id: active.id,
@@ -496,12 +551,21 @@ function Reservas() {
                                   name: active.restaurantName,
                                 })
                               }
-                              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
                             >
-                              <Star className="h-3.5 w-3.5" />
                               {t("reservas.rate")}
-                            </button>
-                          )}
+                            </DetailAction>
+                          </div>
+                        )}
+                        {(active.status === "Pendente" || canCancelConfirmed) && (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmCancelId(active.id)}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-destructive/40 px-4 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                          >
+                            <X className="h-4 w-4" />
+                            {t("reservas.cancel")}
+                          </button>
+                        )}
                       </div>
                     )}
                   </>

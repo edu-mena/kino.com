@@ -21,3 +21,10 @@ export function orderStatusLabel(
   }[status];
   return t(`entrega.${key}`);
 }
+
+/** Número curto do pedido, igual para o cliente e para o painel —
+ * "order-1727890123456" → "123456"; uuid → últimos 6 caracteres. */
+export function orderShortId(id: string) {
+  const tail = id.split("-").pop() ?? id;
+  return (tail.length > 6 ? tail.slice(-6) : tail).toUpperCase();
+}

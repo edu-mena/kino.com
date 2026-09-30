@@ -3,7 +3,6 @@ import {
   Bike,
   ChevronLeft,
   ChevronRight,
-  Clock,
   FileText,
   MapPin,
   MessageSquare,
@@ -22,13 +21,22 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import {
+  DetailAction,
+  DetailChip,
+  DetailContactButtons,
   DetailHeader,
   DetailFacts,
+  DetailNote,
+  DetailProductList,
+  DetailProductRow,
+  DetailProgress,
   DetailRow,
   DetailSection,
   DetailTotal,
   StatusBadge,
+  orderProgressSteps,
   orderStatusVisual,
+  type BreakdownLine,
 } from "@/components/detail-card";
 import { ClientListFilters, FilteredEmpty, RecencyHeading } from "@/components/list-recency";
 import { MediaLightbox } from "@/components/media-lightbox";
@@ -36,7 +44,7 @@ import { ReviewDialog } from "@/components/review-dialog";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { getRestaurant } from "@/data/helpers";
 import { isRefReviewed } from "@/data/reviews-store";
-import { useRestaurantDetail } from "@/data/use-restaurants-query";
+import { useRestaurantDetail, useRestaurantMenuItems } from "@/data/use-restaurants-query";
 import type { FulfillmentType } from "@/data/types";
 import { hasRealBackend } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth";
@@ -46,7 +54,7 @@ import { viewerKey } from "@/lib/customer";
 import { orderDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
 import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
-import { orderStatusLabel } from "@/lib/order-status";
+import { orderShortId, orderStatusLabel } from "@/lib/order-status";
 import { getPaymentMethod } from "@/lib/mock-data";
 import {
   EMPTY_CLIENT_LIST_FILTER,
@@ -246,6 +254,8 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
   const { cancelOrder, orderTotal, orderDiscount, setPaymentProof } = useCart();
   const deliveryPolicy = useDeliveryPolicy();
   const { data: restaurant } = useRestaurantDetail(order.restaurantId);
+  // Fotos/descrições dos pratos (a linha do pedido só guarda nome e preço).
+  const { data: menuItems } = useRestaurantMenuItems(order.restaurantId);
   const { t } = useTranslation();
   const [proofUploading, setProofUploading] = useState(false);
   const canCancel = order.status === "pending";
@@ -306,6 +316,77 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
     }
   };
 
+  // Hierarquia do card (do mais para o menos importante): em que ponto está
+  // → tenho de fazer alguma coisa? → factos → o que pedi → quanto custa →
+  // documentos → ações finais. O secundário (detalhe do valor, documentos já
+  // tratados) fica recolhido.
+  const menuById = new Map((menuItems ?? []).map((m) => [m.id, m]));
+  const progress = orderProgressSteps({
+    status: order.status,
+    flow: isDelivery ? "delivery" : "pickup",
+    labels: [
+      t("detailCard.stepSent"),
+      t("detailCard.stepPreparing"),
+      isDelivery ? t("detailCard.stepOnTheWay") : t("detailCard.stepReady"),
+      isDelivery ? t("detailCard.stepDelivered") : t("detailCard.stepCompleted"),
+    ],
+    captions: [
+      hhmm(new Date(order.createdAt)),
+      undefined,
+      undefined,
+      order.deliveredAt ? hhmm(new Date(order.deliveredAt)) : `~${etaTime(order)}`,
+    ],
+    currentCaption: t("detailCard.now"),
+  });
+  const itemCount = order.lines.reduce((sum, l) => sum + l.qty, 0);
+  const needsProof = paymentDue && !order.paymentProof;
+  const breakdown: BreakdownLine[] = [
+    { label: t("entrega.subtotal"), value: formatKz(subtotal) },
+    ...(order.reservationCredit
+      ? [
+          {
+            label: t("entrega.reservationCreditLine"),
+            value: `− ${formatKz(order.reservationCredit)}`,
+            tone: "credit" as const,
+          },
+        ]
+      : []),
+    ...(order.promoCode
+      ? [
+          {
+            label: `${t("entrega.promoLine", { code: order.promoCode })}${order.promoLabel ? ` · ${order.promoLabel}` : ""}`,
+            value:
+              orderDiscount(order) > 0
+                ? `− ${formatKz(orderDiscount(order))}`
+                : t("entrega.promoFreeDelivery"),
+            tone: "credit" as const,
+          },
+        ]
+      : []),
+    ...(isDelivery
+      ? [
+          {
+            label: (
+              <>
+                {t("entrega.deliveryFeeLine")}
+                {surchargeKm > 0 && (
+                  <span className="ml-1 text-[11px]">
+                    {t("entrega.deliverySurchargeNote", {
+                      radius: deliveryPolicy.freeRadiusKm,
+                      extraKm: surchargeKm,
+                    })}
+                  </span>
+                )}
+              </>
+            ),
+            value: deliveryFee > 0 ? formatKz(deliveryFee) : t("entrega.deliveryFree"),
+          },
+        ]
+      : []),
+  ];
+  const active = order.status !== "delivered" && order.status !== "completed";
+  const finishedOrClosed = !active || order.status === "rejected" || order.status === "canceled";
+
   return (
     <>
       <button
@@ -316,44 +397,116 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         <ChevronLeft className="h-4 w-4" /> {t("common.back")}
       </button>
 
+      {/* 1 · Quem e em que estado */}
       <DetailHeader
         image={restaurant?.coverImage}
-        title={restaurant?.name ?? "Restaurante"}
-        date={etaDate(order)}
-        time={etaTime(order)}
-        people={
-          order.fulfillmentType === "dinein" && order.partySize
-            ? t("entrega.partySize", { count: order.partySize })
-            : undefined
+        eyebrow={t("detailCard.restaurant")}
+        title={restaurant?.name ?? order.restaurantName ?? "Restaurante"}
+        subtitle={restaurant?.neighborhood}
+        subtitleIcon={MapPin}
+        meta={
+          <DetailChip icon={Receipt}>
+            {t("detailCard.orderRef", { ref: orderShortId(order.id) })} · {etaDate(order)}
+          </DetailChip>
         }
-        subtitle={restaurant ? `${restaurant.cuisine} · ${restaurant.neighborhood}` : undefined}
         status={
-          <StatusBadge visual={orderStatusVisual(order.status)}>
-            {orderStatusLabel(order.status, t)}
-          </StatusBadge>
+          progress ? undefined : (
+            <StatusBadge visual={orderStatusVisual(order.status)}>
+              {orderStatusLabel(order.status, t)}
+            </StatusBadge>
+          )
+        }
+        extra={
+          restaurant && !finishedOrClosed ? (
+            <DetailContactButtons
+              phone={restaurant.phone}
+              callLabel={t("detailCard.call")}
+              whatsappLabel={t("detailCard.whatsapp")}
+            />
+          ) : undefined
         }
       />
 
+      {/* 2 · Em que ponto está */}
+      {progress ? (
+        <DetailProgress steps={progress} label={t("detailCard.progressAria")} />
+      ) : (
+        <DetailNote tone={order.status === "rejected" ? "danger" : "neutral"}>
+          {order.status === "rejected"
+            ? t("detailCard.rejectedTitle")
+            : t("detailCard.canceledTitle")}
+        </DetailNote>
+      )}
+
+      {/* 3 · O que o cliente tem de fazer agora — pagar e enviar o comprovativo */}
+      {needsProof && (
+        <DetailSection
+          tone="warning"
+          icon={Wallet}
+          title={t("detailCard.payTitle")}
+          description={t("detailCard.payBody", {
+            method: requiredPayment?.label ?? order.paymentMethod ?? "",
+          })}
+        >
+          {payDestination && (
+            <div className="rounded-xl bg-card px-3 py-2.5 text-xs ring-1 ring-inset ring-border/60">
+              <span className="font-bold uppercase tracking-wide text-muted-foreground">
+                {t("entrega.payToLabel")}
+              </span>
+              <span className="mt-0.5 block whitespace-pre-wrap break-words text-sm font-semibold text-foreground">
+                {payDestination}
+              </span>
+            </div>
+          )}
+          <label className="mt-2.5 flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90">
+            <Upload className="h-4 w-4" />
+            {proofUploading ? t("entrega.proofUploading") : t("entrega.proofUpload")}
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              className="hidden"
+              disabled={proofUploading}
+              onChange={onProofFile}
+            />
+          </label>
+        </DetailSection>
+      )}
+
+      {/* 4 · Factos */}
       <DetailFacts>
-        <DetailRow icon={MODE_ICON[order.fulfillmentType]} label={t("entrega.deliveryStatus")}>
+        <DetailRow
+          icon={MODE_ICON[order.fulfillmentType]}
+          label={t("entrega.modeLabel")}
+          hint={
+            order.fulfillmentType === "dinein" && order.partySize
+              ? t("entrega.partySize", { count: order.partySize })
+              : order.fulfillmentType === "takeaway"
+                ? order.pickupAsap || !order.pickupAt
+                  ? t("entrega.pickupAsap")
+                  : `${t("entrega.pickupTime")}: ${etaTime(order)}`
+                : undefined
+          }
+        >
           {t(`fulfillment.${order.fulfillmentType}`)}
+        </DetailRow>
+
+        <DetailRow
+          icon={Wallet}
+          label={t("entrega.paymentRequired")}
+          hint={
+            order.paymentMethod
+              ? requiredPayment?.digital && !needsProof && !order.paymentProof
+                ? t("entrega.digitalPaymentHint")
+                : undefined
+              : t("entrega.paymentPending")
+          }
+        >
+          {order.paymentMethod ? (requiredPayment?.label ?? order.paymentMethod) : "—"}
         </DetailRow>
 
         {order.deliveryAddress && (
           <DetailRow icon={MapPin} label={t("entrega.deliverTo")} span>
             {order.deliveryAddress.label} — {order.deliveryAddress.line1}
-          </DetailRow>
-        )}
-
-        {order.fulfillmentType === "takeaway" && restaurant && (
-          <DetailRow icon={ShoppingBag} label={t("entrega.modeLabel")} span>
-            {t("entrega.pickupHere", { name: restaurant.name })}
-          </DetailRow>
-        )}
-
-        {order.fulfillmentType === "dinein" && (
-          <DetailRow icon={Utensils} label={t("entrega.dineInHere")}>
-            {order.partySize ? t("entrega.partySize", { count: order.partySize }) : "—"}
           </DetailRow>
         )}
 
@@ -370,42 +523,6 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
           </DetailRow>
         )}
 
-        {restaurant && (
-          <DetailRow icon={Phone} label={t("entrega.complaintContact")}>
-            <a href={`tel:${restaurant.phone.replace(/\s/g, "")}`} className="hover:underline">
-              {restaurant.phone}
-            </a>
-          </DetailRow>
-        )}
-
-        <DetailRow icon={Wallet} label={t("entrega.paymentRequired")} span>
-          {order.paymentMethod ? (
-            <>
-              <span className="block font-semibold">
-                {requiredPayment?.label ?? order.paymentMethod}
-              </span>
-              {payDestination ? (
-                <span className="mt-1 block rounded-lg bg-surface px-2.5 py-1.5 text-xs font-normal">
-                  <span className="font-bold uppercase tracking-wide text-muted-foreground">
-                    {t("entrega.payToLabel")}
-                  </span>
-                  <span className="mt-0.5 block whitespace-pre-wrap break-words font-medium text-foreground">
-                    {payDestination}
-                  </span>
-                </span>
-              ) : (
-                requiredPayment?.digital && (
-                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                    {t("entrega.digitalPaymentHint")}
-                  </span>
-                )
-              )}
-            </>
-          ) : (
-            <span className="font-normal text-muted-foreground">{t("entrega.paymentPending")}</span>
-          )}
-        </DetailRow>
-
         {order.cautionRequired ? (
           <DetailRow icon={ShieldCheck} label={t("entrega.cautionRequired")}>
             {formatKz(order.cautionRequired)}
@@ -419,205 +536,142 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
         )}
       </DetailFacts>
 
-      {/* Carregar comprovativo — depois de o restaurante fixar um método digital */}
-      {(paymentDue || order.paymentProof) && (
-        <DetailSection icon={Upload} title={t("entrega.proofTitle")}>
-          {order.paymentProof ? (
-            <div className="mt-2 space-y-2">
-              <button
-                type="button"
-                onClick={() => setProofLightboxOpen(true)}
-                aria-label={t("entrega.proofViewAria")}
-                className="block w-full"
-              >
-                {proofIsPdf ? (
-                  <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                    <FileText className="h-5 w-5 shrink-0 text-primary" />
-                    {t("entrega.proofPdfLabel")}
-                  </span>
-                ) : (
-                  <img
-                    src={order.paymentProof}
-                    alt=""
-                    className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
-                  />
-                )}
-              </button>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-success">{t("entrega.proofSent")}</span>
-                {paymentDue && (
-                  <button
-                    type="button"
-                    onClick={() => setPaymentProof(order.id, null)}
-                    className="text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive"
-                  >
-                    {t("entrega.proofReplace")}
-                  </button>
-                )}
-              </div>
-              <MediaLightbox
-                open={proofLightboxOpen}
-                onOpenChange={setProofLightboxOpen}
-                src={order.paymentProof}
-                isPdf={proofIsPdf}
-                title={t("entrega.proofTitle")}
-              />
-            </div>
-          ) : (
-            <>
-              <p className="mt-1 text-xs text-muted-foreground">{t("entrega.proofHint")}</p>
-              <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 px-4 py-3 text-xs font-bold text-primary transition-colors hover:bg-primary/5">
-                <Upload className="h-4 w-4" />
-                {proofUploading ? t("entrega.proofUploading") : t("entrega.proofUpload")}
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  className="hidden"
-                  disabled={proofUploading}
-                  onChange={onProofFile}
-                />
-              </label>
-            </>
-          )}
-        </DetailSection>
-      )}
-
-      {/* Fatura emitida pelo restaurante — o cliente só vê, não carrega */}
-      {(order.invoice ||
-        (order.status !== "pending" &&
-          order.status !== "rejected" &&
-          order.status !== "canceled")) && (
-        <DetailSection icon={Receipt} title={t("entrega.invoiceTitle")}>
-          {order.invoice ? (
-            <div className="mt-2 space-y-1.5">
-              <button
-                type="button"
-                onClick={() => setInvoiceLightboxOpen(true)}
-                aria-label={t("entrega.invoiceViewAria")}
-                className="block w-full"
-              >
-                {invoiceIsPdf ? (
-                  <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                    <FileText className="h-5 w-5 shrink-0 text-primary" />
-                    {t("entrega.invoicePdfLabel")}
-                  </span>
-                ) : (
-                  <img
-                    src={order.invoice}
-                    alt=""
-                    className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
-                  />
-                )}
-              </button>
-              <p className="text-xs font-semibold text-success">
-                {t(
-                  order.invoiceType === "nif"
-                    ? "entrega.invoiceIssuedNif"
-                    : "entrega.invoiceIssued",
-                )}
-              </p>
-              <MediaLightbox
-                open={invoiceLightboxOpen}
-                onOpenChange={setInvoiceLightboxOpen}
-                src={order.invoice}
-                isPdf={invoiceIsPdf}
-                title={t("entrega.invoiceTitle")}
-              />
-            </div>
-          ) : (
-            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Clock className="h-3.5 w-3.5 shrink-0" />
-              {t("entrega.invoicePending")}
-            </p>
-          )}
-        </DetailSection>
-      )}
-
-      <DetailSection icon={Package} title={t("entrega.products")}>
-        <ul className="space-y-2">
+      {/* 5 · O que foi pedido */}
+      <DetailSection
+        icon={ShoppingBag}
+        title={t("detailCard.products")}
+        action={<DetailChip>{t("detailCard.itemsCount", { count: itemCount })}</DetailChip>}
+      >
+        <DetailProductList>
           {order.lines.map((line) => {
             const name = lineName(line);
             if (!name) return null;
+            const item = menuById.get(line.menuItemId);
             const custom = lineCustomizations(
               line,
               t("entrega.customRemoved"),
               t("entrega.customAdded"),
             );
             return (
-              <li key={line.key} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm">
-                <span className="min-w-0">
-                  <span className="block truncate text-muted-foreground">
-                    {line.qty}× {name}
-                  </span>
-                  {custom.length > 0 && (
-                    <span className="block truncate text-xs text-muted-foreground/80">
-                      {custom.join(" · ")}
-                    </span>
-                  )}
-                </span>
-                <span className="shrink-0 font-semibold">
-                  {formatKz(lineUnitPrice(line) * line.qty)}
-                </span>
-              </li>
+              <DetailProductRow
+                key={line.key}
+                image={item?.image}
+                name={name}
+                description={item?.description}
+                price={formatKz(lineUnitPrice(line) * line.qty)}
+                quantity={`${line.qty}x`}
+              >
+                {custom.map((c) => (
+                  <DetailChip key={c}>{c}</DetailChip>
+                ))}
+              </DetailProductRow>
             );
           })}
-        </ul>
+        </DetailProductList>
       </DetailSection>
 
-      {(order.promoCode || isDelivery || order.reservationCredit) && (
-        <div className="mt-4 space-y-1 border-t border-border pt-4 text-sm">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span>{t("entrega.subtotal")}</span>
-            <span>{formatKz(subtotal)}</span>
+      {/* 6 · Quanto custa — o detalhe fica recolhido */}
+      <DetailTotal
+        label={t("entrega.amount")}
+        value={formatKz(orderTotal(order))}
+        breakdown={breakdown.length > 1 ? breakdown : undefined}
+        showBreakdownLabel={t("detailCard.showBreakdown")}
+        hideBreakdownLabel={t("detailCard.hideBreakdown")}
+      />
+
+      {/* 7 · Documentos já existentes — recolhidos */}
+      {order.paymentProof && (
+        <DetailSection
+          collapsible
+          icon={Upload}
+          title={t("entrega.proofTitle")}
+          description={t("entrega.proofSent")}
+        >
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setProofLightboxOpen(true)}
+              aria-label={t("entrega.proofViewAria")}
+              className="block w-full"
+            >
+              {proofIsPdf ? (
+                <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                  <FileText className="h-5 w-5 shrink-0 text-primary" />
+                  {t("entrega.proofPdfLabel")}
+                </span>
+              ) : (
+                <img
+                  src={order.paymentProof}
+                  alt=""
+                  className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                />
+              )}
+            </button>
+            {paymentDue && (
+              <button
+                type="button"
+                onClick={() => setPaymentProof(order.id, null)}
+                className="text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive"
+              >
+                {t("entrega.proofReplace")}
+              </button>
+            )}
+            <MediaLightbox
+              open={proofLightboxOpen}
+              onOpenChange={setProofLightboxOpen}
+              src={order.paymentProof}
+              isPdf={proofIsPdf}
+              title={t("entrega.proofTitle")}
+            />
           </div>
-          {!!order.reservationCredit && (
-            <div className="flex items-center justify-between font-semibold text-success">
-              <span>{t("entrega.reservationCreditLine")}</span>
-              <span>− {formatKz(order.reservationCredit)}</span>
-            </div>
-          )}
-          {order.promoCode && (
-            <div className="flex items-center justify-between text-success">
-              <span>
-                {t("entrega.promoLine", { code: order.promoCode })}
-                {order.promoLabel ? ` · ${order.promoLabel}` : ""}
-              </span>
-              <span>
-                {orderDiscount(order) > 0
-                  ? `− ${formatKz(orderDiscount(order))}`
-                  : t("entrega.promoFreeDelivery")}
-              </span>
-            </div>
-          )}
-          {isDelivery && (
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span>
-                {t("entrega.deliveryFeeLine")}
-                {surchargeKm > 0 && (
-                  <span className="ml-1 text-[11px]">
-                    {t("entrega.deliverySurchargeNote", {
-                      radius: deliveryPolicy.freeRadiusKm,
-                      extraKm: surchargeKm,
-                    })}
-                  </span>
-                )}
-              </span>
-              <span>{deliveryFee > 0 ? formatKz(deliveryFee) : t("entrega.deliveryFree")}</span>
-            </div>
-          )}
-        </div>
+        </DetailSection>
       )}
 
-      <DetailTotal label={t("entrega.amount")} value={formatKz(orderTotal(order))} />
-
-      {canReview && (
-        <button
-          type="button"
-          onClick={() => setReviewOpen(true)}
-          className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
+      {order.invoice && (
+        <DetailSection
+          collapsible
+          icon={Receipt}
+          title={t("entrega.invoiceTitle")}
+          description={t(
+            order.invoiceType === "nif" ? "entrega.invoiceIssuedNif" : "entrega.invoiceIssued",
+          )}
         >
-          <Star className="h-4 w-4" /> {t("entrega.rate")}
-        </button>
+          <button
+            type="button"
+            onClick={() => setInvoiceLightboxOpen(true)}
+            aria-label={t("entrega.invoiceViewAria")}
+            className="block w-full"
+          >
+            {invoiceIsPdf ? (
+              <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                <FileText className="h-5 w-5 shrink-0 text-primary" />
+                {t("entrega.invoicePdfLabel")}
+              </span>
+            ) : (
+              <img
+                src={order.invoice}
+                alt=""
+                className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+              />
+            )}
+          </button>
+          <MediaLightbox
+            open={invoiceLightboxOpen}
+            onOpenChange={setInvoiceLightboxOpen}
+            src={order.invoice}
+            isPdf={invoiceIsPdf}
+            title={t("entrega.invoiceTitle")}
+          />
+        </DetailSection>
+      )}
+
+      {/* 8 · Ações finais */}
+      {canReview && (
+        <div className="mt-5">
+          <DetailAction variant="solid" block icon={Star} onClick={() => setReviewOpen(true)}>
+            {t("entrega.rate")}
+          </DetailAction>
+        </div>
       )}
       {restaurant && (
         <ReviewDialog
@@ -637,16 +691,13 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
             if (ok) toast.success(t("entrega.canceledToast"));
             else toast.error(t("entrega.cancelErrorToast"));
           }}
-          className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
+          className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-full border border-destructive/40 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-4 w-4" />
           {t("entrega.cancelOrder")}
         </button>
-      ) : order.status !== "delivered" &&
-        order.status !== "completed" &&
-        order.status !== "rejected" &&
-        order.status !== "canceled" ? (
-        <p className="mt-5 rounded-xl border border-dashed border-border py-2.5 text-center text-xs text-muted-foreground">
+      ) : active && order.status !== "rejected" && order.status !== "canceled" ? (
+        <p className="mt-5 text-center text-xs text-muted-foreground">
           {t("entrega.cannotCancel")}
         </p>
       ) : null}

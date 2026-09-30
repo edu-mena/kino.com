@@ -7,26 +7,28 @@ import {
   Clock,
   FileText,
   List,
-  Mail,
   MapPin,
+  MessageSquare,
   Package,
   Pencil,
   Phone,
   Plus,
   Receipt,
   Search,
+  ShieldCheck,
+  ShoppingBag,
   TrendingUp,
   TriangleAlert,
   Trash2,
   Upload,
   UserRound,
   Users,
+  Utensils,
   Wallet,
 } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  AdminField,
   ADMIN_FILTER_SELECT,
   KpiTile,
   MiniBars,
@@ -37,12 +39,28 @@ import {
   TrendBadge,
 } from "@/components/admin-stats";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
+import {
+  DetailChip,
+  DetailContactButtons,
+  DetailFacts,
+  DetailHeader,
+  DetailNote,
+  DetailProductList,
+  DetailProductRow,
+  DetailProgress,
+  DetailRow,
+  DetailSection,
+  DetailTotal,
+  StatusBadge,
+  orderProgressSteps,
+  orderStatusVisual,
+  type BreakdownLine,
+} from "@/components/detail-card";
 import { LoyaltyBadge, LoyaltyCustomerPopover } from "@/components/loyalty-badge";
 import { LocationMap } from "@/components/location-map";
 import { RecencyHeading } from "@/components/list-recency";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getRestaurantPaymentMethodIds, orderModeRequiresCaution } from "@/data/helpers";
 import { useTranslation, type Locale } from "@/i18n";
 import {
@@ -64,6 +82,7 @@ import {
   type DeliveryLevel,
 } from "@/lib/delivery-eval";
 import { fetchApiRestaurantPaymentDetails } from "@/data/api-restaurants";
+import { useRestaurantMenuItems } from "@/data/use-restaurants-query";
 import { customerKey } from "@/lib/customer";
 import { formatKz } from "@/lib/format";
 import { isPremiumTier } from "@/lib/loyalty";
@@ -75,6 +94,9 @@ import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { parseIsoDate, recencyBucket } from "@/lib/recency-groups";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { useMarkKindReadOnView } from "@/lib/notifications";
+import { orderShortId } from "@/lib/order-status";
+
+const FULFILLMENT_ICON = { delivery: Bike, takeaway: ShoppingBag, dinein: Utensils } as const;
 
 export const Route = createFileRoute("/admin/pedidos")({
   head: () => ({ meta: [{ title: "Pedidos — Painel Luku.com" }] }),
@@ -161,12 +183,6 @@ const statusBarTone: Record<CartOrderStatus, string> = {
 const toTime = (raw: string) => new Date(raw).getTime();
 const dayKey = (raw: string) => new Date(raw).toISOString().slice(0, 10);
 
-/** "order-1727890123456" -> "123456"; "order-b1" -> "B1". */
-function orderShortId(id: string) {
-  const tail = id.split("-").pop() ?? id;
-  return (tail.length > 6 ? tail.slice(-6) : tail).toUpperCase();
-}
-
 function weekStart(d: Date) {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
@@ -177,6 +193,12 @@ function weekStart(d: Date) {
 function AdminPedidos() {
   const { pedido: preselect } = Route.useSearch();
   const { restaurant } = useRestaurantAdmin();
+  // Miniaturas dos pratos no detalhe (a linha do pedido só guarda nome/preço).
+  const { data: restaurantMenuItems } = useRestaurantMenuItems(restaurant?.id);
+  const menuImageById = useMemo(
+    () => new Map((restaurantMenuItems ?? []).map((m) => [m.id, m.image])),
+    [restaurantMenuItems],
+  );
   // Ver a lista conta como visto: o badge deste separador desce.
   useMarkKindReadOnView("restaurant", "order", restaurant?.id);
   // Clientes Gold/Platina (ver @/lib/loyalty) — selo na lista e ficha rápida no detalhe.
@@ -603,6 +625,8 @@ function AdminPedidos() {
     ...STATUS_ORDER.map((k) => ({ value: k as StatusFilter, label: statusLabels[k] })),
   ];
 
+  const fmtTime = (raw: string) =>
+    new Date(raw).toLocaleTimeString(BCP47[locale], { hour: "2-digit", minute: "2-digit" });
   const fmtDateTime = (raw: string) =>
     new Date(raw).toLocaleString(BCP47[locale], {
       day: "2-digit",
@@ -847,308 +871,40 @@ function AdminPedidos() {
                             <ChevronLeft className="h-4 w-4" /> {t("common.back")}
                           </button>
 
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h2 className="font-display text-xl font-bold text-primary">
-                                  {active.customerName || t("adminPedidos.customerFallback")}
-                                </h2>
-                                {(() => {
-                                  const ref = {
-                                    email: active.customerEmail,
-                                    phone: active.customerPhone,
-                                    name: active.customerName,
-                                  };
-                                  return (
-                                    <LoyaltyCustomerPopover
-                                      stats={loyaltyOf(ref)}
-                                      name={active.customerName}
-                                      phone={active.customerPhone}
-                                      customerKey={customerKey(ref)}
-                                    />
-                                  );
-                                })()}
-                              </div>
-                              <p className="mt-0.5 text-xs text-muted-foreground">
-                                {t("adminPedidos.orderRef", { ref: orderShortId(active.id) })} ·{" "}
-                                {fmtDateTime(active.createdAt)}
-                              </p>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              {(active.customerPhone || active.customerEmail) && (
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <button
-                                      type="button"
-                                      aria-label={t("adminPedidos.contactPopoverTitle")}
-                                      className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-                                    >
-                                      <Phone className="h-4 w-4" />
-                                    </button>
-                                  </PopoverTrigger>
-                                  <PopoverContent
-                                    align="end"
-                                    className="w-auto rounded-xl border border-border bg-card p-3 text-sm"
-                                  >
-                                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                      {t("adminPedidos.contactPopoverTitle")}
-                                    </p>
-                                    {active.customerPhone ? (
-                                      <a
-                                        href={`tel:${active.customerPhone.replace(/\s/g, "")}`}
-                                        className="flex items-center gap-1.5 text-foreground hover:text-primary"
-                                      >
-                                        <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                        {active.customerPhone}
-                                      </a>
-                                    ) : (
-                                      <span className="text-muted-foreground">
-                                        {t("adminPedidos.noPhone")}
-                                      </span>
-                                    )}
-                                    {active.customerEmail && (
-                                      <a
-                                        href={`mailto:${active.customerEmail}`}
-                                        className="mt-1 flex items-center gap-1.5 text-foreground hover:text-primary"
-                                      >
-                                        <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                        <span className="truncate">{active.customerEmail}</span>
-                                      </a>
-                                    )}
-                                  </PopoverContent>
-                                </Popover>
-                              )}
-                              <span
-                                className={`rounded-full px-3 py-1 text-xs font-bold ${statusTone[active.status]}`}
-                              >
-                                {statusLabels[active.status]}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Ações no topo — o passo mais importante sem obrigar a scroll */}
-                          {active.status !== "delivered" &&
-                            active.status !== "completed" &&
-                            active.status !== "rejected" &&
-                            active.status !== "canceled" && (
-                              <div className="mt-5 border-t border-border pt-5">
-                                <div className="flex flex-wrap gap-2">
-                                  {(active.status === "pending" ||
-                                    active.status === "accepted") && (
-                                    <button
-                                      type="button"
-                                      onClick={() => reject(active)}
-                                      className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
-                                    >
-                                      {t("adminPedidos.reject")}
-                                    </button>
-                                  )}
-
-                                  {active.status === "pending" && (
-                                    <button
-                                      type="button"
-                                      onClick={() => openAccept(active)}
-                                      className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition-opacity hover:opacity-90 ${
-                                        confirmFarId === active.id
-                                          ? "bg-brand text-brand-foreground"
-                                          : "bg-primary text-primary-foreground"
-                                      }`}
-                                    >
-                                      {confirmFarId === active.id
-                                        ? t("adminPedidos.acceptAnyway")
-                                        : t("adminPedidos.acceptOrder")}
-                                    </button>
-                                  )}
-
-                                  {active.status === "accepted" &&
-                                    active.fulfillmentType === "delivery" && (
-                                      <button
-                                        type="button"
-                                        disabled={!courierPick}
-                                        onClick={() => dispatch(active)}
-                                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-                                      >
-                                        <Bike className="h-3.5 w-3.5" />
-                                        {t("adminPedidos.markOnTheWay")}
-                                      </button>
-                                    )}
-
-                                  {active.status === "accepted" &&
-                                    active.fulfillmentType !== "delivery" && (
-                                      <button
-                                        type="button"
-                                        onClick={() => markReady(active)}
-                                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
-                                      >
-                                        <Package className="h-3.5 w-3.5" />
-                                        {t("adminPedidos.markReady")}
-                                      </button>
-                                    )}
-
-                                  {active.status === "onTheWay" && (
-                                    <button
-                                      type="button"
-                                      onClick={() => markDelivered(active)}
-                                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
-                                    >
-                                      {t("adminPedidos.markDelivered")}
-                                    </button>
-                                  )}
-
-                                  {active.status === "ready" && (
-                                    <button
-                                      type="button"
-                                      onClick={() => markCompleted(active)}
-                                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
-                                    >
-                                      {t("adminPedidos.markCompleted")}
-                                    </button>
-                                  )}
-                                </div>
-
-                                {active.status === "pending" && confirmFarId === active.id && (
-                                  <p className="mt-2 text-xs font-medium text-brand">
-                                    {t("adminPedidos.outOfRangeConfirm", {
-                                      radius: DELIVERY_RADIUS_KM,
-                                    })}
-                                  </p>
-                                )}
-                                {active.status === "accepted" &&
-                                  active.fulfillmentType === "delivery" &&
-                                  !courierPick &&
-                                  available.length > 0 && (
-                                    <p className="mt-2 text-xs text-muted-foreground">
-                                      {t("adminPedidos.dispatchHint")}
-                                    </p>
-                                  )}
-                              </div>
-                            )}
-
-                          {/* Estafeta — atribuição obrigatória para despachar (só delivery) */}
-                          {active.fulfillmentType === "delivery" &&
-                            (active.status === "accepted" || active.status === "onTheWay") && (
-                              <div className="mt-4 border-t border-border pt-4">
-                                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                  {t("adminPedidos.courierTitle")}
-                                </p>
-                                {(() => {
-                                  const assigned = courierForOrder(active.id);
-                                  if (assigned) {
-                                    return (
-                                      <div className="mt-2 flex items-center gap-3 rounded-lg bg-surface p-3">
-                                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-                                          <UserRound className="h-4 w-4" />
-                                        </span>
-                                        <div className="min-w-0">
-                                          <p className="truncate text-sm font-semibold text-foreground">
-                                            {assigned.name}
-                                          </p>
-                                          <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-                                            <Bike className="h-3 w-3" />
-                                            {vehicleLabels[assigned.vehicle]}
-                                            <span aria-hidden>·</span>
-                                            <Phone className="h-3 w-3" />
-                                            {assigned.phone}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-                                  if (active.status === "onTheWay") {
-                                    return (
-                                      <p className="mt-2 text-xs text-muted-foreground">
-                                        {t("adminPedidos.courierUnknown")}
-                                      </p>
-                                    );
-                                  }
-                                  if (available.length === 0) {
-                                    return (
-                                      <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-destructive">
-                                        <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-                                        {t("adminPedidos.noCouriers")}
-                                      </p>
-                                    );
-                                  }
-                                  return (
-                                    <select
-                                      value={courierPick}
-                                      onChange={(e) => setCourierPick(e.target.value)}
-                                      className={`${ADMIN_FILTER_SELECT} mt-2 w-full`}
-                                    >
-                                      <option value="">{t("adminPedidos.courierPick")}</option>
-                                      {available.map((c) => (
-                                        <option key={c.id} value={c.id}>
-                                          {c.name} — {vehicleLabels[c.vehicle]}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  );
-                                })()}
-                              </div>
-                            )}
-
-                          <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
-                            <AdminField label={t("adminPedidos.detailFulfillment")}>
-                              {t(`fulfillment.${active.fulfillmentType}`)}
-                              {active.fulfillmentType === "dinein" && active.partySize
-                                ? ` · ${active.partySize}`
-                                : ""}
-                            </AdminField>
-                            {active.deliveryAddress ? (
-                              <AdminField label={t("adminPedidos.detailDelivery")}>
-                                <span className="block">{active.deliveryAddress.label}</span>
-                                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                                  {active.deliveryAddress.line1}
-                                  {active.deliveryAddress.line2
-                                    ? ` · ${active.deliveryAddress.line2}`
-                                    : ""}
-                                </span>
-                              </AdminField>
-                            ) : null}
-                            <AdminField label={t("adminPedidos.detailPayment")}>
-                              {getPaymentMethod(active.paymentMethod)?.label ??
-                                active.paymentMethod ??
-                                t("adminPedidos.noPayment")}
-                            </AdminField>
-                            {active.cautionRequired ? (
-                              <AdminField label={t("adminPedidos.detailCaution")}>
-                                {formatKz(active.cautionRequired)}
-                              </AdminField>
-                            ) : null}
-                          </dl>
-
-                          {/* Mapa da morada de entrega — antes só texto; o
-                              restaurante/estafeta não tinha como ver a
-                              localização exata sem colar o endereço noutra
-                              app. Só quando a morada tem lat/lng (sempre com
-                              "usar a minha localização atual", ver Fase G —
-                              nem toda morada antiga tem coordenadas). */}
-                          {active.fulfillmentType === "delivery" &&
-                            active.deliveryAddress?.lat != null &&
-                            active.deliveryAddress?.lng != null && (
-                              <div className="mt-4 border-t border-border pt-4">
-                                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                  {t("adminPedidos.deliveryMapTitle")}
-                                </p>
-                                <LocationMap
-                                  className="mt-2"
-                                  height={220}
-                                  enableLocate
-                                  scrollWheelZoom
-                                  points={[
-                                    {
-                                      id: active.id,
-                                      lat: active.deliveryAddress.lat,
-                                      lng: active.deliveryAddress.lng,
-                                      label: active.deliveryAddress.label,
-                                    },
-                                  ]}
-                                />
-                              </div>
-                            )}
-
-                          {/* Comprovativo de pagamento carregado pelo cliente */}
                           {(() => {
+                            // Hierarquia para quem está no balcão/cozinha:
+                            // quem é → em que ponto está → o que fazer já →
+                            // o que a cozinha tem de saber → factos → o que
+                            // preparar → quanto → documentos.
+                            const isDelivery = active.fulfillmentType === "delivery";
+                            const ref = {
+                              email: active.customerEmail,
+                              phone: active.customerPhone,
+                              name: active.customerName,
+                            };
+                            const progress = orderProgressSteps({
+                              status: active.status,
+                              flow: isDelivery ? "delivery" : "pickup",
+                              labels: [
+                                t("detailCard.stepSent"),
+                                t("detailCard.stepPreparing"),
+                                isDelivery
+                                  ? t("detailCard.stepOnTheWay")
+                                  : t("detailCard.stepReady"),
+                                isDelivery
+                                  ? t("detailCard.stepDelivered")
+                                  : t("detailCard.stepCompleted"),
+                              ],
+                              captions: [fmtTime(active.createdAt)],
+                              currentCaption: t("detailCard.now"),
+                            });
+                            const wait =
+                              active.status === "pending" ? minutesSince(active.createdAt, now) : 0;
+                            const inFlow =
+                              active.status !== "delivered" &&
+                              active.status !== "completed" &&
+                              active.status !== "rejected" &&
+                              active.status !== "canceled";
                             const method = getPaymentMethod(active.paymentMethod);
                             const paymentDue =
                               !!method?.digital &&
@@ -1157,368 +913,646 @@ function AdminPedidos() {
                                 active.status === "ready" ||
                                 active.status === "delivered" ||
                                 active.status === "completed");
-                            if (!active.paymentProof && !paymentDue) return null;
-                            return (
-                              <div className="mt-4 border-t border-border pt-4">
-                                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                  {t("adminPedidos.proofTitle")}
-                                </p>
-                                {active.paymentProof ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      onClick={() => setProofLightboxOpen(true)}
-                                      aria-label={t("adminPedidos.proofViewAria")}
-                                      className="mt-2 block w-full"
-                                    >
-                                      {isPdfDataUrl(active.paymentProof) ? (
-                                        <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                                          <FileText className="h-5 w-5 shrink-0 text-primary" />
-                                          {t("adminPedidos.proofPdfLabel")}
-                                        </span>
-                                      ) : (
-                                        <img
-                                          src={active.paymentProof}
-                                          alt=""
-                                          className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
-                                        />
-                                      )}
-                                    </button>
-                                    <p className="mt-1.5 text-xs text-success">
-                                      {active.paymentProofAt
-                                        ? t("adminPedidos.proofReceivedAt", {
-                                            when: fmtDateTime(active.paymentProofAt),
-                                          })
-                                        : t("adminPedidos.proofReceived")}
-                                    </p>
-                                    <MediaLightbox
-                                      open={proofLightboxOpen}
-                                      onOpenChange={setProofLightboxOpen}
-                                      src={active.paymentProof}
-                                      isPdf={isPdfDataUrl(active.paymentProof)}
-                                      title={t("adminPedidos.proofTitle")}
-                                    />
-                                  </>
-                                ) : (
-                                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                                    <Clock className="h-3.5 w-3.5 shrink-0" />
-                                    {t("adminPedidos.proofPending")}
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })()}
+                            const assess = isDelivery ? assessDelivery(active) : null;
+                            const assigned = isDelivery ? courierForOrder(active.id) : null;
+                            const itemCount = active.lines.reduce((sum, l) => sum + l.qty, 0);
+                            const surchargeKm = isDelivery
+                              ? Math.max(
+                                  0,
+                                  Math.ceil(orderDistanceKm(active) - deliveryPolicy.freeRadiusKm),
+                                )
+                              : 0;
+                            const fee =
+                              orderTotal(active) -
+                              orderSubtotal(active) +
+                              orderDiscount(active) +
+                              (active.reservationCredit ?? 0);
+                            const breakdown: BreakdownLine[] = [
+                              {
+                                label: t("adminPedidos.subtotal"),
+                                value: formatKz(orderSubtotal(active)),
+                              },
+                              ...(active.reservationCredit
+                                ? [
+                                    {
+                                      label: t("adminPedidos.reservationCreditLine"),
+                                      value: `− ${formatKz(active.reservationCredit)}`,
+                                      tone: "credit" as const,
+                                    },
+                                  ]
+                                : []),
+                              ...(active.promoCode
+                                ? [
+                                    {
+                                      label: t("adminPedidos.promoLine", {
+                                        code: active.promoCode,
+                                      }),
+                                      value:
+                                        orderDiscount(active) > 0
+                                          ? `− ${formatKz(orderDiscount(active))}`
+                                          : t("adminPedidos.promoFreeDelivery"),
+                                      tone: "credit" as const,
+                                    },
+                                  ]
+                                : []),
+                              ...(isDelivery
+                                ? [
+                                    {
+                                      label: (
+                                        <>
+                                          {t("adminPedidos.deliveryFee")}
+                                          {surchargeKm > 0 && (
+                                            <span className="ml-1 text-[11px]">
+                                              {t("adminPedidos.deliverySurchargeNote", {
+                                                radius: deliveryPolicy.freeRadiusKm,
+                                                extraKm: surchargeKm,
+                                                surcharge: formatKz(
+                                                  deliveryPolicy.perKmSurchargeKz,
+                                                ),
+                                              })}
+                                            </span>
+                                          )}
+                                        </>
+                                      ),
+                                      value: formatKz(fee),
+                                    },
+                                  ]
+                                : []),
+                            ];
+                            const primaryBtn =
+                              "flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40";
 
-                          {/* Fatura emitida pelo restaurante — visível ao cliente em
-                              /entrega. Ao contrário do comprovativo (o cliente carrega,
-                              o restaurante só vê), aqui é o inverso: o restaurante
-                              carrega, o cliente só vê. */}
-                          {active.status !== "pending" &&
-                            active.status !== "rejected" &&
-                            active.status !== "canceled" && (
-                              <div className="mt-4 border-t border-border pt-4">
-                                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                  <Receipt className="h-3.5 w-3.5" />
-                                  {t("adminPedidos.invoiceTitle")}
-                                </p>
-                                {active.invoice ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      onClick={() => setInvoiceLightboxOpen(true)}
-                                      aria-label={t("adminPedidos.invoiceViewAria")}
-                                      className="mt-2 block w-full"
-                                    >
-                                      {isPdfDataUrl(active.invoice) ? (
-                                        <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                                          <FileText className="h-5 w-5 shrink-0 text-primary" />
-                                          {t("adminPedidos.invoicePdfLabel")}
-                                        </span>
-                                      ) : (
-                                        <img
-                                          src={active.invoice}
-                                          alt=""
-                                          className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
-                                        />
-                                      )}
-                                    </button>
-                                    <div className="mt-1.5 flex items-center justify-between gap-2">
-                                      <p className="text-xs text-success">
-                                        {t(
-                                          active.invoiceType === "nif"
-                                            ? "adminPedidos.invoiceIssuedNif"
-                                            : "adminPedidos.invoiceIssued",
-                                        )}
-                                      </p>
-                                      <button
-                                        type="button"
-                                        onClick={() => setInvoice(active.id, null)}
-                                        className="shrink-0 text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive"
-                                      >
-                                        {t("adminPedidos.invoiceReplace")}
-                                      </button>
-                                    </div>
-                                    <MediaLightbox
-                                      open={invoiceLightboxOpen}
-                                      onOpenChange={setInvoiceLightboxOpen}
-                                      src={active.invoice}
-                                      isPdf={isPdfDataUrl(active.invoice)}
-                                      title={t("adminPedidos.invoiceTitle")}
-                                    />
-                                  </>
-                                ) : (
-                                  <>
-                                    <p className="mt-1 text-xs text-muted-foreground">
-                                      {t("adminPedidos.invoiceHint")}
+                            return (
+                              <>
+                                {/* 1 · Quem pediu */}
+                                <DetailHeader
+                                  icon={UserRound}
+                                  eyebrow={t("detailCard.customer")}
+                                  title={
+                                    <span className="inline-flex flex-wrap items-center gap-2">
+                                      {active.customerName || t("adminPedidos.customerFallback")}
+                                      <LoyaltyCustomerPopover
+                                        stats={loyaltyOf(ref)}
+                                        name={active.customerName}
+                                        phone={active.customerPhone}
+                                        customerKey={customerKey(ref)}
+                                      />
+                                    </span>
+                                  }
+                                  meta={
+                                    <>
+                                      <DetailChip icon={Receipt}>
+                                        {t("detailCard.orderRef", {
+                                          ref: orderShortId(active.id),
+                                        })}{" "}
+                                        · {fmtDateTime(active.createdAt)}
+                                      </DetailChip>
+                                      <DetailChip icon={FULFILLMENT_ICON[active.fulfillmentType]}>
+                                        {t(`fulfillment.${active.fulfillmentType}`)}
+                                        {active.fulfillmentType === "dinein" && active.partySize
+                                          ? ` · ${active.partySize}`
+                                          : ""}
+                                      </DetailChip>
+                                    </>
+                                  }
+                                  status={
+                                    progress ? undefined : (
+                                      <StatusBadge visual={orderStatusVisual(active.status)}>
+                                        {statusLabels[active.status]}
+                                      </StatusBadge>
+                                    )
+                                  }
+                                  extra={
+                                    inFlow ? (
+                                      <DetailContactButtons
+                                        phone={active.customerPhone}
+                                        callLabel={t("detailCard.call")}
+                                        whatsappLabel={t("detailCard.whatsapp")}
+                                      />
+                                    ) : undefined
+                                  }
+                                />
+
+                                {/* 2 · Em que ponto está */}
+                                {progress && (
+                                  <DetailProgress
+                                    steps={progress}
+                                    label={t("detailCard.progressAria")}
+                                  />
+                                )}
+                                {wait >= PENDING_SLA_MIN && (
+                                  <DetailNote tone="danger" icon={Clock}>
+                                    {t("adminPedidos.waitingMin", { min: wait })}
+                                  </DetailNote>
+                                )}
+
+                                {/* 3 · O que fazer já */}
+                                {inFlow && (
+                                  <section className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-primary/70">
+                                      {t("detailCard.nextStep")}
                                     </p>
-                                    {active.invoiceCompany && (
-                                      <div className="mt-2 rounded-xl border border-brand/40 bg-brand/5 p-3 text-xs">
-                                        <p className="font-bold text-foreground">
-                                          {t("adminPedidos.invoiceCompanyTitle")}
-                                        </p>
-                                        <p className="mt-1 text-muted-foreground">
-                                          {active.invoiceCompany.name} · NIF{" "}
-                                          {active.invoiceCompany.nif}
-                                          <br />
-                                          {active.invoiceCompany.email}
-                                        </p>
+
+                                    {isDelivery && active.status === "accepted" && (
+                                      <div className="mt-2.5">
+                                        {available.length === 0 ? (
+                                          <p className="flex items-center gap-1.5 text-xs font-semibold text-destructive">
+                                            <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+                                            {t("adminPedidos.noCouriers")}
+                                          </p>
+                                        ) : (
+                                          <select
+                                            value={courierPick}
+                                            onChange={(e) => setCourierPick(e.target.value)}
+                                            aria-label={t("adminPedidos.courierTitle")}
+                                            className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-primary"
+                                          >
+                                            <option value="">
+                                              {t("adminPedidos.courierPick")}
+                                            </option>
+                                            {available.map((c) => (
+                                              <option key={c.id} value={c.id}>
+                                                {c.name} — {vehicleLabels[c.vehicle]}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        )}
                                       </div>
                                     )}
-                                    <div className="mt-2 flex gap-1.5">
-                                      {(["normal", "nif"] as const).map((ty) => (
+
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                      {(active.status === "pending" ||
+                                        active.status === "accepted") && (
                                         <button
-                                          key={ty}
                                           type="button"
-                                          onClick={() => setInvoiceTypeChoice(ty)}
-                                          aria-pressed={invoiceTypeChoice === ty}
-                                          className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors ${
-                                            invoiceTypeChoice === ty
-                                              ? "border-brand bg-brand/10 text-foreground"
-                                              : "border-border text-muted-foreground hover:border-brand"
+                                          onClick={() => reject(active)}
+                                          className="flex items-center justify-center gap-1.5 rounded-full border border-destructive/40 bg-card px-4 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                                        >
+                                          {t("adminPedidos.reject")}
+                                        </button>
+                                      )}
+                                      {active.status === "pending" && (
+                                        <button
+                                          type="button"
+                                          onClick={() => openAccept(active)}
+                                          className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold transition-opacity hover:opacity-90 ${
+                                            confirmFarId === active.id
+                                              ? "bg-brand text-brand-foreground"
+                                              : "bg-primary text-primary-foreground"
                                           }`}
                                         >
-                                          {t(
-                                            ty === "nif"
-                                              ? "adminPedidos.invoiceTypeNif"
-                                              : "adminPedidos.invoiceTypeNormal",
-                                          )}
+                                          {confirmFarId === active.id
+                                            ? t("adminPedidos.acceptAnyway")
+                                            : t("adminPedidos.acceptOrder")}
                                         </button>
-                                      ))}
+                                      )}
+                                      {active.status === "accepted" && isDelivery && (
+                                        <button
+                                          type="button"
+                                          disabled={!courierPick}
+                                          onClick={() => dispatch(active)}
+                                          className={primaryBtn}
+                                        >
+                                          <Bike className="h-4 w-4" />
+                                          {t("adminPedidos.markOnTheWay")}
+                                        </button>
+                                      )}
+                                      {active.status === "accepted" && !isDelivery && (
+                                        <button
+                                          type="button"
+                                          onClick={() => markReady(active)}
+                                          className={primaryBtn}
+                                        >
+                                          <Package className="h-4 w-4" />
+                                          {t("adminPedidos.markReady")}
+                                        </button>
+                                      )}
+                                      {active.status === "onTheWay" && (
+                                        <button
+                                          type="button"
+                                          onClick={() => markDelivered(active)}
+                                          className={primaryBtn}
+                                        >
+                                          {t("adminPedidos.markDelivered")}
+                                        </button>
+                                      )}
+                                      {active.status === "ready" && (
+                                        <button
+                                          type="button"
+                                          onClick={() => markCompleted(active)}
+                                          className={primaryBtn}
+                                        >
+                                          {t("adminPedidos.markCompleted")}
+                                        </button>
+                                      )}
                                     </div>
-                                    <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 px-4 py-3 text-xs font-bold text-primary transition-colors hover:bg-primary/5">
-                                      <Upload className="h-4 w-4" />
-                                      {invoiceUploading
-                                        ? t("adminPedidos.invoiceUploading")
-                                        : t("adminPedidos.invoiceUpload")}
-                                      <input
-                                        type="file"
-                                        accept="image/*,application/pdf"
-                                        className="hidden"
-                                        disabled={invoiceUploading}
-                                        onChange={async (e) => {
-                                          const file = e.target.files?.[0];
-                                          e.target.value = "";
-                                          if (!file) return;
-                                          setInvoiceUploading(true);
-                                          try {
-                                            const dataUrl = await fileToDocumentDataUrl(file);
-                                            const ok = await setInvoice(
-                                              active.id,
-                                              dataUrl,
-                                              invoiceTypeChoice,
-                                            );
-                                            if (!ok)
-                                              throw new Error(t("adminPedidos.invoiceError"));
-                                            toast.success(t("adminPedidos.invoiceSentToast"));
-                                          } catch (err) {
-                                            toast.error(
-                                              err instanceof Error
-                                                ? err.message
-                                                : t("adminPedidos.invoiceError"),
-                                            );
-                                          } finally {
-                                            setInvoiceUploading(false);
-                                          }
-                                        }}
-                                      />
-                                    </label>
-                                  </>
-                                )}
-                              </div>
-                            )}
 
-                          {/* Avaliação da entrega — distância vs. raio habitual (só delivery) */}
-                          {active.fulfillmentType === "delivery" &&
-                            (() => {
-                              const a = assessDelivery(active);
-                              const box =
-                                a.level === "outOfRange"
-                                  ? "border-destructive/40 bg-destructive/5"
-                                  : a.level === "far"
-                                    ? "border-brand/40 bg-brand/5"
-                                    : "border-border bg-surface";
-                              const badge =
-                                a.level === "outOfRange"
-                                  ? "bg-destructive/15 text-destructive"
-                                  : a.level === "far"
-                                    ? "bg-brand/15 text-brand"
-                                    : "bg-success/15 text-success";
-                              const label =
-                                a.level === "outOfRange"
-                                  ? t("adminPedidos.levelOutOfRange")
-                                  : a.level === "far"
-                                    ? t("adminPedidos.levelFar")
-                                    : t("adminPedidos.levelOk");
-                              const wait =
-                                active.status === "pending"
-                                  ? minutesSince(active.createdAt, now)
-                                  : 0;
-                              return (
-                                <div className={`mt-4 rounded-xl border p-3 ${box}`}>
-                                  <div className="flex items-center justify-between gap-2">
-                                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                      {t("adminPedidos.deliveryEval")}
-                                    </p>
-                                    <span
-                                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${badge}`}
-                                    >
-                                      {label}
-                                    </span>
-                                  </div>
-                                  <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-foreground">
-                                    <span className="flex items-center gap-1.5">
-                                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                                      {t("adminPedidos.distanceKm", { km: a.km })}
-                                    </span>
-                                    <span className="flex items-center gap-1.5">
-                                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                      {t("adminPedidos.etaMinutes", { min: a.etaMin })}
-                                    </span>
-                                    {wait >= PENDING_SLA_MIN && (
-                                      <span className="flex items-center gap-1.5 font-semibold text-destructive">
-                                        <TriangleAlert className="h-3.5 w-3.5" />
-                                        {t("adminPedidos.waitingMin", { min: wait })}
-                                      </span>
+                                    {active.status === "pending" && confirmFarId === active.id && (
+                                      <p className="mt-2 text-xs font-medium text-brand">
+                                        {t("adminPedidos.outOfRangeConfirm", {
+                                          radius: DELIVERY_RADIUS_KM,
+                                        })}
+                                      </p>
                                     )}
-                                  </div>
-                                  {a.level !== "ok" && (
-                                    <p className="mt-2 text-xs text-muted-foreground">
-                                      {a.level === "outOfRange"
-                                        ? t("adminPedidos.outOfRangeNote", { radius: a.radiusKm })
-                                        : t("adminPedidos.farNote", { radius: a.radiusKm })}
-                                    </p>
-                                  )}
-                                </div>
-                              );
-                            })()}
+                                    {active.status === "accepted" &&
+                                      isDelivery &&
+                                      !courierPick &&
+                                      available.length > 0 && (
+                                        <p className="mt-2 text-xs text-muted-foreground">
+                                          {t("adminPedidos.dispatchHint")}
+                                        </p>
+                                      )}
+                                  </section>
+                                )}
 
-                          {active.note && (
-                            <div className="mt-4 border-t border-border pt-4">
-                              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                {t("adminPedidos.observationLabel")}
-                              </p>
-                              <p className="mt-1.5 rounded-lg bg-surface p-3 text-sm text-foreground">
-                                {active.note}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Itens */}
-                          <div className="mt-4 border-t border-border pt-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                              {t("adminPedidos.itemsTitle")}
-                            </p>
-                            <ul className="mt-2 space-y-1.5">
-                              {active.lines.map((line) => {
-                                const name = lineName(line);
-                                if (!name) return null;
-                                const custom = lineCustomizations(
-                                  line,
-                                  t("adminPedidos.customRemoved"),
-                                  t("adminPedidos.customAdded"),
-                                );
-                                return (
-                                  <li
-                                    key={line.key}
-                                    className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm"
+                                {/* 4 · O que a cozinha tem de saber */}
+                                {active.note && (
+                                  <DetailNote
+                                    tone="warning"
+                                    icon={MessageSquare}
+                                    title={t("detailCard.customerNote")}
                                   >
-                                    <span className="min-w-0">
-                                      <span className="block truncate text-muted-foreground">
-                                        {line.qty}× {name}
-                                      </span>
-                                      {custom.length > 0 && (
-                                        <span className="block truncate text-xs text-brand">
-                                          {custom.join(" · ")}
+                                    {active.note}
+                                  </DetailNote>
+                                )}
+
+                                {/* 5 · Factos */}
+                                <DetailFacts>
+                                  <DetailRow
+                                    icon={Wallet}
+                                    label={t("adminPedidos.detailPayment")}
+                                    hint={
+                                      paymentDue
+                                        ? active.paymentProof
+                                          ? t("adminPedidos.proofReceived")
+                                          : t("adminPedidos.proofPending")
+                                        : undefined
+                                    }
+                                    tone={paymentDue && !active.paymentProof ? "brand" : "default"}
+                                  >
+                                    {method?.label ??
+                                      active.paymentMethod ??
+                                      t("adminPedidos.noPayment")}
+                                  </DetailRow>
+                                  {active.cautionRequired ? (
+                                    <DetailRow
+                                      icon={ShieldCheck}
+                                      label={t("adminPedidos.detailCaution")}
+                                    >
+                                      {formatKz(active.cautionRequired)}
+                                    </DetailRow>
+                                  ) : (
+                                    <DetailRow icon={Clock} label={t("adminPedidos.detailCreated")}>
+                                      {fmtTime(active.createdAt)}
+                                    </DetailRow>
+                                  )}
+                                  {active.deliveryAddress && (
+                                    <DetailRow
+                                      icon={MapPin}
+                                      label={t("adminPedidos.detailDelivery")}
+                                      span
+                                      tone={
+                                        assess?.level === "outOfRange"
+                                          ? "danger"
+                                          : assess?.level === "far"
+                                            ? "brand"
+                                            : "default"
+                                      }
+                                      hint={
+                                        <>
+                                          {active.deliveryAddress.line1}
+                                          {active.deliveryAddress.line2
+                                            ? ` · ${active.deliveryAddress.line2}`
+                                            : ""}
+                                          {assess && (
+                                            <span className="mt-1.5 flex flex-wrap gap-1.5">
+                                              <DetailChip icon={MapPin}>
+                                                {t("adminPedidos.distanceKm", { km: assess.km })}
+                                              </DetailChip>
+                                              <DetailChip icon={Clock}>
+                                                {t("adminPedidos.etaMinutes", {
+                                                  min: assess.etaMin,
+                                                })}
+                                              </DetailChip>
+                                            </span>
+                                          )}
+                                        </>
+                                      }
+                                    >
+                                      {active.deliveryAddress.label}
+                                    </DetailRow>
+                                  )}
+                                  {isDelivery && active.status === "onTheWay" && (
+                                    <DetailRow
+                                      icon={Bike}
+                                      label={t("adminPedidos.courierTitle")}
+                                      span
+                                    >
+                                      {assigned ? (
+                                        <>
+                                          {assigned.name} · {vehicleLabels[assigned.vehicle]}
+                                          <a
+                                            href={`tel:${assigned.phone.replace(/\s/g, "")}`}
+                                            className="mt-0.5 flex items-center gap-1.5 font-normal text-primary hover:underline"
+                                          >
+                                            <Phone className="h-3.5 w-3.5 shrink-0" />
+                                            {assigned.phone}
+                                          </a>
+                                        </>
+                                      ) : (
+                                        <span className="font-normal text-muted-foreground">
+                                          {t("adminPedidos.courierUnknown")}
                                         </span>
                                       )}
-                                    </span>
-                                    <span className="shrink-0 font-semibold">
-                                      {formatKz(lineUnitPrice(line) * line.qty)}
-                                    </span>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                            <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
-                              <div className="flex justify-between text-muted-foreground">
-                                <span>{t("adminPedidos.subtotal")}</span>
-                                <span>{formatKz(orderSubtotal(active))}</span>
-                              </div>
-                              {!!active.reservationCredit && (
-                                <div className="flex justify-between font-semibold text-success">
-                                  <span>{t("adminPedidos.reservationCreditLine")}</span>
-                                  <span>− {formatKz(active.reservationCredit)}</span>
-                                </div>
-                              )}
-                              {active.promoCode && (
-                                <div className="flex justify-between text-success">
-                                  <span>
-                                    {t("adminPedidos.promoLine", { code: active.promoCode })}
-                                  </span>
-                                  <span>
-                                    {orderDiscount(active) > 0
-                                      ? `− ${formatKz(orderDiscount(active))}`
-                                      : t("adminPedidos.promoFreeDelivery")}
-                                  </span>
-                                </div>
-                              )}
-                              <div className="flex justify-between text-muted-foreground">
-                                <span>
-                                  {t("adminPedidos.deliveryFee")}
-                                  {active.fulfillmentType === "delivery" &&
-                                    (() => {
-                                      const extra = Math.max(
-                                        0,
-                                        Math.ceil(
-                                          orderDistanceKm(active) - deliveryPolicy.freeRadiusKm,
-                                        ),
-                                      );
-                                      return extra > 0 ? (
-                                        <span className="ml-1 text-[11px]">
-                                          {t("adminPedidos.deliverySurchargeNote", {
-                                            radius: deliveryPolicy.freeRadiusKm,
-                                            extraKm: extra,
-                                            surcharge: formatKz(deliveryPolicy.perKmSurchargeKz),
-                                          })}
-                                        </span>
-                                      ) : null;
-                                    })()}
-                                </span>
-                                <span>
-                                  {formatKz(
-                                    orderTotal(active) -
-                                      orderSubtotal(active) +
-                                      orderDiscount(active) +
-                                      (active.reservationCredit ?? 0),
+                                    </DetailRow>
                                   )}
-                                </span>
-                              </div>
-                              <div className="flex justify-between font-bold text-foreground">
-                                <span>{t("adminPedidos.total")}</span>
-                                <span className="text-primary">{formatKz(orderTotal(active))}</span>
-                              </div>
-                            </div>
-                          </div>
+                                </DetailFacts>
+
+                                {assess && assess.level !== "ok" && inFlow && (
+                                  <DetailNote
+                                    tone={assess.level === "outOfRange" ? "danger" : "warning"}
+                                  >
+                                    {assess.level === "outOfRange"
+                                      ? t("adminPedidos.outOfRangeNote", {
+                                          radius: assess.radiusKm,
+                                        })
+                                      : t("adminPedidos.farNote", { radius: assess.radiusKm })}
+                                  </DetailNote>
+                                )}
+
+                                {isDelivery &&
+                                  active.deliveryAddress?.lat != null &&
+                                  active.deliveryAddress?.lng != null && (
+                                    <DetailSection
+                                      collapsible
+                                      icon={MapPin}
+                                      title={t("detailCard.map")}
+                                    >
+                                      <LocationMap
+                                        height={220}
+                                        enableLocate
+                                        scrollWheelZoom
+                                        points={[
+                                          {
+                                            id: active.id,
+                                            lat: active.deliveryAddress.lat,
+                                            lng: active.deliveryAddress.lng,
+                                            label: active.deliveryAddress.label,
+                                          },
+                                        ]}
+                                      />
+                                    </DetailSection>
+                                  )}
+
+                                {/* 6 · O que preparar */}
+                                <DetailSection
+                                  icon={ShoppingBag}
+                                  title={t("detailCard.products")}
+                                  action={
+                                    <DetailChip>
+                                      {t("detailCard.itemsCount", { count: itemCount })}
+                                    </DetailChip>
+                                  }
+                                >
+                                  <DetailProductList>
+                                    {active.lines.map((line) => {
+                                      const name = lineName(line);
+                                      if (!name) return null;
+                                      const custom = lineCustomizations(
+                                        line,
+                                        t("adminPedidos.customRemoved"),
+                                        t("adminPedidos.customAdded"),
+                                      );
+                                      return (
+                                        <DetailProductRow
+                                          key={line.key}
+                                          compact
+                                          image={menuImageById.get(line.menuItemId)}
+                                          name={
+                                            <>
+                                              <span className="mr-1.5 font-extrabold text-primary">
+                                                {line.qty}×
+                                              </span>
+                                              {name}
+                                            </>
+                                          }
+                                          price={formatKz(lineUnitPrice(line) * line.qty)}
+                                        >
+                                          {custom.map((c) => (
+                                            <span
+                                              key={c}
+                                              className="rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand"
+                                            >
+                                              {c}
+                                            </span>
+                                          ))}
+                                        </DetailProductRow>
+                                      );
+                                    })}
+                                  </DetailProductList>
+                                </DetailSection>
+
+                                {/* 7 · Quanto */}
+                                <DetailTotal
+                                  label={t("adminPedidos.total")}
+                                  value={formatKz(orderTotal(active))}
+                                  breakdown={breakdown.length > 1 ? breakdown : undefined}
+                                  showBreakdownLabel={t("detailCard.showBreakdown")}
+                                  hideBreakdownLabel={t("detailCard.hideBreakdown")}
+                                />
+
+                                {/* 8 · Documentos */}
+                                {(active.paymentProof || paymentDue) && (
+                                  <DetailSection
+                                    icon={Upload}
+                                    title={t("adminPedidos.proofTitle")}
+                                    description={
+                                      active.paymentProof
+                                        ? active.paymentProofAt
+                                          ? t("adminPedidos.proofReceivedAt", {
+                                              when: fmtDateTime(active.paymentProofAt),
+                                            })
+                                          : t("adminPedidos.proofReceived")
+                                        : t("adminPedidos.proofPending")
+                                    }
+                                    collapsible={!!active.paymentProof && !inFlow}
+                                    defaultOpen
+                                  >
+                                    {active.paymentProof ? (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => setProofLightboxOpen(true)}
+                                          aria-label={t("adminPedidos.proofViewAria")}
+                                          className="block w-full"
+                                        >
+                                          {isPdfDataUrl(active.paymentProof) ? (
+                                            <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                              <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                              {t("adminPedidos.proofPdfLabel")}
+                                            </span>
+                                          ) : (
+                                            <img
+                                              src={active.paymentProof}
+                                              alt=""
+                                              className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                            />
+                                          )}
+                                        </button>
+                                        <MediaLightbox
+                                          open={proofLightboxOpen}
+                                          onOpenChange={setProofLightboxOpen}
+                                          src={active.paymentProof}
+                                          isPdf={isPdfDataUrl(active.paymentProof)}
+                                          title={t("adminPedidos.proofTitle")}
+                                        />
+                                      </>
+                                    ) : (
+                                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                        <Clock className="h-3.5 w-3.5 shrink-0" />
+                                        {t("adminPedidos.proofPending")}
+                                      </p>
+                                    )}
+                                  </DetailSection>
+                                )}
+
+                                {active.status !== "pending" &&
+                                  active.status !== "rejected" &&
+                                  active.status !== "canceled" && (
+                                    <DetailSection
+                                      icon={Receipt}
+                                      title={t("adminPedidos.invoiceTitle")}
+                                      description={
+                                        active.invoice
+                                          ? t(
+                                              active.invoiceType === "nif"
+                                                ? "adminPedidos.invoiceIssuedNif"
+                                                : "adminPedidos.invoiceIssued",
+                                            )
+                                          : t("adminPedidos.invoiceHint")
+                                      }
+                                      collapsible={!!active.invoice}
+                                      action={
+                                        active.invoice ? (
+                                          <button
+                                            type="button"
+                                            onClick={() => setInvoice(active.id, null)}
+                                            className="text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive"
+                                          >
+                                            {t("adminPedidos.invoiceReplace")}
+                                          </button>
+                                        ) : undefined
+                                      }
+                                    >
+                                      {active.invoice ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => setInvoiceLightboxOpen(true)}
+                                            aria-label={t("adminPedidos.invoiceViewAria")}
+                                            className="block w-full"
+                                          >
+                                            {isPdfDataUrl(active.invoice) ? (
+                                              <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                                <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                                {t("adminPedidos.invoicePdfLabel")}
+                                              </span>
+                                            ) : (
+                                              <img
+                                                src={active.invoice}
+                                                alt=""
+                                                className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                              />
+                                            )}
+                                          </button>
+                                          <MediaLightbox
+                                            open={invoiceLightboxOpen}
+                                            onOpenChange={setInvoiceLightboxOpen}
+                                            src={active.invoice}
+                                            isPdf={isPdfDataUrl(active.invoice)}
+                                            title={t("adminPedidos.invoiceTitle")}
+                                          />
+                                        </>
+                                      ) : (
+                                        <>
+                                          {active.invoiceCompany && (
+                                            <div className="mb-2 rounded-xl border border-brand/40 bg-brand/5 p-3 text-xs">
+                                              <p className="font-bold text-foreground">
+                                                {t("adminPedidos.invoiceCompanyTitle")}
+                                              </p>
+                                              <p className="mt-1 text-muted-foreground">
+                                                {active.invoiceCompany.name} · NIF{" "}
+                                                {active.invoiceCompany.nif}
+                                                <br />
+                                                {active.invoiceCompany.email}
+                                              </p>
+                                            </div>
+                                          )}
+                                          <div className="flex gap-1.5">
+                                            {(["normal", "nif"] as const).map((ty) => (
+                                              <button
+                                                key={ty}
+                                                type="button"
+                                                onClick={() => setInvoiceTypeChoice(ty)}
+                                                aria-pressed={invoiceTypeChoice === ty}
+                                                className={`flex-1 rounded-full border px-2 py-1.5 text-xs font-semibold transition-colors ${
+                                                  invoiceTypeChoice === ty
+                                                    ? "border-brand bg-brand/10 text-foreground"
+                                                    : "border-border text-muted-foreground hover:border-brand"
+                                                }`}
+                                              >
+                                                {t(
+                                                  ty === "nif"
+                                                    ? "adminPedidos.invoiceTypeNif"
+                                                    : "adminPedidos.invoiceTypeNormal",
+                                                )}
+                                              </button>
+                                            ))}
+                                          </div>
+                                          <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-full border border-dashed border-primary/50 px-4 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/5">
+                                            <Upload className="h-4 w-4" />
+                                            {invoiceUploading
+                                              ? t("adminPedidos.invoiceUploading")
+                                              : t("adminPedidos.invoiceUpload")}
+                                            <input
+                                              type="file"
+                                              accept="image/*,application/pdf"
+                                              className="hidden"
+                                              disabled={invoiceUploading}
+                                              onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                e.target.value = "";
+                                                if (!file) return;
+                                                setInvoiceUploading(true);
+                                                try {
+                                                  const dataUrl = await fileToDocumentDataUrl(file);
+                                                  const ok = await setInvoice(
+                                                    active.id,
+                                                    dataUrl,
+                                                    invoiceTypeChoice,
+                                                  );
+                                                  if (!ok)
+                                                    throw new Error(t("adminPedidos.invoiceError"));
+                                                  toast.success(t("adminPedidos.invoiceSentToast"));
+                                                } catch (err) {
+                                                  toast.error(
+                                                    err instanceof Error
+                                                      ? err.message
+                                                      : t("adminPedidos.invoiceError"),
+                                                  );
+                                                } finally {
+                                                  setInvoiceUploading(false);
+                                                }
+                                              }}
+                                            />
+                                          </label>
+                                        </>
+                                      )}
+                                    </DetailSection>
+                                  )}
+                              </>
+                            );
+                          })()}
                         </>
                       ) : (
                         <div className="grid place-items-center gap-3 py-12 text-center">

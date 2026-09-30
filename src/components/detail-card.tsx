@@ -3,13 +3,16 @@ import {
   Bike,
   Check,
   ChefHat,
+  ChevronDown,
   CircleAlert,
   CircleCheck,
   CircleDashed,
   Clock,
   ConciergeBell,
   Info,
+  MessageCircle,
   Package,
+  Phone,
   Receipt,
   TriangleAlert,
   Truck,
@@ -682,6 +685,8 @@ export function DetailSection({
   description,
   action,
   tone = "default",
+  collapsible = false,
+  defaultOpen = false,
   children,
 }: {
   icon?: LucideIcon | undefined;
@@ -691,28 +696,55 @@ export function DetailSection({
   /** Ação secundária alinhada à direita do cabeçalho (ex.: "Ver mapa"). */
   action?: ReactNode;
   tone?: SectionTone | undefined;
+  /** Informação secundária (mapa, documentos já tratados…): o cabeçalho
+   * vira um botão e o conteúdo só aparece quando pedido — o card mostra
+   * primeiro o que importa (divulgação progressiva). */
+  collapsible?: boolean | undefined;
+  defaultOpen?: boolean | undefined;
   children: ReactNode;
 }) {
   const id = useId();
+  const [open, setOpen] = useState(defaultOpen);
   const t = SECTION_TONE[tone];
   const Icon = icon ?? t.fallback;
+  const expanded = !collapsible || open;
+  const heading = (
+    <>
+      {Icon && (
+        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${t.icon}`}>
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </span>
+      )}
+      <span className="min-w-0 flex-1 text-left">
+        <span id={id} className="block text-sm font-semibold leading-snug text-foreground">
+          {title}
+        </span>
+        {description && <span className="block text-xs text-muted-foreground">{description}</span>}
+      </span>
+    </>
+  );
   return (
     <section aria-labelledby={id} className={`mt-4 rounded-2xl border p-4 ${t.box}`}>
-      <div className="flex items-center gap-3">
-        {Icon && (
-          <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${t.icon}`}>
-            <Icon className="h-4 w-4" aria-hidden="true" />
-          </span>
+      <h3 className="flex items-center gap-3">
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            className="-m-1 flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1 transition-colors hover:bg-surface/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            {heading}
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+              aria-hidden="true"
+            />
+          </button>
+        ) : (
+          <span className="flex min-w-0 flex-1 items-center gap-3">{heading}</span>
         )}
-        <div className="min-w-0 flex-1">
-          <h3 id={id} className="text-sm font-semibold leading-snug text-foreground">
-            {title}
-          </h3>
-          {description && <p className="text-xs text-muted-foreground">{description}</p>}
-        </div>
-        {action && <div className="shrink-0">{action}</div>}
-      </div>
-      <div className="mt-3">{children}</div>
+        {action && <span className="shrink-0">{action}</span>}
+      </h3>
+      {expanded && <div className="mt-3">{children}</div>}
     </section>
   );
 }
@@ -737,6 +769,7 @@ export function DetailProductRow({
   description,
   price,
   quantity,
+  compact = false,
   children,
 }: {
   image?: string | undefined;
@@ -746,15 +779,18 @@ export function DetailProductRow({
   price: ReactNode;
   /** Quantidade, já formatada (ex.: "1x"). */
   quantity?: ReactNode;
+  /** Versão do painel (cozinha): miniatura pequena, sem descrição — a
+   * quantidade e o nome é que se leem de relance. */
+  compact?: boolean | undefined;
   children?: ReactNode;
 }) {
   return (
-    <li className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+    <li className={`flex items-start gap-3 first:pt-0 last:pb-0 ${compact ? "py-2.5" : "py-3"}`}>
       <Thumb
         src={image}
         Fallback={UtensilsCrossed}
-        className="h-16 w-16 shrink-0 rounded-xl"
-        iconClassName="h-6 w-6"
+        className={`shrink-0 ${compact ? "h-10 w-10 rounded-lg" : "h-16 w-16 rounded-xl"}`}
+        iconClassName={compact ? "h-4 w-4" : "h-6 w-6"}
       />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold leading-snug text-foreground">{name}</p>
@@ -784,31 +820,159 @@ export function DetailProductRow({
 /** Linha final do total — o facto mais consultado do card e o único
  * elemento "herói": tile de ícone, rótulo + nota opcional (ex.: "IVA
  * incluído") e valor em números tabulares, para alinhar entre pedidos. */
+export type BreakdownLine = {
+  label: ReactNode;
+  value: ReactNode;
+  /** `credit` = desconto/crédito (verde); `muted` = parcela normal. */
+  tone?: "muted" | "credit" | undefined;
+};
+
 export function DetailTotal({
   label,
   value,
   hint,
   icon: Icon = Receipt,
+  breakdown,
+  showBreakdownLabel,
+  hideBreakdownLabel,
 }: {
   label: string;
   value: ReactNode;
   hint?: ReactNode;
   icon?: LucideIcon | undefined;
+  /** Parcelas do valor (subtotal, taxa de entrega, descontos). Ficam
+   * recolhidas por omissão: quase ninguém precisa delas para acompanhar o
+   * pedido, e quem precisa abre com um toque. */
+  breakdown?: BreakdownLine[] | undefined;
+  showBreakdownLabel?: string | undefined;
+  hideBreakdownLabel?: string | undefined;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasBreakdown = !!breakdown && breakdown.length > 0;
+  return (
+    <div className="mt-5 rounded-2xl bg-primary/10 p-4 ring-1 ring-inset ring-primary/20">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+            <Icon className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">{label}</p>
+            {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+            {hasBreakdown && (
+              <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                aria-expanded={open}
+                className="mt-0.5 inline-flex items-center gap-0.5 text-xs font-semibold text-primary hover:underline"
+              >
+                {open ? hideBreakdownLabel : showBreakdownLabel}
+                <ChevronDown
+                  className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+                  aria-hidden="true"
+                />
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="shrink-0 font-display text-2xl font-extrabold tabular-nums text-primary">
+          {value}
+        </p>
+      </div>
+      {hasBreakdown && open && (
+        <dl className="mt-3 space-y-1.5 border-t border-primary/15 pt-3 text-sm">
+          {breakdown.map((line, i) => (
+            <div
+              key={i}
+              className={`flex items-start justify-between gap-3 ${line.tone === "credit" ? "font-semibold text-success" : "text-muted-foreground"}`}
+            >
+              <dt className="min-w-0">{line.label}</dt>
+              <dd className="shrink-0 tabular-nums">{line.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Agenda (reservas)                                                   */
+/* ------------------------------------------------------------------ */
+
+/** Faixa "quando e quantos" de uma reserva — Data · Hora · Pessoas em três
+ * células iguais, com o valor em destaque. É o que o cliente e o
+ * restaurante procuram primeiro numa reserva, por isso vem logo a seguir ao
+ * cabeçalho (o mesmo lugar da linha de progresso nos pedidos). */
+export function DetailSchedule({
+  items,
+}: {
+  items: { icon: LucideIcon; label: string; value: ReactNode }[];
 }) {
   return (
-    <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-primary/10 p-4 ring-1 ring-inset ring-primary/20">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
-          <Icon className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">{label}</p>
-          {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    <dl className="mt-5 grid grid-cols-3 divide-x divide-primary/10 rounded-2xl bg-primary/5 py-3.5 ring-1 ring-inset ring-primary/10">
+      {items.map(({ icon: Icon, label, value }) => (
+        <div key={label} className="flex min-w-0 flex-col items-center gap-1 px-2 text-center">
+          <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+          <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {label}
+          </dt>
+          <dd className="max-w-full truncate text-sm font-bold tabular-nums text-foreground">
+            {value}
+          </dd>
         </div>
-      </div>
-      <p className="shrink-0 font-display text-2xl font-extrabold tabular-nums text-primary">
-        {value}
-      </p>
-    </div>
+      ))}
+    </dl>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Contacto                                                            */
+/* ------------------------------------------------------------------ */
+
+/** Link de WhatsApp a partir de um telefone angolano (com ou sem 244). */
+export function whatsappUrl(phone: string | undefined | null): string | null {
+  const digits = phone?.replace(/\D/g, "") ?? "";
+  if (!digits) return null;
+  return `https://wa.me/${digits.startsWith("244") ? digits : `244${digits}`}`;
+}
+
+/** Botões redondos "Ligar" e "WhatsApp" para o slot `extra` do cabeçalho —
+ * substituem o antigo popover de contacto: ligar ao cliente/restaurante é
+ * uma ação frequente, não devia estar escondida atrás de um clique a mais. */
+export function DetailContactButtons({
+  phone,
+  callLabel,
+  whatsappLabel,
+}: {
+  phone: string | undefined | null;
+  callLabel: string;
+  whatsappLabel: string;
+}) {
+  const wa = whatsappUrl(phone);
+  if (!phone || !wa) return null;
+  const btn =
+    "grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary ring-1 ring-inset ring-primary/20 transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50";
+  return (
+    <>
+      <a
+        href={`tel:${phone.replace(/\s/g, "")}`}
+        aria-label={callLabel}
+        title={callLabel}
+        className={btn}
+      >
+        <Phone className="h-4 w-4" aria-hidden="true" />
+      </a>
+      <a
+        href={wa}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={whatsappLabel}
+        title={whatsappLabel}
+        className={btn}
+      >
+        <MessageCircle className="h-4 w-4" aria-hidden="true" />
+      </a>
+    </>
   );
 }

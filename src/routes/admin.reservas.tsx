@@ -1,33 +1,48 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  Armchair,
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
   CalendarCheck,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
   Clock,
   FileText,
+  Gift,
   List,
-  Mail,
-  Phone,
+  MessageSquare,
   Receipt,
   Search,
+  ShieldCheck,
   TrendingUp,
   TriangleAlert,
   Upload,
+  UserRound,
   Users,
 } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AdminPageHeading, RestaurantGate } from "@/components/admin-shell";
+import {
+  DetailChip,
+  DetailContactButtons,
+  DetailFacts,
+  DetailHeader,
+  DetailNote,
+  DetailRow,
+  DetailSchedule,
+  DetailSection,
+  StatusBadge,
+  reservationStatusVisual,
+} from "@/components/detail-card";
 import { LoyaltyBadge, LoyaltyCustomerPopover } from "@/components/loyalty-badge";
 import { RecencyHeading } from "@/components/list-recency";
 import { MediaLightbox } from "@/components/media-lightbox";
 import { ReservationFloorPlan } from "@/components/reservation-floor-plan";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTranslation, type Locale } from "@/i18n";
 import { customerKey } from "@/lib/customer";
 import { formatKz } from "@/lib/format";
@@ -434,14 +449,6 @@ function AdminReservas() {
 
   const active = activeId ? (mine.find((r) => r.id === activeId) ?? null) : null;
 
-  const customerHistory = useMemo(() => {
-    if (!active) return [];
-    const key = active.customerEmail || active.customerPhone || active.customerName;
-    return mine
-      .filter((r) => (r.customerEmail || r.customerPhone || r.customerName) === key)
-      .sort((a, b) => toTime(`${b.date}T${b.time}`) - toTime(`${a.date}T${a.time}`));
-  }, [active, mine]);
-
   if (!restaurant) return null;
 
   const respond = async (id: string, status: string, toastKey: string) => {
@@ -703,309 +710,486 @@ function AdminReservas() {
                             <ChevronLeft className="h-4 w-4" /> {t("common.back")}
                           </button>
 
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h2 className="font-display text-xl font-bold text-primary">
-                                  {active.customerName}
-                                </h2>
-                                {(() => {
-                                  const ref = {
-                                    email: active.customerEmail,
-                                    phone: active.customerPhone,
-                                    name: active.customerName,
-                                  };
-                                  return (
-                                    <LoyaltyCustomerPopover
-                                      stats={loyaltyOf(ref)}
-                                      name={active.customerName}
-                                      phone={active.customerPhone}
-                                      customerKey={customerKey(ref)}
-                                    />
-                                  );
-                                })()}
-                              </div>
-                              <p className="mt-0.5 text-xs text-muted-foreground">
-                                {t("adminReservas.detailCreatedAt")}{" "}
-                                {new Date(active.createdAt.replace(" ", "T")).toLocaleString(
-                                  BCP47[locale],
-                                  {
-                                    day: "2-digit",
-                                    month: "short",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  },
-                                )}
-                              </p>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <button
-                                    type="button"
-                                    aria-label={t("adminReservas.contactPopoverTitle")}
-                                    className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-                                  >
-                                    <Phone className="h-4 w-4" />
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                  align="end"
-                                  className="w-auto rounded-xl border border-border bg-card p-3 text-sm"
-                                >
-                                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                    {t("adminReservas.contactPopoverTitle")}
-                                  </p>
-                                  <a
-                                    href={`tel:${active.customerPhone.replace(/\s/g, "")}`}
-                                    className="flex items-center gap-1.5 text-foreground hover:text-primary"
-                                  >
-                                    <Phone className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                    {active.customerPhone}
-                                  </a>
-                                  {active.customerEmail && (
-                                    <a
-                                      href={`mailto:${active.customerEmail}`}
-                                      className="mt-1 flex items-center gap-1.5 text-foreground hover:text-primary"
+                          {(() => {
+                            // Hierarquia para a sala: quem → quando e quantos
+                            // → o que decidir já → alertas que mudam a decisão
+                            // → pedidos especiais → mesa → caução →
+                            // documentos. O histórico do cliente saiu daqui
+                            // (vive na ficha do cliente, em /admin/clientes).
+                            const ref = {
+                              email: active.customerEmail,
+                              phone: active.customerPhone,
+                              name: active.customerName,
+                            };
+                            const past = isPast(active);
+                            const closed =
+                              past ||
+                              active.status === "Cancelada" ||
+                              active.status === "Não compareceu";
+                            const conflictIds = conflicts.get(active.id) ?? [];
+                            const showActions =
+                              (active.status === "Confirmada" && hasTimePassed(active)) ||
+                              (!closed &&
+                                (active.status === "Pendente" ||
+                                  active.status === "Confirmada" ||
+                                  active.status === "Recusada" ||
+                                  active.status === "Anulada"));
+                            return (
+                              <>
+                                {/* 1 · Quem reservou */}
+                                <DetailHeader
+                                  icon={UserRound}
+                                  eyebrow={t("detailCard.customer")}
+                                  title={
+                                    <span className="inline-flex flex-wrap items-center gap-2">
+                                      {active.customerName}
+                                      <LoyaltyCustomerPopover
+                                        stats={loyaltyOf(ref)}
+                                        name={active.customerName}
+                                        phone={active.customerPhone}
+                                        customerKey={customerKey(ref)}
+                                      />
+                                    </span>
+                                  }
+                                  meta={
+                                    <>
+                                      <DetailChip icon={Clock}>
+                                        {t("adminReservas.detailCreatedAt")}{" "}
+                                        {fmtDateTime(active.createdAt.replace(" ", "T"))}
+                                      </DetailChip>
+                                      {active.package && (
+                                        <DetailChip icon={Gift}>
+                                          {active.package.title ?? active.package.packageTypeName}
+                                        </DetailChip>
+                                      )}
+                                    </>
+                                  }
+                                  status={
+                                    // Data já passada: "Inativa" em tom neutro
+                                    // (estado desconhecido → visual neutro).
+                                    <StatusBadge
+                                      visual={reservationStatusVisual(
+                                        past ? "__inativa" : active.status,
+                                      )}
                                     >
-                                      <Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                      <span className="truncate">{active.customerEmail}</span>
-                                    </a>
-                                  )}
-                                </PopoverContent>
-                              </Popover>
-                              <span
-                                className={`rounded-full px-3 py-1 text-xs font-bold ${displayStatus(active).tone}`}
-                              >
-                                {displayStatus(active).label}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Ações no topo — o passo mais importante sem obrigar a scroll */}
-                          {active.status === "Confirmada" && hasTimePassed(active) ? (
-                            <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-5">
-                              <button
-                                type="button"
-                                onClick={() => respond(active.id, "Não compareceu", "noShowToast")}
-                                className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
-                              >
-                                {t("adminReservas.markNoShow")}
-                              </button>
-                            </div>
-                          ) : isPast(active) ||
-                            active.status === "Cancelada" ||
-                            active.status === "Não compareceu" ? (
-                            <p className="mt-5 flex items-center gap-1.5 border-t border-border pt-5 text-xs text-muted-foreground">
-                              <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-                              {active.status === "Cancelada"
-                                ? t("adminReservas.canceledNote")
-                                : active.status === "Não compareceu"
-                                  ? t("adminReservas.noShowNote")
-                                  : t("adminReservas.inactiveNote")}
-                            </p>
-                          ) : (
-                            <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-5">
-                              {active.status === "Pendente" && (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => respond(active.id, "Recusada", "rejectedToast")}
-                                    className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
-                                  >
-                                    {t("adminReservas.reject")}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      respond(active.id, "Confirmada", "confirmedToast")
-                                    }
-                                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90"
-                                  >
-                                    {t("adminReservas.confirm")}
-                                  </button>
-                                </>
-                              )}
-                              {active.status === "Confirmada" && (
-                                <button
-                                  type="button"
-                                  onClick={() => respond(active.id, "Anulada", "annulledToast")}
-                                  className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/50 px-4 py-2.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/5"
-                                >
-                                  {t("adminReservas.annul")}
-                                </button>
-                              )}
-                              {(active.status === "Recusada" || active.status === "Anulada") && (
-                                <button
-                                  type="button"
-                                  onClick={() => respond(active.id, "Pendente", "reopenedToast")}
-                                  className="flex items-center justify-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-surface"
-                                >
-                                  {t("adminReservas.reopen")}
-                                </button>
-                              )}
-                            </div>
-                          )}
-
-                          <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-5 text-sm">
-                            <Field label={t("adminReservas.detailWhen")}>
-                              <span className="capitalize">{fmtDate(active.date)}</span> ·{" "}
-                              {active.time}
-                            </Field>
-                            <Field label={t("adminReservas.detailPeople")}>
-                              {active.peopleCount} {t("adminReservas.people")}
-                            </Field>
-                            <Field
-                              label={
-                                active.package
-                                  ? t("adminReservas.detailPackageLabel", {
-                                      title: active.package.title ?? active.package.packageTypeName,
-                                      price: formatKz(active.package.price),
-                                    })
-                                  : t("adminReservas.detailDeposit")
-                              }
-                            >
-                              {!active.package && (
-                                <>
-                                  {active.cautionAmount > 0 ? formatKz(active.cautionAmount) : "—"}
-                                </>
-                              )}
-                              <span className="mt-0.5 block text-xs text-muted-foreground">
-                                {cautionStatusLabels[active.cautionStatus] ?? active.cautionStatus}
-                              </span>
-                              {active.promoCode && (
-                                <span className="mt-0.5 block text-xs font-semibold text-primary">
-                                  {t("adminReservas.promoApplied", { code: active.promoCode })}
-                                </span>
-                              )}
-                            </Field>
-                          </dl>
-
-                          <div className="mt-4 border-t border-border pt-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                              {t("adminReservas.detailRequests")}
-                            </p>
-                            <p className="mt-1.5 rounded-lg bg-surface p-3 text-sm text-foreground">
-                              {active.specialRequests || t("adminReservas.noRequests")}
-                            </p>
-                          </div>
-
-                          {/* Comprovativo de pagamento da caução, carregado pelo cliente */}
-                          {(active.cautionAmount > 0 || active.paymentProof) && (
-                            <div className="mt-4 border-t border-border pt-4">
-                              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                {t("adminReservas.proofTitle")}
-                              </p>
-                              {active.paymentProof ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => setProofLightboxOpen(true)}
-                                    aria-label={t("adminReservas.proofViewAria")}
-                                    className="mt-2 block w-full"
-                                  >
-                                    {isPdfDataUrl(active.paymentProof) ? (
-                                      <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                                        <FileText className="h-5 w-5 shrink-0 text-primary" />
-                                        {t("adminReservas.proofPdfLabel")}
-                                      </span>
-                                    ) : (
-                                      <img
-                                        src={active.paymentProof}
-                                        alt=""
-                                        className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                      {displayStatus(active).label}
+                                    </StatusBadge>
+                                  }
+                                  extra={
+                                    !closed ? (
+                                      <DetailContactButtons
+                                        phone={active.customerPhone}
+                                        callLabel={t("detailCard.call")}
+                                        whatsappLabel={t("detailCard.whatsapp")}
                                       />
-                                    )}
-                                  </button>
-                                  <p className="mt-1.5 text-xs text-success">
-                                    {active.paymentProofAt
-                                      ? t("adminReservas.proofReceivedAt", {
-                                          when: fmtDateTime(active.paymentProofAt),
-                                        })
-                                      : t("adminReservas.proofReceived")}
-                                  </p>
-                                  <MediaLightbox
-                                    open={proofLightboxOpen}
-                                    onOpenChange={setProofLightboxOpen}
-                                    src={active.paymentProof}
-                                    isPdf={isPdfDataUrl(active.paymentProof)}
-                                    title={t("adminReservas.proofTitle")}
-                                  />
-                                </>
-                              ) : (
-                                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                                  <Clock className="h-3.5 w-3.5 shrink-0" />
-                                  {t("adminReservas.proofPending")}
-                                </p>
-                              )}
-                              {active.cautionStatus === "Pendente" && (
-                                <button
-                                  type="button"
-                                  disabled={confirmingCaution}
-                                  onClick={async () => {
-                                    setConfirmingCaution(true);
-                                    const ok = await confirmCaution(active.id);
-                                    setConfirmingCaution(false);
-                                    toast[ok ? "success" : "error"](
-                                      t(
-                                        ok
-                                          ? "adminReservas.cautionConfirmedToast"
-                                          : "adminReservas.cautionConfirmErrorToast",
+                                    ) : undefined
+                                  }
+                                />
+
+                                {/* 2 · Quando e quantos */}
+                                <DetailSchedule
+                                  items={[
+                                    {
+                                      icon: CalendarDays,
+                                      label: t("detailCard.date"),
+                                      value: (
+                                        <span className="capitalize">{fmtDate(active.date)}</span>
                                       ),
-                                    );
-                                  }}
-                                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-                                >
-                                  {confirmingCaution
-                                    ? t("adminReservas.cautionConfirming")
-                                    : t("adminReservas.cautionConfirm")}
-                                </button>
-                              )}
-                            </div>
-                          )}
+                                    },
+                                    {
+                                      icon: Clock,
+                                      label: t("detailCard.time"),
+                                      value: active.time,
+                                    },
+                                    {
+                                      icon: Users,
+                                      label: t("detailCard.people"),
+                                      value: active.peopleCount,
+                                    },
+                                  ]}
+                                />
 
-                          {/* Fatura da reserva, emitida pelo restaurante — a caução combina
-                              na fatura final de consumo; numa reserva "não compareceu", é
-                              só a caução. Ao contrário do comprovativo (cliente carrega,
-                              restaurante vê), aqui é o inverso. */}
-                          {(active.status === "Confirmada" ||
-                            active.status === "Não compareceu") && (
-                            <div className="mt-4 border-t border-border pt-4">
-                              <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                <Receipt className="h-3.5 w-3.5" />
-                                {t("adminReservas.invoiceTitle")}
-                              </p>
-                              {active.invoice ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => setInvoiceLightboxOpen(true)}
-                                    aria-label={t("adminReservas.invoiceViewAria")}
-                                    className="mt-2 block w-full"
-                                  >
-                                    {isPdfDataUrl(active.invoice) ? (
-                                      <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
-                                        <FileText className="h-5 w-5 shrink-0 text-primary" />
-                                        {t("adminReservas.invoicePdfLabel")}
-                                      </span>
-                                    ) : (
-                                      <img
-                                        src={active.invoice}
-                                        alt=""
-                                        className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
-                                      />
-                                    )}
-                                  </button>
-                                  <div className="mt-1.5 flex items-center justify-between gap-2">
-                                    <p className="text-xs text-success">
-                                      {active.invoiceAt
-                                        ? t("adminReservas.invoiceIssuedAt", {
-                                            when: fmtDateTime(active.invoiceAt),
-                                          })
-                                        : t("adminReservas.invoiceIssued")}
+                                {/* 3 · O que decidir já */}
+                                {showActions ? (
+                                  <section className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-primary/70">
+                                      {t("detailCard.nextStep")}
                                     </p>
-                                    <label className="shrink-0 cursor-pointer text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive">
-                                      {t("adminReservas.invoiceReplace")}
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                      {active.status === "Confirmada" && hasTimePassed(active) ? (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            respond(active.id, "Não compareceu", "noShowToast")
+                                          }
+                                          className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-destructive/40 bg-card px-4 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                                        >
+                                          {t("adminReservas.markNoShow")}
+                                        </button>
+                                      ) : (
+                                        <>
+                                          {active.status === "Pendente" && (
+                                            <>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  respond(active.id, "Recusada", "rejectedToast")
+                                                }
+                                                className="flex items-center justify-center gap-1.5 rounded-full border border-destructive/40 bg-card px-4 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                                              >
+                                                {t("adminReservas.reject")}
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  respond(active.id, "Confirmada", "confirmedToast")
+                                                }
+                                                className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                                              >
+                                                {t("adminReservas.confirm")}
+                                              </button>
+                                            </>
+                                          )}
+                                          {active.status === "Confirmada" && (
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                respond(active.id, "Anulada", "annulledToast")
+                                              }
+                                              className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-destructive/40 bg-card px-4 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                                            >
+                                              {t("adminReservas.annul")}
+                                            </button>
+                                          )}
+                                          {(active.status === "Recusada" ||
+                                            active.status === "Anulada") && (
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                respond(active.id, "Pendente", "reopenedToast")
+                                              }
+                                              className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-surface"
+                                            >
+                                              {t("adminReservas.reopen")}
+                                            </button>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  </section>
+                                ) : (
+                                  <DetailNote tone="neutral" icon={TriangleAlert}>
+                                    {active.status === "Cancelada"
+                                      ? t("adminReservas.canceledNote")
+                                      : active.status === "Não compareceu"
+                                        ? t("adminReservas.noShowNote")
+                                        : t("adminReservas.inactiveNote")}
+                                  </DetailNote>
+                                )}
+
+                                {/* 4 · Alertas que mudam a decisão */}
+                                {conflictIds.length > 0 && (
+                                  <DetailSection
+                                    tone="warning"
+                                    title={t("adminReservas.conflictTitle")}
+                                    description={t("adminReservas.conflictHint")}
+                                  >
+                                    <ul className="space-y-1.5">
+                                      {conflictIds.map((cid) => {
+                                        const c = mine.find((x) => x.id === cid);
+                                        if (!c) return null;
+                                        return (
+                                          <li key={cid}>
+                                            <button
+                                              type="button"
+                                              onClick={() => setActiveId(cid)}
+                                              className="flex w-full items-center justify-between gap-2 rounded-xl bg-card px-3 py-2 text-left text-xs transition-colors hover:bg-surface"
+                                            >
+                                              <span className="min-w-0 truncate text-foreground">
+                                                {c.customerName} · {c.time} · {c.peopleCount}{" "}
+                                                {t("adminReservas.people")}
+                                              </span>
+                                              <span
+                                                className={`shrink-0 rounded-full px-2 py-0.5 font-bold ${displayStatus(c).tone}`}
+                                              >
+                                                {displayStatus(c).label}
+                                              </span>
+                                            </button>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  </DetailSection>
+                                )}
+
+                                {/* 5 · Pedidos especiais — só se existirem */}
+                                {active.specialRequests && (
+                                  <DetailNote
+                                    tone="warning"
+                                    icon={MessageSquare}
+                                    title={t("adminReservas.detailRequests")}
+                                  >
+                                    {active.specialRequests}
+                                  </DetailNote>
+                                )}
+
+                                {/* 6 · Sala e mesa */}
+                                {!past && OCCUPYING.has(active.status) && (
+                                  <DetailSection
+                                    icon={Armchair}
+                                    title={t("adminReservas.occupancyTitle")}
+                                  >
+                                    {(() => {
+                                      const occ = occupancyFor(active);
+                                      return (
+                                        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-foreground">
+                                          <span>
+                                            {t("adminReservas.occupancyParties", {
+                                              count: occ.parties,
+                                            })}
+                                          </span>
+                                          <span
+                                            className={
+                                              occ.seatsOver
+                                                ? "font-bold text-destructive"
+                                                : "text-muted-foreground"
+                                            }
+                                          >
+                                            {t("adminReservas.occupancySeats", {
+                                              used: occ.seats,
+                                              total: totalSeats || "—",
+                                            })}
+                                          </span>
+                                          {occ.partiesOver && (
+                                            <span className="font-bold text-destructive">
+                                              {t("adminReservas.occupancyOverTables", {
+                                                total: tableCount,
+                                              })}
+                                            </span>
+                                          )}
+                                          {occ.tableClash && (
+                                            <span className="font-bold text-destructive">
+                                              {t("adminReservas.occupancyTableClash")}
+                                            </span>
+                                          )}
+                                        </p>
+                                      );
+                                    })()}
+                                    {tables.length > 0 && (
+                                      <label className="mt-3 block">
+                                        <span className="text-xs font-medium text-muted-foreground">
+                                          {t("adminReservas.tableLabel")}
+                                        </span>
+                                        <select
+                                          value={active.tableId ?? ""}
+                                          onChange={(e) =>
+                                            assignTable(active.id, e.target.value || undefined)
+                                          }
+                                          className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-primary"
+                                        >
+                                          <option value="">{t("adminReservas.tableNone")}</option>
+                                          {tables.map((tbl) => (
+                                            <option key={tbl.id} value={tbl.id}>
+                                              {tbl.name} ·{" "}
+                                              {t("adminReservas.tableSeats", { count: tbl.seats })}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        {!active.tableId && suggestTable(active) && (
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              assignTable(active.id, suggestTable(active))
+                                            }
+                                            className="mt-1.5 text-xs font-semibold text-primary hover:underline"
+                                          >
+                                            {t("adminReservas.tableSuggest", {
+                                              name: tableName(suggestTable(active)),
+                                            })}
+                                          </button>
+                                        )}
+                                      </label>
+                                    )}
+                                  </DetailSection>
+                                )}
+
+                                {/* 7 · Caução / pacote */}
+                                {(active.cautionAmount > 0 || active.package) && (
+                                  <DetailFacts>
+                                    <DetailRow
+                                      icon={active.package ? Gift : ShieldCheck}
+                                      label={
+                                        active.package
+                                          ? t("adminReservas.detailPackageLabel", {
+                                              title:
+                                                active.package.title ??
+                                                active.package.packageTypeName,
+                                              price: formatKz(active.package.price),
+                                            })
+                                          : t("adminReservas.detailDeposit")
+                                      }
+                                      span
+                                      tone={
+                                        active.cautionStatus === "Pendente" ? "brand" : "default"
+                                      }
+                                      hint={
+                                        active.promoCode ? (
+                                          <span className="font-semibold text-primary">
+                                            {t("adminReservas.promoApplied", {
+                                              code: active.promoCode,
+                                            })}
+                                          </span>
+                                        ) : undefined
+                                      }
+                                    >
+                                      {!active.package && active.cautionAmount > 0 && (
+                                        <>{formatKz(active.cautionAmount)} · </>
+                                      )}
+                                      {cautionStatusLabels[active.cautionStatus] ??
+                                        active.cautionStatus}
+                                    </DetailRow>
+                                  </DetailFacts>
+                                )}
+
+                                {/* 8 · Documentos */}
+                                {(active.cautionAmount > 0 || active.paymentProof) && (
+                                  <DetailSection
+                                    icon={Upload}
+                                    title={t("adminReservas.proofTitle")}
+                                    description={
+                                      active.paymentProof
+                                        ? active.paymentProofAt
+                                          ? t("adminReservas.proofReceivedAt", {
+                                              when: fmtDateTime(active.paymentProofAt),
+                                            })
+                                          : t("adminReservas.proofReceived")
+                                        : t("adminReservas.proofPending")
+                                    }
+                                    collapsible={
+                                      !!active.paymentProof && active.cautionStatus !== "Pendente"
+                                    }
+                                    defaultOpen
+                                  >
+                                    {active.paymentProof ? (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => setProofLightboxOpen(true)}
+                                          aria-label={t("adminReservas.proofViewAria")}
+                                          className="block w-full"
+                                        >
+                                          {isPdfDataUrl(active.paymentProof) ? (
+                                            <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                              <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                              {t("adminReservas.proofPdfLabel")}
+                                            </span>
+                                          ) : (
+                                            <img
+                                              src={active.paymentProof}
+                                              alt=""
+                                              className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                            />
+                                          )}
+                                        </button>
+                                        <MediaLightbox
+                                          open={proofLightboxOpen}
+                                          onOpenChange={setProofLightboxOpen}
+                                          src={active.paymentProof}
+                                          isPdf={isPdfDataUrl(active.paymentProof)}
+                                          title={t("adminReservas.proofTitle")}
+                                        />
+                                      </>
+                                    ) : (
+                                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                        <Clock className="h-3.5 w-3.5 shrink-0" />
+                                        {t("adminReservas.proofPending")}
+                                      </p>
+                                    )}
+                                    {active.cautionStatus === "Pendente" && (
+                                      <button
+                                        type="button"
+                                        disabled={confirmingCaution}
+                                        onClick={async () => {
+                                          setConfirmingCaution(true);
+                                          const ok = await confirmCaution(active.id);
+                                          setConfirmingCaution(false);
+                                          toast[ok ? "success" : "error"](
+                                            t(
+                                              ok
+                                                ? "adminReservas.cautionConfirmedToast"
+                                                : "adminReservas.cautionConfirmErrorToast",
+                                            ),
+                                          );
+                                        }}
+                                        className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                                      >
+                                        {confirmingCaution
+                                          ? t("adminReservas.cautionConfirming")
+                                          : t("adminReservas.cautionConfirm")}
+                                      </button>
+                                    )}
+                                  </DetailSection>
+                                )}
+
+                                {(active.status === "Confirmada" ||
+                                  active.status === "Não compareceu") && (
+                                  <DetailSection
+                                    icon={Receipt}
+                                    title={t("adminReservas.invoiceTitle")}
+                                    description={
+                                      active.invoice
+                                        ? active.invoiceAt
+                                          ? t("adminReservas.invoiceIssuedAt", {
+                                              when: fmtDateTime(active.invoiceAt),
+                                            })
+                                          : t("adminReservas.invoiceIssued")
+                                        : t("adminReservas.invoiceHint")
+                                    }
+                                    collapsible={!!active.invoice}
+                                  >
+                                    {active.invoice && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => setInvoiceLightboxOpen(true)}
+                                          aria-label={t("adminReservas.invoiceViewAria")}
+                                          className="block w-full"
+                                        >
+                                          {isPdfDataUrl(active.invoice) ? (
+                                            <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:border-primary">
+                                              <FileText className="h-5 w-5 shrink-0 text-primary" />
+                                              {t("adminReservas.invoicePdfLabel")}
+                                            </span>
+                                          ) : (
+                                            <img
+                                              src={active.invoice}
+                                              alt=""
+                                              className="max-h-56 w-full rounded-lg border border-border object-contain transition-opacity hover:opacity-90"
+                                            />
+                                          )}
+                                        </button>
+                                        <MediaLightbox
+                                          open={invoiceLightboxOpen}
+                                          onOpenChange={setInvoiceLightboxOpen}
+                                          src={active.invoice}
+                                          isPdf={isPdfDataUrl(active.invoice)}
+                                          title={t("adminReservas.invoiceTitle")}
+                                        />
+                                      </>
+                                    )}
+                                    <label
+                                      className={
+                                        active.invoice
+                                          ? "mt-2 inline-block cursor-pointer text-xs font-semibold text-muted-foreground transition-colors hover:text-destructive"
+                                          : "flex cursor-pointer items-center justify-center gap-2 rounded-full border border-dashed border-primary/50 px-4 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/5"
+                                      }
+                                    >
+                                      {!active.invoice && <Upload className="h-4 w-4" />}
+                                      {active.invoice
+                                        ? t("adminReservas.invoiceReplace")
+                                        : invoiceUploading
+                                          ? t("adminReservas.invoiceUploading")
+                                          : t("adminReservas.invoiceUpload")}
                                       <input
                                         type="file"
                                         accept="image/*,application/pdf"
@@ -1034,220 +1218,21 @@ function AdminReservas() {
                                         }}
                                       />
                                     </label>
-                                  </div>
-                                  <MediaLightbox
-                                    open={invoiceLightboxOpen}
-                                    onOpenChange={setInvoiceLightboxOpen}
-                                    src={active.invoice}
-                                    isPdf={isPdfDataUrl(active.invoice)}
-                                    title={t("adminReservas.invoiceTitle")}
-                                  />
-                                </>
-                              ) : (
-                                <>
-                                  <p className="mt-1 text-xs text-muted-foreground">
-                                    {t("adminReservas.invoiceHint")}
-                                  </p>
-                                  <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 px-4 py-3 text-xs font-bold text-primary transition-colors hover:bg-primary/5">
-                                    <Upload className="h-4 w-4" />
-                                    {invoiceUploading
-                                      ? t("adminReservas.invoiceUploading")
-                                      : t("adminReservas.invoiceUpload")}
-                                    <input
-                                      type="file"
-                                      accept="image/*,application/pdf"
-                                      className="hidden"
-                                      disabled={invoiceUploading}
-                                      onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        e.target.value = "";
-                                        if (!file) return;
-                                        setInvoiceUploading(true);
-                                        try {
-                                          const dataUrl = await fileToDocumentDataUrl(file);
-                                          const ok = await setInvoice(active.id, dataUrl);
-                                          if (!ok) throw new Error(t("adminReservas.invoiceError"));
-                                          toast.success(t("adminReservas.invoiceSentToast"));
-                                        } catch (err) {
-                                          toast.error(
-                                            err instanceof Error
-                                              ? err.message
-                                              : t("adminReservas.invoiceError"),
-                                          );
-                                        } finally {
-                                          setInvoiceUploading(false);
-                                        }
-                                      }}
-                                    />
-                                  </label>
-                                </>
-                              )}
-                            </div>
-                          )}
+                                  </DetailSection>
+                                )}
 
-                          {/* Histórico do cliente */}
-                          <div className="mt-4 border-t border-border pt-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                              {t("adminReservas.historyTitle")}
-                            </p>
-                            {customerHistory.length <= 1 ? (
-                              <p className="mt-1.5 text-sm text-muted-foreground">
-                                {t("adminReservas.historyEmpty")}
-                              </p>
-                            ) : (
-                              <>
-                                <p className="mt-1.5 text-xs text-muted-foreground">
-                                  {t("adminReservas.historySummary", {
-                                    total: customerHistory.length,
-                                    confirmed: customerHistory.filter(
-                                      (r) => r.status === "Confirmada",
-                                    ).length,
-                                    rejected: customerHistory.filter((r) => r.status === "Recusada")
-                                      .length,
-                                  })}
-                                </p>
-                                <ul className="mt-2 space-y-1.5">
-                                  {customerHistory.map((r) => (
-                                    <li
-                                      key={r.id}
-                                      className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs ${
-                                        r.id === active.id ? "bg-primary/10" : "bg-surface"
-                                      }`}
-                                    >
-                                      <span className="min-w-0 truncate text-foreground">
-                                        <span className="capitalize">{fmtDate(r.date)}</span> ·{" "}
-                                        {r.time} · {r.peopleCount} {t("adminReservas.people")}
-                                        {r.id === active.id && (
-                                          <span className="ml-1 text-primary">
-                                            ({t("adminReservas.historyCurrent")})
-                                          </span>
-                                        )}
-                                      </span>
-                                      <span
-                                        className={`shrink-0 rounded-full px-2 py-0.5 font-bold ${displayStatus(r).tone}`}
-                                      >
-                                        {displayStatus(r).label}
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
+                                {/* 9 · Histórico e dados do cliente — na ficha dele */}
+                                <Link
+                                  to="/admin/clientes"
+                                  search={{ cliente: customerKey(ref) }}
+                                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary ring-1 ring-inset ring-primary/25 transition-colors hover:bg-primary/15"
+                                >
+                                  <UserRound className="h-4 w-4" />
+                                  {t("detailCard.viewCustomer")}
+                                </Link>
                               </>
-                            )}
-                          </div>
-
-                          {/* Ocupação da janela + mesa atribuída */}
-                          {!isPast(active) && OCCUPYING.has(active.status) && (
-                            <div className="mt-4 rounded-xl border border-border bg-surface p-3">
-                              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                                {t("adminReservas.occupancyTitle")}
-                              </p>
-                              {(() => {
-                                const occ = occupancyFor(active);
-                                return (
-                                  <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-foreground">
-                                    <span>
-                                      {t("adminReservas.occupancyParties", { count: occ.parties })}
-                                    </span>
-                                    <span
-                                      className={
-                                        occ.seatsOver
-                                          ? "font-bold text-destructive"
-                                          : "text-muted-foreground"
-                                      }
-                                    >
-                                      {t("adminReservas.occupancySeats", {
-                                        used: occ.seats,
-                                        total: totalSeats || "—",
-                                      })}
-                                    </span>
-                                    {occ.partiesOver && (
-                                      <span className="font-bold text-destructive">
-                                        {t("adminReservas.occupancyOverTables", {
-                                          total: tableCount,
-                                        })}
-                                      </span>
-                                    )}
-                                    {occ.tableClash && (
-                                      <span className="font-bold text-destructive">
-                                        {t("adminReservas.occupancyTableClash")}
-                                      </span>
-                                    )}
-                                  </p>
-                                );
-                              })()}
-                              {tables.length > 0 && (
-                                <label className="mt-3 block">
-                                  <span className="text-xs font-medium text-muted-foreground">
-                                    {t("adminReservas.tableLabel")}
-                                  </span>
-                                  <select
-                                    value={active.tableId ?? ""}
-                                    onChange={(e) =>
-                                      assignTable(active.id, e.target.value || undefined)
-                                    }
-                                    className="mt-1 w-full rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground outline-none transition-colors focus:border-brand"
-                                  >
-                                    <option value="">{t("adminReservas.tableNone")}</option>
-                                    {tables.map((tbl) => (
-                                      <option key={tbl.id} value={tbl.id}>
-                                        {tbl.name} ·{" "}
-                                        {t("adminReservas.tableSeats", { count: tbl.seats })}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  {!active.tableId && suggestTable(active) && (
-                                    <button
-                                      type="button"
-                                      onClick={() => assignTable(active.id, suggestTable(active))}
-                                      className="mt-1.5 text-xs font-semibold text-primary hover:underline"
-                                    >
-                                      {t("adminReservas.tableSuggest", {
-                                        name: tableName(suggestTable(active)),
-                                      })}
-                                    </button>
-                                  )}
-                                </label>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Sobre-reservas nesta janela */}
-                          {(conflicts.get(active.id) ?? []).length > 0 && (
-                            <div className="mt-4 rounded-xl border border-brand/40 bg-brand/5 p-3">
-                              <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-brand">
-                                <TriangleAlert className="h-3.5 w-3.5" />
-                                {t("adminReservas.conflictTitle")}
-                              </p>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {t("adminReservas.conflictHint")}
-                              </p>
-                              <ul className="mt-2 space-y-1.5">
-                                {(conflicts.get(active.id) ?? []).map((cid) => {
-                                  const c = mine.find((x) => x.id === cid);
-                                  if (!c) return null;
-                                  return (
-                                    <li key={cid}>
-                                      <button
-                                        type="button"
-                                        onClick={() => setActiveId(cid)}
-                                        className="flex w-full items-center justify-between gap-2 rounded-lg bg-card px-3 py-2 text-left text-xs transition-colors hover:bg-surface"
-                                      >
-                                        <span className="min-w-0 truncate text-foreground">
-                                          {c.customerName} · {c.time} · {c.peopleCount}{" "}
-                                          {t("adminReservas.people")}
-                                        </span>
-                                        <span
-                                          className={`shrink-0 rounded-full px-2 py-0.5 font-bold ${displayStatus(c).tone}`}
-                                        >
-                                          {displayStatus(c).label}
-                                        </span>
-                                      </button>
-                                    </li>
-                                  );
-                                })}
-                              </ul>
-                            </div>
-                          )}
+                            );
+                          })()}
                         </>
                       ) : (
                         <div className="grid place-items-center gap-3 py-12 text-center">
@@ -1641,15 +1626,6 @@ function MiniBars({
           </span>
         ))}
       </div>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1 font-medium text-foreground">{children}</dd>
     </div>
   );
 }
