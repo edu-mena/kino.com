@@ -48,6 +48,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { FirstUseHint } from "@/components/first-use-hint";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { sanitizePromoCode } from "@/data/offers-store";
 import { useRestaurantMenuItems } from "@/data/use-restaurants-query";
 import type { Offer } from "@/data/types";
 import { useTranslation } from "@/i18n";
@@ -214,11 +215,11 @@ function AdminPromocoes() {
       targetMenuItemIds,
       targetCategories,
     };
-    const ok = editing
+    const result = editing
       ? await updateOffer(editing.id, input)
       : await createOffer(restaurant.id, input);
-    if (!ok) {
-      toast.error(t("adminPromocoes.saveFailedError"));
+    if (result !== true) {
+      toast.error(result || t("adminPromocoes.saveFailedError"));
       return;
     }
     if (editing) {
@@ -575,7 +576,7 @@ function AdminPromocoes() {
               <Input
                 id="offer-code"
                 value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                onChange={(e) => setCode(sanitizePromoCode(e.target.value))}
                 placeholder={t("adminPromocoes.codePlaceholder")}
               />
             </div>

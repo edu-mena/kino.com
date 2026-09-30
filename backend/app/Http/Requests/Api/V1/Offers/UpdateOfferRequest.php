@@ -8,6 +8,8 @@ use Illuminate\Validation\Rule;
 
 class UpdateOfferRequest extends FormRequest
 {
+    use OfferValidationMessages;
+
     public function authorize(): bool
     {
         /** @var Offer $offer */

@@ -7,6 +7,8 @@ use Illuminate\Validation\Rule;
 
 class StoreOfferRequest extends FormRequest
 {
+    use OfferValidationMessages;
+
     public function authorize(): bool
     {
         return true; // autorização real feita no controller (restaurante vs. global)

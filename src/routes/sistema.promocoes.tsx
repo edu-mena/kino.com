@@ -26,6 +26,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { SystemPageHeading } from "@/components/system-shell";
+import { sanitizePromoCode } from "@/data/offers-store";
 import type { Offer } from "@/data/types";
 import { translateOffer, useTranslation } from "@/i18n";
 import { useOffersAdmin } from "@/lib/offers-admin";
@@ -126,9 +127,9 @@ function SistemaPromocoes() {
       ...(draft.code.trim() ? { code: draft.code.trim().toUpperCase() } : {}),
       ...(draft.type !== "delivery" ? { percentOff: Math.min(100, pct) } : {}),
     };
-    const ok = editing ? await updateOffer(editing.id, input) : await createLukuOffer(input);
-    if (!ok) {
-      toast.error(t("sistema.promocoes.saveFailedError"));
+    const result = editing ? await updateOffer(editing.id, input) : await createLukuOffer(input);
+    if (result !== true) {
+      toast.error(result || t("sistema.promocoes.saveFailedError"));
       return;
     }
     toast.success(
@@ -256,7 +257,9 @@ function SistemaPromocoes() {
               <Input
                 id="offer-code"
                 value={draft.code}
-                onChange={(e) => setDraft((d) => ({ ...d, code: e.target.value }))}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, code: sanitizePromoCode(e.target.value) }))
+                }
                 placeholder={t("sistema.promocoes.codePlaceholder")}
               />
             </div>

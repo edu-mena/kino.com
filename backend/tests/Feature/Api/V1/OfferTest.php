@@ -275,3 +275,51 @@ test('restaurante Plus não tem tecto de promoções', function () {
         ])
         ->assertStatus(201);
 });
+
+test('erros de validação chegam em português ao painel', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/offers", [
+            'type' => 'discount', 'title' => 'Promo A', 'percent_off' => 10, 'code' => 'VERAO',
+        ])
+        ->assertStatus(201);
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/offers", [
+            'type' => 'discount', 'title' => 'Promo B', 'percent_off' => 10, 'code' => 'verao',
+        ])
+        ->assertStatus(422)
+        ->assertJsonPath('errors.code.0', 'Este código promocional já está a ser usado por outra promoção. Escolha outro.');
+
+    $this->actingAs($owner, 'sanctum')
+        ->postJson("/api/v1/restaurants/{$restaurant->uuid}/offers", [
+            'type' => 'discount', 'title' => 'Promo C', 'percent_off' => 10, 'code' => 'LUKU 20',
+        ])
+        ->assertStatus(422)
+        ->assertJsonPath('errors.code.0', 'O código só pode ter letras, números, hífen e underscore (sem espaços).');
+});
+
+test('editar sem enviar media mantém a imagem já guardada', function () {
+    $restaurant = Restaurant::factory()->create();
+    $owner = ownerOf($restaurant);
+
+    $uuid = $this->actingAs($owner, 'sanctum')
+        ->post("/api/v1/restaurants/{$restaurant->uuid}/offers", [
+            'type' => 'discount', 'title' => 'Com imagem', 'percent_off' => 10,
+            'media' => UploadedFile::fake()->image('promo.jpg'),
+        ], ['Accept' => 'application/json'])
+        ->assertStatus(201)
+        ->json('data.id');
+    $imageUrl = Offer::query()->where('uuid', $uuid)->value('image_url');
+    expect($imageUrl)->not->toBeNull();
+
+    $this->actingAs($owner, 'sanctum')
+        ->post("/api/v1/offers/{$uuid}", [
+            'type' => 'discount', 'title' => 'Título novo', 'percent_off' => 20,
+        ], ['Accept' => 'application/json'])
+        ->assertOk()
+        ->assertJsonPath('data.title', 'Título novo')
+        ->assertJsonPath('data.imageUrl', $imageUrl);
+});

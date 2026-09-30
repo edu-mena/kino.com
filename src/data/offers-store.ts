@@ -1,5 +1,6 @@
 import { hasRealBackend } from "@/lib/api-client";
 import { INITIAL_OFFERS } from "./mockData";
+import { safeLocalStorageSet } from "./safe-storage";
 import type { Offer } from "./types";
 
 /**
@@ -33,10 +34,15 @@ function readState(): OffersState {
   }
 }
 
-function writeState(state: OffersState) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(OFFERS_KEY, JSON.stringify(state));
-  window.dispatchEvent(new Event(CHANGE_EVENT));
+/** `false` = a escrita falhou — na prática, a quota do localStorage
+ * excedida: a imagem/vídeo da promoção vai em data URL (sem backend real) e
+ * pode passar dos ~5 MB. Antes lançava a exceção sem ninguém a apanhar e o
+ * formulário ficava parado, sem gravar nem avisar. */
+function writeState(state: OffersState): boolean {
+  if (typeof window === "undefined") return true;
+  const ok = safeLocalStorageSet(OFFERS_KEY, JSON.stringify(state));
+  if (ok) window.dispatchEvent(new Event(CHANGE_EVENT));
+  return ok;
 }
 
 /** Todas as ofertas: seed (Luku) + criadas pelos restaurantes − eliminadas,
@@ -60,30 +66,43 @@ export function getEffectiveOffers(): Offer[] {
   return [...fromSeed, ...fromCustom];
 }
 
-export function createOffer(restaurantId: string, input: OfferInput): Offer {
+/** `null` = não foi possível gravar (ver `writeState`). */
+export function createOffer(restaurantId: string, input: OfferInput): Offer | null {
   const state = readState();
   const offer: Offer = { id: `offer-custom-${Date.now()}`, restaurantId, ...input };
-  writeState({ ...state, customOffers: [...state.customOffers, offer] });
-  return offer;
+  return writeState({ ...state, customOffers: [...state.customOffers, offer] }) ? offer : null;
 }
 
 /** Oferta global da Luku — sem `restaurantId`. Criada na área de sistema
  * (`/sistema/promocoes`). */
-export function createLukuOffer(input: OfferInput): Offer {
+export function createLukuOffer(input: OfferInput): Offer | null {
   const state = readState();
   const offer = { id: `offer-luku-${Date.now()}`, ...input } as Offer;
-  writeState({ ...state, customOffers: [...state.customOffers, offer] });
-  return offer;
+  return writeState({ ...state, customOffers: [...state.customOffers, offer] }) ? offer : null;
 }
 
-export function updateOffer(id: string, input: OfferInput) {
+export function updateOffer(id: string, input: OfferInput): boolean {
   const state = readState();
-  writeState({ ...state, overrides: { ...state.overrides, [id]: input } });
+  return writeState({ ...state, overrides: { ...state.overrides, [id]: input } });
 }
 
-export function deleteOffer(id: string) {
+export function deleteOffer(id: string): boolean {
   const state = readState();
-  writeState({ ...state, deletedIds: [...state.deletedIds, id] });
+  return writeState({ ...state, deletedIds: [...state.deletedIds, id] });
+}
+
+/**
+ * Código promocional como o backend o aceita (`alpha_dash`, maiúsculas):
+ * só letras, números, `-` e `_`. Aplicado enquanto se escreve — antes, um
+ * espaço ("LUKU 20") ou um acento fazia o servidor recusar a promoção.
+ */
+export function sanitizePromoCode(raw: string): string {
+  return raw
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9_-]/g, "")
+    .slice(0, 40);
 }
 
 /** Efeito resolvido de um código promocional aplicado a um pedido. */
