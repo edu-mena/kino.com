@@ -30,6 +30,7 @@ test('google code flow troca o code com redirect_uri=postmessage (exigido pelo p
             'email' => 'code-flow@example.com',
             'name' => 'Code Flow',
             'aud' => config('services.google.web_client_id'),
+            'email_verified' => 'true',
         ]),
     ]);
 
@@ -49,6 +50,7 @@ test('google id_token cria um novo customer e devolve token', function () {
             'name' => 'Ana',
             'picture' => 'https://example.com/ana.jpg',
             'aud' => config('services.google.web_client_id'),
+            'email_verified' => 'true',
         ]),
     ]);
 
@@ -69,6 +71,7 @@ test('google login reutiliza a conta existente pelo google_id', function () {
             'email' => $user->email,
             'name' => $user->name,
             'aud' => config('services.google.web_client_id'),
+            'email_verified' => 'true',
         ]),
     ]);
 
@@ -88,6 +91,7 @@ test('google login funciona com id_token emitido para o client_id Android ou iOS
             'email' => 'mobile@example.com',
             'name' => 'User Mobile',
             'aud' => config("services.google.{$configKey}"),
+            'email_verified' => 'true',
         ]),
     ]);
 
@@ -104,6 +108,35 @@ test('google callback rejeita id_token cuja audiência não bate com o client_id
     ]);
 
     $this->postJson('/api/v1/auth/google/callback', ['id_token' => 'fake-token'])->assertStatus(422);
+});
+
+test('google callback rejeita id_token com email por verificar — não liga à conta existente com esse email', function () {
+    // Sem esta verificação, uma conta Google criada com o email de outra
+    // pessoa (ainda por confirmar) entraria na conta Luku desse email — o
+    // callback liga contas por email quando o `sub` ainda não é conhecido.
+    $victim = User::factory()->create(['email' => 'vitima@example.com']);
+
+    Http::fake([
+        'oauth2.googleapis.com/tokeninfo*' => Http::response([
+            'sub' => 'google-atacante', 'email' => $victim->email, 'name' => 'Atacante',
+            'aud' => config('services.google.web_client_id'), 'email_verified' => 'false',
+        ]),
+    ]);
+
+    $this->postJson('/api/v1/auth/google/callback', ['id_token' => 'fake-token'])->assertStatus(422);
+    expect($victim->fresh()->google_id)->toBeNull();
+});
+
+test('google callback rejeita id_token sem o campo email_verified', function () {
+    Http::fake([
+        'oauth2.googleapis.com/tokeninfo*' => Http::response([
+            'sub' => 'google-777', 'email' => 'y@example.com', 'name' => 'Y',
+            'aud' => config('services.google.web_client_id'),
+        ]),
+    ]);
+
+    $this->postJson('/api/v1/auth/google/callback', ['id_token' => 'fake-token'])->assertStatus(422);
+    expect(User::query()->where('email', 'y@example.com')->exists())->toBeFalse();
 });
 
 test('customer não consegue autenticar via /auth/login (só staff/operator)', function () {

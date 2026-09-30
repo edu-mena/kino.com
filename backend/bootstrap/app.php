@@ -3,11 +3,13 @@
 use App\Http\Middleware\EnsureIdempotency;
 use App\Http\Middleware\EnsureIpNotBlocked;
 use App\Http\Middleware\ForceJsonResponse;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -62,4 +64,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Route model binding falhado devolvia "No query results for model
+        // [App\Models\Restaurant] <id>" — expõe nomes de classes internas.
+        // Mesma resposta 404, sem detalhe nenhum da implementação.
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            if ($request->is('api/*') && $e->getPrevious() instanceof ModelNotFoundException) {
+                return response()->json(['message' => 'Recurso não encontrado.'], 404);
+            }
+        });
     })->create();

@@ -45,6 +45,7 @@ COPY . .
 RUN composer dump-autoload --optimize --no-dev \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
+COPY docker/prod/php.ini /usr/local/etc/php/conf.d/zz-luku-prod.ini
 COPY docker/prod/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/prod/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/prod/entrypoint.sh /entrypoint.sh

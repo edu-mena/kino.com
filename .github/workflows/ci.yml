@@ -26,6 +26,11 @@ jobs:
 
       - run: npm ci
 
+      # Só dependências de runtime (as de dev não chegam ao bundle) e só a
+      # partir de "high" — alertas low/moderate não bloqueiam o merge.
+      - name: npm audit
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Prettier
         run: npm run format:check
 
@@ -84,11 +89,16 @@ jobs:
 
       - run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      # Chave/config de dev já vêm preenchidas no próprio .env.example (não
-      # é segredo nenhum, é o placeholder de sempre) — chega para os
-      # testes, que nunca enviam email/upload real (Mail::fake()/
-      # Storage::fake() em cada teste que precisa).
-      - run: cp .env.example .env
+      # Config de dev vem do .env.example — chega para os testes, que nunca
+      # enviam email/upload real (Mail::fake()/Storage::fake() em cada teste
+      # que precisa). A APP_KEY já NÃO vem lá (estava commitada e era igual
+      # à de dev — ver auditoria de segurança): gerada aqui a cada run.
+      - run: cp .env.example .env && php artisan key:generate --no-interaction
+
+      # Falha o CI em qualquer vulnerabilidade conhecida nas dependências
+      # PHP (base de dados de advisories do Packagist/GitHub).
+      - name: Composer audit
+        run: composer audit --no-interaction --locked
 
       - name: Pint (estilo de código)
         run: php vendor/bin/pint --test

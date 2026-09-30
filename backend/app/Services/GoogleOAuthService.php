@@ -83,6 +83,15 @@ class GoogleOAuthService
             throw new RuntimeException('google_id_token_audience_mismatch');
         }
 
+        // O `googleCallback` liga contas pelo email quando o `sub` ainda não
+        // é conhecido — sem esta verificação, uma conta Google com um email
+        // alheio ainda por confirmar entraria na conta Luku do verdadeiro
+        // dono desse email. `tokeninfo` devolve os booleanos como string
+        // ("true"), o id_token decodificado localmente como booleano real.
+        if (! in_array($payload['email_verified'] ?? null, [true, 'true'], true)) {
+            throw new RuntimeException('google_email_not_verified');
+        }
+
         return [
             'sub' => $payload['sub'],
             'email' => $payload['email'],
