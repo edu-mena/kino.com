@@ -19,6 +19,7 @@ class UpdateUserPreferenceRequest extends FormRequest
             'dietary_restrictions.*' => ['string', 'max:60'],
             'language' => ['sometimes', 'nullable', Rule::in(['pt', 'en', 'fr'])],
             'notifications_enabled' => ['sometimes', 'boolean'],
+            'share_name_on_profile_visits' => ['sometimes', 'boolean'],
             // Só para marcar como visto (`true`) — nunca se espera `false`
             // aqui, mas aceitar o tipo evita um 422 estranho se o frontend
             // alguma vez mandar isso por engano.

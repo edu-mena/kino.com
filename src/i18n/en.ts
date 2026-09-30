@@ -314,6 +314,12 @@ export const en: Dictionary = {
     savedCompanies: "Saved companies",
     addCompany: "Add company",
     logout: "Log out",
+    profileVisits: {
+      label: "Show my name to restaurants I visit",
+      description:
+        "When on, restaurants whose profile you open see your name (never your contacts). Restaurants you follow already do.",
+      error: "Couldn't save. Please try again.",
+    },
     accountData: {
       exportLabel: "Download my data",
       exportDescription: "Everything Luku keeps about you, in one file",
@@ -2666,13 +2672,14 @@ export const en: Dictionary = {
   },
   profileViewers: {
     title: "Who viewed your profile",
-    hint: "People who opened your restaurant's page. You only see the names of people with an account, never their contacts.",
+    hint: "People who opened your restaurant's page. You only see the names of people who follow you or allowed it — never their contacts.",
     weekLabel: "visitors this week",
     vsPrevWeek: "vs. previous week",
     today: "Today",
     newThisWeek: "New this week",
     total: "In total",
     guest: "Visitor",
+    member: "Luku customer",
     visits: "{count} visits",
     empty: "No visits yet. Share your restaurant's link and they'll start showing up here.",
     invite: "Invite to follow",

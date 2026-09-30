@@ -79,7 +79,7 @@ class ProfileViewController extends Controller
         $base = ProfileView::query()->where('restaurant_id', $restaurant->id);
         $now = now();
 
-        $viewers = (clone $base)->with('user:id,name')
+        $viewers = (clone $base)->with('user:id,name', 'user.preferences')
             ->orderByDesc('last_at')
             ->limit($request->integer('limit', 50))
             ->get();
@@ -113,9 +113,14 @@ class ProfileViewController extends Controller
                         ? 'following'
                         : $this->invites->blockReason($restaurant, $v->user, $invite ?? new FollowInvite, $sentToday);
 
+                    // Nome só de quem segue o restaurante ou autorizou
+                    // explicitamente (auditoria de segurança, Fase 4) — o
+                    // resto aparece como "cliente Luku", sem identificação.
+                    $showName = $following || (bool) $v->user?->preferences?->share_name_on_profile_visits;
+
                     return [
                         'id' => $v->uuid,
-                        'name' => $v->user?->name,
+                        'name' => $showName ? $v->user?->name : null,
                         'isGuest' => $v->user_id === null,
                         'visits' => $v->visits,
                         'firstAt' => $v->first_at->toIso8601String(),

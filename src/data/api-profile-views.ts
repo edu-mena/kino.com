@@ -3,7 +3,9 @@ import type { InviteBlockReason } from "@/lib/follow-invites";
 
 /** "Quem viu o seu perfil" + convite "siga-nos" —
  * backend/app/Http/Controllers/Api/V1/ProfileViewController.php. Só com
- * `hasRealBackend`. O restaurante recebe só o NOME de quem tem conta. */
+ * `hasRealBackend`. O restaurante recebe só o NOME — e só de quem o segue
+ * ou autorizou nas preferências; os outros clientes com conta chegam com
+ * `name: null, isGuest: false` (auditoria de segurança, Fase 4). */
 
 export type ProfileViewsTotals = {
   total: number;

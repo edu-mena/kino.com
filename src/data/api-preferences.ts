@@ -14,6 +14,8 @@ export type ApiPreferences = {
   notificationsEnabled: boolean;
   tutorialSeen: boolean;
   dietaryOnboardingSeen: boolean;
+  /** Restaurantes cujo perfil visita veem o seu nome (omissão: não). */
+  shareNameOnProfileVisits: boolean;
 };
 
 export async function fetchApiPreferences(token: string): Promise<ApiPreferences> {
@@ -26,6 +28,7 @@ export async function updateApiPreferences(
     dietary_restrictions: string[];
     tutorial_seen: boolean;
     dietary_onboarding_seen: boolean;
+    share_name_on_profile_visits: boolean;
   }>,
   token: string,
 ): Promise<ApiPreferences> {

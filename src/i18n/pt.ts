@@ -321,6 +321,12 @@ export const pt = {
     savedCompanies: "Empresas guardadas",
     addCompany: "Adicionar empresa",
     logout: "Terminar sessão",
+    profileVisits: {
+      label: "Mostrar o meu nome aos restaurantes que visito",
+      description:
+        "Se ligado, os restaurantes cujo perfil abrir veem o seu nome (nunca contactos). Quem segue já o vê.",
+      error: "Não foi possível guardar. Tente de novo.",
+    },
     accountData: {
       exportLabel: "Descarregar os meus dados",
       exportDescription: "Tudo o que a Luku guarda sobre si, num ficheiro",
@@ -2676,13 +2682,14 @@ export const pt = {
   },
   profileViewers: {
     title: "Quem viu o seu perfil",
-    hint: "Pessoas que abriram a página do seu restaurante. Só vê o nome de quem tem conta, nunca contactos.",
+    hint: "Pessoas que abriram a página do seu restaurante. Só vê o nome de quem o segue ou autorizou mostrá-lo — nunca contactos.",
     weekLabel: "visitantes esta semana",
     vsPrevWeek: "vs. semana anterior",
     today: "Hoje",
     newThisWeek: "Novos esta semana",
     total: "No total",
     guest: "Visitante",
+    member: "Cliente Luku",
     visits: "{count} visitas",
     empty: "Ainda sem visitas. Partilhe o link do seu restaurante para começarem a aparecer aqui.",
     invite: "Convidar a seguir",

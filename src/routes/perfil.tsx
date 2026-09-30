@@ -18,6 +18,7 @@ import icon from "@/assets/icon.png";
 import { AccountDataActions } from "@/components/account-data-actions";
 import { CompanyFormDialog } from "@/components/company-form-dialog";
 import { OwnPremiumRestaurants } from "@/components/loyalty-badge";
+import { ProfileVisitPrivacy } from "@/components/profile-visit-privacy";
 import { PageShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
@@ -291,6 +292,7 @@ function Perfil() {
               </DialogContent>
             </Dialog>
 
+            <ProfileVisitPrivacy />
             <AccountDataActions />
 
             <button

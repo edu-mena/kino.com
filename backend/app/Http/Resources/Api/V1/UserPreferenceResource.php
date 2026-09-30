@@ -15,6 +15,10 @@ class UserPreferenceResource extends JsonResource
             'dietaryRestrictions' => $this->dietary_restrictions ?? [],
             'language' => $this->language,
             'notificationsEnabled' => $this->notifications_enabled ?? true,
+            // Deixa os restaurantes cujo perfil visita verem o seu nome em
+            // "Quem viu o seu perfil" — desligado por omissão (ver
+            // ProfileViewController::index).
+            'shareNameOnProfileVisits' => (bool) ($this->share_name_on_profile_visits ?? false),
             // Booleano, não a timestamp em si — o frontend só precisa de
             // saber "já viu" ou não (ver src/lib/tutorial.tsx). Preso à
             // CONTA (aqui), não ao browser (era o bug: localStorage sozinho

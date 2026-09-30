@@ -317,6 +317,12 @@ export const fr: Dictionary = {
     savedCompanies: "Entreprises enregistrées",
     addCompany: "Ajouter une entreprise",
     logout: "Se déconnecter",
+    profileVisits: {
+      label: "Afficher mon nom aux restaurants que je visite",
+      description:
+        "Si activé, les restaurants dont vous ouvrez le profil voient votre nom (jamais vos coordonnées). Ceux que vous suivez le voient déjà.",
+      error: "Impossible d'enregistrer. Réessayez.",
+    },
     accountData: {
       exportLabel: "Télécharger mes données",
       exportDescription: "Tout ce que Luku conserve sur vous, dans un fichier",
@@ -2700,13 +2706,14 @@ export const fr: Dictionary = {
   },
   profileViewers: {
     title: "Qui a vu votre profil",
-    hint: "Les personnes qui ont ouvert la page de votre restaurant. Vous ne voyez que le nom des personnes ayant un compte, jamais leurs coordonnées.",
+    hint: "Les personnes qui ont ouvert la page de votre restaurant. Vous ne voyez que le nom de celles qui vous suivent ou l'ont autorisé — jamais leurs coordonnées.",
     weekLabel: "visiteurs cette semaine",
     vsPrevWeek: "vs. semaine précédente",
     today: "Aujourd'hui",
     newThisWeek: "Nouveaux cette semaine",
     total: "Au total",
     guest: "Visiteur",
+    member: "Client Luku",
     visits: "{count} visites",
     empty:
       "Aucune visite pour l'instant. Partagez le lien de votre restaurant pour qu'elles apparaissent ici.",

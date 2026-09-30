@@ -31,9 +31,14 @@ export function ProfileViewersCard({ restaurantId }: { restaurantId: string }) {
   const relTime = (iso: string) =>
     formatDistanceToNow(new Date(iso), { addSuffix: true, locale: dateLocales[locale] });
 
+  // Sem nome: convidado (sem conta), ou cliente com conta que não autorizou
+  // mostrar o nome (backend ProfileViewController::index, auditoria Fase 4).
+  const displayName = (v: ProfileViewerRow) =>
+    v.name ?? (v.isGuest ? t("profileViewers.guest") : t("profileViewers.member"));
+
   const onInvite = async (v: ProfileViewerRow) => {
     const ok = await invite(v.id);
-    const name = v.name ?? t("profileViewers.guest");
+    const name = displayName(v);
     if (ok) toast.success(t("profileViewers.invitedToast", { name }));
     else toast.error(t("profileViewers.inviteFailedToast"));
   };
@@ -44,9 +49,7 @@ export function ProfileViewersCard({ restaurantId }: { restaurantId: string }) {
         {(v.name?.[0] ?? "?").toUpperCase()}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {v.name ?? t("profileViewers.guest")}
-        </p>
+        <p className="truncate text-sm font-semibold text-foreground">{displayName(v)}</p>
         <p className="text-xs text-muted-foreground">
           {relTime(v.lastAt)}
           {v.visits > 1 && ` · ${t("profileViewers.visits", { count: v.visits })}`}

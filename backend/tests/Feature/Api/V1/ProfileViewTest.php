@@ -40,23 +40,64 @@ test('o próprio staff não conta como visita', function () {
     expect(ProfileView::query()->count())->toBe(0);
 });
 
-test('restaurante vê só o nome de quem visitou, nunca contactos', function () {
+function visitAs(User $client, Restaurant $restaurant): void
+{
+    test()->actingAs($client, 'sanctum')->postJson("/api/v1/restaurants/{$restaurant->uuid}/profile-views");
+    app('auth')->forgetGuards();
+}
+
+test('por omissão o restaurante NÃO vê o nome de quem visitou — nem contactos', function () {
+    // Auditoria de segurança, Fase 4: nome só com consentimento (ou a seguir).
     $restaurant = Restaurant::factory()->create();
     $staff = ownerOf($restaurant);
     $client = User::factory()->create(['name' => 'Ana Silva', 'email' => 'ana@example.com', 'phone' => '923000000']);
-    $this->actingAs($client, 'sanctum')->postJson("/api/v1/restaurants/{$restaurant->uuid}/profile-views");
-    app('auth')->forgetGuards();
+    visitAs($client, $restaurant);
 
     $response = $this->actingAs($staff, 'sanctum')
         ->getJson("/api/v1/restaurants/{$restaurant->uuid}/profile-views")
         ->assertOk()
         ->assertJsonPath('data.totals.total', 1)
         ->assertJsonPath('data.totals.week', 1)
-        ->assertJsonPath('data.viewers.0.name', 'Ana Silva')
+        ->assertJsonPath('data.viewers.0.name', null)
+        ->assertJsonPath('data.viewers.0.isGuest', false)
+        // O convite "siga-nos" continua possível — vai pelo id, o
+        // restaurante nunca fica a saber quem é.
         ->assertJsonPath('data.viewers.0.invite.canInvite', true);
 
     $json = json_encode($response->json());
+    expect($json)->not->toContain('Ana Silva')->not->toContain('ana@example.com')->not->toContain('923000000');
+});
+
+test('cliente que autorizou nas preferências aparece com o nome (nunca contactos)', function () {
+    $restaurant = Restaurant::factory()->create();
+    $staff = ownerOf($restaurant);
+    $client = User::factory()->create(['name' => 'Ana Silva', 'email' => 'ana@example.com', 'phone' => '923000000']);
+
+    $this->actingAs($client, 'sanctum')->putJson('/api/v1/preferences', ['share_name_on_profile_visits' => true])
+        ->assertSuccessful()
+        ->assertJsonPath('data.shareNameOnProfileVisits', true);
+    app('auth')->forgetGuards();
+    visitAs($client, $restaurant);
+
+    $response = $this->actingAs($staff, 'sanctum')
+        ->getJson("/api/v1/restaurants/{$restaurant->uuid}/profile-views")
+        ->assertJsonPath('data.viewers.0.name', 'Ana Silva');
+
+    $json = json_encode($response->json());
     expect($json)->not->toContain('ana@example.com')->not->toContain('923000000');
+});
+
+test('quem já segue o restaurante aparece com o nome', function () {
+    $restaurant = Restaurant::factory()->create();
+    $staff = ownerOf($restaurant);
+    $client = User::factory()->create(['name' => 'Ana Silva']);
+    $client->followedRestaurants()->attach($restaurant->id);
+    visitAs($client, $restaurant);
+
+    $this->actingAs($staff, 'sanctum')
+        ->getJson("/api/v1/restaurants/{$restaurant->uuid}/profile-views")
+        ->assertJsonPath('data.viewers.0.name', 'Ana Silva')
+        ->assertJsonPath('data.viewers.0.following', true);
 });
 
 test('outro restaurante não vê os visitantes', function () {

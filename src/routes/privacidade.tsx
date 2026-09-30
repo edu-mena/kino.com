@@ -84,6 +84,12 @@ function Privacidade() {
             <strong>Google</strong> — para autenticação, quando escolhe entrar com essa conta.
           </p>
           <p>
+            <strong>Restaurantes cujo perfil visita</strong> — veem que houve uma visita, mas só
+            veem o seu nome se seguir esse restaurante ou se ligar “Mostrar o meu nome aos
+            restaurantes que visito” no seu Perfil (desligado por omissão). Nunca veem os seus
+            contactos.
+          </p>
+          <p>
             <strong>Fornecedores técnicos que operam a plataforma em nosso nome</strong> (alojamento
             do servidor, armazenamento de imagens, envio de email) — só têm acesso ao estritamente
             necessário para o serviço funcionar, nunca podem usar os seus dados para outro fim.
