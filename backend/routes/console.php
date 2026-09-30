@@ -79,7 +79,7 @@ Artisan::command('push:check {email? : Conta a quem enviar um push de teste}', f
         .($firebasePath !== '' && ! $firebaseFile ? " (caminho definido mas o ficheiro não existe: {$firebasePath})" : ''));
     $this->line("Fila: {$queue}".($queue === 'sync'
         ? ' (envio imediato, sem worker)'
-        : ' — o push só sai com um worker a correr: php artisan queue:work'));
+        : ' — o push só sai com um worker a correr (Horizon no docker compose, ou php artisan queue:work)'));
 
     try {
         $counts = DeviceToken::query()->selectRaw('platform, count(*) as total')->groupBy('platform')->pluck('total', 'platform');

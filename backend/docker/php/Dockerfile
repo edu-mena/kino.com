@@ -1,5 +1,9 @@
 FROM php:8.3-fpm-alpine
 
+# Pacotes do sistema num passo próprio (o maior descarregamento, ~900 MB com
+# o ffmpeg): fica em cache e não se repete quando só muda a lista de
+# extensões PHP abaixo, nem quando um passo seguinte falha. Antes era tudo
+# um RUN só — qualquer falha de rede a meio obrigava a descarregar tudo.
 RUN apk add --no-cache \
         postgresql-dev \
         $PHPIZE_DEPS \
@@ -8,8 +12,11 @@ RUN apk add --no-cache \
         libpng-dev \
         freetype-dev \
         libjpeg-turbo-dev \
-        ffmpeg \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+        ffmpeg
+
+# pcntl: exigido pelo Horizon (worker da fila) — sem ele o `composer install`
+# recusa o lock file. Já estava no Dockerfile.prod; faltava aqui.
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo_pgsql \
         pgsql \
@@ -17,7 +24,9 @@ RUN apk add --no-cache \
         zip \
         gd \
         opcache \
-    && pecl install redis \
+        pcntl
+
+RUN pecl install redis \
     && docker-php-ext-enable redis \
     && apk del $PHPIZE_DEPS
 
