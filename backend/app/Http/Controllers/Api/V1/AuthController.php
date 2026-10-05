@@ -72,7 +72,7 @@ class AuthController extends Controller
      * tem; um operador cujas credenciais vazassem não deve conseguir
      * contorná-lo entrando por aqui.
      */
-    public function login(LoginRequest $request): JsonResponse
+    public function login(LoginRequest $request, TwoFactorService $twoFactor): JsonResponse
     {
         $user = User::query()
             ->where('role', 'restaurant_staff')
@@ -86,6 +86,18 @@ class AuthController extends Controller
         $passwordOk = Hash::check($request->string('password'), $user?->password ?? self::dummyHash());
         if (! $user || ! $passwordOk) {
             return response()->json(['message' => 'Credenciais inválidas.'], 401);
+        }
+
+        // 2FA opcional da equipa (StaffTwoFactorController): ligado, a senha
+        // certa só dá um challenge — mesmo formato do login de sistema.
+        if ($user->hasTwoFactorEnabled()) {
+            return response()->json([
+                'data' => [
+                    'twoFactor' => 'required',
+                    'challenge' => $twoFactor->createChallenge($user, 'required'),
+                    'expiresInMinutes' => TwoFactorService::CHALLENGE_TTL_MINUTES,
+                ],
+            ]);
         }
 
         $user->update(['last_login_at' => now()]);

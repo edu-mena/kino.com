@@ -45,6 +45,7 @@ import { TemplatePicker } from "@/components/ui/template-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { VideoTrimmer } from "@/components/video-trimmer";
 import { WeeklyHoursEditor } from "@/components/weekly-hours-editor";
+import { StaffTwoFactorCard } from "@/components/staff-two-factor-card";
 import {
   addApiGalleryImage,
   fetchApiRestaurantPaymentDetails,
@@ -1496,6 +1497,8 @@ function AdminPerfil() {
             </Section>
           </div>
         )}
+
+        <StaffTwoFactorCard />
 
         <button
           type="button"

@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\V1\RestaurantTableController;
 use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\V1\SavedAddressController;
 use App\Http\Controllers\Api\V1\SiteContentController;
+use App\Http\Controllers\Api\V1\StaffTwoFactorController;
 use App\Http\Controllers\Api\V1\StoryController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupportTicketController;
@@ -50,6 +51,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('google/callback', [AuthController::class, 'googleCallback'])->middleware('throttle:auth');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:auth');
+    // 2º passo do login da equipa com 2FA ligado (sem sessão — só o challenge).
+    Route::post('2fa/verify', [StaffTwoFactorController::class, 'verify'])->middleware('throttle:auth');
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:auth');
 
@@ -77,6 +80,14 @@ Route::prefix('auth')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::post('logout-all', [AuthController::class, 'logoutAll']);
         Route::get('me', [AuthController::class, 'me']);
+
+        // Ligar/desligar o 2FA opcional da equipa do restaurante (/admin/perfil).
+        Route::middleware('throttle:auth')->prefix('2fa')->group(function () {
+            Route::post('setup', [StaffTwoFactorController::class, 'setup']);
+            Route::post('confirm', [StaffTwoFactorController::class, 'confirm']);
+            Route::post('disable', [StaffTwoFactorController::class, 'disable']);
+            Route::post('recovery-codes', [StaffTwoFactorController::class, 'regenerateRecoveryCodes']);
+        });
     });
 });
 

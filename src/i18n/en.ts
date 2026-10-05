@@ -1793,6 +1793,26 @@ export const en: Dictionary = {
     removeAria: "Remove",
   },
   adminPerfil: {
+    twoFactor: {
+      title: "Your account security",
+      hint: "Two-step verification — it belongs to your personal account, not the restaurant.",
+      offDescription:
+        "Off. When on, signing in to the panel also asks for a 6-digit code from the authenticator app on your phone — someone who learns your password can't get in with it alone.",
+      enable: "Turn on two-step verification",
+      setupDescription:
+        "Scan the QR code with an authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows.",
+      activate: "Turn on",
+      enabledToast: "Two-step verification is on. Your account's other sessions were signed out.",
+      savedDone: "I've saved the codes",
+      onDescription: "On. Signing in to the panel asks for the authenticator app code.",
+      regenerate: "Generate new recovery codes",
+      disable: "Turn off",
+      confirmDisable: "To turn it off, type the current code from your authenticator app.",
+      confirmRegenerate:
+        "Your old codes will stop working. Type the current code from your authenticator app.",
+      disabledToast: "Two-step verification is off.",
+      error: "Couldn't complete. Please try again.",
+    },
     eyebrow: "Restaurant",
     title: "Restaurant profile",
     description: "What customers see on your page and on the menu.",

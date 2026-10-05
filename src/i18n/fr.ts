@@ -1815,6 +1815,29 @@ export const fr: Dictionary = {
     removeAria: "Supprimer",
   },
   adminPerfil: {
+    twoFactor: {
+      title: "Sécurité de votre compte",
+      hint: "Vérification en deux étapes — elle concerne votre compte personnel, pas le restaurant.",
+      offDescription:
+        "Désactivée. Une fois activée, la connexion au panneau demande aussi un code à 6 chiffres de l'application d'authentification de votre téléphone — quelqu'un qui découvre votre mot de passe ne peut pas entrer avec lui seul.",
+      enable: "Activer la vérification en deux étapes",
+      setupDescription:
+        "Scannez le QR code avec une application d'authentification (Google Authenticator, Authy, 1Password…) et saisissez le code à 6 chiffres affiché.",
+      activate: "Activer",
+      enabledToast:
+        "Vérification en deux étapes activée. Les autres sessions du compte ont été fermées.",
+      savedDone: "J'ai conservé les codes",
+      onDescription:
+        "Activée. La connexion au panneau demande le code de l'application d'authentification.",
+      regenerate: "Générer de nouveaux codes de récupération",
+      disable: "Désactiver",
+      confirmDisable:
+        "Pour désactiver, saisissez le code actuel de l'application d'authentification.",
+      confirmRegenerate:
+        "Les anciens codes ne fonctionneront plus. Saisissez le code actuel de l'application d'authentification.",
+      disabledToast: "Vérification en deux étapes désactivée.",
+      error: "Impossible de terminer. Réessayez.",
+    },
     eyebrow: "Restaurant",
     title: "Profil du restaurant",
     description: "Ce que les clients voient sur votre page et dans la carte.",

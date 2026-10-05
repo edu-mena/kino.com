@@ -18,6 +18,9 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'avatarUrl' => $this->avatar_url,
+            // Estado do 2FA da própria conta (nunca o segredo) — o painel do
+            // restaurante mostra "ligar/desligar" a partir disto.
+            'twoFactorEnabled' => $this->hasTwoFactorEnabled(),
             'restaurants' => $this->whenLoaded('restaurantUsers', fn () => $this->restaurantUsers->map(fn ($ru) => [
                 'restaurantId' => $ru->restaurant->uuid,
                 'restaurantName' => $ru->restaurant->name,

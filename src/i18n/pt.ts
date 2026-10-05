@@ -1800,6 +1800,27 @@ export const pt = {
     removeAria: "Remover",
   },
   adminPerfil: {
+    twoFactor: {
+      title: "Segurança da sua conta",
+      hint: "Verificação em dois passos — é da sua conta pessoal, não do restaurante.",
+      offDescription:
+        "Desligada. Com ela ligada, entrar no painel pede também um código de 6 dígitos da app de autenticação do seu telemóvel — quem descobrir a sua senha não consegue entrar só com ela.",
+      enable: "Ligar verificação em dois passos",
+      setupDescription:
+        "Leia o código QR com uma app de autenticação (Google Authenticator, Authy, 1Password…) e escreva o código de 6 dígitos que ela mostra.",
+      activate: "Ligar",
+      enabledToast:
+        "Verificação em dois passos ligada. As outras sessões da conta foram terminadas.",
+      savedDone: "Já guardei os códigos",
+      onDescription: "Ligada. Entrar no painel pede o código da app de autenticação.",
+      regenerate: "Gerar novos códigos de recuperação",
+      disable: "Desligar",
+      confirmDisable: "Para desligar, escreva o código atual da app de autenticação.",
+      confirmRegenerate:
+        "Os códigos antigos deixam de funcionar. Escreva o código atual da app de autenticação.",
+      disabledToast: "Verificação em dois passos desligada.",
+      error: "Não foi possível concluir. Tente de novo.",
+    },
     eyebrow: "Restaurante",
     title: "Perfil do restaurante",
     description: "O que os clientes veem na sua página e no cardápio.",

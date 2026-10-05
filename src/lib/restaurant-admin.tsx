@@ -96,6 +96,12 @@ type ApiStaffUser = {
   restaurants?: ApiRestaurantRef[];
 };
 
+type StaffSession = { token: string; user: ApiStaffUser };
+
+/** Resposta do login quando a conta tem a verificação em dois passos ligada
+ * (backend StaffTwoFactorController) — o token só vem em `verifyTwoFactor`. */
+export type StaffTwoFactorStep = { twoFactor: "required"; challenge: string };
+
 /**
  * Sessão do painel do restaurante — email+senha real (ver plano: sem
  * self-signup, a conta só nasce ao a Luku aprovar uma candidatura de
@@ -118,7 +124,13 @@ type RestaurantAdminValue = {
   /** false até a sessão guardada ser validada — evita o `AdminShell`
    * redirecionar pra `/admin/entrar` por engano antes disso. */
   hydrated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  /** Entra direto, ou devolve o challenge se a conta tiver 2FA ligado. */
+  login: (email: string, password: string) => Promise<StaffTwoFactorStep | null>;
+  /** 2º passo do login com 2FA — código da app ou de recuperação. */
+  verifyTwoFactor: (
+    challenge: string,
+    input: { code: string } | { recoveryCode: string },
+  ) => Promise<{ recoveryCodesLeft: number | undefined }>;
   /**
    * Atalho para um `system_operator` entrar diretamente no painel de um
    * restaurante (ex: logo a seguir a aprovar uma candidatura, ou a partir
@@ -206,6 +218,23 @@ export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const startSession = ({ token, user }: StaffSession) => {
+    // Um user pode gerir mais de um restaurante (dono com várias casas) —
+    // por agora entra sempre no primeiro; escolher entre vários fica para
+    // quando o painel tiver um seletor de restaurante (fora do escopo desta
+    // fase, que é só auth).
+    const restaurantId = user.restaurants?.[0]?.restaurantId;
+    if (!restaurantId) {
+      throw new ApiError(403, "Esta conta não gere nenhum restaurante.");
+    }
+
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(RESTAURANT_ID_KEY, restaurantId);
+    localStorage.removeItem(BORROWED_KEY);
+    setManagedRestaurantId(restaurantId);
+    window.dispatchEvent(new Event("luku:menu-changed"));
+  };
+
   const login = async (email: string, password: string) => {
     // Demo sem backend (ver DEPLOY.md) — não há API para autenticar
     // email/senha contra ela, então qualquer credencial entra direto no
@@ -216,28 +245,33 @@ export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(BORROWED_KEY);
       setManagedRestaurantId(DEMO_RESTAURANT_ID);
       window.dispatchEvent(new Event("luku:menu-changed"));
-      return;
+      return null;
     }
 
-    const { data } = await apiFetch<{ data: { token: string; user: ApiStaffUser } }>(
-      "/auth/login",
-      { method: "POST", body: { email, password } },
+    const { data } = await apiFetch<{ data: StaffSession | StaffTwoFactorStep }>("/auth/login", {
+      method: "POST",
+      body: { email, password },
+    });
+
+    if ("challenge" in data) return data;
+    startSession(data);
+    return null;
+  };
+
+  const verifyTwoFactor = async (
+    challenge: string,
+    input: { code: string } | { recoveryCode: string },
+  ) => {
+    const body =
+      "code" in input
+        ? { challenge, code: input.code }
+        : { challenge, recovery_code: input.recoveryCode };
+    const { data } = await apiFetch<{ data: StaffSession & { recoveryCodesLeft?: number } }>(
+      "/auth/2fa/verify",
+      { method: "POST", body },
     );
-
-    // Um user pode gerir mais de um restaurante (dono com várias casas) —
-    // por agora entra sempre no primeiro; escolher entre vários fica para
-    // quando o painel tiver um seletor de restaurante (fora do escopo desta
-    // fase, que é só auth).
-    const restaurantId = data.user.restaurants?.[0]?.restaurantId;
-    if (!restaurantId) {
-      throw new ApiError(403, "Esta conta não gere nenhum restaurante.");
-    }
-
-    localStorage.setItem(TOKEN_KEY, data.token);
-    localStorage.setItem(RESTAURANT_ID_KEY, restaurantId);
-    localStorage.removeItem(BORROWED_KEY);
-    setManagedRestaurantId(restaurantId);
-    window.dispatchEvent(new Event("luku:menu-changed"));
+    startSession(data);
+    return { recoveryCodesLeft: data.recoveryCodesLeft };
   };
 
   const enterAsOperator = (restaurantId: string, operatorToken: string) => {
@@ -277,6 +311,7 @@ export function RestaurantAdminProvider({ children }: { children: ReactNode }) {
         : undefined,
     hydrated,
     login,
+    verifyTwoFactor,
     enterAsOperator,
     logout,
   };
