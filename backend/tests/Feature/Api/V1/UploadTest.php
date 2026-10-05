@@ -14,7 +14,7 @@ beforeEach(function () {
 });
 
 test('upload de imagem válida devolve um URL', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->restaurantStaff()->create();
     $file = UploadedFile::fake()->image('prato.jpg', 800, 800)->size(500); // 500KB
 
     $response = $this->actingAs($user, 'sanctum')
@@ -27,7 +27,7 @@ test('upload de imagem válida devolve um URL', function () {
 });
 
 test('upload rejeita purpose inválido', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->restaurantStaff()->create();
     $file = UploadedFile::fake()->image('x.jpg');
 
     $this->actingAs($user, 'sanctum')
@@ -37,7 +37,7 @@ test('upload rejeita purpose inválido', function () {
 });
 
 test('upload rejeita ficheiro que não é imagem', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->restaurantStaff()->create();
     $file = UploadedFile::fake()->create('curriculo.pdf', 200, 'application/pdf');
 
     $this->actingAs($user, 'sanctum')
@@ -74,4 +74,15 @@ test('não é possível apagar imagem de galeria de outro restaurante', function
     $this->actingAs($owner, 'sanctum')
         ->deleteJson("/api/v1/restaurants/{$restaurant->uuid}/gallery/{$image->id}")
         ->assertStatus(404);
+});
+
+test('cliente não pode usar o upload genérico (só painéis de restaurante/sistema)', function () {
+    Storage::fake('r2', ['url' => 'https://cdn.luku.com']);
+    $customer = User::factory()->create();
+
+    $this->actingAs($customer, 'sanctum')
+        ->postJson('/api/v1/uploads', ['file' => UploadedFile::fake()->image('x.jpg'), 'purpose' => 'dish'])
+        ->assertForbidden();
+
+    expect(Storage::disk('r2')->allFiles())->toBe([]);
 });

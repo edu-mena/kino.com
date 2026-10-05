@@ -2,8 +2,12 @@
 
 namespace App\Services;
 
+use Firebase\JWT\JWK;
+use Firebase\JWT\JWT;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use Throwable;
 
 /**
  * Troca direta HTTP com os endpoints do Google (sem SDK pesado — ver plano).
@@ -13,6 +17,12 @@ use RuntimeException;
  */
 class GoogleOAuthService
 {
+    private const JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
+
+    private const JWKS_CACHE_KEY = 'google-oauth-jwks';
+
+    private const ISSUERS = ['accounts.google.com', 'https://accounts.google.com'];
+
     /**
      * @return array{sub: string, email: string, name: string, picture: ?string}
      */
@@ -51,19 +61,16 @@ class GoogleOAuthService
      */
     public function verifyIdToken(string $idToken): array
     {
-        // TODO (débito técnico, revisão cruzada): `tokeninfo` é o endpoint
-        // de DEBUG do Google — sem garantia de rate limit para produção.
-        // Antes de ir a produção, trocar por validação local da assinatura
-        // contra as JWKs públicas do Google (ex: firebase/php-jwt), evitando
-        // depender de uma chamada de rede síncrona + risco de 429/timeout
-        // sob carga com 3 tipos de cliente (web/android/ios) a fazer login.
-        $response = Http::get('https://oauth2.googleapis.com/tokeninfo', ['id_token' => $idToken]);
+        // Validação LOCAL da assinatura contra as chaves públicas do Google
+        // (auditoria de segurança, Fase 6) — antes ia ao `tokeninfo`, o
+        // endpoint de debug do Google, sem garantia de disponibilidade nem
+        // de rate limit em produção. `JWT::decode` valida assinatura (RS256),
+        // `exp`, `nbf` e `iat`; o resto (emissor, audiência, email) é aqui.
+        $payload = $this->decodeWithGoogleKeys($idToken);
 
-        if ($response->failed()) {
-            throw new RuntimeException('google_id_token_invalid');
+        if (! in_array($payload['iss'] ?? null, self::ISSUERS, true)) {
+            throw new RuntimeException('google_id_token_issuer_mismatch');
         }
-
-        $payload = $response->json();
 
         // O id_token do Google Sign-In nativo (Android/iOS) tem `aud` = o
         // client_id ANDROID/IOS registado na Google Cloud Console — não o
@@ -86,9 +93,8 @@ class GoogleOAuthService
         // O `googleCallback` liga contas pelo email quando o `sub` ainda não
         // é conhecido — sem esta verificação, uma conta Google com um email
         // alheio ainda por confirmar entraria na conta Luku do verdadeiro
-        // dono desse email. `tokeninfo` devolve os booleanos como string
-        // ("true"), o id_token decodificado localmente como booleano real.
-        if (! in_array($payload['email_verified'] ?? null, [true, 'true'], true)) {
+        // dono desse email.
+        if (($payload['email_verified'] ?? null) !== true) {
             throw new RuntimeException('google_email_not_verified');
         }
 
@@ -98,5 +104,48 @@ class GoogleOAuthService
             'name' => $payload['name'] ?? $payload['email'],
             'picture' => $payload['picture'] ?? null,
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private function decodeWithGoogleKeys(string $idToken): array
+    {
+        // Relógios de telemóvel desacertados uns segundos não devem chumbar
+        // um id_token acabado de emitir (`iat` "no futuro").
+        JWT::$leeway = 60;
+
+        try {
+            return (array) JWT::decode($idToken, JWK::parseKeySet($this->googleKeys()));
+        } catch (Throwable $e) {
+            // O Google roda as chaves periodicamente: um `kid` desconhecido
+            // pode só querer dizer que a cache ficou velha — uma nova
+            // tentativa com as chaves acabadas de buscar, nunca mais.
+            if (! str_contains($e->getMessage(), '"kid"')) {
+                throw new RuntimeException('google_id_token_invalid', previous: $e);
+            }
+        }
+
+        try {
+            return (array) JWT::decode($idToken, JWK::parseKeySet($this->googleKeys(refresh: true)));
+        } catch (Throwable $e) {
+            throw new RuntimeException('google_id_token_invalid', previous: $e);
+        }
+    }
+
+    /** JWKS do Google, em cache (as chaves duram dias; 6h é conservador). */
+    private function googleKeys(bool $refresh = false): array
+    {
+        if ($refresh) {
+            Cache::forget(self::JWKS_CACHE_KEY);
+        }
+
+        return Cache::remember(self::JWKS_CACHE_KEY, now()->addHours(6), function () {
+            $response = Http::timeout(5)->get(self::JWKS_URL);
+
+            if ($response->failed() || ! is_array($response->json('keys'))) {
+                throw new RuntimeException('google_jwks_unavailable');
+            }
+
+            return $response->json();
+        });
     }
 }

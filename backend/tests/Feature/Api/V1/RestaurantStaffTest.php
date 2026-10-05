@@ -1,7 +1,9 @@
 <?php
 
+use App\Mail\StaffAddedMail;
 use App\Models\Restaurant;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 
 test('owner convida um novo email — cria conta e manda link de definir senha', function () {
@@ -19,6 +21,7 @@ test('owner convida um novo email — cria conta e manda link de definir senha',
 
 test('owner convida email já existente (conta doutro restaurante) — liga sem duplicar nem reenviar convite', function () {
     Password::shouldReceive('sendResetLink')->never();
+    Mail::fake();
     $restaurant = Restaurant::factory()->create();
     $owner = ownerOf($restaurant);
     User::factory()->restaurantStaff()->create(['email' => 'ja-existe@example.com']);
@@ -28,6 +31,18 @@ test('owner convida email já existente (conta doutro restaurante) — liga sem 
     ])->assertStatus(201);
 
     expect(User::where('email', 'ja-existe@example.com')->count())->toBe(1);
+    // A pessoa é avisada — antes era adicionada à equipa em silêncio.
+    Mail::assertQueued(StaffAddedMail::class, fn ($mail) => $mail->hasTo('ja-existe@example.com')
+        && $mail->restaurant->is($restaurant));
+});
+
+test('o email de aviso a staff existente renderiza sem erro', function () {
+    $restaurant = Restaurant::factory()->create(['name' => 'Casa Teste']);
+    $user = User::factory()->restaurantStaff()->create(['name' => 'Rui']);
+
+    $html = (new StaffAddedMail($user, $restaurant, 'manager'))->render();
+
+    expect($html)->toContain('Casa Teste')->toContain('Rui')->toContain('gerente');
 });
 
 test('não é possível convidar a mesma pessoa duas vezes para o mesmo restaurante', function () {

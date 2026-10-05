@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\RestaurantStaff\InviteStaffRequest;
 use App\Http\Requests\Api\V1\RestaurantStaff\UpdateStaffRoleRequest;
+use App\Mail\StaffAddedMail;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
@@ -57,6 +59,8 @@ class RestaurantStaffController extends Controller
 
         if ($isNewAccount) {
             Password::sendResetLink(['email' => $user->email]);
+        } else {
+            Mail::to($user->email)->queue(new StaffAddedMail($user, $restaurant, $data['role_in_restaurant']));
         }
 
         return response()->json(['data' => [

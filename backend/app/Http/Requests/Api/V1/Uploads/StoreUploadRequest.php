@@ -8,7 +8,11 @@ class StoreUploadRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null; // qualquer role autenticado — ver plano
+        // Só quem gere conteúdo (painéis de restaurante e de sistema — os
+        // únicos que usam este endpoint). Antes qualquer cliente com conta
+        // podia alojar imagens arbitrárias na CDN pública da Luku
+        // (auditoria de segurança, Fase 6).
+        return in_array($this->user()?->role, ['restaurant_staff', 'system_operator'], true);
     }
 
     public function rules(): array

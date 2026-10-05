@@ -2,7 +2,9 @@
 
 use App\Models\Restaurant;
 use App\Models\User;
+use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /*
@@ -58,4 +60,46 @@ function ownerOf(Restaurant $restaurant): User
     $owner->restaurantUsers()->create(['restaurant_id' => $restaurant->id, 'role_in_restaurant' => 'owner']);
 
     return $owner;
+}
+
+/**
+ * id_token do Google assinado de verdade (RS256) com uma chave de teste, e o
+ * endpoint de chaves públicas do Google simulado com a chave correspondente
+ * — o GoogleOAuthService valida a assinatura localmente (sem `tokeninfo`).
+ * Claims por omissão: emissor Google, válido 1h, email verificado.
+ */
+function googleTestKey()
+{
+    static $key = null;
+
+    // Chave fixa SÓ de teste (tests/fixtures) — gerar uma com openssl_pkey_new
+    // falha no PHP de Windows sem openssl.cnf; e assim é mais rápido.
+    return $key ??= openssl_pkey_get_private(file_get_contents(__DIR__.'/fixtures/google-test-key.pem'));
+}
+
+/** Assina um payload exatamente como dado (sem claims por omissão). */
+function googleIdTokenFromPayload(array $payload): string
+{
+    return JWT::encode($payload, googleTestKey(), 'RS256', 'test-kid');
+}
+
+function googleIdToken(array $claims = []): string
+{
+    $key = googleTestKey();
+    $details = openssl_pkey_get_details($key);
+    $b64 = fn (string $bin) => rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
+
+    Http::fake(['www.googleapis.com/oauth2/v3/certs' => Http::response(['keys' => [[
+        'kty' => 'RSA', 'alg' => 'RS256', 'use' => 'sig', 'kid' => 'test-kid',
+        'n' => $b64($details['rsa']['n']), 'e' => $b64($details['rsa']['e']),
+    ]]])]);
+
+    return JWT::encode([
+        'iss' => 'https://accounts.google.com',
+        'aud' => config('services.google.web_client_id'),
+        'iat' => time(),
+        'exp' => time() + 3600,
+        'email_verified' => true,
+        ...$claims,
+    ], $key, 'RS256', 'test-kid');
 }
