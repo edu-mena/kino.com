@@ -1,0 +1,147 @@
+<!doctype html>
+<!--
+  Página local da app (Capacitor `server.errorPath`) — aparece quando a app
+  não consegue carregar o servidor (sem rede, servidor em baixo), em vez do
+  ecrã de erro em branco da WebView. Não tem acesso a plugins Capacitor (no
+  Android, por regra do próprio Capacitor) e é estática de propósito.
+  Volta a tentar sozinha quando o telemóvel recupera a rede.
+-->
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Luku</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: max(2rem, env(safe-area-inset-top)) 1.5rem max(2rem, env(safe-area-inset-bottom));
+        background: #faf7f5;
+        color: #1c1a19;
+        font:
+          16px/1.55 -apple-system,
+          "Segoe UI",
+          Roboto,
+          system-ui,
+          sans-serif;
+        text-align: center;
+      }
+      main {
+        max-width: 22rem;
+      }
+      .logo {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #1f4a33;
+        letter-spacing: -0.02em;
+      }
+      .icon {
+        width: 4rem;
+        height: 4rem;
+        margin: 1.5rem auto 1rem;
+        display: grid;
+        place-items: center;
+        border-radius: 1.25rem;
+        background: rgba(31, 74, 51, 0.1);
+        color: #1f4a33;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0 0 0.5rem;
+      }
+      p {
+        margin: 0;
+        color: #6c645e;
+      }
+      button {
+        margin-top: 1.75rem;
+        width: 100%;
+        border: 0;
+        border-radius: 0.875rem;
+        padding: 0.95rem 1.25rem;
+        background: #1f4a33;
+        color: #fff;
+        font: inherit;
+        font-weight: 700;
+      }
+      button:disabled {
+        opacity: 0.6;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="logo">Luku</div>
+      <div class="icon" aria-hidden="true">
+        <svg
+          width="30"
+          height="30"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 20h.01" />
+          <path d="M8.5 16.43a5 5 0 0 1 7 0" />
+          <path d="M5 12.86a10 10 0 0 1 5.17-2.7" />
+          <path d="M19 12.86a10 10 0 0 0-2-1.43" />
+          <path d="M2 8.82a15 15 0 0 1 4.18-2.65" />
+          <path d="M22 8.82a15 15 0 0 0-11.29-3.76" />
+          <path d="m2 2 20 20" />
+        </svg>
+      </div>
+      <h1 id="title">Sem ligação à internet</h1>
+      <p id="body">Verifique a rede móvel ou o Wi-Fi. A Luku volta assim que houver ligação.</p>
+      <button id="retry" type="button">Tentar de novo</button>
+    </main>
+    <script>
+      // Servidor da app (o mesmo de `server.url` no capacitor.config.ts).
+      var SERVER = "https://luku.ao";
+
+      var texts = {
+        pt: [
+          "Sem ligação à internet",
+          "Verifique a rede móvel ou o Wi-Fi. A Luku volta assim que houver ligação.",
+          "Tentar de novo",
+          "A ligar…",
+        ],
+        en: [
+          "No internet connection",
+          "Check your mobile data or Wi-Fi. Luku will be back as soon as you're connected.",
+          "Try again",
+          "Connecting…",
+        ],
+        fr: [
+          "Pas de connexion internet",
+          "Vérifiez vos données mobiles ou le Wi-Fi. Luku revient dès que vous êtes connecté.",
+          "Réessayer",
+          "Connexion…",
+        ],
+      };
+      var lang = (navigator.language || "pt").slice(0, 2);
+      var t = texts[lang] || texts.pt;
+      document.documentElement.lang = texts[lang] ? lang : "pt";
+      document.getElementById("title").textContent = t[0];
+      document.getElementById("body").textContent = t[1];
+      var button = document.getElementById("retry");
+      button.textContent = t[2];
+
+      function retry() {
+        button.disabled = true;
+        button.textContent = t[3];
+        window.location.replace(SERVER);
+      }
+      button.addEventListener("click", retry);
+      // Rede voltou → tenta logo, sem a pessoa ter de tocar.
+      window.addEventListener("online", retry);
+    </script>
+  </body>
+</html>

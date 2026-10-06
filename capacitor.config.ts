@@ -31,7 +31,10 @@ const config: CapacitorConfig = {
   },
   server: {
     androidScheme: "https",
-    ...(serverUrl ? { url: serverUrl, cleartext: isDevHttpServer } : {}),
+    // Sem rede / servidor em baixo: página local `capacitor/www/offline.html`
+    // em vez do ecrã de erro em branco da WebView (as lojas rejeitam apps
+    // que ficam num ecrã vazio sem ligação).
+    ...(serverUrl ? { url: serverUrl, cleartext: isDevHttpServer, errorPath: "offline.html" } : {}),
   },
 };
 
