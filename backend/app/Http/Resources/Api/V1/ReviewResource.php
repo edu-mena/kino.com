@@ -19,6 +19,11 @@ class ReviewResource extends JsonResource
             'date' => $this->date?->toDateString(),
             'comment' => $this->comment,
             'tags' => $this->tags ?? [],
+            // Só para quem tem sessão e não é o autor: pode bloquear quem
+            // escreveu (UserBlockController) — nunca expõe o id da conta.
+            'authorBlockable' => (bool) ($request->user('sanctum')
+                && $this->user_id
+                && $this->user_id !== $request->user('sanctum')->id),
             'reply' => $this->reply_text ? [
                 'text' => $this->reply_text,
                 'at' => $this->reply_at?->toIso8601String(),

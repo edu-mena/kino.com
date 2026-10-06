@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api-client";
+import { getAuthToken } from "@/lib/auth";
 import type { Review } from "./types";
 
 /** Avaliações reais (backend/app/Http/Controllers/Api/V1/ReviewController.php)
@@ -16,6 +17,7 @@ type ApiReview = {
   comment: string | null;
   tags: string[];
   reply?: { text: string; at: string } | null;
+  authorBlockable?: boolean;
 };
 
 function mapApiReview(r: ApiReview): Review {
@@ -28,11 +30,15 @@ function mapApiReview(r: ApiReview): Review {
     comment: r.comment ?? "",
     tags: r.tags,
     ...(r.reply ? { reply: r.reply } : {}),
+    ...(r.authorBlockable ? { authorBlockable: true } : {}),
   };
 }
 
 export async function fetchApiReviews(restaurantId: string): Promise<Review[]> {
-  const { data } = await apiFetch<{ data: ApiReview[] }>(`/restaurants/${restaurantId}/reviews`);
+  // Com sessão, o backend tira as avaliações de quem a pessoa bloqueou.
+  const { data } = await apiFetch<{ data: ApiReview[] }>(`/restaurants/${restaurantId}/reviews`, {
+    token: getAuthToken(),
+  });
   return data.map((r) => ({ ...mapApiReview(r), restaurantId }));
 }
 

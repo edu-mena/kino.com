@@ -3,6 +3,7 @@ import {
   Activity,
   CreditCard,
   FileText,
+  Flag,
   Inbox,
   LayoutGrid,
   LifeBuoy,
@@ -28,6 +29,7 @@ const navItems = [
   { to: "/sistema/promocoes", labelKey: "promotions", icon: Megaphone },
   { to: "/sistema/pacotes", labelKey: "packages", icon: PartyPopper },
   { to: "/sistema/suporte", labelKey: "support", icon: LifeBuoy },
+  { to: "/sistema/denuncias", labelKey: "moderation", icon: Flag },
   { to: "/sistema/conteudo", labelKey: "content", icon: FileText },
 ] as const;
 

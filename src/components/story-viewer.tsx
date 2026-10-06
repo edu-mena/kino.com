@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { ExternalLink, X } from "lucide-react";
+import { ExternalLink, Flag, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ReportContentDialog } from "@/components/report-content-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import type { Restaurant } from "@/data/types";
 import { storiesForRestaurant, useEffectiveStories } from "@/data/use-stories";
+import { hasRealBackend } from "@/lib/api-client";
 import { useStories } from "@/lib/stories";
 import { parseTimeFragment } from "@/lib/video-trim";
 
@@ -31,6 +33,8 @@ export function StoryViewer({
   const [restaurantIdx, setRestaurantIdx] = useState(startIndex);
   const [storyIdx, setStoryIdx] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Denunciar a story atual (App Store 1.2) — pausa enquanto o diálogo está aberto.
+  const [reportOpen, setReportOpen] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
   const pointerDownAt = useRef(0);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -205,15 +209,43 @@ export function StoryViewer({
                   {restaurant.name}
                 </span>
               </Link>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Fechar stories"
-                className="grid h-8 w-8 place-items-center rounded-full text-white/90 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-1">
+                {hasRealBackend && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaused(true);
+                      setReportOpen(true);
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onPointerUp={(e) => e.stopPropagation()}
+                    aria-label="Denunciar story"
+                    className="grid h-8 w-8 place-items-center rounded-full text-white/80 hover:text-white"
+                  >
+                    <Flag className="h-4 w-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Fechar stories"
+                  className="grid h-8 w-8 place-items-center rounded-full text-white/90 hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
+            {story && (
+              <ReportContentDialog
+                type="story"
+                contentId={story.id}
+                open={reportOpen}
+                onOpenChange={(open) => {
+                  setReportOpen(open);
+                  if (!open) setPaused(false);
+                }}
+              />
+            )}
 
             <div className="grid h-full place-items-center">
               {isVideo ? (

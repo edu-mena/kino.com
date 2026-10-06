@@ -302,6 +302,9 @@ export interface Review {
    * restaurante. Ausente até o restaurante responder (ver `/admin/avaliacoes`,
    * `setReviewReply` em `@/data/reviews-store`). */
   reply?: { text: string; at: string };
+  /** Quem está a ver pode bloquear o autor (tem sessão e não é o autor) —
+   * só vem da API real (ver ReviewActionsMenu). */
+  authorBlockable?: boolean;
 }
 
 export interface RegisteredCustomer {

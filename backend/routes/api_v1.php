@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\ContactMessageController;
+use App\Http\Controllers\Api\V1\ContentReportController;
 use App\Http\Controllers\Api\V1\CourierController;
 use App\Http\Controllers\Api\V1\CustomerLoyaltyController;
 use App\Http\Controllers\Api\V1\CustomerNoteController;
@@ -36,6 +37,7 @@ use App\Http\Controllers\Api\V1\SystemAccessController;
 use App\Http\Controllers\Api\V1\SystemStatsController;
 use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\UploadController;
+use App\Http\Controllers\Api\V1\UserBlockController;
 use App\Http\Controllers\Api\V1\UserPreferenceController;
 use Illuminate\Support\Facades\Route;
 
@@ -308,6 +310,22 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
 | houver Docker/Reverb pra testar de verdade); o cliente faz polling.
 */
 Route::get('restaurants/{restaurant}/reviews', [ReviewController::class, 'index']);
+
+// Moderação de conteúdo (App Store 1.2) — denunciar é público (convidados
+// também veem o conteúdo); decidir e bloquear exigem sessão. Ver
+// ContentReportController / UserBlockController / ModerationService.
+Route::post('reports/{type}/{uuid}', [ContentReportController::class, 'store'])
+    ->whereIn('type', ['review', 'story', 'offer'])
+    ->middleware('throttle:public-forms');
+Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
+    Route::get('content-reports', [ContentReportController::class, 'index']);
+    Route::post('content-reports/{type}/{uuid}/resolve', [ContentReportController::class, 'resolve'])
+        ->whereIn('type', ['review', 'story', 'offer']);
+
+    Route::post('reviews/{review}/block-author', [UserBlockController::class, 'store']);
+    Route::get('me/blocks', [UserBlockController::class, 'index']);
+    Route::delete('me/blocks/{block}', [UserBlockController::class, 'destroy']);
+});
 
 // Visita ao perfil público — cliente com conta OU convidado (id aleatório do
 // browser); nunca conta o staff do próprio restaurante.

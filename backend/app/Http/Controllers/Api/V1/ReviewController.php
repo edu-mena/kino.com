@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\Reviews\StoreReviewRequest;
 use App\Http\Resources\Api\V1\ReviewResource;
 use App\Models\Restaurant;
 use App\Models\Review;
+use App\Models\UserBlock;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -16,7 +17,16 @@ class ReviewController extends Controller
 {
     public function index(Request $request, Restaurant $restaurant): AnonymousResourceCollection
     {
+        // Moderação (App Store 1.2): fora as avaliações escondidas (denunciadas
+        // ou removidas pela equipa) e, para quem tem sessão, as de pessoas que
+        // bloqueou. Rota pública — 'sanctum' explícito para ler o token.
+        $viewer = $request->user('sanctum');
         $reviews = $restaurant->reviews()
+            ->whereNull('hidden_at')
+            ->when($viewer, fn ($q) => $q->where(fn ($q) => $q->whereNull('user_id')->orWhereNotIn(
+                'user_id',
+                UserBlock::query()->where('user_id', $viewer->id)->select('blocked_user_id'),
+            )))
             ->latest('date')
             ->cursorPaginate($request->integer('per_page', 20));
 

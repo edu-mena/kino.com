@@ -57,6 +57,7 @@ import { Route as PratosDishNameRouteImport } from './routes/pratos.$dishName'
 import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
 import { Route as SistemaIndexRouteImport } from './routes/sistema.index'
 import { Route as SistemaConteudoRouteImport } from './routes/sistema.conteudo'
+import { Route as SistemaDenunciasRouteImport } from './routes/sistema.denuncias'
 import { Route as SistemaOperacaoRouteImport } from './routes/sistema.operacao'
 import { Route as SistemaPacotesRouteImport } from './routes/sistema.pacotes'
 import { Route as SistemaParceirosRouteImport } from './routes/sistema.parceiros'
@@ -306,6 +307,11 @@ const SistemaConteudoRoute = SistemaConteudoRouteImport.update({
   path: '/conteudo',
   getParentRoute: () => SistemaRoute,
 } as any)
+const SistemaDenunciasRoute = SistemaDenunciasRouteImport.update({
+  id: '/denuncias',
+  path: '/denuncias',
+  getParentRoute: () => SistemaRoute,
+} as any)
 const SistemaOperacaoRoute = SistemaOperacaoRouteImport.update({
   id: '/operacao',
   path: '/operacao',
@@ -394,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
   '/sistema/conteudo': typeof SistemaConteudoRoute
+  '/sistema/denuncias': typeof SistemaDenunciasRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
@@ -450,6 +457,7 @@ export interface FileRoutesByTo {
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
   '/sistema/conteudo': typeof SistemaConteudoRoute
+  '/sistema/denuncias': typeof SistemaDenunciasRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
@@ -509,6 +517,7 @@ export interface FileRoutesById {
   '/pratos/$dishName': typeof PratosDishNameRoute
   '/restaurantes_/$id': typeof RestaurantesIdRoute
   '/sistema/conteudo': typeof SistemaConteudoRoute
+  '/sistema/denuncias': typeof SistemaDenunciasRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
@@ -569,6 +578,7 @@ export interface FileRouteTypes {
     | '/pratos/$dishName'
     | '/restaurantes/$id'
     | '/sistema/conteudo'
+    | '/sistema/denuncias'
     | '/sistema/operacao'
     | '/sistema/pacotes'
     | '/sistema/parceiros'
@@ -625,6 +635,7 @@ export interface FileRouteTypes {
     | '/pratos/$dishName'
     | '/restaurantes/$id'
     | '/sistema/conteudo'
+    | '/sistema/denuncias'
     | '/sistema/operacao'
     | '/sistema/pacotes'
     | '/sistema/parceiros'
@@ -683,6 +694,7 @@ export interface FileRouteTypes {
     | '/pratos/$dishName'
     | '/restaurantes_/$id'
     | '/sistema/conteudo'
+    | '/sistema/denuncias'
     | '/sistema/operacao'
     | '/sistema/pacotes'
     | '/sistema/parceiros'
@@ -1069,6 +1081,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SistemaConteudoRouteImport
       parentRoute: typeof SistemaRoute
     }
+    '/sistema/denuncias': {
+      id: '/sistema/denuncias'
+      path: '/denuncias'
+      fullPath: '/sistema/denuncias'
+      preLoaderRoute: typeof SistemaDenunciasRouteImport
+      parentRoute: typeof SistemaRoute
+    }
     '/sistema/operacao': {
       id: '/sistema/operacao'
       path: '/operacao'
@@ -1166,6 +1185,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface SistemaRouteChildren {
   SistemaConteudoRoute: typeof SistemaConteudoRoute
+  SistemaDenunciasRoute: typeof SistemaDenunciasRoute
   SistemaOperacaoRoute: typeof SistemaOperacaoRoute
   SistemaPacotesRoute: typeof SistemaPacotesRoute
   SistemaParceirosRoute: typeof SistemaParceirosRoute
@@ -1178,6 +1198,7 @@ interface SistemaRouteChildren {
 
 const SistemaRouteChildren: SistemaRouteChildren = {
   SistemaConteudoRoute: SistemaConteudoRoute,
+  SistemaDenunciasRoute: SistemaDenunciasRoute,
   SistemaOperacaoRoute: SistemaOperacaoRoute,
   SistemaPacotesRoute: SistemaPacotesRoute,
   SistemaParceirosRoute: SistemaParceirosRoute,

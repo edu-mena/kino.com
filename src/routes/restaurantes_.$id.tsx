@@ -23,6 +23,7 @@ import { RestaurantRecommendationsDialog } from "@/components/restaurant-recomme
 import { PageShell } from "@/components/site-shell";
 import { StoryViewer } from "@/components/story-viewer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ReviewActionsMenu } from "@/components/review-actions-menu";
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
 import { useEffectiveStories } from "@/data/use-stories";
 import { addressProvince, canDeliverToNeighborhood, getRestaurant } from "@/data/helpers";
@@ -451,6 +452,7 @@ function RestaurantDetail() {
                             year: "numeric",
                           })}
                         </span>
+                        <ReviewActionsMenu review={review} />
                       </div>
                     </div>
                     {review.comment && (

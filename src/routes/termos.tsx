@@ -25,7 +25,7 @@ function Termos() {
       <PageHeading eyebrow="Legal" title="Termos de Serviço" />
 
       <LegalDocument
-        updatedAt="13 de setembro de 2026"
+        updatedAt="7 de outubro de 2026"
         intro={
           <p>
             Estes termos regem o uso da Luku — o site, e as apps Android e iOS (em conjunto, o
@@ -104,6 +104,17 @@ function Termos() {
             antes de publicar a avaliação. Avaliações devem refletir uma experiência real e genuína;
             a Luku pode remover conteúdo ofensivo, falso, ou que viole estes termos, e suspender
             contas que publiquem avaliações fraudulentas repetidamente.
+          </p>
+          <p>
+            <strong>Tolerância zero para conteúdo ofensivo ou abusivo.</strong> Não é permitido
+            publicar (em avaliações, respostas, stories ou promoções) conteúdo ofensivo, de ódio,
+            assédio, ameaças, conteúdo sexual, violento, ilegal, ou dados pessoais de terceiros.
+            Qualquer pessoa pode <strong>denunciar</strong> uma avaliação, story ou promoção (menu
+            “⋯” ou ícone de bandeira) e <strong>bloquear</strong> o autor de uma avaliação para
+            deixar de ver o que publica. A equipa Luku analisa cada denúncia em até{" "}
+            <strong>24 horas</strong>, remove o conteúdo que viole estes termos e encerra as contas
+            de quem o publicou. Uma avaliação denunciada por várias pessoas fica escondida até ser
+            analisada.
           </p>
         </LegalSection>
 
