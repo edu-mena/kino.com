@@ -7,10 +7,10 @@ use Illuminate\Validation\Rule;
 
 /**
  * Regista (ou atualiza, se já existir — ver DeviceTokenController::store)
- * um destino de push para o utilizador autenticado. `web` e `android` são
- * enviados de verdade (ver PushNotificationService — `android` precisa de
- * `FIREBASE_CREDENTIALS` configurado, senão fica só guardado); `ios` ainda
- * não tem APNs ligado, fica só guardado.
+ * um destino de push para o utilizador autenticado. `web`, `android` e `ios`
+ * são enviados de verdade (ver PushNotificationService — `android`/`ios`
+ * vão pelo FCM e precisam de `FIREBASE_CREDENTIALS`, senão ficam só
+ * guardados; `ios` precisa ainda da chave APNs no projeto Firebase).
  */
 class StoreDeviceTokenRequest extends FormRequest
 {

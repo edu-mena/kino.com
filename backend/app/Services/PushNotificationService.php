@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging as FirebaseMessaging;
 use Kreait\Firebase\Messaging\AndroidConfig;
+use Kreait\Firebase\Messaging\ApnsConfig;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification as FcmNotification;
 use Minishlink\WebPush\Subscription;
@@ -16,9 +17,11 @@ use Throwable;
 
 /**
  * Entrega uma `Notification` já persistida (ver Order/ReservationObserver)
- * às subscrições do utilizador — Web Push (`platform=web`) e Android via
- * Firebase Cloud Messaging (`platform=android`). iOS (APNs) continua fora
- * do escopo (ver `device_tokens`, coluna `platform` já preparada).
+ * às subscrições do utilizador — Web Push (`platform=web`) e app nativa via
+ * Firebase Cloud Messaging (`platform=android` e `platform=ios`). No iOS o
+ * FCM entrega através do APNs: o projeto Firebase precisa da chave APNs da
+ * conta Apple Developer, e a app iOS tem de registar o token FCM (não o
+ * token APNs cru) — ver capacitor/README.md, secção do push no iOS.
  *
  * FCM precisa de credenciais reais dum projeto Firebase
  * (`FIREBASE_CREDENTIALS`, ver config/firebase.php e capacitor/README.md
@@ -33,6 +36,9 @@ use Throwable;
  */
 class PushNotificationService
 {
+    /** Tokens FCM — Android direto, iOS via APNs (ver sendNative). */
+    private const NATIVE_PLATFORMS = ['android', 'ios'];
+
     private ?WebPush $client = null;
 
     /** `true` depois da 1ª tentativa (com ou sem sucesso) — evita repetir
@@ -134,7 +140,7 @@ class PushNotificationService
         [$title, $body] = $this->textFor($notification);
 
         $this->sendWeb($user, $notification, $title, $body);
-        $this->sendAndroid($user, $notification, $title, $body);
+        $this->sendNative($user, $notification, $title, $body);
     }
 
     private function sendWeb(User $user, Notification $notification, string $title, string $body): void
@@ -193,18 +199,18 @@ class PushNotificationService
         }
     }
 
-    /** Um só CloudMessage, enviado a todos os tokens Android do utilizador
-     * de uma vez (`sendMulticast`) — o próprio relatório já diz quais
-     * tokens ficaram inválidos/desconhecidos (app desinstalada, etc.),
+    /** Um só CloudMessage, enviado a todos os tokens Android e iOS do
+     * utilizador de uma vez (`sendMulticast`) — o próprio relatório já diz
+     * quais tokens ficaram inválidos/desconhecidos (app desinstalada, etc.),
      * apagados a seguir, mesmo espírito do 410/404 do Web Push acima. */
-    private function sendAndroid(User $user, Notification $notification, string $title, string $body): void
+    private function sendNative(User $user, Notification $notification, string $title, string $body): void
     {
         $client = $this->fcmClient();
         if (! $client) {
             return;
         }
 
-        $tokens = $user->deviceTokens()->where('platform', 'android')->pluck('token');
+        $tokens = $user->deviceTokens()->whereIn('platform', self::NATIVE_PLATFORMS)->pluck('token');
         if ($tokens->isEmpty()) {
             return;
         }
@@ -230,6 +236,12 @@ class PushNotificationService
                     'channel_id' => 'luku_default',
                     'sound' => 'notification_luku',
                 ],
+            ]))
+            // iOS: som por omissão do sistema (um som próprio teria de ir no
+            // bundle da app iOS) e prioridade imediata (10), como no Android.
+            ->withApnsConfig(ApnsConfig::fromArray([
+                'headers' => ['apns-priority' => '10'],
+                'payload' => ['aps' => ['sound' => 'default']],
             ]));
 
         try {
@@ -242,7 +254,7 @@ class PushNotificationService
 
         $stale = [...$report->invalidTokens(), ...$report->unknownTokens()];
         if ($stale !== []) {
-            $user->deviceTokens()->where('platform', 'android')->whereIn('token', $stale)->delete();
+            $user->deviceTokens()->whereIn('platform', self::NATIVE_PLATFORMS)->whereIn('token', $stale)->delete();
         }
     }
 

@@ -302,17 +302,58 @@ manifest, e copiar `capacitor/assets/notification_luku.wav` para
 `android/app/src/main/res/raw/notification_luku.wav` — o nome do
 recurso, sem extensão, é o que o `channel_id`/`sound` referenciam).
 
-### iOS — falta ainda mais um passo (APNs)
+### iOS — passos no Mac (o servidor já envia)
 
-O mesmo plugin cobre iOS, e o `PushNotificationController`/`device_tokens`
-já aceitam `platform: "ios"`, mas `PushNotificationService` só envia para
-`web`/`android` por agora — enviar para iOS precisa de uma chave APNs
-(Apple Developer → Certificates, Identifiers & Profiles → Keys) associada
-ao mesmo projeto Firebase (Firebase Console → Definições do projeto → Cloud
-Messaging → carregar a chave `.p8` da Apple). Depois disso, o SDK do
-Firebase (`kreait/firebase-php`, já instalado) consegue enviar tanto para
-Android como iOS pelo mesmo `sendMulticast` — só falta o código distinguir
-o `AndroidConfig`/`ApnsConfig` por mensagem, e a credencial Apple em si.
+`PushNotificationService` já envia para tokens `ios` pelo mesmo FCM (com
+`ApnsConfig`: som por omissão, prioridade imediata). Falta só o lado Apple
+e da app iOS, tudo no Mac:
+
+1. **Chave APNs** — Apple Developer → Certificates, Identifiers & Profiles
+   → Keys → "+" → marcar _Apple Push Notifications service (APNs)_ →
+   descarregar o `.p8` (só se descarrega uma vez). Firebase Console →
+   Definições do projeto → Cloud Messaging → _Apple app configuration_ →
+   carregar o `.p8` com o Key ID e o Team ID.
+2. **App iOS no Firebase** — Firebase Console → Adicionar app → iOS →
+   Bundle ID `com.luku.app` → descarregar `GoogleService-Info.plist` e
+   arrastá-lo no Xcode para `App/App` (marcar "Copy items if needed").
+3. **Xcode → target App → Signing & Capabilities** → "+ Capability":
+   _Push Notifications_ e _Background Modes_ (marcar _Remote notifications_).
+4. **Firebase Messaging na app** — o plugin `@capacitor/push-notifications`
+   devolve no iOS o token **APNs** cru, que o FCM não aceita. Em
+   `ios/App/Podfile`, dentro de `target 'App' do`, juntar
+   `pod 'FirebaseMessaging'` e correr `cd ios/App && pod install`. Depois,
+   em `ios/App/App/AppDelegate.swift`:
+
+   ```swift
+   import FirebaseCore
+   import FirebaseMessaging
+
+   // em application(_:didFinishLaunchingWithOptions:), antes do return:
+   FirebaseApp.configure()
+
+   // trocar os dois métodos de registo remoto por:
+   func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+       Messaging.messaging().apnsToken = deviceToken
+       Messaging.messaging().token { token, error in
+           if let error = error {
+               NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+           } else if let token = token {
+               NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: token)
+           }
+       }
+   }
+
+   func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+       NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+   }
+   ```
+
+   Assim o `registration` do plugin já recebe o token **FCM**, e
+   `src/lib/push-notifications.tsx` regista-o como `platform: "ios"` sem
+   mudar nada no código web.
+
+5. **Testar** — num iPhone real (o simulador não recebe push): entrar na
+   app, aceitar notificações, e no servidor `php artisan push:check <email>`.
 
 ---
 
@@ -504,6 +545,49 @@ gera um `.aab`/APK sem assinatura de release, que a Play Store rejeita).
 ```sh
 npm run cap:sync        # copia webDir + aplica capacitor.config + plugins
 ```
+
+---
+
+## Lojas (App Store / Google Play) — passos no Mac e nas consolas
+
+O código já cumpre as regras que dependem dele: apagar conta na app
+(`/perfil`) e página pública `/eliminar-conta`, "Iniciar sessão com Apple"
+na app iOS, denunciar conteúdo e bloquear utilizadores, página própria sem
+rede (`server.errorPath` → `capacitor/www/offline.html`), app iOS sem
+preços da subscrição dos restaurantes. Falta, fora do código:
+
+### Iniciar sessão com Apple (iOS)
+
+1. `npm install` (já inclui `@capawesome/capacitor-apple-sign-in`) e
+   `CAP_SERVER_URL=https://luku.ao npx cap sync ios`.
+2. Xcode → target App → Signing & Capabilities → "+ Capability" →
+   _Sign in with Apple_.
+3. (Recomendado, para revogar o acesso quando um cliente apaga a conta —
+   App Store 5.1.1(v)) Apple Developer → Keys → "+" → _Sign in with Apple_
+   → configurar com o App ID `com.luku.app` → descarregar o `.p8`. No Fly:
+
+   ```sh
+   fly secrets set -a luku-api APPLE_TEAM_ID=XXXXXXXXXX APPLE_KEY_ID=YYYYYYYYYY \
+     APPLE_PRIVATE_KEY="$(awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' AuthKey_YYYYYYYYYY.p8)"
+   ```
+
+   Sem isto o login funciona na mesma; só a revogação fica desligada.
+
+### Ficha das lojas e revisão
+
+- **Contas de demonstração** para os revisores (App Store Connect → App
+  Review Information; Play Console → App access): um cliente de teste e
+  uma conta de restaurante **sem** 2FA, com um restaurante de teste.
+- **Privacidade**: URL `https://luku.ao/privacidade`; eliminação de conta
+  `https://luku.ao/eliminar-conta`. Preencher as "App Privacy" (Apple) e
+  "Segurança dos dados" (Google): nome, email, telefone, morada,
+  localização aproximada/precisa (só com a app aberta), fotos/ficheiros
+  (comprovativos), identificadores do dispositivo (push), conteúdo
+  gerado pelo utilizador (avaliações) — sem rastreamento nem publicidade.
+- **Google Play, conta pessoal recente**: teste fechado com 12 testadores
+  durante 14 dias antes de pedir produção.
+- **Testar num telemóvel real** login (Google e Apple), push e a página
+  sem rede (modo avião) antes de submeter.
 
 ## Limitações deste modo (invólucro sobre servidor)
 
