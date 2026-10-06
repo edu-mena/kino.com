@@ -33,6 +33,7 @@ import { FollowsProvider } from "../lib/follows";
 import { NotificationsProvider } from "../lib/notifications";
 import { TablesProvider } from "../lib/tables";
 import { TutorialProvider } from "../lib/tutorial";
+import { OfflineBanner } from "../components/offline-banner";
 import { Toaster } from "../components/ui/sonner";
 import { RouteErrorBoundary } from "../components/route-error";
 import { RouteNotFound } from "../components/route-not-found";
@@ -192,6 +193,7 @@ function RootComponent() {
                                           <Outlet />
                                         </AuthGate>
                                         <PendingShareDialog />
+                                        <OfflineBanner />
                                         <Toaster />
                                       </TutorialProvider>
                                     </NotificationsProvider>

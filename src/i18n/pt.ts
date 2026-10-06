@@ -9,6 +9,10 @@
  * usuário (alias de endereço, pedidos especiais).
  */
 export const pt = {
+  offlineBanner: {
+    offline: "Sem ligação à internet — algumas ações não vão funcionar até voltar.",
+    restored: "Ligação restabelecida.",
+  },
   common: {
     loading: "A carregar...",
     back: "Voltar",

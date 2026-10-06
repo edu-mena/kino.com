@@ -2,6 +2,10 @@ import type { Dictionary } from "./index";
 
 /** English — mirrors the exact shape of `pt.ts`. */
 export const en: Dictionary = {
+  offlineBanner: {
+    offline: "No internet connection — some actions won't work until it's back.",
+    restored: "Connection restored.",
+  },
   common: {
     loading: "Loading...",
     back: "Back",
