@@ -60,6 +60,18 @@ return [
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     ],
 
+    // "Iniciar sessão com Apple" (ver AppleSignInService). `client_ids`:
+    // Bundle ID da app iOS (+ Services ID se houver login Apple na web),
+    // separados por vírgula. TEAM/KEY/PRIVATE_KEY (.p8 da conta Apple
+    // Developer, com "\n" escapados) só são precisos para revogar o acesso
+    // quando um cliente apaga a conta — sem eles o login funciona na mesma.
+    'apple' => [
+        'client_ids' => env('APPLE_CLIENT_IDS', 'com.luku.app'),
+        'team_id' => env('APPLE_TEAM_ID'),
+        'key_id' => env('APPLE_KEY_ID'),
+        'private_key' => env('APPLE_PRIVATE_KEY'),
+    ],
+
     // Web Push (ver App\Services\PushNotificationService) — só cobre browser
     // (Chrome/Edge/Firefox/Safari), não a app nativa Android/iOS (essa
     // precisaria de FCM/APNs, fora do escopo desta fase). Par de chaves

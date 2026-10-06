@@ -30,6 +30,7 @@
     "@capacitor/geolocation": "^8.2.2",
     "@capacitor/push-notifications": "^8.1.2",
     "@capacitor/status-bar": "^8.0.3",
+    "@capawesome/capacitor-apple-sign-in": "^0.1.4",
     "@capawesome/capacitor-google-sign-in": "^0.1.4",
     "@capgo/capacitor-share-target": "^8.0.53",
     "@hookform/resolvers": "^5.2.2",

@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ApiError, apiFetch, hasRealBackend } from "@/lib/api-client";
+import { requestAppleSignIn } from "@/lib/apple-identity";
 import { requestGoogleAuthorizationCode, requestGoogleIdToken } from "@/lib/google-identity";
 import { forgetPushOnLogout } from "@/lib/push-notifications";
 
@@ -25,6 +26,8 @@ type AuthContextType = {
   /** Abre o popup do Google e autentica — só isto existe como login de
    * cliente (ver plano de backend: sem email/senha para este papel). */
   loginWithGoogle: () => Promise<void>;
+  /** "Iniciar sessão com Apple" — só na app iOS (ver apple-identity.ts). */
+  loginWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   /** Descarrega um JSON com tudo o que a Luku guarda sobre a conta
    * (backend AccountController::export — direito de acesso, Lei 22/11). */
@@ -144,6 +147,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(mapUser(data.user));
   };
 
+  const loginWithApple = async () => {
+    const { data } = await apiFetch<{ data: { token: string; user: ApiUser } }>(
+      "/auth/apple/callback",
+      { method: "POST", body: await requestAppleSignIn() },
+    );
+    localStorage.setItem(TOKEN_KEY, data.token);
+    setUser(mapUser(data.user));
+  };
+
   const logout = async () => {
     if (!hasRealBackend) {
       localStorage.removeItem(DEMO_USER_KEY);
@@ -198,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoggedIn: user !== null,
         isLoading,
         loginWithGoogle,
+        loginWithApple,
         logout,
         exportData,
         deleteAccount,

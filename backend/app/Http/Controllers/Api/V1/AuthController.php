@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\V1\Concerns\IssuesAuthTokens;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Auth\AppleCallbackRequest;
 use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\GoogleCallbackRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
+use App\Services\AppleSignInService;
 use App\Services\GoogleOAuthService;
 use App\Services\SystemSecurityMonitor;
 use App\Services\TwoFactorService;
@@ -18,6 +20,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class AuthController extends Controller
@@ -59,6 +62,56 @@ class AuthController extends Controller
             ]);
         } elseif (! $user->google_id) {
             $user->update(['google_id' => $profile['sub']]);
+        }
+
+        return $this->issueTokenResponse($request, $user);
+    }
+
+    /**
+     * Login de CLIENTE com Apple (App Store, guideline 4.8: com login Google
+     * tem de haver também uma opção como a da Apple). Mesmo modelo do
+     * Google: conta encontrada pelo `sub` da Apple, senão ligada pelo email
+     * (só se a Apple o der como verificado), senão criada. O email pode ser
+     * um endereço de reencaminhamento privado da Apple — é verificado na
+     * mesma e funciona para os emails da Luku.
+     */
+    public function appleCallback(AppleCallbackRequest $request, AppleSignInService $apple): JsonResponse
+    {
+        try {
+            $profile = $apple->verifyIdToken($request->string('id_token'), $request->input('nonce'));
+        } catch (RuntimeException) {
+            return response()->json(['message' => 'Não foi possível continuar com a Apple. Tenta novamente.'], 422);
+        }
+
+        $user = User::query()->where('apple_id', $profile['sub'])->first();
+
+        if (! $user && $profile['email'] && $profile['email_verified']) {
+            $user = User::query()->where('email', $profile['email'])->where('role', 'customer')->first();
+            $user?->update(['apple_id' => $profile['sub']]);
+        }
+
+        if (! $user) {
+            if (! $profile['email'] || ! $profile['email_verified']) {
+                return response()->json(['message' => 'A Apple não partilhou um email verificado. Tenta novamente.'], 422);
+            }
+
+            $name = trim($request->input('given_name', '').' '.$request->input('family_name', ''));
+            $user = User::query()->create([
+                'role' => 'customer',
+                'name' => $name !== '' ? $name : Str::before($profile['email'], '@'),
+                'email' => $profile['email'],
+                'apple_id' => $profile['sub'],
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        // Guarda o refresh token (só se a chave .p8 estiver configurada) —
+        // é o que permite revogar o acesso quando a conta for apagada.
+        if ($request->filled('authorization_code')) {
+            $refresh = $apple->exchangeAuthorizationCode($request->string('authorization_code'), $profile['aud']);
+            if ($refresh) {
+                $user->forceFill(['apple_token' => ['refresh_token' => $refresh, 'client_id' => $profile['aud']]])->save();
+            }
         }
 
         return $this->issueTokenResponse($request, $user);

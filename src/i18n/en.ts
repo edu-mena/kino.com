@@ -1721,6 +1721,7 @@ export const en: Dictionary = {
     gateText: "Sign in with your Google account to see this restaurant's menu.",
     gateHint: "It's quick and free. Simulated in this demo.",
     continueWithGoogle: "Continue with Google",
+    continueWithApple: "Continue with Apple",
     signingIn: "Signing in...",
     signedInToast: "Signed in. Enjoy!",
     visitRestaurant: "Visit restaurant page",

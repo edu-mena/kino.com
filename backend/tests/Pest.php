@@ -63,43 +63,65 @@ function ownerOf(Restaurant $restaurant): User
 }
 
 /**
- * id_token do Google assinado de verdade (RS256) com uma chave de teste, e o
- * endpoint de chaves públicas do Google simulado com a chave correspondente
- * — o GoogleOAuthService valida a assinatura localmente (sem `tokeninfo`).
- * Claims por omissão: emissor Google, válido 1h, email verificado.
+ * id_tokens assinados de verdade (RS256) com uma chave fixa de teste
+ * (tests/fixtures), com o endpoint de chaves públicas do emissor simulado
+ * com a chave correspondente — o backend valida a assinatura localmente
+ * (JwksTokenVerifier), tal como em produção.
  */
-function googleTestKey()
+function testSigningKey()
 {
     static $key = null;
 
-    // Chave fixa SÓ de teste (tests/fixtures) — gerar uma com openssl_pkey_new
-    // falha no PHP de Windows sem openssl.cnf; e assim é mais rápido.
+    // Gerar uma com openssl_pkey_new falha no PHP de Windows sem
+    // openssl.cnf; uma fixa é também mais rápida.
     return $key ??= openssl_pkey_get_private(file_get_contents(__DIR__.'/fixtures/google-test-key.pem'));
+}
+
+/** Simula o JWKS de `$urlPattern` com a chave pública de teste. */
+function fakeJwks(string $urlPattern): void
+{
+    $details = openssl_pkey_get_details(testSigningKey());
+    $b64 = fn (string $bin) => rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
+
+    Http::fake([$urlPattern => Http::response(['keys' => [[
+        'kty' => 'RSA', 'alg' => 'RS256', 'use' => 'sig', 'kid' => 'test-kid',
+        'n' => $b64($details['rsa']['n']), 'e' => $b64($details['rsa']['e']),
+    ]]])]);
 }
 
 /** Assina um payload exatamente como dado (sem claims por omissão). */
 function googleIdTokenFromPayload(array $payload): string
 {
-    return JWT::encode($payload, googleTestKey(), 'RS256', 'test-kid');
+    return JWT::encode($payload, testSigningKey(), 'RS256', 'test-kid');
 }
 
+/** Claims por omissão: emissor Google, válido 1h, email verificado. */
 function googleIdToken(array $claims = []): string
 {
-    $key = googleTestKey();
-    $details = openssl_pkey_get_details($key);
-    $b64 = fn (string $bin) => rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
+    fakeJwks('www.googleapis.com/oauth2/v3/certs');
 
-    Http::fake(['www.googleapis.com/oauth2/v3/certs' => Http::response(['keys' => [[
-        'kty' => 'RSA', 'alg' => 'RS256', 'use' => 'sig', 'kid' => 'test-kid',
-        'n' => $b64($details['rsa']['n']), 'e' => $b64($details['rsa']['e']),
-    ]]])]);
-
-    return JWT::encode([
+    return googleIdTokenFromPayload([
         'iss' => 'https://accounts.google.com',
         'aud' => config('services.google.web_client_id'),
         'iat' => time(),
         'exp' => time() + 3600,
         'email_verified' => true,
         ...$claims,
-    ], $key, 'RS256', 'test-kid');
+    ]);
+}
+
+/** Claims por omissão: emissor Apple, Bundle ID da app, válido 1h, email
+ * verificado (a Apple manda-o como string). */
+function appleIdToken(array $claims = []): string
+{
+    fakeJwks('appleid.apple.com/auth/keys');
+
+    return googleIdTokenFromPayload([
+        'iss' => 'https://appleid.apple.com',
+        'aud' => 'com.luku.app',
+        'iat' => time(),
+        'exp' => time() + 3600,
+        'email_verified' => 'true',
+        ...$claims,
+    ]);
 }

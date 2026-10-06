@@ -2,12 +2,9 @@
 
 namespace App\Services;
 
-use Firebase\JWT\JWK;
-use Firebase\JWT\JWT;
-use Illuminate\Support\Facades\Cache;
+use App\Support\JwksTokenVerifier;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
-use Throwable;
 
 /**
  * Troca direta HTTP com os endpoints do Google (sem SDK pesado — ver plano).
@@ -22,6 +19,8 @@ class GoogleOAuthService
     private const JWKS_CACHE_KEY = 'google-oauth-jwks';
 
     private const ISSUERS = ['accounts.google.com', 'https://accounts.google.com'];
+
+    public function __construct(private readonly JwksTokenVerifier $jwks) {}
 
     /**
      * @return array{sub: string, email: string, name: string, picture: ?string}
@@ -66,7 +65,7 @@ class GoogleOAuthService
         // endpoint de debug do Google, sem garantia de disponibilidade nem
         // de rate limit em produção. `JWT::decode` valida assinatura (RS256),
         // `exp`, `nbf` e `iat`; o resto (emissor, audiência, email) é aqui.
-        $payload = $this->decodeWithGoogleKeys($idToken);
+        $payload = $this->jwks->decode($idToken, self::JWKS_URL, self::JWKS_CACHE_KEY);
 
         if (! in_array($payload['iss'] ?? null, self::ISSUERS, true)) {
             throw new RuntimeException('google_id_token_issuer_mismatch');
@@ -104,48 +103,5 @@ class GoogleOAuthService
             'name' => $payload['name'] ?? $payload['email'],
             'picture' => $payload['picture'] ?? null,
         ];
-    }
-
-    /** @return array<string, mixed> */
-    private function decodeWithGoogleKeys(string $idToken): array
-    {
-        // Relógios de telemóvel desacertados uns segundos não devem chumbar
-        // um id_token acabado de emitir (`iat` "no futuro").
-        JWT::$leeway = 60;
-
-        try {
-            return (array) JWT::decode($idToken, JWK::parseKeySet($this->googleKeys()));
-        } catch (Throwable $e) {
-            // O Google roda as chaves periodicamente: um `kid` desconhecido
-            // pode só querer dizer que a cache ficou velha — uma nova
-            // tentativa com as chaves acabadas de buscar, nunca mais.
-            if (! str_contains($e->getMessage(), '"kid"')) {
-                throw new RuntimeException('google_id_token_invalid', previous: $e);
-            }
-        }
-
-        try {
-            return (array) JWT::decode($idToken, JWK::parseKeySet($this->googleKeys(refresh: true)));
-        } catch (Throwable $e) {
-            throw new RuntimeException('google_id_token_invalid', previous: $e);
-        }
-    }
-
-    /** JWKS do Google, em cache (as chaves duram dias; 6h é conservador). */
-    private function googleKeys(bool $refresh = false): array
-    {
-        if ($refresh) {
-            Cache::forget(self::JWKS_CACHE_KEY);
-        }
-
-        return Cache::remember(self::JWKS_CACHE_KEY, now()->addHours(6), function () {
-            $response = Http::timeout(5)->get(self::JWKS_URL);
-
-            if ($response->failed() || ! is_array($response->json('keys'))) {
-                throw new RuntimeException('google_jwks_unavailable');
-            }
-
-            return $response->json();
-        });
     }
 }

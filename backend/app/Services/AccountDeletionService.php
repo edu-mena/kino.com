@@ -9,7 +9,9 @@ use App\Models\Reservation;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Throwable;
 
 /**
  * "Apagar a minha conta" (auditoria de segurança, Fase 3) — exigido pela
@@ -29,6 +31,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class AccountDeletionService
 {
     public const ANONYMOUS_NAME = 'Cliente removido';
+
+    public function __construct(private readonly AppleSignInService $apple) {}
 
     public function delete(User $user): void
     {
@@ -83,5 +87,17 @@ class AccountDeletionService
 
             $user->forceDelete();
         });
+
+        // Apple (guideline 5.1.1(v)): revogar o acesso dado por "Iniciar
+        // sessão com Apple". Depois de apagar, e sem nunca bloquear a
+        // eliminação — se a Apple falhar, a conta já não existe na Luku.
+        $appleToken = $user->apple_token;
+        if (is_array($appleToken) && isset($appleToken['refresh_token'], $appleToken['client_id'])) {
+            try {
+                $this->apple->revoke($appleToken['refresh_token'], $appleToken['client_id']);
+            } catch (Throwable $e) {
+                Log::warning('apple: revogação falhou ao apagar conta', ['error' => $e->getMessage()]);
+            }
+        }
     }
 }

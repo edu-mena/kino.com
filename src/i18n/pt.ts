@@ -1726,6 +1726,7 @@ export const pt = {
     gateText: "Entre com a sua conta Google para ver o cardápio deste restaurante.",
     gateHint: "É rápido e gratuito. Simulado nesta demonstração.",
     continueWithGoogle: "Continuar com o Google",
+    continueWithApple: "Continuar com a Apple",
     signingIn: "A entrar...",
     signedInToast: "Sessão iniciada. Bom apetite!",
     visitRestaurant: "Visitar página do restaurante",

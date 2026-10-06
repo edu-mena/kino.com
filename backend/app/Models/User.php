@@ -27,10 +27,10 @@ class User extends Authenticatable
 
     protected $fillable = [
         'role', 'name', 'email', 'phone', 'avatar_url',
-        'google_id', 'password', 'email_verified_at', 'last_login_at',
+        'google_id', 'apple_id', 'password', 'email_verified_at', 'last_login_at',
     ];
 
-    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
+    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'apple_token'];
 
     protected function casts(): array
     {
@@ -44,6 +44,9 @@ class User extends Authenticatable
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
+            // Refresh token da Apple + client_id (para revogar ao apagar a
+            // conta — ver AppleSignInService), cifrados.
+            'apple_token' => 'encrypted:array',
         ];
     }
 

@@ -50,6 +50,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
     Route::post('google/callback', [AuthController::class, 'googleCallback'])->middleware('throttle:auth');
+    Route::post('apple/callback', [AuthController::class, 'appleCallback'])->middleware('throttle:auth');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:auth');
     // 2º passo do login da equipa com 2FA ligado (sem sessão — só o challenge).
     Route::post('2fa/verify', [StaffTwoFactorController::class, 'verify'])->middleware('throttle:auth');

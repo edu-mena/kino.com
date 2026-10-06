@@ -1740,6 +1740,7 @@ export const fr: Dictionary = {
     gateText: "Connectez-vous avec votre compte Google pour voir la carte de ce restaurant.",
     gateHint: "C'est rapide et gratuit. Simulé dans cette démo.",
     continueWithGoogle: "Continuer avec Google",
+    continueWithApple: "Continuer avec Apple",
     signingIn: "Connexion...",
     signedInToast: "Connecté. Bon appétit !",
     visitRestaurant: "Voir la page du restaurant",
