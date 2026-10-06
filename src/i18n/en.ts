@@ -1755,6 +1755,8 @@ export const en: Dictionary = {
     noSession: "Choose a restaurant first at",
   },
   menuQrDialog: {
+    scanHint: "Point your phone camera here to see the menu",
+    downloadFailedToast: "Couldn't create the image. Please try again.",
     title: "Menu QR code",
     description: "Print it for the table or the window. Scanning it opens the menu.",
     copyLink: "Copy link",

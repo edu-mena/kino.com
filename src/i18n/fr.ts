@@ -1776,6 +1776,8 @@ export const fr: Dictionary = {
     noSession: "Choisissez d'abord un restaurant sur",
   },
   menuQrDialog: {
+    scanHint: "Pointez l'appareil photo de votre téléphone pour voir le menu",
+    downloadFailedToast: "Impossible de générer l'image. Réessayez.",
     title: "QR code de la carte",
     description:
       "Imprimez-le pour la table ou la vitrine. En le scannant, le client voit la carte.",

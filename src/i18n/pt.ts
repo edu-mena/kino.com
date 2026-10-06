@@ -1762,6 +1762,8 @@ export const pt = {
     noSession: "Escolha um restaurante primeiro em",
   },
   menuQrDialog: {
+    scanHint: "Aponte a câmara do telemóvel para ver o cardápio",
+    downloadFailedToast: "Não foi possível gerar a imagem. Tente de novo.",
     title: "QR Code do cardápio",
     description: "Imprima e coloque na mesa ou na montra. Ao ler, o cliente vê o cardápio.",
     copyLink: "Copiar link",
