@@ -45,8 +45,17 @@ class RestaurantController extends Controller
         // por serialize()/unserialize() de verdade — um array plano nunca
         // tem esse problema, e continua válido em qualquer driver.
         $payload = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($request) {
+            // Demonstração (revisores das lojas) fora da listagem — exceto a
+            // quem pesquisar o NOME EXATO dele (é assim que o revisor o
+            // encontra, ver notas de revisão). A chave de cache já inclui a
+            // query string, por isso isto nunca vaza para outras pesquisas.
+            $exactSearch = mb_strtolower(trim((string) $request->input('filter.search', '')));
             $restaurants = QueryBuilder::for(Restaurant::class)
                 ->with('subscription')
+                ->where(fn ($q) => $q->where('is_demo', false)->when(
+                    $exactSearch !== '',
+                    fn ($q) => $q->orWhereRaw('lower(name) = ?', [$exactSearch]),
+                ))
                 ->allowedFilters(
                     AllowedFilter::exact('city'),
                     AllowedFilter::exact('cuisine'),

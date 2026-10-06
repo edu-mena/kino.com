@@ -44,6 +44,7 @@ class PackageTypeController extends Controller
     {
         $packages = $packageType->restaurantPackages()
             ->where('is_active', true)
+            ->whereHas('restaurant', fn ($q) => $q->listed())
             ->with('restaurant', 'packageType')
             ->get();
 

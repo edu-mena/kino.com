@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasPublicUuid;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -55,6 +56,16 @@ class Restaurant extends Model
         return $this->belongsToMany(User::class, 'restaurant_users')
             ->withPivot('role_in_restaurant')
             ->withTimestamps();
+    }
+
+    /**
+     * Fora da descoberta pública: tira os restaurantes de demonstração (os
+     * dos revisores das lojas, ver `store:demo-restaurant`). `is_demo` não
+     * está em $fillable de propósito — nunca muda pela API.
+     */
+    public function scopeListed(Builder $query): Builder
+    {
+        return $query->where('is_demo', false);
     }
 
     public function hours(): HasMany

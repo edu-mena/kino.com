@@ -31,7 +31,7 @@ class SystemStatsController extends Controller
      * já usada em SendRestaurantDailyDigestsJob. */
     public function siteStats(): JsonResponse
     {
-        $partnerRestaurants = Restaurant::query()
+        $partnerRestaurants = Restaurant::query()->listed()
             ->whereDoesntHave('subscription', fn ($q) => $q->where('status', 'suspended'))
             ->count();
 
@@ -40,7 +40,7 @@ class SystemStatsController extends Controller
         return response()->json(['data' => [
             'activeCustomers' => User::query()->where('role', 'customer')->count(),
             'partnerRestaurants' => $partnerRestaurants,
-            'menuDishes' => MenuItem::query()->count(),
+            'menuDishes' => MenuItem::query()->whereHas('restaurant', fn ($q) => $q->listed())->count(),
             'averageRating' => round($averageRating, 1),
         ]]);
     }

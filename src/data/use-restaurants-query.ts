@@ -1,7 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchApiMenus } from "./api-menus";
 import { fetchApiRestaurantPackages } from "./api-restaurant-packages";
-import { fetchApiMenuItems, fetchApiRestaurant, fetchApiRestaurants } from "./api-restaurants";
+import {
+  fetchApiMenuItems,
+  fetchApiRestaurant,
+  fetchApiRestaurants,
+  searchApiRestaurants,
+} from "./api-restaurants";
 import { getAllRestaurants, getMenuItemsByRestaurant, getRestaurant } from "./helpers";
 import { getMenusByRestaurant } from "./menus-store";
 import { getRestaurantPackagesByRestaurant } from "./restaurant-packages-store";
@@ -26,6 +31,18 @@ export function useRestaurants() {
     queryKey: ["restaurants"],
     queryFn: () => (hasRealBackend ? fetchApiRestaurants() : Promise.resolve(getAllRestaurants())),
     staleTime: 30_000,
+  });
+}
+
+/** Resultados da pesquisa no servidor (ver `searchApiRestaurants`) — só
+ * com backend real e a partir de 3 letras. */
+export function useRestaurantServerSearch(query: string) {
+  const q = query.trim();
+  return useQuery({
+    queryKey: ["restaurants", "search", q.toLowerCase()],
+    queryFn: () => searchApiRestaurants(q),
+    enabled: hasRealBackend && q.length >= 3,
+    staleTime: 60_000,
   });
 }
 

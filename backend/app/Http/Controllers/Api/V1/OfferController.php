@@ -19,7 +19,10 @@ class OfferController extends Controller
     /** Feed global (carrossel da home) — ativas agora, de qualquer restaurante. */
     public function index(): AnonymousResourceCollection
     {
-        $offers = Offer::query()->with('restaurant')->active()->latest()->get();
+        // Feed global: sem as promoções do restaurante de demonstração.
+        $offers = Offer::query()->with('restaurant')->active()
+            ->where(fn ($q) => $q->whereNull('restaurant_id')->orWhereHas('restaurant', fn ($r) => $r->listed()))
+            ->latest()->get();
 
         return OfferResource::collection($offers);
     }

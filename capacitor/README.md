@@ -576,8 +576,13 @@ preços da subscrição dos restaurantes. Falta, fora do código:
 ### Ficha das lojas e revisão
 
 - **Contas de demonstração** para os revisores (App Store Connect → App
-  Review Information; Play Console → App access): um cliente de teste e
-  uma conta de restaurante **sem** 2FA, com um restaurante de teste.
+  Review Information; Play Console → App access): correr no servidor
+  `fly ssh console -a luku-api -C "php artisan store:demo-restaurant"`. Cria
+  o restaurante **Luku Demo** — escondido da descoberta pública, só aparece
+  a quem pesquisar esse nome exato — e a conta do dono (sem 2FA); mostra a
+  senha uma vez (correr de novo gera outra). Nas notas: usar essa conta no
+  painel do restaurante, e para pedidos de teste entrar com qualquer conta
+  Apple/Google e pesquisar "Luku Demo".
 - **Privacidade**: URL `https://luku.ao/privacidade`; eliminação de conta
   `https://luku.ao/eliminar-conta`. Preencher as "App Privacy" (Apple) e
   "Segurança dos dados" (Google): nome, email, telefone, morada,

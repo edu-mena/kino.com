@@ -18,7 +18,10 @@ class StoryController extends Controller
     /** Feed global — institucionais Luku + todos os restaurantes, últimas 24h. */
     public function index(): AnonymousResourceCollection
     {
-        $stories = RestaurantStory::query()->with('restaurant')->fresh()->latest()->get();
+        // Feed global: sem as stories do restaurante de demonstração.
+        $stories = RestaurantStory::query()->with('restaurant')->fresh()
+            ->where(fn ($q) => $q->whereNull('restaurant_id')->orWhereHas('restaurant', fn ($r) => $r->listed()))
+            ->latest()->get();
 
         return StoryResource::collection($stories);
     }

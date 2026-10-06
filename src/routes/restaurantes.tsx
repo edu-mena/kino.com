@@ -29,7 +29,7 @@ import {
 import type { Restaurant } from "@/data/types";
 import { addressProvince } from "@/data/helpers";
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
-import { useRestaurants } from "@/data/use-restaurants-query";
+import { useRestaurantServerSearch, useRestaurants } from "@/data/use-restaurants-query";
 import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
 import { haversineKm } from "@/lib/geo";
@@ -98,7 +98,15 @@ function Restaurantes() {
   const [view, setView] = useState<"grid" | "map">("grid");
   // Sem backend real (demo), resolve-se já com o mock — nunca fica a
   // "carregar" nesse caso (ver useRestaurants, hasRealBackend).
-  const { data: allRestaurants = [], isLoading: restaurantsLoading } = useRestaurants();
+  const { data: listedRestaurants = [], isLoading: restaurantsLoading } = useRestaurants();
+  // Junta o que só o servidor encontra pelo nome exato (o restaurante de
+  // demonstração dos revisores das lojas — ver searchApiRestaurants).
+  const { data: serverMatches = [] } = useRestaurantServerSearch(debouncedQuery);
+  const allRestaurants = useMemo(() => {
+    const known = new Set(listedRestaurants.map((r) => r.id));
+    const extra = serverMatches.filter((r) => !known.has(r.id));
+    return extra.length ? [...listedRestaurants, ...extra] : listedRestaurants;
+  }, [listedRestaurants, serverMatches]);
   const myProvince = selectedAddress ? addressProvince(selectedAddress.line2) : undefined;
 
   useEffect(() => {

@@ -197,6 +197,17 @@ export async function fetchApiRestaurants(): Promise<Restaurant[]> {
   return data.map(mapApiRestaurant);
 }
 
+/** Pesquisa feita NO SERVIDOR — a lista acima já chega para filtrar por
+ * nome no browser, mas o restaurante de demonstração dos revisores das
+ * lojas não vem nela: só aparece a quem pesquisar o nome exato dele
+ * (backend RestaurantController::index, `is_demo`). */
+export async function searchApiRestaurants(query: string): Promise<Restaurant[]> {
+  const { data } = await apiFetch<{ data: ApiRestaurant[] }>(
+    `/restaurants?filter[search]=${encodeURIComponent(query)}`,
+  );
+  return data.map(mapApiRestaurant);
+}
+
 export async function fetchApiRestaurant(id: string): Promise<Restaurant | undefined> {
   try {
     const { data } = await apiFetch<{ data: ApiRestaurant }>(`/restaurants/${id}`);
