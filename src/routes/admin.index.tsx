@@ -21,8 +21,8 @@ import { KpiTile, StatCard, StatSection, TrendArea, TrendBadge } from "@/compone
 import { AdminPageHeading } from "@/components/admin-shell";
 import { ProfileViewersCard } from "@/components/profile-viewers-card";
 import { useOwnRestaurantSubscription } from "@/data/api-subscriptions";
-import { getReviewsForRestaurant } from "@/data/helpers";
 import { PLAN_PRICE } from "@/data/subscriptions-store";
+import { useReviews } from "@/data/use-reviews";
 import { useTranslation } from "@/i18n";
 import { hasRealBackend } from "@/lib/api-client";
 import { useCart } from "@/lib/cart";
@@ -56,6 +56,9 @@ function AdminDashboard() {
   const { availableByRestaurant } = useCouriers();
   const { byRestaurant: subByRestaurant } = useSubscriptions();
   const realSub = useOwnRestaurantSubscription(hasRealBackend ? restaurant?.id : undefined);
+  // Avaliações reais (API) com backend — `getReviewsForRestaurant` só
+  // conhecia as do mock.
+  const reviews = useReviews(restaurant?.id);
   const { t, locale } = useTranslation();
 
   const restaurantId = restaurant?.id ?? "";
@@ -111,7 +114,6 @@ function AdminDashboard() {
   const menuItems = items.filter((m) => m.restaurantId === restaurant.id);
   const unavailableCount = menuItems.filter((m) => !m.isAvailable).length;
 
-  const reviews = getReviewsForRestaurant(restaurant.id);
   const offers = offersByRestaurant(restaurant.id);
   const stories = storiesByRestaurant(restaurant.id);
 

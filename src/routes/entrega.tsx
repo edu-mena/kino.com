@@ -67,6 +67,7 @@ import { groupByRecency, modifiedAt } from "@/lib/recency-groups";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { useMarkKindReadOnView } from "@/lib/notifications";
 import { useTranslation } from "@/i18n";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 const MODE_ICON: Record<FulfillmentType, typeof Bike> = {
   delivery: Bike,
@@ -116,6 +117,7 @@ function etaDate(order: CartOrder) {
 }
 
 function Entrega() {
+  useLiveCatalogVersion(); // getRestaurant() lê o catálogo real (live-catalog)
   const { pedido: preselect } = Route.useSearch();
   const { orders: allOrders } = useCart();
   const { user } = useAuth();

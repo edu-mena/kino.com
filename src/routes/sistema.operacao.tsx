@@ -20,6 +20,7 @@ import { formatKz } from "@/lib/format";
 import { useReservations } from "@/lib/reservations";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 import { BCP47, last8Weeks } from "@/lib/week";
+import { useRestaurants } from "@/data/use-restaurants-query";
 
 export const Route = createFileRoute("/sistema/operacao")({
   head: () => ({ meta: [{ title: "Operação — Sistema Luku.com" }] }),
@@ -55,7 +56,8 @@ function SistemaOperacao() {
   const { t, locale } = useTranslation();
   const bcp = BCP47[locale];
 
-  const restaurants = useMemo(() => getAllRestaurants(), []);
+  // Restaurantes reais (API) — antes `getAllRestaurants()` lia o mock uma vez.
+  const { data: restaurants = [] } = useRestaurants();
   const nameOf = (id: string) => restaurants.find((r) => r.id === id)?.name ?? id;
 
   const [tab, setTab] = useState<Tab>("pedidos");

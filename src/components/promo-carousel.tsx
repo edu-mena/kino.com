@@ -19,6 +19,7 @@ import { useMenuItems } from "@/data/use-menu-items";
 import { useOffers } from "@/data/use-offers";
 import { formatKz } from "@/lib/format";
 import { translateOffer, useTranslation } from "@/i18n";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 const MAX_SLIDES = 8;
 
@@ -322,7 +323,14 @@ export function PromoCarousel() {
   const offers = useOffers();
   const { items: menuItems } = useMenuItems();
   const promotedDishes = useMemo(() => menuItems.filter((item) => item.isPromoted), [menuItems]);
-  const slides = useMemo(() => buildSlides(t, offers, promotedDishes), [t, offers, promotedDishes]);
+  // buildSlides lê o restaurante de cada oferta/prato com getRestaurant(),
+  // que vem do catálogo real (live-catalog) — refaz quando ele chega.
+  const catalogVersion = useLiveCatalogVersion();
+  const slides = useMemo(
+    () => buildSlides(t, offers, promotedDishes),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: ver acima
+    [t, offers, promotedDishes, catalogVersion],
+  );
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

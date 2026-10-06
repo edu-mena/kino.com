@@ -96,3 +96,17 @@ test('stories e estatísticas do site não incluem o restaurante de demonstraç�
     $this->getJson('/api/v1/stories')->assertJsonCount(1, 'data');
     $this->getJson('/api/v1/system/site-stats')->assertJsonPath('data.partnerRestaurants', 1);
 });
+
+test('a listagem pagina sem erros mesmo com restaurantes ainda sem avaliação (rating nulo)', function () {
+    Restaurant::factory()->count(5)->create(['rating' => null]);
+
+    $first = $this->getJson('/api/v1/restaurants?per_page=2')->assertOk();
+    $seen = collect($first->json('data'))->pluck('id');
+    $page = 2;
+    while ($page <= $first->json('meta.last_page')) {
+        $seen = $seen->merge($this->getJson("/api/v1/restaurants?per_page=2&page={$page}")->assertOk()->json('data.*.id'));
+        $page++;
+    }
+
+    expect($seen->unique()->count())->toBe(5);
+});

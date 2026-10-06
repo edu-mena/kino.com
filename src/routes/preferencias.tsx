@@ -18,6 +18,9 @@ import { getAllIngredientNames, getCuisines } from "@/data/helpers";
 import { RESTRICTION_PACKAGES, RESTRICTION_PACKAGE_LABELS } from "@/lib/dietary-packages";
 import { usePreferences } from "@/lib/preferences";
 import { useTranslation } from "@/i18n";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
+import { useMenuItems } from "@/data/use-menu-items";
+import { useRestaurants } from "@/data/use-restaurants-query";
 
 export const Route = createFileRoute("/preferencias")({
   head: () => ({
@@ -48,7 +51,12 @@ function IngredientPicker({
   tone: "primary" | "destructive";
 }) {
   const { t } = useTranslation();
-  const allIngredients = useMemo(() => getAllIngredientNames(), []);
+  // Ingredientes de todos os pratos reais (useMenuItems carrega-os da API e
+  // alimenta o catálogo que getAllIngredientNames lê).
+  const { items: allItems } = useMenuItems();
+  const catalogVersion = useLiveCatalogVersion();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- recalcula quando chegam os pratos reais
+  const allIngredients = useMemo(() => getAllIngredientNames(), [allItems, catalogVersion]);
   const [query, setQuery] = useState("");
   // Ingrediente digitado sem nenhum match no cardápio, aguardando confirmação
   // do usuário antes de ser adicionado como está.
@@ -229,7 +237,10 @@ function RestrictionPackages() {
 function CuisinePackages() {
   const { t } = useTranslation();
   const { cuisinePreferences, setCuisinePreferences } = usePreferences();
-  const cuisines = useMemo(() => getCuisines(), []);
+  const { data: realRestaurants } = useRestaurants();
+  const catalogVersion = useLiveCatalogVersion();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- recalcula quando chegam os restaurantes reais
+  const cuisines = useMemo(() => getCuisines(), [realRestaurants, catalogVersion]);
 
   const toggle = (cuisine: string) => {
     setCuisinePreferences(

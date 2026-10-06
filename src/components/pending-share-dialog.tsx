@@ -10,6 +10,7 @@ import { formatKz } from "@/lib/format";
 import { orderStatusLabel } from "@/lib/order-status";
 import { getManagedRestaurantId, usePendingShare } from "@/lib/pending-share";
 import { useTranslation } from "@/i18n";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 type Purpose = "proof" | "invoice";
 type Step = "purpose" | "restaurant" | "order";
@@ -24,6 +25,7 @@ type Step = "purpose" | "restaurant" | "order";
  * e por fim o pedido em si — escolher já anexa e fecha.
  */
 export function PendingShareDialog() {
+  useLiveCatalogVersion(); // getRestaurant() lê o catálogo real (live-catalog)
   const { t } = useTranslation();
   const { pendingShare, clearPendingShare } = usePendingShare();
   const { user } = useAuth();

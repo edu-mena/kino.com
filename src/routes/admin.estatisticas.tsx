@@ -23,7 +23,9 @@ import {
   type StatBarRow,
 } from "@/components/admin-stats";
 import { AdminPageHeading, PlanGate } from "@/components/admin-shell";
-import { getMenuItem, getReviewsForRestaurant } from "@/data/helpers";
+import { getMenuItem } from "@/data/helpers";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
+import { useReviews } from "@/data/use-reviews";
 import { useTranslation } from "@/i18n";
 import { lineName, lineUnitPrice, useCart, type CartOrder } from "@/lib/cart";
 import { customerKey } from "@/lib/customer";
@@ -62,6 +64,11 @@ function AdminEstatisticas() {
   const { reservations } = useReservations();
   const { t, locale } = useTranslation();
   const [period, setPeriod] = useState<Period>("90");
+  // Categoria dos pratos: getMenuItem() lê o catálogo real (live-catalog),
+  // preenchido quando o painel carrega o cardápio — refaz quando chega.
+  const catalogVersion = useLiveCatalogVersion();
+  // Avaliações reais (API) — `getReviewsForRestaurant` só conhecia o mock.
+  const reviews = useReviews(restaurant?.id);
 
   const bcp = BCP47[locale];
 
@@ -346,12 +353,9 @@ function AdminEstatisticas() {
       newReturning,
       topSpenders,
     };
-  }, [mineOrders, mineResv, period, orderTotal, orderSubtotal, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: ver acima
+  }, [mineOrders, mineResv, period, orderTotal, orderSubtotal, t, catalogVersion]);
 
-  const reviews = useMemo(
-    () => (restaurant ? getReviewsForRestaurant(restaurant.id) : []),
-    [restaurant],
-  );
   const ratingRows = useMemo<StatBarRow[]>(() => {
     return [5, 4, 3, 2, 1].map((stars) => {
       const count = reviews.filter((r) => r.rating === stars).length;

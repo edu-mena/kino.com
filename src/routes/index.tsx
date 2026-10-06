@@ -22,6 +22,7 @@ import { useLocation } from "@/lib/location";
 import { usePreferences } from "@/lib/preferences";
 import { buildRecommendedDishes } from "@/lib/recommend-dishes";
 import { useTranslation } from "@/i18n";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -174,6 +175,9 @@ function SectionHeading({
 function HomeLoggedIn() {
   const { t } = useTranslation();
   const { items } = useMenuItems();
+  // Restaurantes/pratos reais chegam da API depois do 1º render — os
+  // helpers síncronos (getRestaurant...) leem-nos de live-catalog.
+  const catalogVersion = useLiveCatalogVersion();
   const {
     cuisinePreferences,
     excludedIngredients,
@@ -220,6 +224,7 @@ function HomeLoggedIn() {
         favoriteIngredients,
         limit: 10,
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: getRestaurant() lê o catálogo real, que chega depois
     [
       items,
       selectedAddress,
@@ -229,6 +234,7 @@ function HomeLoggedIn() {
       favoriteDishIds,
       favoriteIngredients,
       t,
+      catalogVersion,
     ],
   );
 

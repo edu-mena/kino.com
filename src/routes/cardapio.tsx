@@ -4,6 +4,7 @@ import { MenuBrowser } from "@/components/menu-browser";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import { getRestaurant } from "@/data/helpers";
 import { useTranslation } from "@/i18n";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 type CardapioSearch = { categoria?: string | undefined; restaurante?: string | undefined };
 
@@ -29,6 +30,7 @@ export const Route = createFileRoute("/cardapio")({
 });
 
 function Cardapio() {
+  useLiveCatalogVersion(); // getRestaurant() lê o catálogo real (live-catalog)
   const { restaurante, categoria } = Route.useSearch();
   const restaurantFilter = restaurante ? getRestaurant(restaurante) : undefined;
   const { t } = useTranslation();

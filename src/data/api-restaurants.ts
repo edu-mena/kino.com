@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api-client";
+import { rememberMenuItems, rememberRestaurants } from "./live-catalog";
 import type {
   FulfillmentType,
   MenuItem,
@@ -192,9 +193,23 @@ export function mapApiMenuItem(m: ApiMenuItem, restaurantId?: string): MenuItem 
   };
 }
 
+const MAX_RESTAURANT_PAGES = 20;
+
+/** Todos os restaurantes listados (página a página, 100 de cada vez) —
+ * antes só vinha a 1ª página (20), e acima disso o resto nunca aparecia.
+ * Alimenta também o catálogo real dos helpers síncronos (live-catalog). */
 export async function fetchApiRestaurants(): Promise<Restaurant[]> {
-  const { data } = await apiFetch<{ data: ApiRestaurant[] }>("/restaurants");
-  return data.map(mapApiRestaurant);
+  const all: Restaurant[] = [];
+  for (let page = 1; page <= MAX_RESTAURANT_PAGES; page += 1) {
+    const { data, meta } = await apiFetch<{
+      data: ApiRestaurant[];
+      meta?: { last_page?: number };
+    }>(`/restaurants?per_page=100&page=${page}`);
+    all.push(...data.map(mapApiRestaurant));
+    if (!meta?.last_page || page >= meta.last_page) break;
+  }
+  rememberRestaurants(all);
+  return all;
 }
 
 /** Pesquisa feita NO SERVIDOR — a lista acima já chega para filtrar por
@@ -205,13 +220,17 @@ export async function searchApiRestaurants(query: string): Promise<Restaurant[]>
   const { data } = await apiFetch<{ data: ApiRestaurant[] }>(
     `/restaurants?filter[search]=${encodeURIComponent(query)}`,
   );
-  return data.map(mapApiRestaurant);
+  const list = data.map(mapApiRestaurant);
+  rememberRestaurants(list);
+  return list;
 }
 
 export async function fetchApiRestaurant(id: string): Promise<Restaurant | undefined> {
   try {
     const { data } = await apiFetch<{ data: ApiRestaurant }>(`/restaurants/${id}`);
-    return mapApiRestaurant(data);
+    const restaurant = mapApiRestaurant(data);
+    rememberRestaurants([restaurant]);
+    return restaurant;
   } catch {
     return undefined;
   }
@@ -221,7 +240,9 @@ export async function fetchApiMenuItems(restaurantId: string): Promise<MenuItem[
   const { data } = await apiFetch<{ data: ApiMenuItem[] }>(
     `/restaurants/${restaurantId}/menu-items`,
   );
-  return data.map((m) => mapApiMenuItem(m, restaurantId));
+  const items = data.map((m) => mapApiMenuItem(m, restaurantId));
+  rememberMenuItems(items);
+  return items;
 }
 
 /** UM prato pelo próprio id — `/prato/$dishId` só tem o id do prato, nunca
@@ -230,7 +251,9 @@ export async function fetchApiMenuItems(restaurantId: string): Promise<MenuItem[
 export async function fetchApiMenuItem(id: string): Promise<MenuItem | undefined> {
   try {
     const { data } = await apiFetch<{ data: ApiMenuItem }>(`/menu-items/${id}`);
-    return mapApiMenuItem(data);
+    const item = mapApiMenuItem(data);
+    rememberMenuItems([item]);
+    return item;
   } catch {
     return undefined;
   }

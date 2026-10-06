@@ -69,7 +69,12 @@ class RestaurantController extends Controller
                 )
                 ->allowedSorts('name', 'rating', 'created_at')
                 ->defaultSort('-is_featured', '-rating')
-                ->cursorPaginate($request->integer('per_page', 20));
+                // Páginas numeradas, não cursor: a ordenação inclui `rating`,
+                // nulo nos restaurantes ainda sem avaliações, e a paginação
+                // por cursor sobre uma coluna com nulos rebentava (500) logo
+                // na 2ª página. Máximo 100 por página.
+                ->paginate(min(max($request->integer('per_page', 20), 1), 100))
+                ->withQueryString();
 
             return RestaurantResource::collection($restaurants)->response()->getData(true);
         });

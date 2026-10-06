@@ -15,22 +15,16 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LocationFilterSelect, matchesLocation } from "@/components/search-filters";
-import {
-  addressProvince,
-  getAllRestaurants,
-  getMenuCategories,
-  getRestaurant,
-} from "@/data/helpers";
+import { addressProvince, getRestaurant } from "@/data/helpers";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 import type { MenuItem, Restaurant } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
+import { useRestaurantServerSearch, useRestaurants } from "@/data/use-restaurants-query";
 import { formatKz } from "@/lib/format";
 import { groupMenuItemsByName, type DishGroup } from "@/lib/group-dishes-by-name";
 import { useLocation } from "@/lib/location";
 import { useTranslation } from "@/i18n";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
-
-const categories = getMenuCategories();
-const restaurants = getAllRestaurants();
 
 /** Insere `extra` como 3º elemento de `rows` (ou no fim, se `rows` tiver
  * menos de 2) — usado para o atalho de restrição alimentar aparecer como
@@ -42,12 +36,30 @@ function insertAsThird(rows: ReactNode[], extra: ReactNode): ReactNode[] {
   return result;
 }
 
+/** O que a pesquisa mostra — pratos OU restaurantes, nunca os dois juntos
+ * (antes misturava-os, e os restaurantes vinham do mock: ids falsos que
+ * davam 404 ao abrir). */
+type SearchMode = "dishes" | "restaurants";
+
 export function HeaderSearch() {
   const { t } = useTranslation();
   const { items } = useMenuItems();
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<SearchMode>("dishes");
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query);
+  // Restaurantes reais (API), mais o que só a pesquisa no servidor encontra
+  // (o restaurante de demonstração dos revisores, pelo nome exato).
+  const { data: listedRestaurants = [] } = useRestaurants();
+  const { data: serverMatches = [] } = useRestaurantServerSearch(debouncedQuery);
+  const restaurants = useMemo(() => {
+    const known = new Set(listedRestaurants.map((r) => r.id));
+    return [...listedRestaurants, ...serverMatches.filter((r) => !known.has(r.id))];
+  }, [listedRestaurants, serverMatches]);
+  // `getRestaurant()` (nome/zona do restaurante de cada prato) lê o catálogo
+  // real — redesenha quando ele chega.
+  const catalogVersion = useLiveCatalogVersion();
+  const categories = useMemo(() => [...new Set(items.map((m) => m.category))], [items]);
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [neighborhood, setNeighborhood] = useState<string>("todos");
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -74,7 +86,8 @@ export function HeaderSearch() {
       const byNeighborhood = matchesLocation(restaurant?.neighborhood, neighborhood, myProvince);
       return byQuery && byCategory && byNeighborhood;
     });
-  }, [items, debouncedQuery, category, neighborhood, myProvince]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: getRestaurant() lê o catálogo real, que chega depois
+  }, [items, debouncedQuery, category, neighborhood, myProvince, catalogVersion]);
 
   const maxAvailablePrice = filteredExceptPrice.length
     ? Math.max(...filteredExceptPrice.map((m) => m.price ?? 0))
@@ -93,17 +106,16 @@ export function HeaderSearch() {
   );
 
   // Restaurantes correspondem por nome/cozinha e localização — categoria
-  // e preço são atributos do prato, não fazem sentido aqui.
+  // e preço são atributos do prato, não fazem sentido aqui. Sem texto,
+  // mostra todos os da zona escolhida.
   const matchedRestaurants = useMemo(() => {
-    if (!debouncedQuery) return [];
+    const q = debouncedQuery.toLowerCase();
     return restaurants.filter((r) => {
-      const byQuery =
-        r.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
-        r.cuisine.toLowerCase().includes(debouncedQuery.toLowerCase());
+      const byQuery = !q || r.name.toLowerCase().includes(q) || r.cuisine.toLowerCase().includes(q);
       const byNeighborhood = matchesLocation(r.neighborhood, neighborhood, myProvince);
       return byQuery && byNeighborhood;
     });
-  }, [debouncedQuery, neighborhood, myProvince]);
+  }, [restaurants, debouncedQuery, neighborhood, myProvince]);
 
   // Agrupa por nome do prato só quando há texto pesquisado — clicar leva
   // pra `/pratos/$dishName` (visão geral, com faixa de preço e lista de
@@ -113,12 +125,15 @@ export function HeaderSearch() {
     [debouncedQuery, filtered],
   );
 
-  const totalResults =
-    matchedRestaurants.length + (debouncedQuery ? dishGroups.length : filtered.length);
+  const dishCount = debouncedQuery ? dishGroups.length : filtered.length;
+  const totalResults = mode === "dishes" ? dishCount : matchedRestaurants.length;
+  // Preço e categoria são filtros de prato — no modo restaurantes só conta
+  // (e só aparece) a localização.
   const activeFilterCount =
-    (category ? 1 : 0) +
     (neighborhood !== "todos" ? 1 : 0) +
-    (priceTouched && maxPrice < overallMaxPrice ? 1 : 0);
+    (mode === "dishes"
+      ? (category ? 1 : 0) + (priceTouched && maxPrice < overallMaxPrice ? 1 : 0)
+      : 0);
 
   return (
     <>
@@ -161,6 +176,36 @@ export function HeaderSearch() {
             </label>
           </div>
 
+          <div
+            role="tablist"
+            aria-label={t("search.modeLabel")}
+            className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-surface p-1"
+          >
+            {(
+              [
+                ["dishes", UtensilsCrossed, t("search.dishesLabel"), dishCount],
+                ["restaurants", Store, t("search.restaurantsLabel"), matchedRestaurants.length],
+              ] as const
+            ).map(([value, Icon, label, count]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={mode === value}
+                onClick={() => setMode(value)}
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+                  mode === value
+                    ? "bg-card text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+                <span className="font-semibold opacity-60">{count}</span>
+              </button>
+            ))}
+          </div>
+
           <button
             type="button"
             onClick={() => setFiltersExpanded((v) => !v)}
@@ -180,21 +225,23 @@ export function HeaderSearch() {
 
           {filtersExpanded && (
             <div className="mt-3 min-w-0 space-y-5 rounded-xl border border-border p-4">
-              <div className="min-w-0">
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  {t("search.priceUpTo", { price: formatKz(maxPrice) })}
-                </p>
-                <Slider
-                  min={0}
-                  max={maxAvailablePrice}
-                  step={500}
-                  value={[maxPrice]}
-                  onValueChange={([v]) => {
-                    setPriceTouched(true);
-                    setMaxPrice(v ?? maxAvailablePrice);
-                  }}
-                />
-              </div>
+              {mode === "dishes" && (
+                <div className="min-w-0">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {t("search.priceUpTo", { price: formatKz(maxPrice) })}
+                  </p>
+                  <Slider
+                    min={0}
+                    max={maxAvailablePrice}
+                    step={500}
+                    value={[maxPrice]}
+                    onValueChange={([v]) => {
+                      setPriceTouched(true);
+                      setMaxPrice(v ?? maxAvailablePrice);
+                    }}
+                  />
+                </div>
+              )}
 
               <div className="min-w-0">
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
@@ -204,27 +251,29 @@ export function HeaderSearch() {
                 <LocationFilterSelect value={neighborhood} onChange={setNeighborhood} />
               </div>
 
-              <div className="min-w-0">
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  {t("search.category")}
-                </p>
-                <ToggleGroup
-                  type="single"
-                  value={category ?? ""}
-                  onValueChange={(v) => setCategory(v || undefined)}
-                  className="no-scrollbar flex-nowrap justify-start overflow-x-auto"
-                >
-                  {categories.map((cat) => (
-                    <ToggleGroupItem
-                      key={cat}
-                      value={cat}
-                      className="shrink-0 rounded-full border border-border data-[state=on]:border-brand data-[state=on]:bg-brand data-[state=on]:text-brand-foreground"
-                    >
-                      {cat}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              </div>
+              {mode === "dishes" && (
+                <div className="min-w-0">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {t("search.category")}
+                  </p>
+                  <ToggleGroup
+                    type="single"
+                    value={category ?? ""}
+                    onValueChange={(v) => setCategory(v || undefined)}
+                    className="no-scrollbar flex-nowrap justify-start overflow-x-auto"
+                  >
+                    {categories.map((cat) => (
+                      <ToggleGroupItem
+                        key={cat}
+                        value={cat}
+                        className="shrink-0 rounded-full border border-border data-[state=on]:border-brand data-[state=on]:bg-brand data-[state=on]:text-brand-foreground"
+                      >
+                        {cat}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </div>
+              )}
             </div>
           )}
 
@@ -234,12 +283,8 @@ export function HeaderSearch() {
             </p>
 
             <div className="mt-3 max-h-80 space-y-5 overflow-y-auto">
-              {matchedRestaurants.length > 0 && (
+              {mode === "restaurants" && matchedRestaurants.length > 0 && (
                 <div className="space-y-2">
-                  <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-brand">
-                    <Store className="h-3.5 w-3.5" />
-                    {t("search.restaurantsLabel")}
-                  </p>
                   {matchedRestaurants.map((restaurant) => (
                     <RestaurantResultRow
                       key={restaurant.id}
@@ -250,52 +295,47 @@ export function HeaderSearch() {
                 </div>
               )}
 
-              {debouncedQuery
-                ? dishGroups.length > 0 && (
-                    <div className="space-y-2">
-                      {matchedRestaurants.length > 0 && (
-                        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-brand">
-                          <UtensilsCrossed className="h-3.5 w-3.5" />
-                          {t("search.dishesLabel")}
-                        </p>
-                      )}
-                      {/* 3º elemento da lista de pratos: atalho de restrição
+              {mode === "dishes" &&
+                (debouncedQuery
+                  ? dishGroups.length > 0 && (
+                      <div className="space-y-2">
+                        {/* 3º elemento da lista de pratos: atalho de restrição
                           alimentar — some sozinho assim que o usuário já
                           tiver escolhido uma (ver DietaryShortcutPicker). */}
-                      {insertAsThird(
-                        dishGroups.map((group) => (
-                          <DishGroupResultRow
-                            key={group.name}
-                            group={group}
-                            onSelect={() => setOpen(false)}
-                          />
-                        )),
-                        <DietaryShortcutPicker
-                          key="dietary-shortcut"
-                          ctaLabel={t("search.dietaryCta")}
-                          onNavigate={() => setOpen(false)}
-                        />,
-                      )}
-                    </div>
-                  )
-                : filtered.length > 0 && (
-                    <div className="space-y-2">
-                      {insertAsThird(
-                        filtered.map((item) => (
-                          <SearchResultRow
-                            key={item.id}
-                            item={item}
-                            onSelect={() => setOpen(false)}
-                          />
-                        )),
-                        <DietaryShortcutPicker
-                          key="dietary-shortcut"
-                          ctaLabel={t("search.dietaryCta")}
-                          onNavigate={() => setOpen(false)}
-                        />,
-                      )}
-                    </div>
-                  )}
+                        {insertAsThird(
+                          dishGroups.map((group) => (
+                            <DishGroupResultRow
+                              key={group.name}
+                              group={group}
+                              onSelect={() => setOpen(false)}
+                            />
+                          )),
+                          <DietaryShortcutPicker
+                            key="dietary-shortcut"
+                            ctaLabel={t("search.dietaryCta")}
+                            onNavigate={() => setOpen(false)}
+                          />,
+                        )}
+                      </div>
+                    )
+                  : filtered.length > 0 && (
+                      <div className="space-y-2">
+                        {insertAsThird(
+                          filtered.map((item) => (
+                            <SearchResultRow
+                              key={item.id}
+                              item={item}
+                              onSelect={() => setOpen(false)}
+                            />
+                          )),
+                          <DietaryShortcutPicker
+                            key="dietary-shortcut"
+                            ctaLabel={t("search.dietaryCta")}
+                            onNavigate={() => setOpen(false)}
+                          />,
+                        )}
+                      </div>
+                    ))}
 
               {totalResults === 0 && (
                 <p className="py-8 text-center text-sm text-muted-foreground">

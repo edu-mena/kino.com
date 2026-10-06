@@ -389,6 +389,7 @@ export const en: Dictionary = {
     resultsCount: "{count} results",
     noResults: "No results found.",
     dishesLabel: "Dishes",
+    modeLabel: "Show dishes or restaurants",
     restaurantsLabel: "Restaurants",
     dietaryCta: "Dietary restrictions? Set up your preferences",
     dietaryMoreOptions: "More options in Preferences",

@@ -11,8 +11,10 @@ import { usePreferences } from "@/lib/preferences";
 import { useRestaurantStatus } from "@/lib/restaurant-status";
 import { formatDishConflicts, useDishConflicts } from "@/lib/use-dish-conflicts";
 import { useTranslation } from "@/i18n";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 export function DishCard({ item }: { item: MenuItem }) {
+  useLiveCatalogVersion(); // getRestaurant() lê o catálogo real (live-catalog)
   const addToBill = useAddToBill();
   const { isFavoriteDish, toggleFavoriteDish } = usePreferences();
   const { isAvailable } = useMenuAdmin();

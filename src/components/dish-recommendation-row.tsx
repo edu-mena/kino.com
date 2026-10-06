@@ -11,6 +11,7 @@ import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
 import { computeDishConflicts, formatDishConflicts } from "@/lib/use-dish-conflicts";
 import { useTranslation } from "@/i18n";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 /**
  * Linha horizontal reutilizável de pratos recomendados. Usada para
@@ -18,6 +19,7 @@ import { useTranslation } from "@/i18n";
  * lista de `items` recebida.
  */
 export function DishRecommendationRow({ items }: { items: MenuItem[] }) {
+  useLiveCatalogVersion(); // getRestaurant() lê o catálogo real (live-catalog)
   const { t } = useTranslation();
   const [active, setActive] = useState<MenuItem | null>(null);
   const addToBill = useAddToBill();

@@ -17,6 +17,7 @@ import { usePreferences } from "@/lib/preferences";
 import { useRestaurantStatus } from "@/lib/restaurant-status";
 import { formatDishConflicts, useDishConflicts } from "@/lib/use-dish-conflicts";
 import { useTranslation } from "@/i18n";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 export const Route = createFileRoute("/prato/$dishId")({
   // Assíncrono (TanStack Router já trata isto nativamente, mesmo padrão de
@@ -53,6 +54,9 @@ export const Route = createFileRoute("/prato/$dishId")({
 
 function DishDetail() {
   const { item } = Route.useLoaderData();
+  // Restaurante deste prato e "outros restaurantes com este prato" vêm do
+  // catálogo real (live-catalog) — redesenha quando ele chega.
+  useLiveCatalogVersion();
   const addToBill = useAddToBill();
   const { t } = useTranslation();
   const { isAvailable } = useMenuAdmin();

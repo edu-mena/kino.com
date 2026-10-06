@@ -393,6 +393,7 @@ export const fr: Dictionary = {
     resultsCount: "{count} résultats",
     noResults: "Aucun résultat trouvé.",
     dishesLabel: "Plats",
+    modeLabel: "Afficher plats ou restaurants",
     restaurantsLabel: "Restaurants",
     dietaryCta: "Restrictions alimentaires ? Configurez vos préférences",
     dietaryMoreOptions: "Plus d'options dans Préférences",

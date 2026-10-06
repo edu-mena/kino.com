@@ -6,6 +6,7 @@ import type { FulfillmentType, Restaurant } from "@/data/types";
 import { useTranslation } from "@/i18n";
 import { getRecommendedRestaurants } from "@/lib/recommend-restaurants";
 import { useSubscriptions } from "@/lib/subscriptions";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 /**
  * Popup de alternativas — aberto sempre que um restaurante não dá para usar
@@ -30,6 +31,9 @@ export function RestaurantRecommendationsDialog({
   /** Motivo já traduzido (ex: "Pausado", "Fechado agora — abre às 18:00"). */
   reasonText: string;
 }) {
+  // getRecommendedRestaurants lê os restaurantes reais do catálogo
+  // (live-catalog), que chegam da API depois do 1º render.
+  const catalogVersion = useLiveCatalogVersion();
   const { t, locale } = useTranslation();
   const { byRestaurant } = useSubscriptions();
 
@@ -43,7 +47,8 @@ export function RestaurantRecommendationsDialog({
         locale,
         limit: 3,
       }),
-    [restaurant.id, restaurant.cuisine, mode, byRestaurant, locale],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: ver acima
+    [restaurant.id, restaurant.cuisine, mode, byRestaurant, locale, catalogVersion],
   );
 
   return (

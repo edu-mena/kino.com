@@ -3,13 +3,14 @@ import { Bike, ChevronLeft, ChevronRight, MapPin, Star, TriangleAlert } from "lu
 import icon from "@/assets/icon.png";
 import { PageShell } from "@/components/site-shell";
 import { fetchApiAllMenuItems } from "@/data/api-restaurants";
-import { getCommonIngredients, getMenuItemsByName, getRestaurant } from "@/data/helpers";
+import { commonIngredientNames, getMenuItemsByName, getRestaurant } from "@/data/helpers";
 import { hasRealBackend } from "@/lib/api-client";
 import { formatKz } from "@/lib/format";
 import { usePreferences } from "@/lib/preferences";
 import { computeDishConflicts } from "@/lib/use-dish-conflicts";
 import { rankDishOfferings, type DishOffering } from "@/lib/rank-dish-offerings";
 import { useTranslation } from "@/i18n";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 export const Route = createFileRoute("/pratos/$dishName")({
   // Assíncrono, mesmo padrão de `/prato/$dishId` — `getMenuItemsByName` só
@@ -44,12 +45,15 @@ export const Route = createFileRoute("/pratos/$dishName")({
 
 function DishOverview() {
   const { items } = Route.useLoaderData();
+  // getRestaurant() lê o catálogo real (live-catalog), que chega da API
+  // depois do 1º render — sem isto a lista de restaurantes ficava vazia.
+  useLiveCatalogVersion();
   const { t } = useTranslation();
   const { excludedIngredients, dietaryRestrictions, cuisinePreferences } = usePreferences();
   const ownListReason = t("home.dishConflictOwnListReason");
 
   const dishName = items[0]!.name;
-  const commonIngredients = getCommonIngredients(dishName);
+  const commonIngredients = commonIngredientNames(items);
   const prices = items.map((i) => i.price).filter((p): p is number => p != null);
   const minPrice = prices.length ? Math.min(...prices) : null;
   const maxPrice = prices.length ? Math.max(...prices) : null;

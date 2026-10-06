@@ -396,6 +396,7 @@ export const pt = {
     resultsCount: "{count} resultados",
     noResults: "Nenhum resultado encontrado.",
     dishesLabel: "Pratos",
+    modeLabel: "Mostrar pratos ou restaurantes",
     restaurantsLabel: "Restaurantes",
     dietaryCta: "Restrição alimentar? Configure as suas preferências",
     dietaryMoreOptions: "Mais opções em Preferências",

@@ -5,6 +5,7 @@ import { PageHeading, PageShell } from "@/components/site-shell";
 import { getRestaurant } from "@/data/helpers";
 import { useOffers } from "@/data/use-offers";
 import { translateOffer, useTranslation } from "@/i18n";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 export const Route = createFileRoute("/ofertas")({
   head: () => ({
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/ofertas")({
 const iconByType = { discount: Percent, delivery: Bike, "happy-hour": Sparkles } as const;
 
 function Ofertas() {
+  useLiveCatalogVersion(); // getRestaurant() lê o catálogo real (live-catalog)
   const offers = useOffers();
   const { t } = useTranslation();
   return (

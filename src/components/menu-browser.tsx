@@ -31,6 +31,7 @@ import { usePreferences } from "@/lib/preferences";
 import { buildRecommendedDishes } from "@/lib/recommend-dishes";
 import { translateMenuCategory, useTranslation } from "@/i18n";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 const sortOptions = [
   { value: "relevancia", labelKey: "cardapio.sortRelevance" },
@@ -71,6 +72,9 @@ export function MenuBrowser({
    * pré-seleciona o chip correspondente ao entrar na página. */
   initialCategory?: string | undefined;
 }) {
+  // Restaurantes/pratos reais chegam da API depois do 1º render — os
+  // helpers síncronos (getRestaurant...) leem-nos de live-catalog.
+  const catalogVersion = useLiveCatalogVersion();
   const effectiveRestaurantId = lockedRestaurantId ?? restaurantFilter?.id;
   const { t, locale } = useTranslation();
   const { items, loading: itemsLoading } = useMenuItems(lockedRestaurantId);
@@ -158,6 +162,7 @@ export function MenuBrowser({
         lockedRestaurantId || matchesLocation(restaurant?.neighborhood, neighborhood, myProvince);
       return byCat && byRestaurant && byQuery && byNeighborhood;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: getRestaurant() lê o catálogo real, que chega depois
   }, [
     items,
     active,
@@ -166,6 +171,7 @@ export function MenuBrowser({
     debouncedQuery,
     neighborhood,
     myProvince,
+    catalogVersion,
   ]);
 
   const maxAvailablePrice = filteredExceptPrice.length
@@ -243,6 +249,7 @@ export function MenuBrowser({
       favoriteIngredients,
       profileItems: items,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: getRestaurant() lê o catálogo real, que chega depois
   }, [
     filteredExceptPrice,
     maxPrice,
@@ -256,6 +263,7 @@ export function MenuBrowser({
     favoriteIngredients,
     items,
     t,
+    catalogVersion,
   ]);
 
   const activeExtraFilters = (neighborhood !== "todos" ? 1 : 0) + (priceTouched ? 1 : 0);
