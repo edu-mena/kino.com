@@ -2686,6 +2686,8 @@ export const fr: Dictionary = {
     },
   },
   adminSubscricao: {
+    managedOutsideApp:
+      "L'abonnement du restaurant est géré par l'équipe Luku, en dehors de l'application.",
     eyebrow: "Abonnement",
     title: "Votre abonnement",
     description: "Votre mensualité Luku — forfait, statut et renouvellement.",

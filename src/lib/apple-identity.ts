@@ -1,4 +1,4 @@
-import { Capacitor } from "@capacitor/core";
+import { isIosApp } from "@/lib/platform";
 
 /**
  * "Iniciar sessão com Apple" — só na app iOS (Capacitor), onde a App Store o
@@ -9,7 +9,7 @@ import { Capacitor } from "@capacitor/core";
  * na conta Apple Developer, sem nada que o exija.
  */
 export function isAppleSignInAvailable(): boolean {
-  return Capacitor.getPlatform() === "ios";
+  return isIosApp();
 }
 
 export type AppleSignInPayload = {

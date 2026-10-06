@@ -2648,6 +2648,8 @@ export const en: Dictionary = {
     },
   },
   adminSubscricao: {
+    managedOutsideApp:
+      "The restaurant's subscription is managed by the Luku team, outside the app.",
     eyebrow: "Subscription",
     title: "Your subscription",
     description: "Your Luku fee — plan, status and renewal.",

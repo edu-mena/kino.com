@@ -28,6 +28,7 @@ import { hasRealBackend } from "@/lib/api-client";
 import { useCart } from "@/lib/cart";
 import { useCouriers } from "@/lib/couriers";
 import { formatKz } from "@/lib/format";
+import { isIosApp } from "@/lib/platform";
 import { useMenuAdmin } from "@/lib/menu-admin";
 import { useOffersAdmin } from "@/lib/offers-admin";
 import { isOpenNow, nextOpenAt } from "@/lib/opening-hours";
@@ -433,8 +434,14 @@ function AdminDashboard() {
                     {t("adminIndex.subscriptionTitle")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t(`sistema.plan.${sub.plan}`)} · {formatKz(PLAN_PRICE[sub.plan])}
-                    {t("adminSubscricao.perMonth")} ·{" "}
+                    {t(`sistema.plan.${sub.plan}`)} ·{" "}
+                    {/* Sem preço na app iOS — ver admin.subscricao.tsx. */}
+                    {!isIosApp() && (
+                      <>
+                        {formatKz(PLAN_PRICE[sub.plan])}
+                        {t("adminSubscricao.perMonth")} ·{" "}
+                      </>
+                    )}
                     <span className={`font-semibold ${tone}`}>
                       {t(`sistema.subStatus.${sub.status}`)}
                     </span>

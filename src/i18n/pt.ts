@@ -2661,6 +2661,7 @@ export const pt = {
     },
   },
   adminSubscricao: {
+    managedOutsideApp: "A subscrição do restaurante é gerida pela equipa Luku, fora da app.",
     eyebrow: "Subscrição",
     title: "A sua subscrição",
     description: "Mensalidade da Luku — plano, estado e renovação.",

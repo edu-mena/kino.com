@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { useState, type SVGProps } from "react";
+import { useEffect, useState, type SVGProps } from "react";
 import { toast } from "sonner";
 import authVideo from "@/assets/auth-food.mp4";
 import icon from "@/assets/icon.png";
@@ -58,6 +58,11 @@ function AppleIcon({ className }: { className?: string }) {
 
 function Entrar() {
   const [loading, setLoading] = useState(false);
+  // Decidido só depois de hidratar: esta página vem do SSR (onde nunca é
+  // iOS) — ler a plataforma durante o render dava HTML diferente entre
+  // servidor e cliente dentro da app iOS.
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  useEffect(() => setAppleAvailable(isAppleSignInAvailable()), []);
   const { loginWithGoogle, loginWithApple } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -147,7 +152,7 @@ function Entrar() {
         {/* App Store (4.8): com login Google, a app iOS tem de oferecer
             também "Iniciar sessão com Apple", com o mesmo destaque. Botão
             preto com o logótipo, como pedem as regras de design da Apple. */}
-        {isAppleSignInAvailable() && (
+        {appleAvailable && (
           <button
             type="button"
             onClick={handleAppleAuth}
