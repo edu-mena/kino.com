@@ -2,23 +2,23 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Bike,
   Building2,
-  Check,
   ChevronDown,
   ChevronLeft,
   ChevronUp,
   Clock,
-  MapPin,
+  LocateFixed,
+  MessageSquare,
   Minus,
   Plus,
   Receipt,
   ShieldAlert,
   ShoppingBag,
+  Tag,
   Trash2,
   Users,
   Utensils,
-  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { CompanyFormDialog } from "@/components/company-form-dialog";
 import { RestaurantRecommendationsDialog } from "@/components/restaurant-recommendations-dialog";
@@ -27,7 +27,6 @@ import { UseCurrentLocationField } from "@/components/use-current-location-field
 import {
   addressProvince,
   canDeliverToNeighborhood,
-  getDeliveryZones,
   getRestaurantFulfillmentModes,
   orderModeRequiresCaution,
 } from "@/data/helpers";
@@ -138,6 +137,8 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
   // reserva elegível, se só houver uma); `null` = desligado explicitamente.
   const [reservationChoice, setReservationChoice] = useState<string | null | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
+  // Extras opcionais (nota, código, NIF) — recolhidos, um aberto de cada vez.
+  const [openExtra, setOpenExtra] = useState<"note" | "promo" | "invoice" | null>(null);
 
   // Reservas de hoje, confirmadas e com caução já paga, NESTE restaurante —
   // elegíveis para descontar automaticamente do consumo de um pedido
@@ -163,10 +164,12 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
     // cliente continua a ver que tem algo pendente.
     return (
       <div
-        className={`${positionClass} fixed right-4 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-[1.5rem] bg-neutral-900 p-4 text-primary-foreground shadow-xl`}
+        className={`${positionClass} fixed right-4 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-[1.5rem] bg-neutral-900 p-3.5 text-primary-foreground shadow-2xl ring-1 ring-white/10`}
       >
-        <span className="flex items-center gap-2 font-display text-sm font-bold">
-          <Receipt className="h-4 w-4 shrink-0" />
+        <span className="flex items-center gap-3 font-display text-sm font-bold">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10">
+            <Receipt className="h-4 w-4" />
+          </span>
           {restaurantQuery.isError
             ? t("orderBuilderCard.loadError")
             : t("orderBuilderCard.loading")}
@@ -239,12 +242,21 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
     setPromoError(!effect);
   };
 
+  // Morada dentro da zona de entrega do restaurante (sem província
+  // conhecida, não se bloqueia — o servidor valida de novo ao enviar).
+  const isInZone = (address: { line2: string }) => {
+    const province = addressProvince(address.line2);
+    return !province || canDeliverToNeighborhood(restaurant, province);
+  };
+
   const goToConfirm = () => {
     if (paused) {
       toast.error(pausedMessage);
       return;
     }
-    setChosenAddressId(headerLocation?.id ?? allAddresses[0]?.id ?? null);
+    // A do topo se estiver na zona; senão a primeira guardada que esteja.
+    const preferred = [headerLocation, ...allAddresses].find((a) => a && isInZone(a));
+    setChosenAddressId(preferred?.id ?? headerLocation?.id ?? allAddresses[0]?.id ?? null);
     setStep("confirm");
   };
 
@@ -311,534 +323,570 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
     navigate({ to: "/entrega" });
   };
 
+  // ---------- Derivados só para a apresentação ----------
+  const itemCount = lines.reduce((n, l) => n + l.qty, 0);
+  const itemsLabel = `${itemCount} ${
+    itemCount === 1 ? t("orderBuilderCard.itemSingular") : t("orderBuilderCard.itemPlural")
+  }`;
+  const ModeIcon = MODE_ICON[mode];
+
+  // Taxa mostrada no resumo: grátis com a promo; estimada pela distância
+  // quando a morada tem coordenadas; senão o mínimo do restaurante.
+  const deliveryFeeShown =
+    mode !== "delivery"
+      ? null
+      : promo?.freeDelivery
+        ? 0
+        : (deliveryFeeEstimate ?? (chosenAddress ? restaurant.deliveryFee : null));
+  const reservationCredit =
+    mode === "dinein" && selectedReservationId
+      ? (eligibleReservations.find((r) => r.id === selectedReservationId)?.cautionAmount ?? 0)
+      : 0;
+  // Estimativa — o restaurante confirma o valor final ao aceitar.
+  const estimatedTotal = Math.max(
+    0,
+    total - promoDiscount + (deliveryFeeShown ?? 0) - reservationCredit,
+  );
+  const selectedCompany = companies.find((c) => c.id === companyId);
+  const toggleExtra = (extra: "note" | "promo" | "invoice") =>
+    setOpenExtra((current) => (current === extra ? null : extra));
+
   return (
     <div
-      className={`${positionClass} fixed right-4 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-[1.5rem] bg-neutral-900 text-primary-foreground shadow-xl`}
+      className={`${positionClass} fixed right-4 z-40 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[1.5rem] bg-neutral-900 text-primary-foreground shadow-2xl ring-1 ring-white/10`}
     >
+      {/* Cabeçalho — sempre visível: quantos itens, de onde, quanto. */}
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        aria-label={expanded ? "Minimizar lista do pedido" : "Expandir lista do pedido"}
-        className="flex w-full items-center justify-between gap-3 p-4"
+        aria-expanded={expanded}
+        aria-label={
+          expanded ? t("orderBuilderCard.collapseAria") : t("orderBuilderCard.expandAria")
+        }
+        className="flex w-full items-center gap-3 p-3.5 text-left"
       >
-        <span className="flex min-w-0 items-center gap-2 font-display text-sm font-bold">
-          <Receipt className="h-4 w-4 shrink-0" />
-          <span className="truncate">{restaurant.name}</span>
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand text-sm font-extrabold tabular-nums text-brand-foreground">
+          {itemCount}
         </span>
-        <span className="flex shrink-0 items-center gap-2 text-sm font-bold">
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-display text-sm font-bold">{restaurant.name}</span>
+          <span className="block text-xs text-primary-foreground/55">
+            {expanded ? t("orderBuilderCard.hide") : t("orderBuilderCard.viewOrder")}
+          </span>
+        </span>
+        <span className="shrink-0 font-display text-base font-extrabold tabular-nums">
           {formatKz(total)}
-          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
         </span>
+        {expanded ? (
+          <ChevronDown className="h-4 w-4 shrink-0 text-primary-foreground/60" />
+        ) : (
+          <ChevronUp className="h-4 w-4 shrink-0 text-primary-foreground/60" />
+        )}
       </button>
 
       {expanded && (
-        // `max-h`/`overflow-y-auto`: sem isto, o passo de confirmação (morada,
-        // nota, promo…) podia crescer mais alto do que o ecrã e deixar o
-        // botão de enviar fora de vista — o mesmo problema que tinha o
-        // diálogo que isto substituiu (ver comentário no topo do ficheiro).
-        <div className="max-h-[min(32rem,62dvh)] overflow-y-auto md:max-h-[min(32rem,70dvh)] border-t border-primary-foreground/20 p-4 pt-3">
+        // `max-h`/`overflow-y-auto`: o passo de confirmação nunca passa da
+        // altura do ecrã com o botão de enviar fora de vista (ver o topo).
+        <div className="max-h-[min(34rem,64dvh)] overflow-y-auto border-t border-white/10 md:max-h-[min(34rem,72dvh)]">
           {step === "list" ? (
-            <>
-              <ul className="max-h-36 space-y-2 overflow-y-auto">
+            <div className="px-4 pb-4 pt-1">
+              {/* Linhas: nome + preço por baixo; à direita só o contador. */}
+              <ul className="max-h-52 divide-y divide-white/10 overflow-y-auto">
                 {lines.map((line) => {
                   const item = menuItemsById.get(line.menuItemId);
                   if (!item) return null;
+                  const unit = billLineUnitPrice(line, item);
                   return (
-                    <li key={line.key} className="flex items-center gap-2 text-sm">
-                      <span className="min-w-0 flex-1 truncate">{item.name}</span>
-                      <button
-                        type="button"
-                        aria-label="Diminuir"
-                        onClick={() => updateQty(line.key, line.qty - 1)}
-                        className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-primary-foreground/30 text-primary-foreground/80 hover:border-primary-foreground hover:text-primary-foreground"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </button>
-                      <span className="w-4 shrink-0 text-center font-semibold">{line.qty}</span>
-                      <button
-                        type="button"
-                        aria-label="Aumentar"
-                        onClick={() => updateQty(line.key, line.qty + 1)}
-                        className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-primary-foreground/30 text-primary-foreground/80 hover:border-primary-foreground hover:text-primary-foreground"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </button>
-                      <span className="w-16 shrink-0 text-right font-semibold">
-                        {formatKz(billLineUnitPrice(line, item) * line.qty)}
-                      </span>
-                      <button
-                        type="button"
-                        aria-label="Remover"
-                        onClick={() => updateQty(line.key, 0)}
-                        className="shrink-0 text-primary-foreground/70 hover:text-destructive"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
+                    <li key={line.key} className="flex items-center gap-3 py-2.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{item.name}</p>
+                        <p className="text-xs tabular-nums text-primary-foreground/55">
+                          {line.qty > 1
+                            ? `${line.qty} × ${formatKz(unit)} = ${formatKz(unit * line.qty)}`
+                            : formatKz(unit)}
+                        </p>
+                      </div>
+                      <QtyStepper
+                        qty={line.qty}
+                        onChange={(qty) => updateQty(line.key, qty)}
+                        labels={{
+                          decrease: t("orderBuilderCard.decrease"),
+                          increase: t("orderBuilderCard.increase"),
+                          remove: t("orderBuilderCard.remove"),
+                        }}
+                      />
                     </li>
                   );
                 })}
               </ul>
 
-              <div className="mt-3 flex items-center justify-between border-t border-primary-foreground/20 pt-3 text-sm">
-                <span className="font-bold">{t("orderBuilderCard.total")}</span>
-                <span className="font-extrabold">{formatKz(total)}</span>
+              <div className="mt-1 flex items-baseline justify-between border-t border-white/10 pt-3">
+                <span className="text-sm text-primary-foreground/70">
+                  {t("orderBuilderCard.subtotal")}
+                </span>
+                <span className="font-display text-lg font-extrabold tabular-nums">
+                  {formatKz(total)}
+                </span>
               </div>
 
-              <div className="mt-3 space-y-2">
-                {paused ? (
-                  <div className="rounded-xl border border-dashed border-primary-foreground/30 px-3 py-2.5 text-center text-xs text-primary-foreground/80">
-                    <p>{pausedMessage}</p>
-                    <button
-                      type="button"
-                      onClick={() => setRecommendationsOpen(true)}
-                      className="mt-1.5 font-bold text-brand hover:underline"
-                    >
-                      {t("orderBuilderCard.seeAlternatives")}
-                    </button>
-                  </div>
-                ) : (
+              {paused ? (
+                <div className="mt-4 rounded-xl bg-white/5 px-3 py-3 text-center text-xs text-primary-foreground/75">
+                  <p>{pausedMessage}</p>
+                  <button
+                    type="button"
+                    onClick={() => setRecommendationsOpen(true)}
+                    className="mt-1.5 font-bold text-brand hover:underline"
+                  >
+                    {t("orderBuilderCard.seeAlternatives")}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <SegmentedControl
+                    ariaLabel={t("orderBuilderCard.chooseMode")}
+                    value={mode}
+                    onChange={setModeOverride}
+                    options={availableModes.map((m) => ({
+                      value: m,
+                      label: t(`fulfillment.${m}`),
+                      icon: MODE_ICON[m],
+                    }))}
+                    className="mt-4"
+                  />
+                  <button
+                    type="button"
+                    onClick={goToConfirm}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90"
+                  >
+                    {t("orderBuilderCard.continue")}
+                  </button>
+                </>
+              )}
+
+              <button
+                type="button"
+                onClick={discard}
+                className="mx-auto mt-2 flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold text-primary-foreground/50 transition-colors hover:text-primary-foreground"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {t("orderBuilderCard.discardList")}
+              </button>
+            </div>
+          ) : (
+            <div className="px-4 pb-4 pt-3">
+              {/* Barra do passo: voltar · modo · nº de itens. */}
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setStep("list")}
+                  aria-label={t("orderBuilderCard.backToList")}
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 transition-colors hover:bg-white/15"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <p className="flex min-w-0 flex-1 items-center gap-1.5 font-display text-base font-bold">
+                  <ModeIcon className="h-4 w-4 shrink-0 text-brand" />
+                  <span className="truncate">{t(`fulfillment.${mode}`)}</span>
+                </p>
+                <span className="shrink-0 text-xs text-primary-foreground/55">{itemsLabel}</span>
+              </div>
+
+              {/* ---------- 1. O obrigatório do modo ---------- */}
+              <section className="mt-5">
+                <SectionLabel>
+                  {mode === "delivery"
+                    ? t("orderBuilderCard.whereTo")
+                    : mode === "takeaway"
+                      ? t("orderBuilderCard.whenPickup")
+                      : t("orderBuilderCard.partySizeLabel")}
+                </SectionLabel>
+
+                {mode === "delivery" && (
                   <>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-foreground/50">
-                      {t("orderBuilderCard.chooseMode")}
-                    </p>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {availableModes.map((m) => {
-                        const Icon = MODE_ICON[m];
+                    <div className="mt-2 space-y-1">
+                      {allAddresses.map((a) => {
+                        const inZone = isInZone(a);
+                        const selected = chosenAddressId === a.id;
                         return (
                           <button
-                            key={m}
+                            key={a.id}
                             type="button"
-                            onClick={() => setModeOverride(m)}
-                            aria-pressed={mode === m}
-                            className={`flex flex-col items-center gap-1 rounded-xl border px-1.5 py-2 text-[11px] font-semibold transition-colors ${
-                              mode === m
-                                ? "border-brand bg-brand/15 text-primary-foreground"
-                                : "border-primary-foreground/20 text-primary-foreground/70 hover:border-primary-foreground/50"
+                            role="radio"
+                            aria-checked={selected}
+                            disabled={!inZone}
+                            onClick={() => setChosenAddressId(a.id)}
+                            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                              selected ? "bg-white/10 ring-1 ring-brand" : "hover:bg-white/5"
                             }`}
                           >
-                            <Icon className="h-4 w-4" />
-                            {t(`fulfillment.${m}`)}
+                            <RadioDot checked={selected} />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-semibold">
+                                {a.label}
+                              </span>
+                              <span className="block truncate text-xs text-primary-foreground/55">
+                                {inZone ? a.line1 : t("orderBuilderCard.outOfZoneShort")}
+                              </span>
+                            </span>
                           </button>
                         );
                       })}
+                      {allAddresses.length === 0 && (
+                        <p className="rounded-xl bg-white/5 p-3 text-center text-xs text-primary-foreground/60">
+                          {t("orderBuilderCard.noSavedAddresses")}
+                        </p>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={goToConfirm}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90"
-                    >
-                      {t("orderBuilderCard.continue")}
-                    </button>
+
+                    {useLocationOpen ? (
+                      <div className="mt-2">
+                        <UseCurrentLocationField
+                          onConfirm={({ lat, lng, line1 }) => {
+                            const address = addAddress(
+                              t("orderBuilderCard.currentLocationLabel"),
+                              line1 || t("orderBuilderCard.currentLocationLabel"),
+                              undefined,
+                              { lat, lng },
+                            );
+                            setChosenAddressId(address.id);
+                            setUseLocationOpen(false);
+                          }}
+                          onCancel={() => setUseLocationOpen(false)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 px-1">
+                        <button
+                          type="button"
+                          onClick={() => setUseLocationOpen(true)}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
+                        >
+                          <LocateFixed className="h-3.5 w-3.5" />
+                          {t("orderBuilderCard.useMyLocation")}
+                        </button>
+                        <Link
+                          to="/perfil"
+                          onClick={() => setExpanded(false)}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          {t("orderBuilderCard.newAddressShort")}
+                        </Link>
+                      </div>
+                    )}
                   </>
                 )}
-                <button
-                  type="button"
-                  onClick={discard}
-                  className="flex w-full items-center justify-center gap-1.5 py-1.5 text-xs font-semibold text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  {t("orderBuilderCard.discardList")}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => setStep("list")}
-                className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                {t("orderBuilderCard.backToList")}
-              </button>
 
-              <p className="text-xs text-primary-foreground/50">
-                {lines.length}{" "}
-                {lines.length === 1
-                  ? t("orderBuilderCard.itemSingular")
-                  : t("orderBuilderCard.itemPlural")}{" "}
-                · {formatKz(total)}
-              </p>
-
-              <h3 className="mt-2 font-display text-base font-bold">
-                {mode === "delivery"
-                  ? t("orderBuilderCard.confirmLocationTitle")
-                  : mode === "takeaway"
-                    ? t("orderBuilderCard.takeawayTitle")
-                    : t("orderBuilderCard.dineinTitle")}
-              </h3>
-              <p className="mt-1 text-xs text-primary-foreground/60">
-                {mode === "delivery"
-                  ? t("orderBuilderCard.confirmLocationDesc")
-                  : mode === "takeaway"
-                    ? t("orderBuilderCard.takeawayDesc")
-                    : t("orderBuilderCard.dineinDesc")}
-              </p>
-
-              {/* ---------- DELIVERY ---------- */}
-              {mode === "delivery" && (
-                <>
-                  <p className="mt-2 rounded-lg bg-white/5 px-3 py-2 text-xs text-primary-foreground/60">
-                    {t("orderBuilderCard.coveredZones", {
-                      zones: getDeliveryZones(restaurant).join(", ") || restaurant.neighborhood,
-                    })}
-                  </p>
-                  <div className="mt-3 space-y-2">
-                    {allAddresses.map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        onClick={() => setChosenAddressId(a.id)}
-                        className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border p-3 text-left ${
-                          chosenAddressId === a.id
-                            ? "border-brand bg-brand/15"
-                            : "border-primary-foreground/20"
-                        }`}
-                      >
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/5 text-brand">
-                          <MapPin className="h-4 w-4" />
+                {mode === "takeaway" && (
+                  <>
+                    <SegmentedControl
+                      ariaLabel={t("orderBuilderCard.whenPickup")}
+                      value={pickupChoice}
+                      onChange={setPickupChoice}
+                      options={[
+                        { value: "asap", label: t("orderBuilderCard.pickupAsap") },
+                        { value: "scheduled", label: t("orderBuilderCard.pickupScheduled") },
+                      ]}
+                      className="mt-2"
+                    />
+                    {pickupChoice === "scheduled" && (
+                      <label className="mt-2 flex items-center justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 text-sm">
+                        <span className="flex items-center gap-2 text-primary-foreground/70">
+                          <Clock className="h-4 w-4" />
+                          {t("orderBuilderCard.pickupTimeLabel")}
                         </span>
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm font-bold">{a.label}</span>
-                          <span className="block truncate text-xs text-primary-foreground/60">
-                            {a.line1}
-                          </span>
-                        </span>
-                        {chosenAddressId === a.id && (
-                          <Check className="h-4 w-4 shrink-0 text-brand" />
+                        <input
+                          type="time"
+                          value={pickupTime}
+                          onChange={(e) => setPickupTime(e.target.value)}
+                          className="rounded-lg bg-white/10 px-2 py-1 text-sm font-bold tabular-nums text-primary-foreground outline-none focus:ring-1 focus:ring-brand"
+                        />
+                      </label>
+                    )}
+                  </>
+                )}
+
+                {mode === "dinein" && (
+                  <>
+                    <div className="mt-2 flex items-center justify-between rounded-xl bg-white/5 px-3 py-2">
+                      <Users className="h-4 w-4 text-primary-foreground/60" aria-hidden />
+                      <QtyStepper
+                        qty={partySize}
+                        min={1}
+                        max={20}
+                        onChange={setPartySize}
+                        labels={{
+                          decrease: t("orderBuilderCard.decrease"),
+                          increase: t("orderBuilderCard.increase"),
+                          remove: t("orderBuilderCard.decrease"),
+                        }}
+                      />
+                    </div>
+
+                    {/* Caução já paga de uma reserva de hoje desconta do
+                        consumo — ver plano, Fase J3. */}
+                    {eligibleReservations.length > 0 && (
+                      <div className="mt-2 space-y-1.5">
+                        <label className="flex items-center gap-2.5 px-1 text-xs font-semibold">
+                          <Checkbox
+                            checked={selectedReservationId !== null}
+                            onCheckedChange={(checked) => {
+                              setReservationChoice(
+                                checked === true
+                                  ? (autoReservationId ?? eligibleReservations[0]!.id)
+                                  : null,
+                              );
+                            }}
+                            className="border-primary-foreground/40 data-[state=checked]:bg-brand data-[state=checked]:text-brand-foreground"
+                          />
+                          {eligibleReservations.length === 1
+                            ? t("orderBuilderCard.useReservationCredit", {
+                                amount: formatKz(eligibleReservations[0]!.cautionAmount),
+                              })
+                            : t("orderBuilderCard.useReservationCreditGeneric")}
+                        </label>
+                        {selectedReservationId !== null && eligibleReservations.length > 1 && (
+                          <div className="space-y-1 pl-7">
+                            {eligibleReservations.map((r) => (
+                              <button
+                                key={r.id}
+                                type="button"
+                                role="radio"
+                                aria-checked={selectedReservationId === r.id}
+                                onClick={() => setReservationChoice(r.id)}
+                                className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs ${
+                                  selectedReservationId === r.id
+                                    ? "bg-white/10 ring-1 ring-brand"
+                                    : "hover:bg-white/5"
+                                }`}
+                              >
+                                <RadioDot checked={selectedReservationId === r.id} />
+                                <span className="flex-1">{r.time}</span>
+                                <span className="font-bold tabular-nums">
+                                  {formatKz(r.cautionAmount)}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
                         )}
-                      </button>
-                    ))}
-                    {allAddresses.length === 0 && (
-                      <p className="rounded-xl border border-dashed border-primary-foreground/20 p-3 text-center text-xs text-primary-foreground/60">
-                        {t("orderBuilderCard.noSavedAddresses")}
+                      </div>
+                    )}
+                  </>
+                )}
+              </section>
+
+              {/* Caução exigida pelo restaurante neste modo — uma linha, a
+                  política por baixo, sem caixa colorida a competir. */}
+              {cautionForMode && (
+                <div className="mt-4 flex gap-2.5 rounded-xl bg-white/5 p-3 text-xs">
+                  <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                  <div className="min-w-0">
+                    <p className="font-semibold">
+                      {t("orderBuilderCard.cautionShort", {
+                        amount: formatKz(restaurant.cautionAmount),
+                      })}
+                    </p>
+                    {restaurant.cautionPolicyNotice && (
+                      <p className="mt-0.5 text-primary-foreground/55">
+                        {restaurant.cautionPolicyNotice}
                       </p>
                     )}
                   </div>
+                </div>
+              )}
 
-                  {useLocationOpen ? (
-                    <div className="mt-3">
-                      <UseCurrentLocationField
-                        onConfirm={({ lat, lng, line1 }) => {
-                          const address = addAddress(
-                            t("orderBuilderCard.currentLocationLabel"),
-                            line1 || t("orderBuilderCard.currentLocationLabel"),
-                            undefined,
-                            { lat, lng },
-                          );
-                          setChosenAddressId(address.id);
-                          setUseLocationOpen(false);
-                        }}
-                        onCancel={() => setUseLocationOpen(false)}
-                      />
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setUseLocationOpen(true)}
-                      className="mt-3 flex w-full items-center gap-2 text-xs font-semibold text-brand hover:underline"
-                    >
-                      <MapPin className="h-3.5 w-3.5" />
-                      {t("useLocation.cta")}
-                    </button>
-                  )}
-
-                  <Link
-                    to="/perfil"
-                    onClick={() => setExpanded(false)}
-                    className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
+              {/* ---------- 2. Opcional — recolhido, mostra o valor quando há ---------- */}
+              <section className="mt-5">
+                <SectionLabel>{t("orderBuilderCard.extrasTitle")}</SectionLabel>
+                <div className="mt-2 divide-y divide-white/10 overflow-hidden rounded-xl bg-white/5">
+                  <ExtraRow
+                    icon={MessageSquare}
+                    label={t("orderBuilderCard.extraNote")}
+                    value={note.trim() || null}
+                    open={openExtra === "note"}
+                    onToggle={() => toggleExtra("note")}
                   >
-                    <Plus className="h-3.5 w-3.5" />
-                    {t("orderBuilderCard.addNewAddress")}
-                  </Link>
+                    <textarea
+                      id="order-note"
+                      aria-label={t("orderBuilderCard.extraNote")}
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder={t("orderBuilderCard.notePlaceholder")}
+                      rows={2}
+                      className="w-full rounded-lg bg-white/10 px-3 py-2 text-sm text-primary-foreground outline-none placeholder:text-primary-foreground/40 focus:ring-1 focus:ring-brand"
+                    />
+                  </ExtraRow>
 
-                  {deliveryKm != null && deliveryFeeEstimate != null && (
-                    <div className="mt-3 rounded-lg bg-white/5 px-3 py-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-primary-foreground/60">
-                          {t("orderBuilderCard.deliveryFeeEstimate", { km: deliveryKm })}
-                        </span>
-                        <span className="font-bold">
-                          {deliveryFeeEstimate === 0
-                            ? t("orderBuilderCard.deliveryFree")
-                            : formatKz(deliveryFeeEstimate)}
-                        </span>
-                      </div>
-                      {deliverySurchargeKm > 0 && !promo?.freeDelivery && (
-                        <p className="mt-1 text-[11px] text-primary-foreground/50">
-                          {t("orderBuilderCard.deliverySurchargeNote", {
+                  <ExtraRow
+                    icon={Tag}
+                    label={t("orderBuilderCard.promoLabel")}
+                    value={promo ? promo.label : null}
+                    valueTone="success"
+                    open={openExtra === "promo"}
+                    onToggle={() => toggleExtra("promo")}
+                  >
+                    <div className="flex gap-2">
+                      <input
+                        id="order-promo"
+                        aria-label={t("orderBuilderCard.promoLabel")}
+                        value={promoInput}
+                        onChange={(e) => {
+                          setPromoInput(e.target.value.toUpperCase());
+                          setPromoError(false);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            applyPromo();
+                          }
+                        }}
+                        placeholder={t("orderBuilderCard.promoPlaceholder")}
+                        className={`min-w-0 flex-1 rounded-lg bg-white/10 px-3 py-2 text-sm uppercase text-primary-foreground outline-none placeholder:text-primary-foreground/40 focus:ring-1 ${
+                          promoError ? "ring-1 ring-destructive" : "focus:ring-brand"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={promo ? resetPromo : applyPromo}
+                        className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+                          promo
+                            ? "text-primary-foreground/70 hover:text-destructive"
+                            : "bg-primary-foreground text-neutral-900 hover:opacity-90"
+                        }`}
+                      >
+                        {promo
+                          ? t("orderBuilderCard.promoRemove")
+                          : t("orderBuilderCard.promoApply")}
+                      </button>
+                    </div>
+                    {promoError && (
+                      <p className="mt-1.5 text-xs text-destructive">
+                        {t("orderBuilderCard.promoInvalid")}
+                      </p>
+                    )}
+                  </ExtraRow>
+
+                  {/* Fatura com NIF — exige conta (empresas são só do
+                      cliente autenticado, ver CompanyController). */}
+                  {user && (
+                    <ExtraRow
+                      icon={Building2}
+                      label={t("orderBuilderCard.extraInvoice")}
+                      value={
+                        wantsNifInvoice
+                          ? (selectedCompany?.name ?? t("orderBuilderCard.chooseCompany"))
+                          : null
+                      }
+                      valueTone={wantsNifInvoice && !selectedCompany ? "warning" : "muted"}
+                      open={openExtra === "invoice"}
+                      onToggle={() => toggleExtra("invoice")}
+                    >
+                      <label className="flex items-center gap-2.5 text-xs font-semibold">
+                        <Checkbox
+                          checked={wantsNifInvoice}
+                          onCheckedChange={(checked) => {
+                            setWantsNifInvoice(checked === true);
+                            if (checked !== true) setCompanyId(null);
+                          }}
+                          className="border-primary-foreground/40 data-[state=checked]:bg-brand data-[state=checked]:text-brand-foreground"
+                        />
+                        {t("orderBuilderCard.wantsNifInvoice")}
+                      </label>
+                      {wantsNifInvoice && (
+                        <div className="mt-2 space-y-1">
+                          {companies.length === 0 && (
+                            <p className="text-xs text-primary-foreground/60">
+                              {t("orderBuilderCard.noCompanies")}
+                            </p>
+                          )}
+                          {companies.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              role="radio"
+                              aria-checked={companyId === c.id}
+                              onClick={() => setCompanyId(c.id)}
+                              className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left ${
+                                companyId === c.id
+                                  ? "bg-white/10 ring-1 ring-brand"
+                                  : "hover:bg-white/5"
+                              }`}
+                            >
+                              <RadioDot checked={companyId === c.id} />
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-xs font-bold">{c.name}</span>
+                                <span className="block truncate text-[11px] text-primary-foreground/55">
+                                  NIF {c.nif}
+                                </span>
+                              </span>
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setCompanyDialogOpen(true)}
+                            className="inline-flex items-center gap-1 px-1 pt-1 text-xs font-semibold text-brand hover:underline"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            {t("orderBuilderCard.newCompany")}
+                          </button>
+                        </div>
+                      )}
+                    </ExtraRow>
+                  )}
+                </div>
+              </section>
+
+              {/* ---------- 3. Resumo (recibo) + enviar ---------- */}
+              <div className="mt-5 space-y-1.5 border-t border-white/10 pt-3 text-sm">
+                <SummaryRow label={t("orderBuilderCard.subtotal")} value={formatKz(total)} />
+                {mode === "delivery" && (
+                  <SummaryRow
+                    label={
+                      deliveryKm != null
+                        ? t("orderBuilderCard.deliveryRowKm", { km: deliveryKm })
+                        : t("orderBuilderCard.deliveryRow")
+                    }
+                    value={
+                      deliveryFeeShown == null
+                        ? "—"
+                        : deliveryFeeShown === 0
+                          ? t("orderBuilderCard.deliveryFree")
+                          : formatKz(deliveryFeeShown)
+                    }
+                    tone={deliveryFeeShown === 0 ? "success" : "default"}
+                    hint={
+                      deliverySurchargeKm > 0 && !promo?.freeDelivery
+                        ? t("orderBuilderCard.deliverySurchargeNote", {
                             base: formatKz(restaurant.deliveryFee),
                             radius: deliveryPolicy.freeRadiusKm,
                             extraKm: deliverySurchargeKm,
                             surcharge: formatKz(deliveryPolicy.perKmSurchargeKz),
-                          })}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* ---------- TAKEAWAY ---------- */}
-              {mode === "takeaway" && (
-                <div className="mt-3 space-y-2">
-                  {(["asap", "scheduled"] as const).map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setPickupChoice(c)}
-                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left text-sm font-semibold ${
-                        pickupChoice === c
-                          ? "border-brand bg-brand/15"
-                          : "border-primary-foreground/20"
-                      }`}
-                    >
-                      <Clock className="h-4 w-4 shrink-0 text-brand" />
-                      {c === "asap"
-                        ? t("orderBuilderCard.pickupAsap")
-                        : t("orderBuilderCard.pickupScheduled")}
-                    </button>
-                  ))}
-                  {pickupChoice === "scheduled" && (
-                    <label className="block pt-1 text-xs font-semibold">
-                      {t("orderBuilderCard.pickupTimeLabel")}
-                      <input
-                        type="time"
-                        value={pickupTime}
-                        onChange={(e) => setPickupTime(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-primary-foreground/20 bg-white/5 px-3 py-2 text-sm text-primary-foreground outline-none transition-colors focus:border-primary-foreground/50"
-                      />
-                    </label>
-                  )}
-                </div>
-              )}
-
-              {/* ---------- DINE-IN ---------- */}
-              {mode === "dinein" && (
-                <div className="mt-3">
-                  <p className="text-xs font-semibold">{t("orderBuilderCard.partySizeLabel")}</p>
-                  <div className="mt-2 flex items-center gap-3">
-                    <button
-                      type="button"
-                      aria-label="Diminuir"
-                      onClick={() => setPartySize((n) => Math.max(1, n - 1))}
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-primary-foreground/20 hover:border-primary-foreground/50"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <span className="flex items-center gap-1.5 text-lg font-bold">
-                      <Users className="h-4 w-4 text-brand" />
-                      {partySize}
-                    </span>
-                    <button
-                      type="button"
-                      aria-label="Aumentar"
-                      onClick={() => setPartySize((n) => Math.min(20, n + 1))}
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-primary-foreground/20 hover:border-primary-foreground/50"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  {/* Caução já paga de uma reserva de hoje, desconta do consumo —
-                      ver plano, Fase J3. */}
-                  {eligibleReservations.length > 0 && (
-                    <div className="mt-3 space-y-2 rounded-xl border border-brand/40 bg-brand/10 p-3">
-                      <label className="flex items-center gap-2 text-xs font-semibold">
-                        <Checkbox
-                          checked={selectedReservationId !== null}
-                          onCheckedChange={(checked) => {
-                            setReservationChoice(
-                              checked === true
-                                ? (autoReservationId ?? eligibleReservations[0]!.id)
-                                : null,
-                            );
-                          }}
-                          className="border-brand/40 data-[state=checked]:bg-brand data-[state=checked]:text-brand-foreground"
-                        />
-                        {eligibleReservations.length === 1
-                          ? t("orderBuilderCard.useReservationCredit", {
-                              amount: formatKz(eligibleReservations[0]!.cautionAmount),
-                            })
-                          : t("orderBuilderCard.useReservationCreditGeneric")}
-                      </label>
-
-                      {selectedReservationId !== null && eligibleReservations.length > 1 && (
-                        <div className="space-y-1.5">
-                          {eligibleReservations.map((r) => (
-                            <button
-                              key={r.id}
-                              type="button"
-                              onClick={() => setReservationChoice(r.id)}
-                              className={`flex w-full items-center justify-between gap-2 rounded-lg border p-2 text-left text-xs ${
-                                selectedReservationId === r.id
-                                  ? "border-brand bg-brand/15"
-                                  : "border-primary-foreground/20"
-                              }`}
-                            >
-                              <span>{r.time}</span>
-                              <span className="font-bold">{formatKz(r.cautionAmount)}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Caução do modo */}
-              {cautionForMode && (
-                <div className="mt-3 flex items-start gap-2 rounded-xl border border-brand/40 bg-brand/10 p-3">
-                  <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-                  <div className="min-w-0 text-xs">
-                    <p className="font-bold">{t("orderBuilderCard.cautionNoticeTitle")}</p>
-                    <p className="mt-0.5 text-primary-foreground/60">
-                      {t("orderBuilderCard.cautionNotice", {
-                        amount: formatKz(restaurant.cautionAmount),
-                        policy: restaurant.cautionPolicyNotice,
-                      })}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-3 space-y-1.5">
-                <label htmlFor="order-note" className="text-xs font-semibold">
-                  {t("orderBuilderCard.noteLabel")}
-                </label>
-                <textarea
-                  id="order-note"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder={t("orderBuilderCard.notePlaceholder")}
-                  rows={2}
-                  className="w-full rounded-xl border border-primary-foreground/20 bg-white/5 px-3 py-2 text-sm text-primary-foreground placeholder:text-primary-foreground/40 outline-none transition-colors focus:border-primary-foreground/50"
-                />
-              </div>
-
-              {/* Código promocional */}
-              <div className="mt-3 space-y-1.5">
-                <label htmlFor="order-promo" className="text-xs font-semibold">
-                  {t("orderBuilderCard.promoLabel")}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id="order-promo"
-                    value={promoInput}
-                    onChange={(e) => {
-                      setPromoInput(e.target.value.toUpperCase());
-                      setPromoError(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        applyPromo();
-                      }
-                    }}
-                    placeholder={t("orderBuilderCard.promoPlaceholder")}
-                    className={`min-w-0 flex-1 rounded-xl border bg-white/5 px-3 py-2 text-sm uppercase text-primary-foreground outline-none transition-colors placeholder:text-primary-foreground/40 focus:border-primary-foreground/50 ${
-                      promoError ? "border-destructive" : "border-primary-foreground/20"
-                    }`}
-                  />
-                  {promo ? (
-                    <button
-                      type="button"
-                      onClick={resetPromo}
-                      className="shrink-0 rounded-xl border border-primary-foreground/20 px-3 py-2 text-xs font-semibold text-primary-foreground/70 transition-colors hover:border-destructive hover:text-destructive"
-                    >
-                      {t("orderBuilderCard.promoRemove")}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={applyPromo}
-                      className="shrink-0 rounded-xl border border-brand px-3 py-2 text-xs font-bold text-brand transition-colors hover:bg-brand/10"
-                    >
-                      {t("orderBuilderCard.promoApply")}
-                    </button>
-                  )}
-                </div>
-                {promoError && (
-                  <p className="text-xs text-destructive">{t("orderBuilderCard.promoInvalid")}</p>
-                )}
-                {promo && (
-                  <div className="rounded-xl border border-success/40 bg-success/10 p-2.5 text-xs">
-                    <p className="font-bold text-success">{promo.label}</p>
-                    <p className="mt-0.5 text-primary-foreground/60">
-                      {promoDiscount > 0
-                        ? t("orderBuilderCard.promoDiscountApplied", {
-                            amount: formatKz(promoDiscount),
                           })
-                        : t("orderBuilderCard.promoFreeDeliveryApplied")}
-                    </p>
-                  </div>
+                        : undefined
+                    }
+                  />
                 )}
-              </div>
-
-              {/* Fatura com NIF — exige conta (empresas são só do cliente
-                  autenticado, ver Company/CompanyController no backend). */}
-              {user && (
-                <div className="mt-3 space-y-2">
-                  <label className="flex items-center gap-2 text-xs font-semibold">
-                    <Checkbox
-                      checked={wantsNifInvoice}
-                      onCheckedChange={(checked) => {
-                        setWantsNifInvoice(checked === true);
-                        if (checked !== true) setCompanyId(null);
-                      }}
-                      className="border-primary-foreground/40 data-[state=checked]:bg-brand data-[state=checked]:text-brand-foreground"
-                    />
-                    {t("orderBuilderCard.wantsNifInvoice")}
-                  </label>
-
-                  {wantsNifInvoice && (
-                    <div className="space-y-1.5 rounded-xl bg-white/5 p-2.5">
-                      {companies.length === 0 ? (
-                        <p className="px-0.5 text-xs text-primary-foreground/60">
-                          {t("orderBuilderCard.noCompanies")}
-                        </p>
-                      ) : (
-                        companies.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => setCompanyId(c.id)}
-                            className={`flex w-full items-center gap-2.5 rounded-lg border p-2 text-left ${
-                              companyId === c.id
-                                ? "border-brand bg-brand/15"
-                                : "border-primary-foreground/20"
-                            }`}
-                          >
-                            <Building2 className="h-3.5 w-3.5 shrink-0 text-brand" />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-xs font-bold">{c.name}</span>
-                              <span className="block truncate text-[11px] text-primary-foreground/60">
-                                NIF {c.nif}
-                              </span>
-                            </span>
-                            {companyId === c.id && (
-                              <Check className="h-3.5 w-3.5 shrink-0 text-brand" />
-                            )}
-                          </button>
-                        ))
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setCompanyDialogOpen(true)}
-                        className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary-foreground/30 py-2 text-xs font-semibold text-primary-foreground/80 hover:border-primary-foreground"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        {t("orderBuilderCard.newCompany")}
-                      </button>
-                    </div>
-                  )}
+                {promoDiscount > 0 && (
+                  <SummaryRow
+                    label={t("orderBuilderCard.discountRow")}
+                    value={`− ${formatKz(promoDiscount)}`}
+                    tone="success"
+                  />
+                )}
+                {reservationCredit > 0 && (
+                  <SummaryRow
+                    label={t("orderBuilderCard.reservationCreditRow")}
+                    value={`− ${formatKz(reservationCredit)}`}
+                    tone="success"
+                  />
+                )}
+                <div className="flex items-baseline justify-between border-t border-white/10 pt-2.5">
+                  <span className="font-bold">{t("orderBuilderCard.estimatedTotal")}</span>
+                  <span className="font-display text-xl font-extrabold tabular-nums">
+                    {formatKz(estimatedTotal)}
+                  </span>
                 </div>
-              )}
-
-              <p className="mt-3 text-center text-[11px] text-primary-foreground/50">
-                {t("orderBuilderCard.paymentAfterAccept")}
-              </p>
+              </div>
 
               <button
                 type="button"
@@ -848,17 +896,23 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
                   submitting
                 }
                 onClick={submit}
-                className="mt-3 w-full rounded-xl bg-brand px-5 py-3 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="mt-4 w-full rounded-xl bg-brand px-5 py-3 text-sm font-bold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {t("orderBuilderCard.sendOrder")}
               </button>
+              <p className="mt-2 text-center text-[11px] leading-snug text-primary-foreground/45">
+                {t("orderBuilderCard.paymentAfterAccept")}
+              </p>
 
               <CompanyFormDialog
                 open={companyDialogOpen}
                 onOpenChange={setCompanyDialogOpen}
-                onCreated={(company) => setCompanyId(company.id)}
+                onCreated={(company) => {
+                  setCompanyId(company.id);
+                  setWantsNifInvoice(true);
+                }}
               />
-            </>
+            </div>
           )}
         </div>
       )}
@@ -870,6 +924,201 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
         mode={mode}
         reasonText={pausedMessage}
       />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Peças de apresentação do cartão (fundo escuro, ver OrderBuilderCard) */
+/* ------------------------------------------------------------------ */
+
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-[11px] font-bold uppercase tracking-wide text-primary-foreground/45">
+      {children}
+    </p>
+  );
+}
+
+/** Opções lado a lado, a escolhida em "pílula" clara — cor da marca fica só
+ * para a ação principal. */
+function SegmentedControl<T extends string>({
+  ariaLabel,
+  value,
+  onChange,
+  options,
+  className = "",
+}: {
+  ariaLabel: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string; icon?: typeof Bike }[];
+  className?: string;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={ariaLabel}
+      className={`grid auto-cols-fr grid-flow-col gap-1 rounded-xl bg-white/5 p-1 ${className}`}
+    >
+      {options.map((option) => {
+        const active = option.value === value;
+        const Icon = option.icon;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(option.value)}
+            className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-bold transition-colors ${
+              active
+                ? "bg-primary-foreground text-neutral-900 shadow-sm"
+                : "text-primary-foreground/65 hover:text-primary-foreground"
+            }`}
+          >
+            {Icon && <Icon className="h-3.5 w-3.5 shrink-0" />}
+            <span className="truncate">{option.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** − quantidade +; no mínimo, o "−" vira lixo (remove a linha) — dispensa
+ * um botão "×" à parte em cada linha. */
+function QtyStepper({
+  qty,
+  onChange,
+  labels,
+  min = 0,
+  max = 99,
+}: {
+  qty: number;
+  onChange: (qty: number) => void;
+  labels: { decrease: string; increase: string; remove: string };
+  min?: number;
+  max?: number;
+}) {
+  const removes = min === 0 && qty <= 1;
+  return (
+    <div className="flex shrink-0 items-center rounded-full bg-white/10">
+      <button
+        type="button"
+        aria-label={removes ? labels.remove : labels.decrease}
+        disabled={!removes && qty <= Math.max(min, 1)}
+        onClick={() => onChange(Math.max(min, qty - 1))}
+        className={`grid h-8 w-8 place-items-center rounded-full transition-colors disabled:opacity-30 ${
+          removes
+            ? "text-primary-foreground/60 hover:text-destructive"
+            : "text-primary-foreground/80 hover:text-primary-foreground"
+        }`}
+      >
+        {removes ? <Trash2 className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
+      </button>
+      <span className="w-5 text-center text-sm font-bold tabular-nums">{qty}</span>
+      <button
+        type="button"
+        aria-label={labels.increase}
+        disabled={qty >= max}
+        onClick={() => onChange(Math.min(max, qty + 1))}
+        className="grid h-8 w-8 place-items-center rounded-full text-primary-foreground/80 transition-colors hover:text-primary-foreground disabled:opacity-30"
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function RadioDot({ checked }: { checked: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 ${
+        checked ? "border-brand" : "border-primary-foreground/35"
+      }`}
+    >
+      {checked && <span className="h-1.5 w-1.5 rounded-full bg-brand" />}
+    </span>
+  );
+}
+
+/** Linha opcional recolhida: rótulo + o valor escolhido (se houver); abre
+ * por baixo para editar. */
+function ExtraRow({
+  icon: Icon,
+  label,
+  value,
+  valueTone = "muted",
+  open,
+  onToggle,
+  children,
+}: {
+  icon: typeof Bike;
+  label: string;
+  value: string | null;
+  valueTone?: "muted" | "success" | "warning";
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const toneClass =
+    valueTone === "success"
+      ? "text-success"
+      : valueTone === "warning"
+        ? "text-brand"
+        : "text-primary-foreground/55";
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+      >
+        <Icon className="h-4 w-4 shrink-0 text-primary-foreground/55" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{label}</span>
+          {value && <span className={`block truncate text-xs ${toneClass}`}>{value}</span>}
+        </span>
+        {open ? (
+          <ChevronUp className="h-4 w-4 shrink-0 text-primary-foreground/50" />
+        ) : value ? (
+          <ChevronDown className="h-4 w-4 shrink-0 text-primary-foreground/50" />
+        ) : (
+          <Plus className="h-4 w-4 shrink-0 text-primary-foreground/50" />
+        )}
+      </button>
+      {open && <div className="px-3 pb-3">{children}</div>}
+    </div>
+  );
+}
+
+/** Uma linha do resumo: rótulo à esquerda, valor alinhado à direita;
+ * `hint` é uma explicação curta por baixo (ex.: como a taxa foi calculada). */
+function SummaryRow({
+  label,
+  value,
+  tone = "default",
+  hint,
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "success";
+  hint?: string | undefined;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-primary-foreground/70">{label}</span>
+        <span
+          className={`shrink-0 font-semibold tabular-nums ${tone === "success" ? "text-success" : ""}`}
+        >
+          {value}
+        </span>
+      </div>
+      {hint && <p className="mt-0.5 text-[11px] text-primary-foreground/45">{hint}</p>}
     </div>
   );
 }
