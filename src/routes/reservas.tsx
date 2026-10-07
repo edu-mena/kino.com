@@ -254,6 +254,7 @@ function Reservas() {
         eyebrow={t("reservas.eyebrow")}
         title={t("reservas.title")}
         description={t("reservas.description")}
+        descriptionAsInfo
       />
       <div className="mx-auto mt-8 max-w-5xl px-4 md:px-6">
         {reservations.length === 0 ? (

@@ -6,6 +6,7 @@ import {
   CircleHelp,
   Heart,
   Home,
+  Info,
   LogOut,
   MapPin,
   Menu,
@@ -30,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLocation } from "@/lib/location";
 import { useAuth } from "@/lib/auth";
 import { useUnreadByKind } from "@/lib/notifications";
@@ -617,20 +619,49 @@ export function PageHeading({
   eyebrow,
   title,
   description,
+  descriptionAsInfo = false,
   className,
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
+  /** Esconde a descrição atrás de um ícone "i" ao lado do título (abre num
+   * popover) — para páginas de uso diário (Pedidos, Reservas,
+   * Preferências), onde o texto explicativo só serve na primeira visita e
+   * depois só empurra o conteúdo para baixo. */
+  descriptionAsInfo?: boolean;
   className?: string;
 }) {
+  const { t } = useTranslation();
+  const infoOnly = descriptionAsInfo && !!description;
   return (
     <div className={cn("mx-auto max-w-6xl px-4 pt-10 md:px-6", className)}>
       {eyebrow && (
         <p className="text-sm font-semibold uppercase tracking-widest text-brand">{eyebrow}</p>
       )}
-      <h1 className="mt-2 text-3xl font-extrabold text-primary sm:text-4xl">{title}</h1>
-      {description && <p className="mt-3 max-w-2xl text-muted-foreground">{description}</p>}
+      <div className="mt-2 flex items-center gap-2">
+        <h1 className="min-w-0 text-3xl font-extrabold text-primary sm:text-4xl">{title}</h1>
+        {infoOnly && (
+          <Popover>
+            <PopoverTrigger
+              aria-label={t("pageInfo.aria")}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-surface hover:text-primary data-[state=open]:bg-surface data-[state=open]:text-primary"
+            >
+              <Info className="h-5 w-5" />
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              sideOffset={8}
+              className="w-80 max-w-[calc(100vw-2rem)] rounded-2xl border-border bg-card text-sm leading-relaxed text-muted-foreground shadow-lg"
+            >
+              {description}
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
+      {description && !infoOnly && (
+        <p className="mt-3 max-w-2xl text-muted-foreground">{description}</p>
+      )}
     </div>
   );
 }

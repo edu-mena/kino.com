@@ -47,6 +47,9 @@ export const en: Dictionary = {
     next: "Next page",
     page: "Page {n}",
   },
+  pageInfo: {
+    aria: "About this page",
+  },
   nav: {
     home: "Home",
     search: "Search",

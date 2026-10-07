@@ -49,6 +49,9 @@ export const fr: Dictionary = {
     next: "Page suivante",
     page: "Page {n}",
   },
+  pageInfo: {
+    aria: "À propos de cette page",
+  },
   nav: {
     home: "Accueil",
     search: "Rechercher",

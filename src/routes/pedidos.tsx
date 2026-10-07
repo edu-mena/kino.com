@@ -166,6 +166,7 @@ function Pedidos() {
         eyebrow={t("entrega.eyebrow")}
         title={t("entrega.title")}
         description={t("entrega.description")}
+        descriptionAsInfo
       />
       <div className="mx-auto mt-8 max-w-5xl px-4 md:px-6">
         {/* Mobile: um card de cada vez (lista ↔ visualização). Desktop: lado a lado. */}

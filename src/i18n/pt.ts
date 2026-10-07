@@ -54,6 +54,9 @@ export const pt = {
     next: "Próxima página",
     page: "Página {n}",
   },
+  pageInfo: {
+    aria: "Sobre esta página",
+  },
   nav: {
     home: "Início",
     search: "Buscar",
