@@ -48,6 +48,12 @@ export const pt = {
   emptyState: {
     genericTitle: "Nada por aqui, ainda",
   },
+  pagination: {
+    label: "Paginação",
+    previous: "Página anterior",
+    next: "Próxima página",
+    page: "Página {n}",
+  },
   nav: {
     home: "Início",
     search: "Buscar",

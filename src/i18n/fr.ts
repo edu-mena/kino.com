@@ -43,6 +43,12 @@ export const fr: Dictionary = {
   emptyState: {
     genericTitle: "Rien ici pour l'instant",
   },
+  pagination: {
+    label: "Pagination",
+    previous: "Page précédente",
+    next: "Page suivante",
+    page: "Page {n}",
+  },
   nav: {
     home: "Accueil",
     search: "Rechercher",
