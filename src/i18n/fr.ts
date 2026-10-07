@@ -54,7 +54,7 @@ export const fr: Dictionary = {
     search: "Rechercher",
     menu: "Menu",
     restaurants: "Restaurants",
-    delivery: "Livraison",
+    orders: "Commandes",
     reservations: "Réservations",
     favorites: "Favoris",
     preferences: "Préférences",
@@ -137,13 +137,13 @@ export const fr: Dictionary = {
     reserve: "Réserver",
   },
   entrega: {
-    eyebrow: "Livraison",
+    eyebrow: "Commandes",
     title: "Vos commandes",
     description:
       "Chaque commande vient d'un seul restaurant — choisissez-en une pour voir l'état, le contact et les détails.",
-    emptyTitle: "Vous n'avez encore aucune commande de livraison.",
+    emptyTitle: "Vous n'avez encore aucune commande.",
     emptyHint:
-      'Ajoutez des plats avec le bouton "+" dans le menu ou sur la page d\'un restaurant et choisissez "Demander la livraison".',
+      'Ajoutez des plats avec le bouton "+" dans le menu ou sur la page d\'un restaurant et touchez "Envoyer la commande".',
     seeMenu: "Voir le menu",
     itemSingular: "article",
     itemPlural: "articles",
@@ -446,7 +446,7 @@ export const fr: Dictionary = {
   tutorial: {
     step1Title: "Trouvez ce que vous voulez manger",
     step1Description: "Recherchez par plat, restaurant ou ingrédient ici.",
-    step2Title: "Votre panier et vos livraisons",
+    step2Title: "Votre panier et vos commandes",
     step2Description: "Suivez vos commandes en cours et voyez ce que vous avez ajouté au panier.",
     step3Title: "Vos préférences",
     step3Description:

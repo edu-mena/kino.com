@@ -81,7 +81,7 @@ export function fileToDocumentDataUrl(file: File): Promise<string> {
  * antes do upload real acabar) e URL real do backend (R2/Tigris, ver
  * `MediaUploadService::storeDocument` — mantém a extensão original).
  * Usado por quem MOSTRA o documento (comprovativo ou fatura), dos dois
- * lados (cliente em `/entrega`, restaurante em `/admin/pedidos`). */
+ * lados (cliente em `/pedidos`, restaurante em `/admin/pedidos`). */
 export function isPdfDataUrl(src: string | undefined): boolean {
   if (!src) return false;
   if (src.startsWith("data:")) return src.startsWith("data:application/pdf");

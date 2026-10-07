@@ -14,7 +14,7 @@ function dist(a: { clientX: number; clientY: number }, b: { clientX: number; cli
 /**
  * Visualizador em ecrã inteiro para o comprovativo de pagamento (ou
  * qualquer imagem/PDF que precise de zoom) — usado pelo cliente em
- * `/entrega` e pelo painel do restaurante em `/admin/pedidos`. Antes, ambos
+ * `/pedidos` e pelo painel do restaurante em `/admin/pedidos`. Antes, ambos
  * só tinham a imagem em miniatura (ou um link `target="_blank"`); nem
  * imagem nem PDF davam para examinar em detalhe sem sair da app.
  *

@@ -26,6 +26,7 @@ import { Route as NotificacoesRouteImport } from './routes/notificacoes'
 import { Route as OfertasRouteImport } from './routes/ofertas'
 import { Route as PacotesRouteImport } from './routes/pacotes'
 import { Route as ParceirosRouteImport } from './routes/parceiros'
+import { Route as PedidosRouteImport } from './routes/pedidos'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PreferenciasRouteImport } from './routes/preferencias'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
@@ -150,6 +151,11 @@ const PacotesRoute = PacotesRouteImport.update({
 const ParceirosRoute = ParceirosRouteImport.update({
   id: '/parceiros',
   path: '/parceiros',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PedidosRoute = PedidosRouteImport.update({
+  id: '/pedidos',
+  path: '/pedidos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PerfilRoute = PerfilRouteImport.update({
@@ -371,6 +377,7 @@ export interface FileRoutesByFullPath {
   '/ofertas': typeof OfertasRoute
   '/pacotes': typeof PacotesRoute
   '/parceiros': typeof ParceirosRoute
+  '/pedidos': typeof PedidosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -429,6 +436,7 @@ export interface FileRoutesByTo {
   '/ofertas': typeof OfertasRoute
   '/pacotes': typeof PacotesRoute
   '/parceiros': typeof ParceirosRoute
+  '/pedidos': typeof PedidosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -488,6 +496,7 @@ export interface FileRoutesById {
   '/ofertas': typeof OfertasRoute
   '/pacotes': typeof PacotesRoute
   '/parceiros': typeof ParceirosRoute
+  '/pedidos': typeof PedidosRoute
   '/perfil': typeof PerfilRoute
   '/preferencias': typeof PreferenciasRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -549,6 +558,7 @@ export interface FileRouteTypes {
     | '/ofertas'
     | '/pacotes'
     | '/parceiros'
+    | '/pedidos'
     | '/perfil'
     | '/preferencias'
     | '/privacidade'
@@ -607,6 +617,7 @@ export interface FileRouteTypes {
     | '/ofertas'
     | '/pacotes'
     | '/parceiros'
+    | '/pedidos'
     | '/perfil'
     | '/preferencias'
     | '/privacidade'
@@ -665,6 +676,7 @@ export interface FileRouteTypes {
     | '/ofertas'
     | '/pacotes'
     | '/parceiros'
+    | '/pedidos'
     | '/perfil'
     | '/preferencias'
     | '/privacidade'
@@ -725,6 +737,7 @@ export interface RootRouteChildren {
   OfertasRoute: typeof OfertasRoute
   PacotesRoute: typeof PacotesRoute
   ParceirosRoute: typeof ParceirosRoute
+  PedidosRoute: typeof PedidosRoute
   PerfilRoute: typeof PerfilRoute
   PreferenciasRoute: typeof PreferenciasRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
@@ -862,6 +875,13 @@ declare module '@tanstack/react-router' {
       path: '/parceiros'
       fullPath: '/parceiros'
       preLoaderRoute: typeof ParceirosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pedidos': {
+      id: '/pedidos'
+      path: '/pedidos'
+      fullPath: '/pedidos'
+      preLoaderRoute: typeof PedidosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/perfil': {
@@ -1230,6 +1250,7 @@ const rootRouteChildren: RootRouteChildren = {
   OfertasRoute: OfertasRoute,
   PacotesRoute: PacotesRoute,
   ParceirosRoute: ParceirosRoute,
+  PedidosRoute: PedidosRoute,
   PerfilRoute: PerfilRoute,
   PreferenciasRoute: PreferenciasRoute,
   PrivacidadeRoute: PrivacidadeRoute,

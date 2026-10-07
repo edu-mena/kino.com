@@ -661,7 +661,7 @@ export function useNotifications() {
 
 /**
  * Marca como lidas as notificações de um tipo enquanto a página dele está
- * aberta e visível (`/entrega`, `/reservas`, `/admin/pedidos`,
+ * aberta e visível (`/pedidos`, `/reservas`, `/admin/pedidos`,
  * `/admin/reservas`) — o badge desse separador desce assim que se vê a
  * lista. Antes só descia clicando em cada notificação no sino. Numa aba em
  * segundo plano não marca nada: só conta como visto o que está no ecrã.
@@ -707,7 +707,7 @@ export function useMarkKindReadOnView(
 }
 
 export type UnreadByKind = {
-  /** `kind === "order"` — mapeia para `/entrega` (cliente) ou `/admin/pedidos` (restaurante). */
+  /** `kind === "order"` — mapeia para `/pedidos` (cliente) ou `/admin/pedidos` (restaurante). */
   orders: number;
   /** `kind === "reservation"` — mapeia para `/reservas` (cliente) ou `/admin/reservas` (restaurante). */
   reservations: number;

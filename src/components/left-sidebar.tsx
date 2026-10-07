@@ -27,10 +27,10 @@ import { useUnreadByKind } from "@/lib/notifications";
 import { useTranslation } from "@/i18n";
 
 /** Contagem do badge por destino: só novidades por ler (notificações de
- * pedido/reserva). Antes `/entrega` usava o maior entre isso e o TOTAL de
+ * pedido/reserva). Antes o badge de Pedidos usava o maior entre isso e o TOTAL de
  * pedidos do utilizador — que só crescia, por isso o número nunca descia. */
 function badgeCountFor(to: string, unread: { orders: number; reservations: number }): number {
-  if (to === "/entrega") return unread.orders;
+  if (to === "/pedidos") return unread.orders;
   if (to === "/reservas") return unread.reservations;
   return 0;
 }
@@ -42,7 +42,7 @@ function badgeCountFor(to: string, unread: { orders: number; reservations: numbe
 export const tabs = [
   { to: "/", labelKey: "nav.home", icon: Home },
   { to: "/cardapio", labelKey: "nav.search", icon: Search },
-  { to: "/entrega", labelKey: "nav.delivery", icon: Bike },
+  { to: "/pedidos", labelKey: "nav.orders", icon: Bike },
   { to: "/reservas", labelKey: "nav.reservations", icon: CalendarCheck },
   { to: "/perfil", labelKey: "nav.profile", icon: User },
 ] as const;
@@ -53,7 +53,7 @@ const desktopNavItems = [
   { to: "/", labelKey: "nav.home", icon: Home },
   { to: "/cardapio", labelKey: "nav.search", icon: Search },
   { to: "/restaurantes", labelKey: "nav.restaurants", icon: MapPin },
-  { to: "/entrega", labelKey: "nav.delivery", icon: Bike },
+  { to: "/pedidos", labelKey: "nav.orders", icon: Bike },
   { to: "/reservas", labelKey: "nav.reservations", icon: CalendarCheck },
   { to: "/favoritos", labelKey: "nav.favorites", icon: Heart },
   { to: "/perfil", labelKey: "nav.profile", icon: User },

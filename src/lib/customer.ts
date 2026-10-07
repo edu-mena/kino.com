@@ -14,7 +14,7 @@ export function customerKey(c: {
 
 /** Chave usada quando não há sessão — o "convidado" desta janela do browser.
  * Estável de propósito: os pedidos/reservas que um convidado cria ficam
- * visíveis para ele em `/entrega` e `/reservas`, mas nunca se confundem com
+ * visíveis para ele em `/pedidos` e `/reservas`, mas nunca se confundem com
  * os registos da seed (que não têm `ownerKey`) nem com os de uma conta. */
 export const GUEST_KEY = "__guest__";
 

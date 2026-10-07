@@ -84,7 +84,7 @@ const menu = [
     labelKey: "perfil.menuOrdersLabel",
     descriptionKey: "perfil.menuOrdersDescription",
     icon: Receipt,
-    to: "/entrega" as const,
+    to: "/pedidos" as const,
   },
   {
     labelKey: "perfil.menuReservationsLabel",

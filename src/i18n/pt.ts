@@ -59,7 +59,7 @@ export const pt = {
     search: "Buscar",
     menu: "Cardápio",
     restaurants: "Restaurantes",
-    delivery: "Entrega",
+    orders: "Pedidos",
     reservations: "Reservas",
     favorites: "Favoritos",
     preferences: "Preferências",
@@ -141,13 +141,13 @@ export const pt = {
     reserve: "Reservar",
   },
   entrega: {
-    eyebrow: "Entrega",
+    eyebrow: "Pedidos",
     title: "Os seus pedidos",
     description:
       "Cada pedido é de um restaurante só — escolha um para ver o estado, o contacto e os detalhes.",
-    emptyTitle: "Ainda não tem pedidos de entrega.",
+    emptyTitle: "Ainda não tem pedidos.",
     emptyHint:
-      'Adicione pratos com o botão "+" no cardápio ou na página de um restaurante e escolha "Solicitar delivery".',
+      'Adicione pratos com o botão "+" no cardápio ou na página de um restaurante e toque em "Enviar pedido".',
     seeMenu: "Ver cardápio",
     itemSingular: "item",
     itemPlural: "itens",
@@ -449,7 +449,7 @@ export const pt = {
   tutorial: {
     step1Title: "Encontre o que quer comer",
     step1Description: "Pesquise por prato, restaurante ou ingrediente aqui.",
-    step2Title: "O seu carrinho e entregas",
+    step2Title: "O seu carrinho e pedidos",
     step2Description: "Acompanhe pedidos em curso e veja o que já adicionou ao carrinho.",
     step3Title: "As suas preferências",
     step3Description:

@@ -60,7 +60,7 @@ export type CartLine = {
  * Como não há backend real, o painel do restaurante (`/admin`) lê os
  * MESMOS pedidos daqui (filtrados por `restaurantId`) — é o que faz o
  * "Aceitar"/"A caminho"/"Entregue" do lado do restaurante aparecer de
- * imediato do lado do cliente em `/entrega`, no mesmo navegador.
+ * imediato do lado do cliente em `/pedidos`, no mesmo navegador.
  */
 /** Código de estado do pedido — o texto exibido vem de `t("entrega.status." + status)`,
  * nunca guardado já traduzido (senão trocar de idioma não atualizava pedidos existentes). */
@@ -79,7 +79,7 @@ export type CartOrder = {
   restaurantId: string;
   /** Dono do pedido no lado do cliente (`viewerKey` no momento do pedido:
    * conta autenticada ou convidado). Ausente nos pedidos da seed — que por
-   * isso nunca aparecem em `/entrega` como sendo de quem está a ver. */
+   * isso nunca aparecem em `/pedidos` como sendo de quem está a ver. */
   ownerKey?: string;
   /** Só presentes com backend real (a lista "meus pedidos" atravessa vários
    * restaurantes — ver api-orders.ts) — usados por `entrega.tsx` em vez de
@@ -156,7 +156,7 @@ export type CartOrder = {
   /** ISO — quando o comprovativo foi carregado. */
   paymentProofAt?: string;
   /** Fatura carregada pelo restaurante (data URL — imagem ou PDF), visível
-   * ao cliente em `/entrega`. Ausente até o restaurante a emitir. */
+   * ao cliente em `/pedidos`. Ausente até o restaurante a emitir. */
   invoice?: string;
   /** `"nif"` = fatura com o NIF da empresa do cliente; ausente/`"normal"` =
    * fatura simples de consumidor final. Escolhido pelo RESTAURANTE ao
@@ -255,7 +255,7 @@ type CartValue = {
    * `ok: false` = falha real (upload rejeitado, tamanho excedido, etc.). */
   setPaymentProof: (orderId: string, dataUrl: string | null) => Promise<boolean>;
   /** Restaurante emite (ou substitui) a fatura — data URL de imagem ou PDF.
-   * `null` remove. Visível de imediato ao cliente em `/entrega`. `ok: false`
+   * `null` remove. Visível de imediato ao cliente em `/pedidos`. `ok: false`
    * = falha real. */
   setInvoice: (
     orderId: string,

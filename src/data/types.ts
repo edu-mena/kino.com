@@ -60,7 +60,7 @@ export interface Restaurant {
   /** Dados de destino do pagamento, por id de método — texto livre (IBAN +
    * titular para "transferencia", nº de telefone / carteira para os
    * digitais). Definidos pelo restaurante em `/admin/perfil`; o cliente
-   * vê-os em `/entrega` depois de o restaurante fixar o método exigido.
+   * vê-os em `/pedidos` depois de o restaurante fixar o método exigido.
    * "cash" (numerário) não precisa. */
   paymentDetails?: Record<string, string>;
   /** Modos de pedido para os quais a caução (`cautionAmount`) é exigida como

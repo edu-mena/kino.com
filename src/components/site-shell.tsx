@@ -59,7 +59,7 @@ const appNavLinks = [
   { to: "/", labelKey: "nav.home", icon: Home },
   { to: "/cardapio", labelKey: "nav.menu", icon: Search },
   { to: "/restaurantes", labelKey: "nav.restaurants", icon: MapPin },
-  { to: "/entrega", labelKey: "nav.delivery", icon: Bike },
+  { to: "/pedidos", labelKey: "nav.orders", icon: Bike },
   { to: "/reservas", labelKey: "nav.reservations", icon: CalendarCheck },
   { to: "/favoritos", labelKey: "nav.favorites", icon: Heart },
   { to: "/preferencias", labelKey: "nav.preferences", icon: Settings },
@@ -161,7 +161,7 @@ function CartButton() {
   const { t } = useTranslation();
   return (
     <Link
-      to="/entrega"
+      to="/pedidos"
       data-tour="cart"
       aria-label={t("header.viewDelivery")}
       className="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground transition-colors hover:border-primary"
@@ -389,7 +389,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
         <div className="flex-1 mt-4 overflow-y-auto px-4 py-8">
           {panelLinks.map((link) => {
             const badge =
-              link.to === "/entrega"
+              link.to === "/pedidos"
                 ? unread.orders
                 : link.to === "/reservas"
                   ? unread.reservations
@@ -482,7 +482,7 @@ export function MobileTabBar() {
       <div className="grid grid-cols-5">
         {tabs.map((tab) => {
           const badge =
-            tab.to === "/entrega"
+            tab.to === "/pedidos"
               ? unread.orders
               : tab.to === "/reservas"
                 ? unread.reservations
@@ -540,7 +540,7 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
-              <Link to="/entrega" className="hover:text-primary">
+              <Link to="/pedidos" className="hover:text-primary">
                 {t("siteFooter.trackOrder")}
               </Link>
             </li>

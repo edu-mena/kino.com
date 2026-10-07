@@ -20,9 +20,9 @@ import { groupByRecency, parseIsoDate } from "@/lib/recency-groups";
 export const targetFor = (
   scope: "client" | "restaurant",
   kind: LukuNotification["kind"],
-): "/entrega" | "/reservas" | "/admin/pedidos" | "/admin/reservas" | null => {
+): "/pedidos" | "/reservas" | "/admin/pedidos" | "/admin/reservas" | null => {
   if (kind === "restaurant") return null;
-  if (scope === "client") return kind === "order" ? "/entrega" : "/reservas";
+  if (scope === "client") return kind === "order" ? "/pedidos" : "/reservas";
   return kind === "order" ? "/admin/pedidos" : "/admin/reservas";
 };
 
@@ -135,9 +135,9 @@ export function NotificationList({
           >
             {body}
           </Link>
-        ) : to === "/entrega" ? (
+        ) : to === "/pedidos" ? (
           <Link
-            to="/entrega"
+            to="/pedidos"
             search={{ pedido: n.refId }}
             onClick={onNavigate}
             className="block px-4 py-2.5 hover:bg-surface"

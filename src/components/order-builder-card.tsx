@@ -320,7 +320,7 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
     setCompanyId(null);
     setReservationChoice(undefined);
     toast.success(t("orderBuilderCard.orderCreatedToast"));
-    navigate({ to: "/entrega" });
+    navigate({ to: "/pedidos" });
   };
 
   // ---------- Derivados só para a apresentação ----------

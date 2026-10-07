@@ -52,7 +52,7 @@ export const en: Dictionary = {
     search: "Search",
     menu: "Menu",
     restaurants: "Restaurants",
-    delivery: "Delivery",
+    orders: "Orders",
     reservations: "Reservations",
     favorites: "Favorites",
     preferences: "Preferences",
@@ -134,13 +134,13 @@ export const en: Dictionary = {
     reserve: "Reserve",
   },
   entrega: {
-    eyebrow: "Delivery",
+    eyebrow: "Orders",
     title: "Your orders",
     description:
       "Each order is from one restaurant only — pick one to see the status, contact and details.",
-    emptyTitle: "You don't have any delivery orders yet.",
+    emptyTitle: "You don't have any orders yet.",
     emptyHint:
-      'Add dishes with the "+" button on the menu or a restaurant page and choose "Request delivery".',
+      'Add dishes with the "+" button on the menu or a restaurant page and tap "Send order".',
     seeMenu: "View menu",
     itemSingular: "item",
     itemPlural: "items",
@@ -442,7 +442,7 @@ export const en: Dictionary = {
   tutorial: {
     step1Title: "Find what you want to eat",
     step1Description: "Search by dish, restaurant or ingredient here.",
-    step2Title: "Your cart and deliveries",
+    step2Title: "Your cart and orders",
     step2Description: "Track orders in progress and see what you've added to your cart.",
     step3Title: "Your preferences",
     step3Description:
