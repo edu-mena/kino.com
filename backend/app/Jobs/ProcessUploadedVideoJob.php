@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Services\MediaUploadService;
 use App\Services\VideoTranscoder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -66,7 +67,10 @@ class ProcessUploadedVideoJob implements ShouldQueue
             $transcoder->transcode($rawLocalPath, $outputLocalPath);
 
             $videoPath = "{$this->publicPathPrefix}/{$model->id}/".Str::uuid().'.mp4';
-            Storage::disk('r2')->put($videoPath, file_get_contents($outputLocalPath), 'public');
+            // Vídeo com cache de um ano, e a capa como qualquer imagem pública
+            // (com miniaturas — as listas usam-nas, ver MediaUploadService).
+            $uploads = app(MediaUploadService::class);
+            $uploads->putPublic($videoPath, (string) file_get_contents($outputLocalPath));
 
             $updates = [
                 $this->mediaUrlField => Storage::disk('r2')->url($videoPath),
@@ -76,8 +80,10 @@ class ProcessUploadedVideoJob implements ShouldQueue
             if ($this->thumbnailField && $thumbLocalPath) {
                 $transcoder->generateThumbnail($rawLocalPath, $thumbLocalPath);
                 $thumbPath = "{$this->publicPathPrefix}/{$model->id}/".Str::uuid().'.jpg';
-                Storage::disk('r2')->put($thumbPath, file_get_contents($thumbLocalPath), 'public');
-                $updates[$this->thumbnailField] = Storage::disk('r2')->url($thumbPath);
+                $updates[$this->thumbnailField] = $uploads->putPublicImage(
+                    $thumbPath,
+                    (string) file_get_contents($thumbLocalPath),
+                );
             }
 
             $model->update($updates);

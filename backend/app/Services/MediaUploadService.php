@@ -7,12 +7,15 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /**
  * Pipeline de upload (ver plano, secção "Imagens/vídeos"). O frontend já
  * faz resize/crop por preset antes de enviar (dish 1:1/900px, cover
  * 16:9/1600px, gallery 16:9/1280px, promo 16:9/1400px, story 9:16/1280px) —
- * aqui só valida e guarda; não reprocessa a imagem no servidor.
+ * aqui valida, guarda o original tal como veio e gera ao lado as miniaturas
+ * WebP (ver `storeThumbnails`) para as listas não descarregarem a foto
+ * inteira por cada cartão.
  *
  * Vídeo (stories + ofertas, Fase 4) vai por fila Redis
  * (ProcessUploadedVideoJob, ffmpeg) — `storeRawVideo()` abaixo só guarda o
@@ -45,6 +48,25 @@ class MediaUploadService
 
     private const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100MB — bruto, antes do ffmpeg recomprimir
 
+    /** Larguras das miniaturas de cada imagem pública: avatares/linhas
+     * (160), cartões (480) e largura total do telemóvel (960). Existem
+     * SEMPRE as três — num original mais estreito, a miniatura fica com a
+     * largura dele (nunca amplia) — para o frontend poder montar o URL por
+     * convenção (`thumbnailPath`) sem nunca pedir uma que não existe. */
+    public const THUMBNAIL_WIDTHS = [160, 480, 960];
+
+    /** Ficheiros públicos nunca mudam depois de gravados (cada upload tem um
+     * uuid novo no nome) — podem ficar em cache um ano. Antes ficavam 1h:
+     * quem voltava à app no dia seguinte descarregava todas as fotos outra
+     * vez. */
+    private const PUBLIC_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
+    /** Acima disto não gera miniaturas: descodificar a imagem inteira em
+     * memória (4 bytes/píxel) arriscava rebentar o memory_limit do PHP e
+     * derrubar o upload todo. Os presets do frontend nunca passam de
+     * 1600×900; isto só apanha fotos cruas (ex.: formulário de parceiro). */
+    private const MAX_THUMBNAIL_SOURCE_PIXELS = 25_000_000;
+
     public function storeImage(UploadedFile $file, string $purpose, string $ownerSegment): string
     {
         if (! in_array($purpose, self::IMAGE_PURPOSES, true)) {
@@ -63,9 +85,103 @@ class MediaUploadService
         $extension = $file->extension() ?: 'jpg';
         $path = "{$purpose}/{$ownerSegment}/".Str::uuid().".{$extension}";
 
-        Storage::disk('r2')->put($path, file_get_contents($file->getRealPath()), 'public');
+        return $this->putPublicImage($path, (string) file_get_contents($file->getRealPath()));
+    }
+
+    /** Pastas do bucket público com imagens (as mesmas dos uploads) — o
+     * comando `media:thumbnails` percorre só estas. */
+    public static function publicImagePrefixes(): array
+    {
+        return self::IMAGE_PURPOSES;
+    }
+
+    /** Imagem pública já validada: grava o original e as miniaturas.
+     * Devolve o URL público do original. */
+    public function putPublicImage(string $path, string $contents): string
+    {
+        $this->putPublic($path, $contents);
+        $this->storeThumbnails($path, $contents);
 
         return Storage::disk('r2')->url($path);
+    }
+
+    /** Qualquer ficheiro do bucket público (imagem, vídeo, capa de vídeo) —
+     * sempre com cache de um ano, ver PUBLIC_CACHE_CONTROL. */
+    public function putPublic(string $path, string $contents): void
+    {
+        Storage::disk('r2')->put($path, $contents, [
+            'visibility' => 'public',
+            'CacheControl' => self::PUBLIC_CACHE_CONTROL,
+        ]);
+    }
+
+    /** `dish/x/<uuid>.jpg` → `dish/x/<uuid>.w480.webp`. O frontend monta o
+     * mesmo nome a partir do URL do original (src/lib/image-cdn.ts) — mudar
+     * aqui obriga a mudar lá. */
+    public static function thumbnailPath(string $path, int $width): string
+    {
+        return preg_replace('/\.[A-Za-z0-9]+$/', '', $path).".w{$width}.webp";
+    }
+
+    public static function isThumbnailPath(string $path): bool
+    {
+        return (bool) preg_match('/\.w\d+\.webp$/', $path);
+    }
+
+    public static function isImagePath(string $path): bool
+    {
+        return (bool) preg_match('/\.(jpe?g|png|webp|gif)$/i', $path);
+    }
+
+    /**
+     * Gera as miniaturas WebP de `THUMBNAIL_WIDTHS` ao lado do original.
+     * Nunca deixa o upload falhar por causa delas: sem suporte WebP no GD,
+     * formato que o GD não lê, imagem gigante ou erro a gravar → regista e
+     * devolve `false`; o frontend, sem miniatura, volta ao original.
+     */
+    public function storeThumbnails(string $path, string $contents): bool
+    {
+        if (! function_exists('imagewebp')) {
+            return false;
+        }
+
+        $info = @getimagesizefromstring($contents);
+        if (! $info || $info[0] < 1 || $info[1] < 1 || $info[0] * $info[1] > self::MAX_THUMBNAIL_SOURCE_PIXELS) {
+            return false;
+        }
+
+        try {
+            $source = @imagecreatefromstring($contents);
+            if ($source === false) {
+                return false;
+            }
+            $width = imagesx($source);
+            $height = imagesy($source);
+
+            foreach (self::THUMBNAIL_WIDTHS as $target) {
+                $thumbWidth = min($target, $width);
+                $thumbHeight = max(1, (int) round($height * $thumbWidth / $width));
+                $thumb = imagecreatetruecolor($thumbWidth, $thumbHeight);
+                // Mantém a transparência de PNGs (logótipos).
+                imagealphablending($thumb, false);
+                imagesavealpha($thumb, true);
+                imagecopyresampled($thumb, $source, 0, 0, 0, 0, $thumbWidth, $thumbHeight, $width, $height);
+
+                ob_start();
+                try {
+                    imagewebp($thumb, null, 78);
+                } finally {
+                    $bytes = (string) ob_get_clean();
+                }
+                $this->putPublic(self::thumbnailPath($path, $target), $bytes);
+            }
+
+            return true;
+        } catch (Throwable $e) {
+            report($e);
+
+            return false;
+        }
     }
 
     /**
@@ -185,6 +301,9 @@ class MediaUploadService
         }
 
         $path = ltrim(substr($url, strlen($publicBase)), '/');
-        Storage::disk('r2')->delete($path);
+        $thumbnails = self::isImagePath($path) && ! self::isThumbnailPath($path)
+            ? array_map(fn (int $w) => self::thumbnailPath($path, $w), self::THUMBNAIL_WIDTHS)
+            : [];
+        Storage::disk('r2')->delete([$path, ...$thumbnails]);
     }
 }

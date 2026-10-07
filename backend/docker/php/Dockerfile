@@ -12,11 +12,13 @@ RUN apk add --no-cache \
         libpng-dev \
         freetype-dev \
         libjpeg-turbo-dev \
+        libwebp-dev \
         ffmpeg
 
 # pcntl: exigido pelo Horizon (worker da fila) — sem ele o `composer install`
 # recusa o lock file. Já estava no Dockerfile.prod; faltava aqui.
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+# --with-webp: miniaturas das imagens (MediaUploadService::storeThumbnails).
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j$(nproc) \
         pdo_pgsql \
         pgsql \
