@@ -44,7 +44,9 @@ class PackageTypeController extends Controller
     {
         $packages = $packageType->restaurantPackages()
             ->where('is_active', true)
-            ->whereHas('restaurant', fn ($q) => $q->listed())
+            // Só restaurantes ativos — um inativo (subscrição suspensa) não
+            // aparece na descoberta, nem os pacotes dele.
+            ->whereHas('restaurant', fn ($q) => $q->visibleToCustomers())
             ->with('restaurant', 'packageType')
             ->get();
 

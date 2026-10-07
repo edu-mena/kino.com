@@ -130,6 +130,8 @@ Route::get('restaurants', [RestaurantController::class, 'index']);
 Route::get('restaurants/{restaurant}', [RestaurantController::class, 'show']);
 Route::get('restaurants/{restaurant}/menus', [RestaurantMenuController::class, 'index']);
 Route::get('restaurants/{restaurant}/menu-items', [MenuItemController::class, 'index']);
+// Catálogo público num só pedido (home, pesquisa, /cardapio) — ver catalog().
+Route::get('menu-items', [MenuItemController::class, 'catalog']);
 Route::get('menu-items/{menuItem}', [MenuItemController::class, 'show']);
 
 // Escrita — sempre autenticada; autorização fina fica nas Policies/FormRequests

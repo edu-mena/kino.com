@@ -42,6 +42,13 @@ class MenuItem extends Model
         return $this->belongsTo(RestaurantMenu::class, 'menu_id');
     }
 
+    /** Linhas de pedido com este prato — base do `orderCount` (popularidade)
+     * do catálogo público, ver MenuItemController::catalog. */
+    public function orderLines(): HasMany
+    {
+        return $this->hasMany(OrderLine::class);
+    }
+
     public function ingredients(): HasMany
     {
         return $this->hasMany(MenuItemIngredient::class)->orderBy('position');

@@ -13,6 +13,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantGalleryImage;
 use App\Models\RestaurantHour;
 use App\Services\MediaUploadService;
+use App\Support\Popularity;
 use App\Support\RestaurantIndexCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -52,6 +53,12 @@ class RestaurantController extends Controller
             $exactSearch = mb_strtolower(trim((string) $request->input('filter.search', '')));
             $restaurants = QueryBuilder::for(Restaurant::class)
                 ->with('subscription')
+                // Popularidade (ordem das listagens de cliente): seguidores e
+                // pedidos dos últimos 30 dias — ver App\Support\Popularity.
+                ->withCount([
+                    'followers',
+                    'orders as recent_orders_count' => fn ($q) => Popularity::recentOrders($q),
+                ])
                 ->where(fn ($q) => $q->where('is_demo', false)->when(
                     $exactSearch !== '',
                     fn ($q) => $q->orWhereRaw('lower(name) = ?', [$exactSearch]),

@@ -81,6 +81,9 @@ class RestaurantResource extends JsonResource
             // Só no detalhe (`show` faz loadCount) — nunca nas listagens,
             // para não somar uma contagem por restaurante.
             'followersCount' => $this->whenCounted('followers'),
+            // Pedidos dos últimos 30 dias (ver App\Support\Popularity) — só na
+            // listagem pública, para ordenar por popularidade no cliente.
+            'recentOrdersCount' => $this->whenCounted('recent_orders'),
             'createdAt' => $this->created_at?->toIso8601String(),
         ];
     }

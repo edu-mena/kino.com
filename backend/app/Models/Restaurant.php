@@ -68,6 +68,19 @@ class Restaurant extends Model
         return $query->where('is_demo', false);
     }
 
+    /**
+     * Descoberta do cliente: listado e ATIVO — subscrição não suspensa.
+     * Inativo ≠ fechado: fora de horário ou com pedidos pausados continua a
+     * aparecer (com o aviso); inativo desaparece, ele e os pratos. Não está
+     * dentro de `listed()` porque esse também serve as estatísticas e as
+     * listagens do sistema.
+     */
+    public function scopeVisibleToCustomers(Builder $query): Builder
+    {
+        return $query->listed()
+            ->whereDoesntHave('subscription', fn (Builder $q) => $q->where('status', 'suspended'));
+    }
+
     public function hours(): HasMany
     {
         return $this->hasMany(RestaurantHour::class);

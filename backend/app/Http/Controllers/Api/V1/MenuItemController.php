@@ -9,9 +9,12 @@ use App\Http\Resources\Api\V1\MenuItemResource;
 use App\Models\MenuItem;
 use App\Models\Restaurant;
 use App\Models\RestaurantMenu;
+use App\Support\Popularity;
+use App\Support\RestaurantIndexCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -26,6 +29,46 @@ class MenuItemController extends Controller
     {
         return new MenuItemResource($menuItem->load(['restaurant', 'menu', 'ingredients']));
     }
+
+    /**
+     * Catálogo público: os pratos de todos os restaurantes visíveis a
+     * clientes, num só pedido. Antes o frontend fazia 1 + N (lista de
+     * restaurantes, depois um pedido por restaurante — cada ida à API custa
+     * ~1s a partir de Angola) e lia só os primeiros 30 pratos de cada.
+     * Fora: demonstração e restaurantes inativos (subscrição suspensa).
+     * `orderCount` = pedidos dos últimos 30 dias (ver Popularity).
+     * Cache 5min na mesma geração da listagem de restaurantes
+     * (RestaurantIndexCache), invalidada também quando um prato muda.
+     */
+    public function catalog(): JsonResponse
+    {
+        $generation = Cache::get('restaurants:index:generation', 0);
+
+        $payload = Cache::remember("menu-items:catalog:{$generation}", now()->addMinutes(5), function () {
+            $items = MenuItem::query()
+                ->whereHas('restaurant', fn ($q) => $q->visibleToCustomers())
+                ->with(['restaurant:id,uuid', 'menu:id,uuid', 'ingredients'])
+                ->withCount(['orderLines as recent_orders_count' => fn ($q) => $q->whereHas(
+                    'order',
+                    fn ($orders) => Popularity::recentOrders($orders),
+                )])
+                ->orderBy('restaurant_id')
+                ->orderBy('category')
+                ->orderBy('name')
+                ->limit(self::CATALOG_LIMIT)
+                ->get();
+
+            // Array já resolvido, nunca os modelos — ver o mesmo cuidado em
+            // RestaurantController::index (serialização com drivers reais).
+            return MenuItemResource::collection($items)->response()->getData(true);
+        });
+
+        return response()->json($payload);
+    }
+
+    /** Teto de segurança do catálogo num só pedido. Muito acima do que
+     * existe hoje (dezenas); ao aproximar-se disto, passar a paginar. */
+    private const CATALOG_LIMIT = 3000;
 
     public function index(Request $request, Restaurant $restaurant): AnonymousResourceCollection
     {
@@ -65,6 +108,8 @@ class MenuItemController extends Controller
             return $item;
         });
 
+        RestaurantIndexCache::forget(); // catálogo público
+
         return (new MenuItemResource($item->load('ingredients')))->response()->setStatusCode(201);
     }
 
@@ -88,6 +133,8 @@ class MenuItemController extends Controller
             }
         });
 
+        RestaurantIndexCache::forget(); // catálogo público
+
         return new MenuItemResource($menuItem->fresh('ingredients'));
     }
 
@@ -96,6 +143,7 @@ class MenuItemController extends Controller
         $this->authorize('update', $menuItem->restaurant);
 
         $menuItem->delete(); // soft delete — order_lines guardam snapshot próprio
+        RestaurantIndexCache::forget(); // catálogo público
 
         return response()->json(status: 204);
     }

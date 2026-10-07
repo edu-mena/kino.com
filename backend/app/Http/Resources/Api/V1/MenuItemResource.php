@@ -28,6 +28,9 @@ class MenuItemResource extends JsonResource
             'prepTimeMinutes' => $this->prep_time_minutes,
             'isPromoted' => $this->is_promoted,
             'promotionLabel' => $this->promotion_label,
+            // Só no catálogo público (MenuItemController::catalog): pedidos dos
+            // últimos 30 dias — popularidade nas listagens de cliente.
+            'orderCount' => $this->whenCounted('recent_orders'),
             'ingredients' => $this->whenLoaded('ingredients', fn () => $this->ingredients->map(fn ($i) => [
                 'id' => $i->id,
                 'name' => $i->name,
