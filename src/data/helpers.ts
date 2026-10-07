@@ -245,7 +245,12 @@ export function canDeliverToNeighborhood(restaurant: Restaurant, neighborhood?: 
  * o restaurante entrega, `takeaway` e `dinein` sempre (qualquer casa pode
  * servir ao balcão ou no local). */
 export function getRestaurantFulfillmentModes(restaurant: Restaurant): FulfillmentType[] {
-  if (restaurant.fulfillmentModes?.length) return restaurant.fulfillmentModes;
+  // Lista definida — mesmo vazia — é a decisão do restaurante: vazia = não
+  // aceita pedidos pela app (o servidor recusa qualquer modo). Antes uma
+  // lista vazia caía no "por omissão" abaixo e o cliente via Take away/No
+  // local que depois eram recusados ao enviar. O "por omissão" fica só para
+  // restaurantes sem a lista (demo/mock antigos).
+  if (restaurant.fulfillmentModes) return restaurant.fulfillmentModes;
   return [
     ...(restaurant.isDeliveryAvailable ? (["delivery"] as const) : []),
     "takeaway" as const,

@@ -9,6 +9,7 @@ import {
   getMenuItemsByRestaurant,
   getProvinces,
   getRestaurant,
+  getRestaurantFulfillmentModes,
   getRestaurantsOfferingDish,
   getRestaurantsWithStories,
   getStoriesForRestaurant,
@@ -150,5 +151,28 @@ describe("stories helpers", () => {
       Math.max(...getStoriesForRestaurant(r.id).map((s) => new Date(s.createdAt).getTime())),
     );
     expect(latestTimes).toEqual([...latestTimes].sort((a, b) => b - a));
+  });
+});
+
+describe("getRestaurantFulfillmentModes", () => {
+  const base = getRestaurant("rest-1")!;
+
+  it("lista vazia = não aceita pedidos pela app (não volta aos modos por omissão)", () => {
+    expect(getRestaurantFulfillmentModes({ ...base, fulfillmentModes: [] })).toEqual([]);
+  });
+
+  it("lista definida manda", () => {
+    expect(getRestaurantFulfillmentModes({ ...base, fulfillmentModes: ["takeaway"] })).toEqual([
+      "takeaway",
+    ]);
+  });
+
+  it("sem lista (demo antiga): take away e no local, mais entrega se disponível", () => {
+    const { fulfillmentModes: _omit, ...withoutModes } = base;
+    expect(getRestaurantFulfillmentModes({ ...withoutModes, isDeliveryAvailable: true })).toEqual([
+      "delivery",
+      "takeaway",
+      "dinein",
+    ]);
   });
 });

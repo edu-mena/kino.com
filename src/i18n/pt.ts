@@ -1947,7 +1947,10 @@ export const pt = {
     hoursLabel: "Horário de funcionamento",
     hoursPlaceholder: "Ex: Todos os dias, 11h - 22h",
     deliveryLabel: "Entrega disponível",
-    deliveryOffHint: "Desligado: o restaurante fica só para consumo no local.",
+    deliveryOffHint: "Desligado: os clientes deixam de poder pedir entrega.",
+    modesNone: "Nenhum — não aceita pedidos pela app",
+    modesNoneWarning:
+      'Com os três modos desligados, o restaurante deixa de receber pedidos pela app. Para parar só por umas horas, use antes "Pausar pedidos agora", em Horário de funcionamento.',
     deliveryFeeLabel: "Taxa de entrega (Kz)",
     deliveryFeeHint:
       "Cobre entregas até {km} km. Acima disso, +{surcharge} por cada km (definido pela Luku).",
@@ -2368,6 +2371,7 @@ export const pt = {
     orderCreatedError: "Não foi possível enviar o pedido. Tente novamente.",
     needAddress: "Adicione um endereço em Perfil antes de pedir entrega.",
     restaurantPaused: "Restaurante temporariamente indisponível.",
+    noOrderModes: "Este restaurante não está a aceitar pedidos pela app.",
     seeAlternatives: "Ver alternativas",
     outOfZone: "Este restaurante não entrega em {province}.",
     discardList: "Descartar lista",

@@ -1936,7 +1936,10 @@ export const en: Dictionary = {
     hoursLabel: "Opening hours",
     hoursPlaceholder: "E.g.: Every day, 11am - 10pm",
     deliveryLabel: "Delivery available",
-    deliveryOffHint: "Off: the restaurant is dine-in only.",
+    deliveryOffHint: "Off: customers can no longer order delivery.",
+    modesNone: "None — not taking orders through the app",
+    modesNoneWarning:
+      'With all three modes off, the restaurant stops receiving orders through the app. To stop for just a few hours, use "Pause orders now" under Opening hours instead.',
     deliveryFeeLabel: "Delivery fee (Kz)",
     deliveryFeeHint:
       "Covers deliveries up to {km} km. Beyond that, +{surcharge} per km (set by Luku).",
@@ -2352,6 +2355,7 @@ export const en: Dictionary = {
     orderCreatedError: "Couldn't send the order. Please try again.",
     needAddress: "Add an address in Profile before requesting delivery.",
     restaurantPaused: "Restaurant temporarily unavailable.",
+    noOrderModes: "This restaurant is not taking orders through the app.",
     seeAlternatives: "See alternatives",
     outOfZone: "This restaurant doesn't deliver to {province}.",
     discardList: "Discard list",

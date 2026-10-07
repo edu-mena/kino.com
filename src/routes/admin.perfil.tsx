@@ -831,6 +831,11 @@ function AdminPerfil() {
                   </div>
                   <Switch id="rest-dinein" checked={modeDinein} onCheckedChange={setModeDinein} />
                 </div>
+                {!isDeliveryAvailable && !modeTakeaway && !modeDinein && (
+                  <p className="rounded-xl bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive">
+                    {t("adminPerfil.modesNoneWarning")}
+                  </p>
+                )}
                 {isDeliveryAvailable && (
                   <div className="space-y-4">
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -1280,6 +1285,11 @@ function AdminPerfil() {
                   {t("adminPerfil.modesLabel")}
                 </dt>
                 <div className="mt-2 flex flex-wrap gap-1.5">
+                  {getRestaurantFulfillmentModes(restaurant).length === 0 && (
+                    <span className="text-sm font-semibold text-destructive">
+                      {t("adminPerfil.modesNone")}
+                    </span>
+                  )}
                   {getRestaurantFulfillmentModes(restaurant).map((m) => (
                     <span
                       key={m}

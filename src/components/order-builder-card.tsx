@@ -180,15 +180,21 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
 
   const menuItemsById = new Map((menuItemsQuery.data ?? []).map((item) => [item.id, item]));
 
-  const paused = !status.available;
-  const pausedMessage =
-    status.reason === "closed"
+  const availableModes = getRestaurantFulfillmentModes(restaurant);
+  // Restaurante com os três modos desligados: não aceita pedidos pela app —
+  // mesmo tratamento de "pausado" (aviso + alternativas, sem enviar).
+  const noOrderModes = availableModes.length === 0;
+  const paused = !status.available || noOrderModes;
+  const pausedMessage = noOrderModes
+    ? t("orderBuilderCard.noOrderModes")
+    : status.reason === "closed"
       ? t("orderBuilderCard.closedNow", { opensAt: status.opensAt ?? "" })
       : t("orderBuilderCard.restaurantPaused");
-
-  const availableModes = getRestaurantFulfillmentModes(restaurant);
+  // Sem modos nada é enviado (`paused`); "dinein" só para os cálculos.
   const mode: FulfillmentType =
-    modeOverride && availableModes.includes(modeOverride) ? modeOverride : availableModes[0]!;
+    modeOverride && availableModes.includes(modeOverride)
+      ? modeOverride
+      : (availableModes[0] ?? "dinein");
 
   const total = lines.reduce(
     (sum, l) => sum + billLineUnitPrice(l, menuItemsById.get(l.menuItemId)) * l.qty,

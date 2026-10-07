@@ -1968,7 +1968,10 @@ export const fr: Dictionary = {
     hoursLabel: "Horaires d'ouverture",
     hoursPlaceholder: "Ex : Tous les jours, 11h - 22h",
     deliveryLabel: "Livraison disponible",
-    deliveryOffHint: "Désactivé : le restaurant fonctionne uniquement sur place.",
+    deliveryOffHint: "Désactivé : les clients ne peuvent plus commander en livraison.",
+    modesNone: "Aucun — ne prend pas de commandes via l'application",
+    modesNoneWarning:
+      "Avec les trois modes désactivés, le restaurant ne reçoit plus de commandes via l'application. Pour arrêter seulement quelques heures, utilisez plutôt « Suspendre les commandes maintenant », dans Horaires d'ouverture.",
     deliveryFeeLabel: "Frais de livraison (Kz)",
     deliveryFeeHint:
       "Couvre les livraisons jusqu'à {km} km. Au-delà, +{surcharge} par km (fixé par Luku).",
@@ -2394,6 +2397,7 @@ export const fr: Dictionary = {
     orderCreatedError: "Impossible d'envoyer la commande. Réessayez.",
     needAddress: "Ajoutez une adresse dans Profil avant de demander une livraison.",
     restaurantPaused: "Restaurant temporairement indisponible.",
+    noOrderModes: "Ce restaurant ne prend pas de commandes via l'application.",
     seeAlternatives: "Voir des alternatives",
     outOfZone: "Ce restaurant ne livre pas à {province}.",
     discardList: "Vider la liste",
