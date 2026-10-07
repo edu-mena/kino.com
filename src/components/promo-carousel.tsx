@@ -196,7 +196,7 @@ function SlideCard({ slide }: { slide: Slide }) {
 
   if (slide.kind === "split") {
     return (
-      <div className="flex h-96 flex-col overflow-hidden rounded-[2rem] border border-border bg-card sm:h-72 sm:flex-row">
+      <div className="flex h-full min-h-[22rem] flex-col overflow-hidden rounded-[2rem] border border-border bg-card sm:h-72 sm:min-h-0 sm:flex-row">
         {/* Mobile: imagem em cima do texto. Desktop: texto encolhe pro conteúdo,
             imagem absorve o resto (com teto, senão ela estoura em telas grandes). */}
         <div className="relative order-1 h-44 w-full p-3 sm:order-none sm:h-auto sm:min-w-0 sm:max-w-[45%] sm:flex-1 sm:p-3 sm:pl-0">
@@ -213,7 +213,7 @@ function SlideCard({ slide }: { slide: Slide }) {
             label={t("home.promoImageAria", { title: slide.title })}
           />
         </div>
-        <div className="order-2 flex w-full flex-col justify-center gap-[10px] p-5 sm:order-none sm:w-fit sm:shrink-0 sm:max-w-xs sm:p-8">
+        <div className="order-2 flex w-full flex-col justify-center gap-[10px] p-5 max-sm:flex-1 sm:order-none sm:w-fit sm:shrink-0 sm:max-w-xs sm:p-8">
           <h3 className="truncate text-xl font-extrabold text-primary sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">
             {slide.title}
           </h3>
@@ -233,7 +233,7 @@ function SlideCard({ slide }: { slide: Slide }) {
 
   if (slide.kind === "cover") {
     return (
-      <div className="relative h-96 overflow-hidden rounded-[2rem] sm:h-72">
+      <div className="relative h-full min-h-[22rem] overflow-hidden rounded-[2rem] sm:h-72 sm:min-h-0">
         <LazyImage
           src={slide.image}
           alt=""
@@ -270,7 +270,7 @@ function SlideCard({ slide }: { slide: Slide }) {
   // apertado ainda se for vertical). Mobile: vídeo em cima do texto.
   const vertical = slide.orientation === "vertical";
   return (
-    <div className="flex h-96 flex-col overflow-hidden rounded-[2rem] border border-border bg-card sm:h-72 sm:flex-row">
+    <div className="flex h-full min-h-[22rem] flex-col overflow-hidden rounded-[2rem] border border-border bg-card sm:h-72 sm:min-h-0 sm:flex-row">
       <div
         className={`relative order-1 h-44 w-full p-3 sm:order-none sm:h-auto sm:min-w-0 sm:flex-1 sm:p-3 sm:pl-0 ${
           vertical ? "sm:max-w-[40%]" : "sm:max-w-[45%]"
@@ -290,7 +290,7 @@ function SlideCard({ slide }: { slide: Slide }) {
           label={t("home.promoVideoAria", { title: slide.title })}
         />
       </div>
-      <div className="order-2 flex w-full flex-col justify-center gap-[10px] p-5 sm:order-none sm:w-fit sm:shrink-0 sm:max-w-xs sm:p-8">
+      <div className="order-2 flex w-full flex-col justify-center gap-[10px] p-5 max-sm:flex-1 sm:order-none sm:w-fit sm:shrink-0 sm:max-w-xs sm:p-8">
         <h3 className="truncate text-xl font-extrabold text-primary sm:overflow-visible sm:whitespace-normal sm:text-clip sm:text-2xl">
           {slide.title}
         </h3>
