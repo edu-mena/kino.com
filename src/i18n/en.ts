@@ -50,6 +50,9 @@ export const en: Dictionary = {
   pageInfo: {
     aria: "About this page",
   },
+  navigationProgress: {
+    aria: "Opening page",
+  },
   nav: {
     home: "Home",
     search: "Search",

@@ -57,6 +57,9 @@ export const pt = {
   pageInfo: {
     aria: "Sobre esta página",
   },
+  navigationProgress: {
+    aria: "A abrir a página",
+  },
   nav: {
     home: "Início",
     search: "Buscar",

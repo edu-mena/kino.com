@@ -105,6 +105,29 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   }
 }
 
+/* Barra de navegação (navigation-progress.tsx) — indeterminada: um segmento
+   atravessa o ecrã enquanto a próxima página carrega. Sem movimento para
+   quem o pediu ao sistema: a barra fica parada, cheia, só como sinal. */
+@keyframes luku-nav-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+.animate-nav-progress {
+  animation: luku-nav-progress 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-nav-progress {
+    animation: none;
+    width: 100%;
+  }
+}
+
 /* Barrinha de progresso do StoryViewer (story-viewer.tsx) — preenche da esquerda pra direita. */
 @keyframes story-progress {
   from {
