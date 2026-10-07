@@ -1246,6 +1246,14 @@ export const pt = {
       removeToast: "Candidatura eliminada.",
     },
     promocoes: {
+      lukuPromoTitle: '"Veja a Luku em ação" (slide da página inicial)',
+      lukuPromoDescription:
+        "Slide com o vídeo da página Luku no carrossel de promoções dos clientes. Não é uma promoção registada — liga-se e desliga-se aqui.",
+      lukuPromoOn: "Ativa",
+      lukuPromoOff: "Inativa",
+      lukuPromoVideoNote:
+        "Campo vazio = texto original. O vídeo é o da página Luku (Conteúdo → Páginas públicas → Luku).",
+      lukuPromoSaved: "Slide da Luku guardado.",
       eyebrow: "Sistema",
       title: "Promoções Luku",
       description: "Ofertas da própria Luku, visíveis a todos os clientes da app.",

@@ -57,10 +57,10 @@ test('guardar uma página não apaga as outras; texto vazio volta ao original', 
 
 test('sem conteúdo editado, os mapas saem como objetos vazios', function () {
     $settings = $this->getJson('/api/v1/site/content')->json('data.settings');
-    expect($settings['guestContent'])->toBe(['texts' => [], 'media' => []])
+    expect($settings['guestContent'])->toBe(['texts' => [], 'media' => [], 'flags' => []])
         ->and($settings['lukuVideoStatus'])->toBe('ready');
     expect($this->getJson('/api/v1/site/content')->getContent())
-        ->toContain('"guestContent":{"texts":{},"media":{}}');
+        ->toContain('"guestContent":{"texts":{},"media":{},"flags":{}}');
 });
 
 test('rejeita chaves fora do formato, textos longos e imagens que não são URL', function (array $content) {
@@ -132,4 +132,24 @@ test('o job marca a falha na coluna de estado pedida, não na do vídeo da pági
     $fresh = $setting->fresh();
     expect($fresh->luku_video_status)->toBe('failed')
         ->and($fresh->processing_status)->toBe('ready');
+});
+
+test('interruptores: desligar a promoção da Luku, e null volta ao por omissão', function () {
+    $operator = User::factory()->systemOperator()->create();
+
+    $this->actingAs($operator, 'sanctum')
+        ->postJson('/api/v1/site/settings', [
+            'guest_content' => json_encode(['flags' => ['home.lukuPromo' => false]]),
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.guestContent.flags', ['home.lukuPromo' => false]);
+
+    $this->actingAs($operator, 'sanctum')
+        ->postJson('/api/v1/site/settings', ['guest_content' => ['flags' => ['home.lukuPromo' => null]]])
+        ->assertOk();
+    expect(SiteSetting::current()->guest_content['flags'])->toBe([]);
+
+    $this->actingAs($operator, 'sanctum')
+        ->postJson('/api/v1/site/settings', ['guest_content' => ['flags' => ['home.lukuPromo' => 'talvez']]])
+        ->assertStatus(422);
 });

@@ -48,6 +48,10 @@ class UpdateSiteSettingsRequest extends FormRequest
             'guest_content.texts.*' => ['nullable', 'string', 'max:600'],
             'guest_content.media' => ['sometimes', 'array', 'max:40'],
             'guest_content.media.*' => ['nullable', 'string', 'url:http,https', 'max:2048'],
+            // Interruptores (ex. `home.lukuPromo`: o slide "Veja a Luku em
+            // ação" da home); null = volta ao comportamento por omissão.
+            'guest_content.flags' => ['sometimes', 'array', 'max:20'],
+            'guest_content.flags.*' => ['nullable', 'boolean'],
             'luku_video' => ['sometimes', 'nullable', 'file', 'mimes:mp4,mov,webm', 'max:102400'],
             'luku_video_reset' => ['sometimes', 'boolean'],
         ];
@@ -61,7 +65,7 @@ class UpdateSiteSettingsRequest extends FormRequest
                 if (! is_array($content)) {
                     return;
                 }
-                foreach (['texts', 'media'] as $group) {
+                foreach (['texts', 'media', 'flags'] as $group) {
                     foreach (array_keys((array) ($content[$group] ?? [])) as $key) {
                         if (! is_string($key) || ! preg_match(self::CONTENT_KEY, $key)) {
                             $validator->errors()->add("guest_content.{$group}", 'invalid_key');

@@ -1241,6 +1241,14 @@ export const en: Dictionary = {
       removeToast: "Application deleted.",
     },
     promocoes: {
+      lukuPromoTitle: '"See Luku in action" (home page slide)',
+      lukuPromoDescription:
+        "Slide with the Luku page video in the customers' promotions carousel. It isn't a registered promotion — switch it on and off here.",
+      lukuPromoOn: "Active",
+      lukuPromoOff: "Inactive",
+      lukuPromoVideoNote:
+        "Empty field = original text. The video is the Luku page one (Content → Public pages → Luku).",
+      lukuPromoSaved: "Luku slide saved.",
       eyebrow: "System",
       title: "Luku promos",
       description: "Luku's own offers, shown to every customer in the app.",

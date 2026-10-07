@@ -25,11 +25,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { LukuPromoSettings } from "@/components/luku-promo-settings";
 import { SystemPageHeading } from "@/components/system-shell";
 import { sanitizePromoCode } from "@/data/offers-store";
 import type { Offer } from "@/data/types";
 import { translateOffer, useTranslation } from "@/i18n";
 import { useOffersAdmin } from "@/lib/offers-admin";
+import { useSystemAdmin } from "@/lib/system-admin";
 
 export const Route = createFileRoute("/sistema/promocoes")({
   head: () => ({ meta: [{ title: "Promoções Luku — Sistema Luku.com" }] }),
@@ -64,6 +66,7 @@ const emptyDraft: Draft = {
 
 function SistemaPromocoes() {
   const { lukuOffers, createLukuOffer, updateOffer, deleteOffer } = useOffersAdmin();
+  const { token } = useSystemAdmin();
   const { t } = useTranslation();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -152,6 +155,7 @@ function SistemaPromocoes() {
       />
 
       <div className="mx-auto mt-8 max-w-4xl px-4 md:px-6">
+        <LukuPromoSettings token={token} />
         {lukuOffers.length === 0 ? (
           <div className="card-soft grid place-items-center gap-3 p-12 text-center">
             <Megaphone className="h-10 w-10 text-muted-foreground" />

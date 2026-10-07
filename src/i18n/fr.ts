@@ -1259,6 +1259,14 @@ export const fr: Dictionary = {
       removeToast: "Candidature supprimée.",
     },
     promocoes: {
+      lukuPromoTitle: "« Découvrez Luku en action » (diapositive de l'accueil)",
+      lukuPromoDescription:
+        "Diapositive avec la vidéo de la page Luku dans le carrousel de promotions des clients. Ce n'est pas une promotion enregistrée — activez-la ou désactivez-la ici.",
+      lukuPromoOn: "Active",
+      lukuPromoOff: "Inactive",
+      lukuPromoVideoNote:
+        "Champ vide = texte d'origine. La vidéo est celle de la page Luku (Contenu → Pages publiques → Luku).",
+      lukuPromoSaved: "Diapositive Luku enregistrée.",
       eyebrow: "Système",
       title: "Promos Luku",
       description: "Les offres de Luku, visibles par tous les clients de l'app.",

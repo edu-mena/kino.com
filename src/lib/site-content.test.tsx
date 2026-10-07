@@ -31,6 +31,7 @@ const settings = {
   guestContent: {
     texts: { "luku.bentoTitle": "Título editado", "luku.seeMenu": "   " },
     media: { "luku.heroImage": "https://cdn.luku.com/site/x/hero.jpg" },
+    flags: { "home.lukuPromo": false },
   },
   lukuVideoUrl: "https://cdn.luku.com/site/1/video.mp4",
   lukuVideoPosterUrl: "https://cdn.luku.com/site/1/poster.jpg",
@@ -50,6 +51,9 @@ describe("useGuestContent", () => {
       "https://cdn.luku.com/site/x/hero.jpg",
     );
     expect(result.current.media("luku.illustration1Image", "/date.png")).toBe("/date.png");
+    expect(result.current.ready).toBe(true);
+    expect(result.current.flag("home.lukuPromo", true)).toBe(false);
+    expect(result.current.flag("home.outraCoisa", true)).toBe(true);
     expect(result.current.lukuVideo).toEqual({
       src: "https://cdn.luku.com/site/1/video.mp4",
       poster: "https://cdn.luku.com/site/1/poster.jpg",

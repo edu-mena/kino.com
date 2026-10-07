@@ -28,6 +28,8 @@ export type SiteSettings = {
 export type GuestContent = {
   texts: Record<string, string>;
   media: Record<string, string>;
+  /** Interruptores (ex. `home.lukuPromo`: o slide "Veja a Luku em ação"). */
+  flags: Record<string, boolean>;
 };
 
 export type SiteTeamMember = {

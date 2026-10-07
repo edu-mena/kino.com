@@ -129,11 +129,21 @@ class SiteContentController extends Controller
      *
      * @param  array<string, mixed>  $current
      * @param  array<string, mixed>  $changes
-     * @return array{texts: array<string, string>, media: array<string, string>}
+     * @return array{texts: array<string, string>, media: array<string, string>, flags: array<string, bool>}
      */
     private function mergeGuestContent(array $current, array $changes): array
     {
         $merged = [];
+        // Interruptores: true/false grava, null volta ao por omissão.
+        $flags = (array) ($current['flags'] ?? []);
+        foreach ((array) ($changes['flags'] ?? []) as $key => $value) {
+            if ($value === null) {
+                unset($flags[$key]);
+            } else {
+                $flags[$key] = (bool) $value;
+            }
+        }
+        $merged['flags'] = $flags;
         foreach (['texts', 'media'] as $group) {
             $values = (array) ($current[$group] ?? []);
             foreach ((array) ($changes[$group] ?? []) as $key => $value) {

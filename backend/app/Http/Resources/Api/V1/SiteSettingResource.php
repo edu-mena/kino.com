@@ -29,6 +29,7 @@ class SiteSettingResource extends JsonResource
             'guestContent' => [
                 'texts' => (object) ($this->guest_content['texts'] ?? []),
                 'media' => (object) ($this->guest_content['media'] ?? []),
+                'flags' => (object) ($this->guest_content['flags'] ?? []),
             ],
             'lukuVideoUrl' => $this->luku_video_url,
             'lukuVideoPosterUrl' => $this->luku_video_poster_url,

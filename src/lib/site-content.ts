@@ -25,7 +25,7 @@ const MOCK_CONTENT: SiteContent = {
     aboutHeroMediaType: "image",
     aboutHeroThumbnailUrl: null,
     processingStatus: "ready",
-    guestContent: { texts: {}, media: {} },
+    guestContent: { texts: {}, media: {}, flags: {} },
     lukuVideoUrl: null,
     lukuVideoPosterUrl: null,
     lukuVideoStatus: "ready",
@@ -206,9 +206,14 @@ export function useGuestContent() {
   const settings = content?.settings;
   const texts = settings?.guestContent?.texts ?? {};
   const media = settings?.guestContent?.media ?? {};
+  const flags = settings?.guestContent?.flags ?? {};
   return {
+    /** O conteúdo já chegou (do servidor ou da cópia no aparelho). */
+    ready: content !== null,
     text: (key: string): string => texts[key]?.trim() || t(key),
     media: (key: string, fallback: string): string => media[key] || fallback,
+    /** Interruptor definido no admin, ou `fallback` se nunca foi mexido. */
+    flag: (key: string, fallback: boolean): boolean => flags[key] ?? fallback,
     /** Vídeo enviado e já processado; `null` = o original do site. */
     lukuVideo:
       settings?.lukuVideoUrl && settings.lukuVideoStatus === "ready"

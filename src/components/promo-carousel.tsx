@@ -3,7 +3,6 @@ import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dishDrink from "@/assets/dish-drink.webp";
 import heroFood from "@/assets/hero-food.webp";
-import lukuVideo from "@/assets/luku/video.mp4";
 import restaurantAngolana from "@/assets/restaurant-angolana.webp";
 import { LazyImage } from "@/components/lazy-image";
 import {
@@ -20,6 +19,8 @@ import { useOffers } from "@/data/use-offers";
 import { formatKz } from "@/lib/format";
 import { translateOffer, useTranslation } from "@/i18n";
 import { useLiveCatalogVersion } from "@/data/live-catalog";
+import { LUKU_VIDEO_DEFAULT } from "@/lib/guest-content-fields";
+import { useGuestContent } from "@/lib/site-content";
 
 const MAX_SLIDES = 8;
 
@@ -62,10 +63,21 @@ type Slide =
 // tem `image` (definida no painel), essa tem prioridade.
 const offerSlideImages = [restaurantAngolana, heroFood, dishDrink];
 
+/** O slide "Veja a Luku em ação" (vídeo da página Luku) — `null` quando
+ * desligado em /sistema/promocoes. */
+type LukuPromo = {
+  title: string;
+  description: string;
+  cta: string;
+  video: string;
+  poster?: string;
+};
+
 function buildSlides(
   t: ReturnType<typeof useTranslation>["t"],
   offers: Offer[],
   promotedDishes: MenuItem[],
+  lukuPromo: LukuPromo | null,
 ): Slide[] {
   const slides: Slide[] = [];
 
@@ -99,16 +111,19 @@ function buildSlides(
     }
   });
 
-  slides.push({
-    id: "video-luku",
-    kind: "video",
-    title: t("home.promoVideoTitle"),
-    description: t("home.promoVideoDescription"),
-    cta: t("home.promoVideoCta"),
-    video: lukuVideo,
-    orientation: "vertical",
-    target: { to: "/luku" },
-  });
+  if (lukuPromo) {
+    slides.push({
+      id: "video-luku",
+      kind: "video",
+      title: lukuPromo.title,
+      description: lukuPromo.description,
+      cta: lukuPromo.cta,
+      video: lukuPromo.video,
+      ...(lukuPromo.poster ? { poster: lukuPromo.poster } : {}),
+      orientation: "vertical",
+      target: { to: "/luku" },
+    });
+  }
 
   promotedDishes.forEach((item, i) => {
     if (slides.length >= MAX_SLIDES) return;
@@ -326,10 +341,46 @@ export function PromoCarousel() {
   // buildSlides lê o restaurante de cada oferta/prato com getRestaurant(),
   // que vem do catálogo real (live-catalog) — refaz quando ele chega.
   const catalogVersion = useLiveCatalogVersion();
+  // "Veja a Luku em ação": ligado/desligado e textos em /sistema/promocoes,
+  // vídeo = o da página Luku. Só entra depois de o conteúdo chegar — antes
+  // disso não se sabe se está desligado, e um slide a desaparecer a meio
+  // do carrossel era pior do que ele aparecer um instante depois.
+  const guest = useGuestContent();
+  const showLukuPromo = guest.ready && guest.flag("home.lukuPromo", true);
+  const lukuTitle = guest.text("home.promoVideoTitle");
+  const lukuDescription = guest.text("home.promoVideoDescription");
+  const lukuCta = guest.text("home.promoVideoCta");
+  const lukuVideoSrc = guest.lukuVideo?.src ?? LUKU_VIDEO_DEFAULT;
+  const lukuPoster = guest.lukuVideo?.poster ?? undefined;
   const slides = useMemo(
-    () => buildSlides(t, offers, promotedDishes),
+    () =>
+      buildSlides(
+        t,
+        offers,
+        promotedDishes,
+        showLukuPromo
+          ? {
+              title: lukuTitle,
+              description: lukuDescription,
+              cta: lukuCta,
+              video: lukuVideoSrc,
+              ...(lukuPoster ? { poster: lukuPoster } : {}),
+            }
+          : null,
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: ver acima
-    [t, offers, promotedDishes, catalogVersion],
+    [
+      t,
+      offers,
+      promotedDishes,
+      catalogVersion,
+      showLukuPromo,
+      lukuTitle,
+      lukuDescription,
+      lukuCta,
+      lukuVideoSrc,
+      lukuPoster,
+    ],
   );
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
@@ -363,6 +414,10 @@ export function PromoCarousel() {
       api.off("pointerDown", onInteraction);
     };
   }, [api, scheduleAutoplay]);
+
+  // Sem ofertas, sem pratos em promoção e com o slide da Luku desligado:
+  // não há nada para mostrar (antes o slide da Luku existia sempre).
+  if (slides.length === 0) return null;
 
   return (
     <div className="relative">
