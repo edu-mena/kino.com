@@ -20,6 +20,7 @@ import { MediaLightbox } from "@/components/media-lightbox";
 import { MenuBrowser } from "@/components/menu-browser";
 import { ReservationDialog } from "@/components/reservation-dialog";
 import { RestaurantRecommendationsDialog } from "@/components/restaurant-recommendations-dialog";
+import { ROUTE_PENDING, RestaurantPendingSkeleton } from "@/components/route-pending";
 import { PageShell } from "@/components/site-shell";
 import { StoryViewer } from "@/components/story-viewer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -68,6 +69,8 @@ export const Route = createFileRoute("/restaurantes_/$id")({
     ],
   }),
   component: RestaurantDetail,
+  pendingComponent: RestaurantPendingSkeleton,
+  ...ROUTE_PENDING,
 });
 
 const BCP47: Record<Locale, string> = { pt: "pt-PT", en: "en-GB", fr: "fr-FR" };

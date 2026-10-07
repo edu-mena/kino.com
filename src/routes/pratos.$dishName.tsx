@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Bike, ChevronLeft, ChevronRight, MapPin, Star, TriangleAlert } from "lucide-react";
 import icon from "@/assets/icon.png";
+import { ROUTE_PENDING, DishListPendingSkeleton } from "@/components/route-pending";
 import { PageShell } from "@/components/site-shell";
 import { fetchApiAllMenuItems } from "@/data/api-restaurants";
 import { commonIngredientNames, getMenuItemsByName, getRestaurant } from "@/data/helpers";
@@ -41,6 +42,8 @@ export const Route = createFileRoute("/pratos/$dishName")({
     };
   },
   component: DishOverview,
+  pendingComponent: DishListPendingSkeleton,
+  ...ROUTE_PENDING,
 });
 
 function DishOverview() {

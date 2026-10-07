@@ -4,6 +4,7 @@ import { useState } from "react";
 import icon from "@/assets/icon.png";
 import { DishCard } from "@/components/dish-card";
 import { LazyImage } from "@/components/lazy-image";
+import { ROUTE_PENDING, DishPendingSkeleton } from "@/components/route-pending";
 import { PageShell } from "@/components/site-shell";
 import { fetchApiMenuItem } from "@/data/api-restaurants";
 import { getMenuItem, getRestaurant, getRestaurantsOfferingDish } from "@/data/helpers";
@@ -50,6 +51,8 @@ export const Route = createFileRoute("/prato/$dishId")({
     };
   },
   component: DishDetail,
+  pendingComponent: DishPendingSkeleton,
+  ...ROUTE_PENDING,
 });
 
 function DishDetail() {
