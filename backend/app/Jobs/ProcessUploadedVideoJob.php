@@ -31,6 +31,14 @@ class ProcessUploadedVideoJob implements ShouldQueue
 
     public int $timeout = 360;
 
+    /** Coluna onde fica o estado (processing/ready/failed). Quase sempre
+     * `processing_status`; o vídeo da página Luku usa a sua
+     * (`luku_video_status`) para não se confundir com o da página Sobre, no
+     * mesmo model. Propriedade com valor por omissão (não promovida no
+     * construtor) de propósito: um job já na fila antes deste campo existir
+     * volta da fila com este valor, em vez de rebentar. */
+    public string $statusField = 'processing_status';
+
     public function __construct(
         public readonly string $modelClass,
         public readonly int $modelId,
@@ -38,7 +46,12 @@ class ProcessUploadedVideoJob implements ShouldQueue
         public readonly string $mediaUrlField,
         public readonly ?string $thumbnailField,
         public readonly string $publicPathPrefix,
-    ) {}
+        ?string $statusField = null,
+    ) {
+        if ($statusField) {
+            $this->statusField = $statusField;
+        }
+    }
 
     public function handle(VideoTranscoder $transcoder): void
     {
@@ -54,7 +67,7 @@ class ProcessUploadedVideoJob implements ShouldQueue
         }
 
         if (! Storage::disk('local')->exists($this->rawStoragePath)) {
-            $model->update(['processing_status' => 'failed']);
+            $model->update([$this->statusField => 'failed']);
 
             return;
         }
@@ -74,7 +87,7 @@ class ProcessUploadedVideoJob implements ShouldQueue
 
             $updates = [
                 $this->mediaUrlField => Storage::disk('r2')->url($videoPath),
-                'processing_status' => 'ready',
+                $this->statusField => 'ready',
             ];
 
             if ($this->thumbnailField && $thumbLocalPath) {
@@ -116,7 +129,7 @@ class ProcessUploadedVideoJob implements ShouldQueue
      * marca failed e só agora liberta o ficheiro bruto. */
     public function failed(?Throwable $exception): void
     {
-        $this->modelClass::query()->whereKey($this->modelId)->update(['processing_status' => 'failed']);
+        $this->modelClass::query()->whereKey($this->modelId)->update([$this->statusField => 'failed']);
         $this->cleanupRaw();
     }
 

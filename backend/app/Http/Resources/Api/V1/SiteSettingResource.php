@@ -23,6 +23,16 @@ class SiteSettingResource extends JsonResource
             'aboutHeroMediaType' => $this->about_hero_media_type,
             'aboutHeroThumbnailUrl' => $this->about_hero_thumbnail_url,
             'processingStatus' => $this->processing_status,
+            // Páginas para visitantes: textos/imagens que substituem os
+            // originais (por chave de tradução). `(object)`: um mapa vazio
+            // sai `{}`, nunca `[]`.
+            'guestContent' => [
+                'texts' => (object) ($this->guest_content['texts'] ?? []),
+                'media' => (object) ($this->guest_content['media'] ?? []),
+            ],
+            'lukuVideoUrl' => $this->luku_video_url,
+            'lukuVideoPosterUrl' => $this->luku_video_poster_url,
+            'lukuVideoStatus' => $this->luku_video_status ?? 'ready',
         ];
     }
 }

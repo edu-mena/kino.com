@@ -16,7 +16,16 @@ class SiteSetting extends Model
         'about_eyebrow', 'about_title', 'about_description',
         'about_hero_image_url', 'about_hero_media_type', 'about_hero_thumbnail_url',
         'processing_status',
+        // Páginas para visitantes — ver a migração add_guest_content_to_site_settings.
+        'guest_content', 'luku_video_url', 'luku_video_poster_url', 'luku_video_status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'guest_content' => 'array',
+        ];
+    }
 
     public static function current(): self
     {

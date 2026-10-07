@@ -57,7 +57,29 @@ class SiteContentController extends Controller
         $setting = SiteSetting::current();
         $data = $request->validated();
         $media = $request->file('hero_media');
-        unset($data['hero_media']);
+        $lukuVideo = $request->file('luku_video');
+        unset($data['hero_media'], $data['luku_video'], $data['luku_video_reset']);
+
+        if (array_key_exists('guest_content', $data)) {
+            $data['guest_content'] = $this->mergeGuestContent(
+                $setting->guest_content ?? [],
+                $data['guest_content'] ?? [],
+            );
+        }
+
+        // Vídeo da página Luku: trocar ou repor o original (o que vem com o
+        // site) apaga o anterior; o novo passa pelo mesmo ffmpeg do vídeo
+        // da página Sobre, com estado próprio (`luku_video_status`).
+        if ($lukuVideo || $request->boolean('luku_video_reset')) {
+            $uploads->deleteByUrl($setting->luku_video_url);
+            $uploads->deleteByUrl($setting->luku_video_poster_url);
+            $data['luku_video_url'] = null;
+            $data['luku_video_poster_url'] = null;
+            $data['luku_video_status'] = $lukuVideo ? 'processing' : 'ready';
+        }
+        if ($lukuVideo) {
+            $rawPath = $uploads->storeRawVideo($lukuVideo, 'site', 'luku-video');
+        }
 
         if ($media) {
             $isVideo = str_starts_with((string) $media->getMimeType(), 'video/');
@@ -90,7 +112,42 @@ class SiteContentController extends Controller
             $setting->update($data);
         }
 
+        if (isset($rawPath)) {
+            ProcessUploadedVideoJob::dispatch(
+                SiteSetting::class, $setting->id, $rawPath,
+                'luku_video_url', 'luku_video_poster_url', 'site', 'luku_video_status',
+            );
+        }
+
         return new SiteSettingResource($setting->fresh());
+    }
+
+    /**
+     * Junta as alterações às já guardadas: só as chaves enviadas mudam
+     * (cada página do admin guarda as suas sem apagar as das outras), e
+     * texto/URL vazio remove a chave — a página volta ao original.
+     *
+     * @param  array<string, mixed>  $current
+     * @param  array<string, mixed>  $changes
+     * @return array{texts: array<string, string>, media: array<string, string>}
+     */
+    private function mergeGuestContent(array $current, array $changes): array
+    {
+        $merged = [];
+        foreach (['texts', 'media'] as $group) {
+            $values = (array) ($current[$group] ?? []);
+            foreach ((array) ($changes[$group] ?? []) as $key => $value) {
+                $value = is_string($value) ? trim($value) : '';
+                if ($value === '') {
+                    unset($values[$key]);
+                } else {
+                    $values[$key] = $value;
+                }
+            }
+            $merged[$group] = $values;
+        }
+
+        return $merged;
     }
 
     public function storeTeamMember(StoreSiteTeamMemberRequest $request): JsonResponse
