@@ -355,7 +355,9 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
     <div
       className={`${positionClass} fixed right-4 z-40 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[1.5rem] bg-neutral-900 text-primary-foreground shadow-2xl ring-1 ring-white/10`}
     >
-      {/* Cabeçalho — sempre visível: quantos itens, de onde, quanto. */}
+      {/* Cabeçalho — sempre visível: quantos itens, de onde e, fechado, quanto
+          (aberto, o valor já está no subtotal/recibo logo abaixo — repeti-lo
+          no topo mostrava o mesmo número duas e três vezes). */}
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
@@ -374,9 +376,11 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
             {expanded ? t("orderBuilderCard.hide") : t("orderBuilderCard.viewOrder")}
           </span>
         </span>
-        <span className="shrink-0 font-display text-base font-extrabold tabular-nums">
-          {formatKz(total)}
-        </span>
+        {!expanded && (
+          <span className="shrink-0 font-display text-base font-extrabold tabular-nums">
+            {formatKz(total)}
+          </span>
+        )}
         {expanded ? (
           <ChevronDown className="h-4 w-4 shrink-0 text-primary-foreground/60" />
         ) : (
