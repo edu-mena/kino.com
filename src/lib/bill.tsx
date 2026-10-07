@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { getRestaurant } from "@/data/helpers";
+import { getMenuItem, getRestaurant } from "@/data/helpers";
 import type { MenuItem, SelectedIngredient } from "@/data/types";
 import { useTranslation } from "@/i18n";
+import { recordDishSignal } from "@/lib/taste-signals";
 
 const STORAGE_KEY = "luku_active_bill";
 
@@ -142,5 +143,9 @@ export function useAddToBill() {
     }
     addToBill(restaurantId, menuItemId, selectedIngredients);
     toast.success(t("bill.addedToOrder", { name: itemName }));
+    // "Algoritmo Luku": adicionar ao pedido é intenção clara (só neste
+    // aparelho — ver @/lib/taste-signals).
+    const item = getMenuItem(menuItemId);
+    if (item) recordDishSignal("cart", item, getRestaurant(restaurantId)?.cuisine);
   };
 }

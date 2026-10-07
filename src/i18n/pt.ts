@@ -377,6 +377,14 @@ export const pt = {
   preferencias: {
     title: "Preferências",
     description: "Ingredientes favoritos e ingredientes que não podem constar no prato.",
+    historyTitle: "Histórico de recomendações",
+    historyDescription:
+      "A Luku ordena pratos e restaurantes pelo que pesquisa, abre e adiciona ao pedido. Este histórico fica só neste aparelho; os pedidos feitos continuam a contar.",
+    historyClear: "Limpar histórico",
+    historyConfirmTitle: "Limpar o histórico de recomendações?",
+    historyConfirmDescription:
+      "As pesquisas, os pratos vistos e os adicionados ao pedido deixam de influenciar as recomendações neste aparelho. Os seus pedidos, favoritos e preferências mantêm-se.",
+    historyCleared: "Histórico de recomendações limpo.",
     restrictionsTitle: "Restrições alimentares",
     restrictionsDescription: "Avisamos automaticamente o restaurante sempre que fizer um pedido.",
     restrictionPackagesLabel: "Pacotes de restrição",

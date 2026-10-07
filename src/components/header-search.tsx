@@ -25,6 +25,7 @@ import { groupMenuItemsByName, type DishGroup } from "@/lib/group-dishes-by-name
 import { useLocation } from "@/lib/location";
 import { useTranslation } from "@/i18n";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { recordSearchSignal } from "@/lib/taste-signals";
 
 /** Insere `extra` como 3º elemento de `rows` (ou no fim, se `rows` tiver
  * menos de 2) — usado para o atalho de restrição alimentar aparecer como
@@ -48,6 +49,11 @@ export function HeaderSearch() {
   const [mode, setMode] = useState<SearchMode>("dishes");
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query);
+  // "Algoritmo Luku": o que se pesquisa diz o que se procura (só neste
+  // aparelho; "fra"→"frango" ao escrever conta como um só sinal).
+  useEffect(() => {
+    if (debouncedQuery) recordSearchSignal(debouncedQuery);
+  }, [debouncedQuery]);
   // Restaurantes reais (API), mais o que só a pesquisa no servidor encontra
   // (o restaurante de demonstração dos revisores, pelo nome exato).
   // Sem restaurantes inativos (subscrição suspensa) — nem os da lista,

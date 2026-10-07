@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ChevronLeft, Minus, Plus, Salad, Star, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import icon from "@/assets/icon.png";
 import { DishCard } from "@/components/dish-card";
 import { LazyImage } from "@/components/lazy-image";
@@ -8,6 +8,7 @@ import { ROUTE_PENDING, DishPendingSkeleton } from "@/components/route-pending";
 import { PageShell } from "@/components/site-shell";
 import { fetchApiMenuItem } from "@/data/api-restaurants";
 import { getMenuItem, getRestaurant, getRestaurantsOfferingDish } from "@/data/helpers";
+import { recordDishSignal } from "@/lib/taste-signals";
 import type { SelectedIngredient } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { hasRealBackend } from "@/lib/api-client";
@@ -71,6 +72,13 @@ function DishDetail() {
   const restaurantStatus = useRestaurantStatus(item.restaurantId);
   const { excludedIngredients, dietaryRestrictions } = usePreferences();
   const [qty, setQty] = useState(1);
+
+  // "Algoritmo Luku": abrir um prato é sinal de interesse (só neste
+  // aparelho — ver @/lib/taste-signals). Uma vez por prato aberto.
+  useEffect(() => {
+    recordDishSignal("view", item, getRestaurant(item.restaurantId)?.cuisine);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- um registo por prato, não a cada re-render
+  }, [item.id]);
 
   const restaurantPaused = !restaurantStatus.available;
   const available = item.isAvailable && isAvailable(item.id) && restaurantStatus.available;

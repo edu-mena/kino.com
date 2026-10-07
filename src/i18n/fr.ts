@@ -374,6 +374,14 @@ export const fr: Dictionary = {
   preferencias: {
     title: "Préférences",
     description: "Ingrédients favoris et ingrédients qui ne peuvent pas figurer dans le plat.",
+    historyTitle: "Historique des recommandations",
+    historyDescription:
+      "Luku classe les plats et les restaurants selon ce que vous recherchez, ouvrez et ajoutez à votre commande. Cet historique reste uniquement sur cet appareil ; les commandes passées continuent de compter.",
+    historyClear: "Effacer l'historique",
+    historyConfirmTitle: "Effacer l'historique des recommandations ?",
+    historyConfirmDescription:
+      "Vos recherches, les plats consultés et ceux ajoutés aux commandes n'influenceront plus les recommandations sur cet appareil. Vos commandes, favoris et préférences sont conservés.",
+    historyCleared: "Historique des recommandations effacé.",
     restrictionsTitle: "Restrictions alimentaires",
     restrictionsDescription: "Nous prévenons automatiquement le restaurant à chaque commande.",
     restrictionPackagesLabel: "Formules de restriction",

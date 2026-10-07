@@ -20,8 +20,15 @@ import { useAuth } from "@/lib/auth";
 import { distanceFromDeviceKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
 import { usePreferences } from "@/lib/preferences";
-import { byDishPopularity, topCategories } from "@/lib/popularity";
-import { buildRecommendedDishes, diversifyByKey } from "@/lib/recommend-dishes";
+import {
+  dishBehaviorScore,
+  personalizedTopCategories,
+  rankSectionDishes,
+  rotationJitter,
+  usePersonalization,
+} from "@/lib/personalize";
+import { byDishPopularity } from "@/lib/popularity";
+import { buildRecommendedDishes } from "@/lib/recommend-dishes";
 import { translateMenuCategory, useTranslation, type Locale } from "@/i18n";
 import type { MenuItem } from "@/data/types";
 import { useLiveCatalogVersion } from "@/data/live-catalog";
@@ -192,20 +199,29 @@ function HomeLoggedIn() {
   // nas recomendações (antes usava uma distância inventada).
   const { deviceCoords } = useLocation();
   const { data: packageTypes = [] } = usePackageTypesWithOffers();
+  // "Algoritmo Luku": o histórico deste cliente (pesquisas, pratos vistos e
+  // adicionados, pedidos) + a variação do dia — ver @/lib/personalize. Sem
+  // histórico, a ordem é a geral (popularidade, nº de pratos).
+  const { profile, seed } = usePersonalization(items);
+  const getCuisine = (restaurantId: string) => getRestaurant(restaurantId)?.cuisine;
 
-  // Secções de categoria: as que têm mais pratos (não fixas), cada uma com
-  // os mais pedidos primeiro e sem vários seguidos do mesmo restaurante.
-  // Os pratos de restaurantes inativos já vêm de fora (useMenuItems).
+  // Secções de categoria: as que têm mais pratos, com as preferidas deste
+  // cliente à frente; dentro de cada uma, mais pedidos + gosto pessoal, sem
+  // vários seguidos do mesmo restaurante. Os pratos de restaurantes
+  // inativos já vêm de fora (useMenuItems).
   const categorySections = useMemo(
     () =>
-      topCategories(items).map((category) => ({
+      personalizedTopCategories(items, profile).map((category) => ({
         category,
-        items: diversifyByKey(
-          items.filter((m) => m.category === category).sort(byDishPopularity),
-          (m) => m.restaurantId,
+        items: rankSectionDishes(
+          items.filter((m) => m.category === category),
+          profile,
+          seed,
+          getCuisine,
         ),
       })),
-    [items],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: getCuisine lê o catálogo real, que chega depois
+    [items, profile, seed, catalogVersion],
   );
   const trendingItems = useMemo(
     () => items.filter((m) => m.isTrending || (m.orderCount ?? 0) > 0).sort(byDishPopularity),
@@ -228,6 +244,8 @@ function HomeLoggedIn() {
         ownListReason: t("home.dishConflictOwnListReason"),
         favoriteItemIds: favoriteDishIds,
         favoriteIngredients,
+        extraScore: (item) =>
+          dishBehaviorScore(item, profile, getCuisine) + rotationJitter(seed, item.id) * 4,
         limit: 10,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: getRestaurant() lê o catálogo real, que chega depois
@@ -239,6 +257,8 @@ function HomeLoggedIn() {
       dietaryRestrictions,
       favoriteDishIds,
       favoriteIngredients,
+      profile,
+      seed,
       t,
       catalogVersion,
     ],
@@ -267,7 +287,7 @@ function HomeLoggedIn() {
           to="/restaurantes"
         />
         <div className="mt-5">
-          <RestaurantAvatarRow />
+          <RestaurantAvatarRow profile={profile} />
         </div>
       </section>
 
@@ -299,7 +319,7 @@ function HomeLoggedIn() {
       <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
         <SectionHeading title={t("home.categories")} />
         <div className="mt-5">
-          <CategoryShortcutRow items={items} />
+          <CategoryShortcutRow items={items} profile={profile} />
         </div>
       </section>
 

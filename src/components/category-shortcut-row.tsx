@@ -18,7 +18,8 @@ import {
 import { useMemo } from "react";
 import { HorizontalCarousel } from "@/components/horizontal-carousel";
 import type { MenuItem } from "@/data/types";
-import { categoriesByCount } from "@/lib/popularity";
+import { personalizedCategories } from "@/lib/personalize";
+import { emptyProfile, recordCategorySignal, type BehaviorProfile } from "@/lib/taste-signals";
 import { translateMenuCategory, useTranslation } from "@/i18n";
 
 /** Ícone por categoria de prato — só decorativo, sem correspondência
@@ -49,18 +50,26 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
  * já com o filtro de categoria aplicado (`?categoria=`). Substitui o antigo
  * card "Tem alguma restrição alimentar?" (agora só em Preferências).
  */
-export function CategoryShortcutRow({ items }: { items: MenuItem[] }) {
+export function CategoryShortcutRow({
+  items,
+  profile,
+}: {
+  items: MenuItem[];
+  /** Histórico do cliente — as categorias preferidas vêm primeiro. */
+  profile?: BehaviorProfile;
+}) {
   const { locale } = useTranslation();
 
-  // Categorias com mais pratos primeiro — antes saíam pela ordem em que
-  // apareciam nos dados, sempre igual.
+  // Categorias com mais pratos primeiro, e as preferidas deste cliente à
+  // frente ("algoritmo Luku") — antes saíam pela ordem em que apareciam nos
+  // dados, sempre igual.
   const categories = useMemo(
     () =>
-      categoriesByCount(items).map(({ category }) => ({
+      personalizedCategories(items, profile ?? emptyProfile()).map(({ category }) => ({
         id: category,
         label: translateMenuCategory(category, locale),
       })),
-    [items, locale],
+    [items, locale, profile],
   );
 
   return (
@@ -76,6 +85,7 @@ export function CategoryShortcutRow({ items }: { items: MenuItem[] }) {
           <Link
             to="/cardapio"
             search={{ categoria: cat.id }}
+            onClick={() => recordCategorySignal(cat.id)}
             className="card-soft flex w-fit shrink-0 flex-col items-center gap-2 px-5 py-4 text-center transition-colors hover:border-brand"
           >
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand/10 text-brand">

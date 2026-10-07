@@ -370,6 +370,14 @@ export const en: Dictionary = {
   preferencias: {
     title: "Preferences",
     description: "Favorite ingredients and ingredients that can't be in your dish.",
+    historyTitle: "Recommendation history",
+    historyDescription:
+      "Luku orders dishes and restaurants by what you search, open and add to your order. This history stays on this device only; orders you have placed still count.",
+    historyClear: "Clear history",
+    historyConfirmTitle: "Clear your recommendation history?",
+    historyConfirmDescription:
+      "Your searches, viewed dishes and dishes added to orders will stop influencing recommendations on this device. Your orders, favourites and preferences are kept.",
+    historyCleared: "Recommendation history cleared.",
     restrictionsTitle: "Dietary restrictions",
     restrictionsDescription: "We automatically let the restaurant know with every order.",
     restrictionPackagesLabel: "Restriction packages",

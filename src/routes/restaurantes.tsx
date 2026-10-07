@@ -33,7 +33,7 @@ import { useCustomerRestaurants, useRestaurantServerSearch } from "@/data/use-re
 import { formatKz } from "@/lib/format";
 import { distanceFromDeviceKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
-import { byPopularity } from "@/lib/popularity";
+import { byPersonalPopularity, usePersonalization } from "@/lib/personalize";
 import { computeRestaurantStatus } from "@/lib/restaurant-status";
 import { useSubscriptions } from "@/lib/subscriptions";
 import { useTranslation } from "@/i18n";
@@ -82,6 +82,10 @@ function Restaurantes() {
     requestDeviceLocation,
   } = useLocation();
   const distanceKm = (r: Restaurant) => distanceFromDeviceKm(deviceCoords, r);
+  // "Mais populares" com o histórico deste cliente: onde já encomendou ou
+  // viu pratos sobe (ver @/lib/personalize). Sem histórico = popularidade.
+  const { profile } = usePersonalization();
+  const byPopularity = useMemo(() => byPersonalPopularity(profile), [profile]);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -160,6 +164,7 @@ function Restaurantes() {
     deviceCoords,
     subByRestaurant,
     locale,
+    byPopularity,
   ]);
 
   const activeExtraFilters = (neighborhood !== "todos" ? 1 : 0) + (deliveryOnly ? 1 : 0);

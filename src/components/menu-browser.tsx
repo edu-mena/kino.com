@@ -32,6 +32,8 @@ import { usePreferences } from "@/lib/preferences";
 import { buildRecommendedDishes } from "@/lib/recommend-dishes";
 import { translateMenuCategory, useTranslation } from "@/i18n";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { dishBehaviorScore, rotationJitter, usePersonalization } from "@/lib/personalize";
+import { recordCategorySignal, recordSearchSignal } from "@/lib/taste-signals";
 import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 const sortOptions = [
@@ -79,6 +81,8 @@ export function MenuBrowser({
   const effectiveRestaurantId = lockedRestaurantId ?? restaurantFilter?.id;
   const { t, locale } = useTranslation();
   const { items, loading: itemsLoading } = useMenuItems(lockedRestaurantId);
+  // Histórico deste cliente + variação do dia, para a "Relevância" global.
+  const { profile, seed } = usePersonalization(items);
   const {
     cuisinePreferences,
     excludedIngredients,
@@ -121,6 +125,11 @@ export function MenuBrowser({
   const [active, setActive] = useState<string>(initialCategory ?? "todos");
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query);
+  // "Algoritmo Luku" (só neste aparelho): o que se pesquisa e as categorias
+  // escolhidas contam como sinais de gosto.
+  useEffect(() => {
+    if (debouncedQuery) recordSearchSignal(debouncedQuery);
+  }, [debouncedQuery]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [neighborhood, setNeighborhood] = useState("todos");
   const myProvince = selectedAddress ? addressProvince(selectedAddress.line2) : undefined;
@@ -245,6 +254,9 @@ export function MenuBrowser({
       favoriteItemIds: favoriteDishIds,
       favoriteIngredients,
       profileItems: items,
+      extraScore: (item) =>
+        dishBehaviorScore(item, profile, (id) => getRestaurant(id)?.cuisine) +
+        rotationJitter(seed, item.id) * 4,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: getRestaurant() lê o catálogo real, que chega depois
   }, [
@@ -259,6 +271,8 @@ export function MenuBrowser({
     favoriteDishIds,
     favoriteIngredients,
     items,
+    profile,
+    seed,
     t,
     catalogVersion,
   ]);
@@ -339,7 +353,10 @@ export function MenuBrowser({
           <button
             key={cat.id}
             type="button"
-            onClick={() => setActive(cat.id)}
+            onClick={() => {
+              setActive(cat.id);
+              if (cat.id !== "todos" && cat.id !== BUFFET_FILTER_ID) recordCategorySignal(cat.id);
+            }}
             className={`shrink-0 rounded-t-lg rounded-b-none px-4 py-2 text-sm font-semibold transition-colors ${
               active === cat.id
                 ? "bg-primary text-primary-foreground"

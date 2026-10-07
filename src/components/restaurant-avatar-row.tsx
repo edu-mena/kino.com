@@ -14,7 +14,8 @@ import {
 } from "@/data/use-stories";
 import { distanceFromDeviceKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
-import { byPopularity } from "@/lib/popularity";
+import { byPersonalPopularity } from "@/lib/personalize";
+import { emptyProfile, type BehaviorProfile } from "@/lib/taste-signals";
 import { useStories } from "@/lib/stories";
 import { useTranslation } from "@/i18n";
 
@@ -22,7 +23,9 @@ function abbreviate(name: string) {
   return name.length > 14 ? `${name.slice(0, 13)}…` : name;
 }
 
-export function RestaurantAvatarRow() {
+/** `profile`: histórico do cliente ("algoritmo Luku") — nos "Populares",
+ * quem já encomendou/viu um restaurante vê-o mais à frente. */
+export function RestaurantAvatarRow({ profile }: { profile?: BehaviorProfile }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   // Com localização autorizada: "Perto de si", pela distância real (GPS →
@@ -33,12 +36,13 @@ export function RestaurantAvatarRow() {
   const { data: restaurants } = useCustomerRestaurants();
   const sorted = useMemo(() => {
     const list = [...(restaurants ?? [])];
+    const byPopularity = byPersonalPopularity(profile ?? emptyProfile());
     if (!deviceCoords) return list.sort(byPopularity);
     const km = new Map(list.map((r) => [r.id, distanceFromDeviceKm(deviceCoords, r)]));
     return list.sort(
       (a, b) => (km.get(a.id) ?? Infinity) - (km.get(b.id) ?? Infinity) || byPopularity(a, b),
     );
-  }, [restaurants, deviceCoords]);
+  }, [restaurants, deviceCoords, profile]);
   // Restaurante com story já totalmente visto — pergunta ao usuário o que
   // quer fazer (ver o story de novo ou ir para a página do restaurante) em
   // vez de decidir por ele. Sem story: vai direto para o restaurante (não

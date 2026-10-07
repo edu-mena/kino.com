@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Search, X } from "lucide-react";
+import { Plus, RotateCcw, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell } from "@/components/site-shell";
 import {
@@ -17,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getAllIngredientNames, getCuisines } from "@/data/helpers";
 import { RESTRICTION_PACKAGES, RESTRICTION_PACKAGE_LABELS } from "@/lib/dietary-packages";
 import { usePreferences } from "@/lib/preferences";
+import { clearTasteSignals, useTasteEvents } from "@/lib/taste-signals";
 import { useTranslation } from "@/i18n";
 import { useLiveCatalogVersion } from "@/data/live-catalog";
 import { useMenuItems } from "@/data/use-menu-items";
@@ -318,7 +320,58 @@ function Preferencias() {
           onToggle={toggleExcludedIngredient}
           tone="destructive"
         />
+
+        <RecommendationHistory />
       </div>
     </PageShell>
+  );
+}
+
+/** "Algoritmo Luku": o histórico de gosto deste aparelho (pesquisas,
+ * pratos abertos e adicionados ao pedido — ver @/lib/taste-signals). Limpar
+ * não mexe nos pedidos, favoritos nem preferências, que continuam a contar. */
+function RecommendationHistory() {
+  const { t } = useTranslation();
+  const events = useTasteEvents();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  return (
+    <section className="card-soft p-6">
+      <h2 className="font-display text-lg font-bold text-primary">
+        {t("preferencias.historyTitle")}
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">{t("preferencias.historyDescription")}</p>
+      <button
+        type="button"
+        onClick={() => setConfirmOpen(true)}
+        disabled={events.length === 0}
+        className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-destructive hover:text-destructive disabled:pointer-events-none disabled:opacity-50"
+      >
+        <RotateCcw className="h-4 w-4" />
+        {t("preferencias.historyClear")}
+      </button>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="rounded-[1.5rem]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("preferencias.historyConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("preferencias.historyConfirmDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                clearTasteSignals();
+                toast.success(t("preferencias.historyCleared"));
+              }}
+            >
+              {t("preferencias.historyClear")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </section>
   );
 }
