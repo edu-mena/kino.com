@@ -18,17 +18,22 @@ import { usePreferences } from "@/lib/preferences";
 import { useRestaurantStatus } from "@/lib/restaurant-status";
 import { formatDishConflicts, useDishConflicts } from "@/lib/use-dish-conflicts";
 import { useTranslation } from "@/i18n";
-import { useLiveCatalogVersion } from "@/data/live-catalog";
+import { liveMenuItem, useLiveCatalogVersion } from "@/data/live-catalog";
 
 export const Route = createFileRoute("/prato/$dishId")({
   // Assíncrono (TanStack Router já trata isto nativamente, mesmo padrão de
   // `/restaurantes/$id`) — sem isto, `getMenuItem` (só o catálogo mock)
   // nunca encontrava um prato criado a sério com o backend real, e a
   // página dava 404 SEMPRE que se clicava num prato de verdade.
+  //
+  // Prato já em memória (a lista de onde se tocou acabou de o trazer, com
+  // os mesmos campos do detalhe) → abre logo, sem esperar pela API — em
+  // rede móvel essa espera era 1–2s de página parada após o toque.
   loader: async ({ params }) => {
-    const item = hasRealBackend
-      ? await fetchApiMenuItem(params.dishId)
-      : getMenuItem(params.dishId);
+    const cached = hasRealBackend ? liveMenuItem(params.dishId) : undefined;
+    const item =
+      cached ??
+      (hasRealBackend ? await fetchApiMenuItem(params.dishId) : getMenuItem(params.dishId));
     if (!item) throw notFound();
     return { item };
   },

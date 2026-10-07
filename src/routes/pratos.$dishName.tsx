@@ -11,14 +11,27 @@ import { usePreferences } from "@/lib/preferences";
 import { computeDishConflicts } from "@/lib/use-dish-conflicts";
 import { rankDishOfferings, type DishOffering } from "@/lib/rank-dish-offerings";
 import { useTranslation } from "@/i18n";
-import { useLiveCatalogVersion } from "@/data/live-catalog";
+import { hasFreshFullMenuCatalog, liveMenuItems, useLiveCatalogVersion } from "@/data/live-catalog";
+
+/** Idade máxima do cardápio em memória para abrir esta página sem pedir à
+ * API (o mesmo que a listagem pública fica em cache no backend). */
+const FULL_MENU_MAX_AGE_MS = 5 * 60_000;
 
 export const Route = createFileRoute("/pratos/$dishName")({
   // Assíncrono, mesmo padrão de `/prato/$dishId` — `getMenuItemsByName` só
   // olha o catálogo mock, nunca encontrava pratos reais (backend real).
+  //
+  // Com o cardápio completo carregado há pouco (home, /cardapio), usa-o
+  // logo — ir buscá-lo de novo são 1 + N pedidos (um por restaurante), a
+  // parte mais lenta de abrir esta página.
   loader: async ({ params }) => {
-    const items = hasRealBackend
-      ? (await fetchApiAllMenuItems()).filter((m) => m.name === params.dishName)
+    const all = hasRealBackend
+      ? hasFreshFullMenuCatalog(FULL_MENU_MAX_AGE_MS)
+        ? liveMenuItems()
+        : await fetchApiAllMenuItems()
+      : null;
+    const items = all
+      ? all.filter((m) => m.name === params.dishName)
       : getMenuItemsByName(params.dishName);
     if (items.length === 0) throw notFound();
     return { items };

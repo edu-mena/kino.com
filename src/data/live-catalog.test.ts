@@ -48,3 +48,19 @@ describe("helpers com backend real", () => {
     expect(helpers.getAllIngredientNames()).toEqual(["Dendém", "Galinha", "Quiabo"]);
   });
 });
+
+describe("cardápio completo em memória", () => {
+  it("só conta depois de marcado e enquanto for recente", async () => {
+    const { hasFreshFullMenuCatalog, markFullMenuCatalog } = await import("./live-catalog");
+    vi.useFakeTimers();
+    try {
+      expect(hasFreshFullMenuCatalog(60_000)).toBe(false);
+      markFullMenuCatalog();
+      expect(hasFreshFullMenuCatalog(60_000)).toBe(true);
+      vi.advanceTimersByTime(61_000);
+      expect(hasFreshFullMenuCatalog(60_000)).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

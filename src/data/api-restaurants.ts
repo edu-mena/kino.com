@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api-client";
-import { rememberMenuItems, rememberRestaurants } from "./live-catalog";
+import { markFullMenuCatalog, rememberMenuItems, rememberRestaurants } from "./live-catalog";
 import type {
   FulfillmentType,
   MenuItem,
@@ -266,9 +266,18 @@ export async function fetchApiMenuItem(id: string): Promise<MenuItem | undefined
  * real e nenhum `restaurantId` específico foi pedido. */
 export async function fetchApiAllMenuItems(): Promise<MenuItem[]> {
   const restaurants = await fetchApiRestaurants();
+  let complete = true;
   const perRestaurant = await Promise.all(
-    restaurants.map((r) => fetchApiMenuItems(r.id).catch(() => [])),
+    restaurants.map((r) =>
+      fetchApiMenuItems(r.id).catch(() => {
+        complete = false;
+        return [];
+      }),
+    ),
   );
+  // Só conta como "cardápio completo em memória" se nenhum restaurante
+  // falhou — senão `/pratos/$nome` podia abrir sem os desse restaurante.
+  if (complete) markFullMenuCatalog();
   return perRestaurant.flat();
 }
 

@@ -52,6 +52,24 @@ export function liveMenuItems(): MenuItem[] {
   return [...menuItems.values()];
 }
 
+export function liveMenuItem(id: string): MenuItem | undefined {
+  return menuItems.get(id);
+}
+
+/** Quando foi carregado o cardápio COMPLETO (todos os restaurantes, sem
+ * falhas — ver `fetchApiAllMenuItems`). Só então `liveMenuItems()` serve
+ * para perguntas sobre "todos os pratos"; antes disso pode ter só os de um
+ * restaurante (quem veio da página dele). */
+let fullMenuLoadedAt = 0;
+
+export function markFullMenuCatalog(): void {
+  if (isBrowser) fullMenuLoadedAt = Date.now();
+}
+
+export function hasFreshFullMenuCatalog(maxAgeMs: number): boolean {
+  return fullMenuLoadedAt > 0 && Date.now() - fullMenuLoadedAt < maxAgeMs;
+}
+
 /** Muda sempre que entram restaurantes/pratos novos — chamar no topo de um
  * componente que lê `getRestaurant()`/`getMenuItem()` etc. durante o render,
  * para ele se atualizar quando a API responder. No servidor é sempre 0. */
