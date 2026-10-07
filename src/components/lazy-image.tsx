@@ -24,6 +24,7 @@ type LazyImageProps = ImgHTMLAttributes<HTMLImageElement> & {
 export function LazyImage({
   className,
   onLoad,
+  onError,
   src,
   widths,
   sizes,
@@ -31,12 +32,16 @@ export function LazyImage({
   ...props
 }: LazyImageProps) {
   const [loaded, setLoaded] = useState(false);
+  // Miniatura/proxy falhou (ex.: imagem antiga ainda sem miniaturas) → volta
+  // ao URL original, sem srcset, em vez de deixar a imagem partida.
+  const [useOriginal, setUseOriginal] = useState(false);
 
-  const stringSrc = typeof src === "string" ? src : undefined;
+  const stringSrc = typeof src === "string" && !useOriginal ? src : undefined;
   const resolvedSrc = stringSrc
     ? cdnUrl(stringSrc, widths?.length ? { width: Math.max(...widths) } : {})
     : src;
   const srcSet = stringSrc && widths?.length ? cdnSrcSet(stringSrc, widths) : undefined;
+  const transformed = resolvedSrc !== src || !!srcSet;
 
   return (
     <img
@@ -48,6 +53,13 @@ export function LazyImage({
       onLoad={(e) => {
         setLoaded(true);
         onLoad?.(e);
+      }}
+      onError={(e) => {
+        if (transformed) {
+          setUseOriginal(true);
+          return;
+        }
+        onError?.(e);
       }}
       className={cn(!loaded && "animate-pulse bg-surface", className)}
       {...props}

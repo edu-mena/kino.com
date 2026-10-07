@@ -1,15 +1,41 @@
 /**
- * As fotos de pratos e restaurantes vêm de URLs de terceiros (Wikipédia,
- * blogs de culinária, CDNs de reviews) — tamanhos imprevisíveis, sem
- * possibilidade de as otimizarmos na origem, e sujeitas a bloqueio de
- * hotlink em produção. Este módulo reescreve essas URLs para passarem por
- * um proxy de redimensionamento, que devolve a imagem no tamanho pedido e
- * em WebP.
+ * Imagens no tamanho em que são mostradas, em vez da foto inteira em cada
+ * cartão de lista.
  *
- * Ativa-se com `VITE_IMAGE_CDN=wsrv` (ver `.env.local`). Sem essa variável
- * o comportamento é identidade — nada muda, útil em dev/offline e para não
- * enviar tráfego a um terceiro sem uma escolha explícita.
+ * - Uploads da própria app (`<host>/<pasta>/<dono>/<uuid>.<ext>`): o backend
+ *   grava ao lado miniaturas WebP de 160/480/960px
+ *   (`MediaUploadService::storeThumbnails`) — aqui só se monta o nome delas.
+ *   Sempre ativo; se uma faltar (ex.: falha a gerá-la), `LazyImage` volta ao
+ *   original.
+ * - URLs de terceiros (links colados): opcionalmente por um proxy de
+ *   redimensionamento, com `VITE_IMAGE_CDN=wsrv`. Sem essa variável ficam
+ *   como estão. ATENÇÃO: o wsrv.nl não consegue ler do Tigris
+ *   (`*.fly.storage.tigris.dev` — "hostname unresolvable"), por isso os
+ *   uploads nunca passam por ele.
  */
+
+/** Larguras gravadas pelo backend — `MediaUploadService::THUMBNAIL_WIDTHS`;
+ * mudar lá obriga a mudar aqui. */
+const THUMBNAIL_WIDTHS = [160, 480, 960] as const;
+
+/** Upload nosso — o mesmo formato de caminho de `storeImage` e das capas de
+ * vídeo. Um link externo colado nunca tem este formato. */
+const OWN_UPLOAD =
+  /^(https?:\/\/[^/?#]+\/(?:dish|cover|wallpaper|gallery|promo|story|partner|site)\/[^/?#]+\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.(?:jpe?g|png|webp|gif)$/i;
+
+/** Miniatura gravada pelo backend mais pequena que ainda cobre `width`
+ * (a maior, se nenhuma cobrir). `undefined` se não for um upload nosso. */
+export function thumbnailUrl(src: string, width: number): string | undefined {
+  const match = OWN_UPLOAD.exec(src);
+  if (!match) return undefined;
+  const chosen = THUMBNAIL_WIDTHS.find((w) => w >= width) ?? THUMBNAIL_WIDTHS.at(-1);
+  return `${match[1]}.w${chosen}.webp`;
+}
+
+/** Largura anunciada no `srcset` para o original — maior que qualquer
+ * miniatura, para o browser só o escolher quando precisa de mais de 960px
+ * (os presets de upload vão até 1600px). */
+const ORIGINAL_SRCSET_WIDTH = 1600;
 type Provider = "none" | "wsrv";
 
 const PROVIDER: Provider =
@@ -24,6 +50,10 @@ export type ImageTransform = { width?: number; quality?: number };
 
 /** Reescreve `src` para o proxy configurado, no tamanho pedido. */
 export function cdnUrl(src: string, { width, quality = 78 }: ImageTransform = {}): string {
+  if (width) {
+    const thumb = thumbnailUrl(src, width);
+    if (thumb) return thumb;
+  }
   if (PROVIDER === "none" || isBypassed(src)) return src;
   if (PROVIDER === "wsrv") {
     // https://wsrv.nl/docs — `url` sem esquema, `we` = without-enlargement.
@@ -41,7 +71,16 @@ export function cdnUrl(src: string, { width, quality = 78 }: ImageTransform = {}
  * proxy (aí todas as entradas seriam a mesma URL — o browser não ganha nada).
  */
 export function cdnSrcSet(src: string, widths: number[]): string | undefined {
-  if (PROVIDER === "none" || isBypassed(src) || widths.length === 0) return undefined;
+  if (widths.length === 0) return undefined;
+  // Upload nosso: as miniaturas que existem + o original, e o browser
+  // escolhe pela largura mostrada (`sizes`) × densidade do ecrã.
+  if (OWN_UPLOAD.test(src)) {
+    return [
+      ...THUMBNAIL_WIDTHS.map((w) => `${thumbnailUrl(src, w)} ${w}w`),
+      `${src} ${ORIGINAL_SRCSET_WIDTH}w`,
+    ].join(", ");
+  }
+  if (PROVIDER === "none" || isBypassed(src)) return undefined;
   return widths
     .slice()
     .sort((a, b) => a - b)

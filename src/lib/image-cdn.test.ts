@@ -54,3 +54,41 @@ describe("cdnSrcSet", () => {
     expect(out).toMatch(/ 200w,.* 400w$/);
   });
 });
+
+describe("miniaturas dos uploads da app", () => {
+  const upload =
+    "https://luku-media.fly.storage.tigris.dev/dish/user-63/5f077fc0-6867-4479-a221-cae192ad73c1.jpg";
+  const base =
+    "https://luku-media.fly.storage.tigris.dev/dish/user-63/5f077fc0-6867-4479-a221-cae192ad73c1";
+
+  it("escolhe a miniatura mais pequena que cobre a largura pedida", async () => {
+    const { thumbnailUrl } = await load();
+    expect(thumbnailUrl(upload, 64)).toBe(`${base}.w160.webp`);
+    expect(thumbnailUrl(upload, 320)).toBe(`${base}.w480.webp`);
+    expect(thumbnailUrl(upload, 900)).toBe(`${base}.w960.webp`);
+    expect(thumbnailUrl(upload, 1200)).toBe(`${base}.w960.webp`);
+  });
+
+  it("links externos e assets locais não têm miniaturas", async () => {
+    const { thumbnailUrl } = await load();
+    expect(thumbnailUrl("https://images.unsplash.com/photo-1517248135467?w=1200", 400)).toBe(
+      undefined,
+    );
+    expect(thumbnailUrl("/assets/hero-abc.webp", 400)).toBe(undefined);
+  });
+
+  it("usa as miniaturas mesmo sem proxy, e nunca as manda para o wsrv", async () => {
+    for (const provider of [undefined, "wsrv"]) {
+      const { cdnUrl, cdnSrcSet } = await load(provider);
+      expect(cdnUrl(upload, { width: 400 })).toBe(`${base}.w480.webp`);
+      expect(cdnSrcSet(upload, [160, 320])).toBe(
+        `${base}.w160.webp 160w, ${base}.w480.webp 480w, ${base}.w960.webp 960w, ${upload} 1600w`,
+      );
+    }
+  });
+
+  it("sem largura pedida fica o original", async () => {
+    const { cdnUrl } = await load();
+    expect(cdnUrl(upload)).toBe(upload);
+  });
+});

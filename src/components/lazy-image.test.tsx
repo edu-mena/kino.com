@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { axe } from "vitest-axe";
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 
 import { LazyImage } from "./lazy-image";
 
@@ -33,6 +33,22 @@ describe("LazyImage", () => {
       <LazyImage src="https://example.com/a.jpg" alt="prato" widths={[200, 400]} />,
     );
     expect(container.querySelector("img")!.hasAttribute("srcset")).toBe(false);
+  });
+
+  it("upload da app: usa as miniaturas e volta ao original se uma faltar", () => {
+    const upload =
+      "https://luku-media.fly.storage.tigris.dev/dish/user-63/5f077fc0-6867-4479-a221-cae192ad73c1.jpg";
+    const { container } = render(
+      <LazyImage src={upload} alt="prato" widths={[160, 320]} sizes="160px" />,
+    );
+    const img = container.querySelector("img")!;
+    expect(img.getAttribute("src")).toMatch(/\.w480\.webp$/);
+    expect(img.getAttribute("srcset")).toContain(".w160.webp 160w");
+
+    fireEvent.error(img);
+
+    expect(img.getAttribute("src")).toBe(upload);
+    expect(img.hasAttribute("srcset")).toBe(false);
   });
 
   it("não tem violações de acessibilidade", async () => {
