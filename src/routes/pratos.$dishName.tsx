@@ -4,9 +4,16 @@ import icon from "@/assets/icon.png";
 import { ROUTE_PENDING, DishListPendingSkeleton } from "@/components/route-pending";
 import { PageShell } from "@/components/site-shell";
 import { fetchApiAllMenuItems } from "@/data/api-restaurants";
-import { commonIngredientNames, getMenuItemsByName, getRestaurant } from "@/data/helpers";
+import {
+  commonIngredientNames,
+  dishesVisibleToCustomers,
+  getMenuItemsByName,
+  getRestaurant,
+} from "@/data/helpers";
 import { hasRealBackend } from "@/lib/api-client";
 import { formatKz } from "@/lib/format";
+import { distanceFromDeviceKm } from "@/lib/geo";
+import { useLocation } from "@/lib/location";
 import { usePreferences } from "@/lib/preferences";
 import { computeDishConflicts } from "@/lib/use-dish-conflicts";
 import { rankDishOfferings, type DishOffering } from "@/lib/rank-dish-offerings";
@@ -30,9 +37,10 @@ export const Route = createFileRoute("/pratos/$dishName")({
         ? liveMenuItems()
         : await fetchApiAllMenuItems()
       : null;
-    const items = all
-      ? all.filter((m) => m.name === params.dishName)
-      : getMenuItemsByName(params.dishName);
+    // Sem restaurantes inativos — se só esses o servem, a página é 404.
+    const items = dishesVisibleToCustomers(
+      all ? all.filter((m) => m.name === params.dishName) : getMenuItemsByName(params.dishName),
+    );
     if (items.length === 0) throw notFound();
     return { items };
   },
@@ -66,6 +74,8 @@ function DishOverview() {
   useLiveCatalogVersion();
   const { t } = useTranslation();
   const { excludedIngredients, dietaryRestrictions, cuisinePreferences } = usePreferences();
+  const { deviceCoords } = useLocation();
+  const distanceKmOf = (o: DishOffering) => distanceFromDeviceKm(deviceCoords, o.restaurant);
   const ownListReason = t("home.dishConflictOwnListReason");
 
   const dishName = items[0]!.name;
@@ -88,7 +98,7 @@ function DishOverview() {
     })
     .filter((o): o is DishOffering => o !== null);
 
-  const ranked = rankDishOfferings(offerings, cuisinePreferences);
+  const ranked = rankDishOfferings(offerings, cuisinePreferences, distanceKmOf);
   const heroImage = ranked[0]?.item.image ?? items[0]!.image;
   const heroDescription = ranked[0]?.item.description ?? items[0]!.description;
 
@@ -186,10 +196,12 @@ function DishOverview() {
                     <Star className="h-3.5 w-3.5 fill-star text-star" />
                     {restaurant.rating}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {restaurant.distanceKm} km
-                  </span>
+                  {distanceFromDeviceKm(deviceCoords, restaurant) != null && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" />
+                      {distanceFromDeviceKm(deviceCoords, restaurant)} km
+                    </span>
+                  )}
                   {restaurant.isDeliveryAvailable && (
                     <span className="flex items-center gap-1">
                       <Bike className="h-3.5 w-3.5" />

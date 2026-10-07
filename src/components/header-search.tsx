@@ -15,11 +15,11 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LocationFilterSelect, matchesLocation } from "@/components/search-filters";
-import { addressProvince, getRestaurant } from "@/data/helpers";
+import { addressProvince, getRestaurant, visibleToCustomers } from "@/data/helpers";
 import { useLiveCatalogVersion } from "@/data/live-catalog";
 import type { MenuItem, Restaurant } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
-import { useRestaurantServerSearch, useRestaurants } from "@/data/use-restaurants-query";
+import { useCustomerRestaurants, useRestaurantServerSearch } from "@/data/use-restaurants-query";
 import { formatKz } from "@/lib/format";
 import { groupMenuItemsByName, type DishGroup } from "@/lib/group-dishes-by-name";
 import { useLocation } from "@/lib/location";
@@ -50,11 +50,16 @@ export function HeaderSearch() {
   const debouncedQuery = useDebouncedValue(query);
   // Restaurantes reais (API), mais o que só a pesquisa no servidor encontra
   // (o restaurante de demonstração dos revisores, pelo nome exato).
-  const { data: listedRestaurants = [] } = useRestaurants();
+  // Sem restaurantes inativos (subscrição suspensa) — nem os da lista,
+  // nem os que a pesquisa no servidor encontra pelo nome.
+  const { data: listedRestaurants = [] } = useCustomerRestaurants();
   const { data: serverMatches = [] } = useRestaurantServerSearch(debouncedQuery);
   const restaurants = useMemo(() => {
     const known = new Set(listedRestaurants.map((r) => r.id));
-    return [...listedRestaurants, ...serverMatches.filter((r) => !known.has(r.id))];
+    return [
+      ...listedRestaurants,
+      ...visibleToCustomers(serverMatches).filter((r) => !known.has(r.id)),
+    ];
   }, [listedRestaurants, serverMatches]);
   // `getRestaurant()` (nome/zona do restaurante de cada prato) lê o catálogo
   // real — redesenha quando ele chega.

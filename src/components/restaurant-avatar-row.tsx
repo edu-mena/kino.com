@@ -7,13 +7,14 @@ import { LazyImage } from "@/components/lazy-image";
 import { StoryViewer } from "@/components/story-viewer";
 import { suspendedRestaurantIds } from "@/data/helpers";
 import type { Restaurant } from "@/data/types";
-import { useRestaurants } from "@/data/use-restaurants-query";
+import { useCustomerRestaurants } from "@/data/use-restaurants-query";
 import {
   restaurantsWithStories as deriveRestaurantsWithStories,
   useEffectiveStories,
 } from "@/data/use-stories";
-import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
+import { distanceFromDeviceKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
+import { byPopularity } from "@/lib/popularity";
 import { useStories } from "@/lib/stories";
 import { useTranslation } from "@/i18n";
 
@@ -24,19 +25,20 @@ function abbreviate(name: string) {
 export function RestaurantAvatarRow() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  // Morada selecionada no header — "perto de si" reflete a localização de
-  // quem está a ver, não um `distanceKm` fixo igual pra toda a gente.
-  const { selected: selectedAddress } = useLocation();
-  const { data: restaurants } = useRestaurants();
-  const sorted = useMemo(
-    () =>
-      [...(restaurants ?? [])].sort(
-        (a, b) =>
-          personalizedRestaurantDistanceKm(a.id, selectedAddress, a.distanceKm) -
-          personalizedRestaurantDistanceKm(b.id, selectedAddress, b.distanceKm),
-      ),
-    [restaurants, selectedAddress],
-  );
+  // Com localização autorizada: "Perto de si", pela distância real (GPS →
+  // coordenadas do restaurante; sem coordenadas vai para o fim). Sem ela:
+  // "Populares" (o título muda na home). Inativos já vêm de fora
+  // (`useCustomerRestaurants`).
+  const { deviceCoords } = useLocation();
+  const { data: restaurants } = useCustomerRestaurants();
+  const sorted = useMemo(() => {
+    const list = [...(restaurants ?? [])];
+    if (!deviceCoords) return list.sort(byPopularity);
+    const km = new Map(list.map((r) => [r.id, distanceFromDeviceKm(deviceCoords, r)]));
+    return list.sort(
+      (a, b) => (km.get(a.id) ?? Infinity) - (km.get(b.id) ?? Infinity) || byPopularity(a, b),
+    );
+  }, [restaurants, deviceCoords]);
   // Restaurante com story já totalmente visto — pergunta ao usuário o que
   // quer fazer (ver o story de novo ou ir para a página do restaurante) em
   // vez de decidir por ele. Sem story: vai direto para o restaurante (não
@@ -69,7 +71,7 @@ export function RestaurantAvatarRow() {
   const { isRestaurantFullyViewed } = useStories();
 
   // Restaurantes com story: não vistos primeiro, vistos depois (igual WhatsApp).
-  // Sem story: mantém a ordem por distância, sempre no final da linha.
+  // Sem story: mantém a ordem acima (distância ou popularidade), no fim da linha.
   const orderedStoryRestaurants = useMemo(
     () =>
       [...restaurantsWithStories].sort((a, b) => {

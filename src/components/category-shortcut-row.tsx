@@ -18,6 +18,7 @@ import {
 import { useMemo } from "react";
 import { HorizontalCarousel } from "@/components/horizontal-carousel";
 import type { MenuItem } from "@/data/types";
+import { categoriesByCount } from "@/lib/popularity";
 import { translateMenuCategory, useTranslation } from "@/i18n";
 
 /** Ícone por categoria de prato — só decorativo, sem correspondência
@@ -51,10 +52,16 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 export function CategoryShortcutRow({ items }: { items: MenuItem[] }) {
   const { locale } = useTranslation();
 
-  const categories = useMemo(() => {
-    const ids = [...new Set(items.map((m) => m.category))];
-    return ids.map((id) => ({ id, label: translateMenuCategory(id, locale) }));
-  }, [items, locale]);
+  // Categorias com mais pratos primeiro — antes saíam pela ordem em que
+  // apareciam nos dados, sempre igual.
+  const categories = useMemo(
+    () =>
+      categoriesByCount(items).map(({ category }) => ({
+        id: category,
+        label: translateMenuCategory(category, locale),
+      })),
+    [items, locale],
+  );
 
   return (
     <HorizontalCarousel

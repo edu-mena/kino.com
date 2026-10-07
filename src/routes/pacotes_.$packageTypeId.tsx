@@ -10,9 +10,8 @@ import type { RestaurantPackage } from "@/data/types";
 import { usePackageTypeRestaurants } from "@/data/use-package-types-query";
 import { useRestaurantDetail } from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
-import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
 import { formatKz } from "@/lib/format";
-import { haversineKm } from "@/lib/geo";
+import { distanceFromDeviceKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
 import { packageTypeIcon } from "@/lib/package-type-icons";
 
@@ -25,7 +24,7 @@ function PacotesPorTipo() {
   const { packageTypeId } = Route.useParams();
   const { t } = useTranslation();
   const { data: offers = [], isLoading } = usePackageTypeRestaurants(packageTypeId);
-  const { selected: selectedAddress, deviceCoords } = useLocation();
+  const { deviceCoords } = useLocation();
 
   // Detalhe (`selected`) e reserva (`reserving`) são dois passos do MESMO
   // pacote escolhido — nunca dois estados independentes: fechar a reserva
@@ -38,17 +37,18 @@ function PacotesPorTipo() {
   // aviso de caução...), e assim já está pronto quando o cliente decide.
   const { data: fullRestaurant } = useRestaurantDetail(selected?.restaurant?.id);
 
-  const distanceKm = (p: RestaurantPackage) => {
-    if (deviceCoords && p.restaurant?.lat != null && p.restaurant?.lng != null) {
-      return Math.round(haversineKm(deviceCoords, [p.restaurant.lat, p.restaurant.lng]) * 10) / 10;
-    }
-    return p.restaurant ? personalizedRestaurantDistanceKm(p.restaurant.id, selectedAddress, 0) : 0;
-  };
+  // Distância real só com localização autorizada — sem ela não se mostra
+  // nem se ordena por distância (fica a ordem da API).
+  const distanceKm = (p: RestaurantPackage) => distanceFromDeviceKm(deviceCoords, p.restaurant);
 
   const sorted = useMemo(
-    () => [...offers].sort((a, b) => distanceKm(a) - distanceKm(b)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `distanceKm` é recriada a cada render, mas só muda de resultado quando `selectedAddress`/`deviceCoords` mudam.
-    [offers, selectedAddress, deviceCoords],
+    () =>
+      deviceCoords
+        ? // Sem distância vai para o fim; dois sem distância (NaN) = empate.
+          [...offers].sort((a, b) => (distanceKm(a) ?? Infinity) - (distanceKm(b) ?? Infinity) || 0)
+        : offers,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `distanceKm` é recriada a cada render, mas só muda de resultado quando `deviceCoords` muda.
+    [offers, deviceCoords],
   );
 
   const typeInfo = sorted[0]?.packageType;
@@ -108,9 +108,11 @@ function PacotesPorTipo() {
                   <p className="truncate text-xs text-muted-foreground">
                     {pkg.title ?? pkg.packageType.name}
                   </p>
-                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" /> {distanceKm(pkg)} km
-                  </p>
+                  {distanceKm(pkg) != null && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5" /> {distanceKm(pkg)} km
+                    </p>
+                  )}
                 </div>
                 <span className="shrink-0 text-sm font-bold text-primary">
                   {formatKz(pkg.price)}

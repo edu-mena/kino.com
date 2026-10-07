@@ -10,6 +10,21 @@ export function haversineKm(a: [number, number], b: [number, number]): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+/**
+ * Distância real (km, 1 casa decimal) do aparelho ao restaurante, ou
+ * `undefined` sem localização autorizada ou sem coordenadas do restaurante.
+ * Nas listagens de cliente, quem não sabe a distância não a mostra nem
+ * ordena por ela — antes caía-se numa distância inventada a partir do id da
+ * morada (`addressDistanceKm`), que não tinha nada a ver com a realidade.
+ */
+export function distanceFromDeviceKm(
+  deviceCoords: [number, number] | null | undefined,
+  place: { lat?: number | null; lng?: number | null } | null | undefined,
+): number | undefined {
+  if (!deviceCoords || place?.lat == null || place?.lng == null) return undefined;
+  return Math.round(haversineKm(deviceCoords, [place.lat, place.lng]) * 10) / 10;
+}
+
 /** "1.2 km" abaixo de 10 km, "34 km" acima — para etiquetas curtas. */
 export function formatKm(km: number): string {
   return km < 10 ? km.toFixed(1) : String(Math.round(km));

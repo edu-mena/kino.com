@@ -23,7 +23,8 @@ import type { MenuItem } from "@/data/types";
 import { useMenuItems } from "@/data/use-menu-items";
 import { useRestaurantDetail } from "@/data/use-restaurants-query";
 import { useAddToBill } from "@/lib/bill";
-import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
+import { distanceFromDeviceKm } from "@/lib/geo";
+import { byDishPopularity } from "@/lib/popularity";
 import { formatKz } from "@/lib/format";
 import { groupMenuItemsByName } from "@/lib/group-dishes-by-name";
 import { useLocation } from "@/lib/location";
@@ -85,7 +86,7 @@ export function MenuBrowser({
     favoriteDishIds,
     favoriteIngredients,
   } = usePreferences();
-  const { selected: selectedAddress } = useLocation();
+  const { selected: selectedAddress, deviceCoords } = useLocation();
   const addToBill = useAddToBill();
   const overallMaxPrice = useMemo(
     () => (items.length ? Math.max(...items.map((m) => m.price ?? 0)) : 0),
@@ -223,7 +224,8 @@ export function MenuBrowser({
       });
     }
     if (sort === "populares") {
-      return [...byPrice].sort((a, b) => (b.orderCount ?? 0) - (a.orderCount ?? 0));
+      // `orderCount` = pedidos dos últimos 30 dias (catálogo da API).
+      return [...byPrice].sort(byDishPopularity);
     }
     // "Relevância" (default): perto do usuário + preferências de cozinha e
     // restrições, sem amontoar vários pratos seguidos do mesmo restaurante
@@ -233,14 +235,9 @@ export function MenuBrowser({
     return buildRecommendedDishes({
       items: byPrice,
       getCuisine: (restaurantId) => getRestaurant(restaurantId)?.cuisine,
-      distanceKmOf: (restaurantId) => {
-        const restaurant = getRestaurant(restaurantId);
-        return personalizedRestaurantDistanceKm(
-          restaurantId,
-          selectedAddress,
-          restaurant?.distanceKm ?? 0,
-        );
-      },
+      // Distância real só com localização autorizada; sem ela não conta.
+      distanceKmOf: (restaurantId) =>
+        distanceFromDeviceKm(deviceCoords, getRestaurant(restaurantId)),
       cuisinePreferences,
       excludedIngredients,
       dietaryRestrictions,
@@ -255,7 +252,7 @@ export function MenuBrowser({
     maxPrice,
     sort,
     effectiveRestaurantId,
-    selectedAddress,
+    deviceCoords,
     cuisinePreferences,
     excludedIngredients,
     dietaryRestrictions,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampToRadius, haversineKm } from "./geo";
+import { clampToRadius, distanceFromDeviceKm, haversineKm } from "./geo";
 
 describe("clampToRadius", () => {
   const anchor = { lat: -8.8147, lng: 13.2302 };
@@ -18,5 +18,19 @@ describe("clampToRadius", () => {
     expect(meters).toBeLessThanOrEqual(151);
     expect(point.lat).toBeLessThan(anchor.lat);
     expect(point.lng).toBeGreaterThan(anchor.lng);
+  });
+});
+
+describe("distanceFromDeviceKm", () => {
+  const luanda: [number, number] = [-8.8147, 13.2302];
+
+  it("calcula a distância real quando há GPS e coordenadas do restaurante", () => {
+    expect(distanceFromDeviceKm(luanda, { lat: -8.8247, lng: 13.2402 })).toBe(1.6);
+  });
+
+  it("sem localização autorizada ou sem coordenadas, não inventa nada", () => {
+    expect(distanceFromDeviceKm(null, { lat: -8.8, lng: 13.2 })).toBeUndefined();
+    expect(distanceFromDeviceKm(luanda, { lat: null, lng: 13.2 })).toBeUndefined();
+    expect(distanceFromDeviceKm(luanda, undefined)).toBeUndefined();
   });
 });

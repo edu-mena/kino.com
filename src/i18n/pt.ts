@@ -121,6 +121,7 @@ export const pt = {
     filters: "Filtros",
     resultsSuffix: "restaurantes",
     noResults: "Nenhum restaurante encontrado. Tente outra pesquisa.",
+    sortPopular: "Mais populares",
     sortProximity: "Mais próximos",
     sortRating: "Melhor avaliados",
     sortName: "Nome (A-Z)",
@@ -416,6 +417,7 @@ export const pt = {
   },
   home: {
     restaurantsNearYou: "Perto de si",
+    popularRestaurants: "Populares",
     seeMore: "Ver mais",
     recommendedForYou: "Recomendações",
     fastFood: "Fast-food",

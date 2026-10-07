@@ -1,9 +1,9 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { INITIAL_SAVED_ADDRESSES } from "@/data/mockData";
 import { hasRealBackend } from "@/lib/api-client";
 import type { SavedAddress } from "@/data/types";
 import { useAddresses } from "./addresses";
-import { getDevicePosition } from "./native-permissions";
+import { getDevicePosition, hasLocationPermission } from "./native-permissions";
 
 // Com backend real, um utilizador novo começa sem moradas guardadas — as
 // 3 moradas de exemplo (Casa/Trabalho/Universidade) só fazem sentido sem
@@ -73,6 +73,21 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       }
     });
   };
+
+  // Já autorizada antes (noutra visita) → obtém a posição sozinha, sem
+  // pedido nenhum: o "Perto de si" da home só existe com localização, e
+  // não faz sentido obrigar a tocar no botão em cada visita. Quem nunca
+  // autorizou não é incomodado — fica para o botão "usar a minha
+  // localização".
+  useEffect(() => {
+    let cancelled = false;
+    void hasLocationPermission().then((granted) => {
+      if (granted && !cancelled) requestDeviceLocation();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const value: LocationValue = {
     allAddresses,

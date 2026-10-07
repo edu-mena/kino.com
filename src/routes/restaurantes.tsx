@@ -27,13 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Restaurant } from "@/data/types";
-import { addressProvince } from "@/data/helpers";
+import { addressProvince, visibleToCustomers } from "@/data/helpers";
 import { PROVINCE_CENTERS } from "@/data/restaurant-coordinates";
-import { useRestaurantServerSearch, useRestaurants } from "@/data/use-restaurants-query";
-import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
+import { useCustomerRestaurants, useRestaurantServerSearch } from "@/data/use-restaurants-query";
 import { formatKz } from "@/lib/format";
-import { haversineKm } from "@/lib/geo";
+import { distanceFromDeviceKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
+import { byPopularity } from "@/lib/popularity";
 import { computeRestaurantStatus } from "@/lib/restaurant-status";
 import { useSubscriptions } from "@/lib/subscriptions";
 import { useTranslation } from "@/i18n";
@@ -58,6 +58,7 @@ export const Route = createFileRoute("/restaurantes")({
 });
 
 const sortOptions = [
+  { value: "populares", labelKey: "restaurantes.sortPopular" },
   { value: "proximidade", labelKey: "restaurantes.sortProximity" },
   { value: "avaliacao", labelKey: "restaurantes.sortRating" },
   { value: "nome", labelKey: "restaurantes.sortName" },
@@ -70,41 +71,36 @@ function Restaurantes() {
   const { t, locale } = useTranslation();
   const navigate = useNavigate();
   const { byRestaurant: subByRestaurant } = useSubscriptions();
-  // Morada selecionada no chip do header — dá uma distância "real" (por
-  // usuário) em vez do `distanceKm` fixo da seed, igual pra toda a gente.
-  // Com a localização exata do dispositivo (`deviceCoords`, autorizada no
-  // botão abaixo), a distância passa a ser a real (haversine), não a
-  // aproximação por morada.
+  // Distância só com a localização do dispositivo (`deviceCoords`,
+  // autorizada no botão abaixo) — real (haversine). Sem ela não se mostra
+  // nem se ordena por distância: antes caía-se numa distância inventada a
+  // partir da morada, igual a nada na realidade.
   const {
     selected: selectedAddress,
     deviceCoords,
     deviceLocationStatus,
     requestDeviceLocation,
   } = useLocation();
-  const distanceKm = (r: Restaurant) => {
-    if (deviceCoords && r.lat != null && r.lng != null) {
-      return Math.round(haversineKm(deviceCoords, [r.lat, r.lng]) * 10) / 10;
-    }
-    return personalizedRestaurantDistanceKm(r.id, selectedAddress, r.distanceKm);
-  };
+  const distanceKm = (r: Restaurant) => distanceFromDeviceKm(deviceCoords, r);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [neighborhood, setNeighborhood] = useState("todos");
   const [deliveryOnly, setDeliveryOnly] = useState(false);
-  const [sort, setSort] = useState<(typeof sortOptions)[number]["value"]>("proximidade");
+  const [sort, setSort] = useState<(typeof sortOptions)[number]["value"]>("populares");
   const [page, setPage] = useState(1);
   const [reservingRestaurant, setReservingRestaurant] = useState<Restaurant | null>(null);
   const [view, setView] = useState<"grid" | "map">("grid");
   // Sem backend real (demo), resolve-se já com o mock — nunca fica a
   // "carregar" nesse caso (ver useRestaurants, hasRealBackend).
-  const { data: listedRestaurants = [], isLoading: restaurantsLoading } = useRestaurants();
+  // Sem os inativos (subscrição suspensa) — ver useCustomerRestaurants.
+  const { data: listedRestaurants = [], isLoading: restaurantsLoading } = useCustomerRestaurants();
   // Junta o que só o servidor encontra pelo nome exato (o restaurante de
   // demonstração dos revisores das lojas — ver searchApiRestaurants).
   const { data: serverMatches = [] } = useRestaurantServerSearch(debouncedQuery);
   const allRestaurants = useMemo(() => {
     const known = new Set(listedRestaurants.map((r) => r.id));
-    const extra = serverMatches.filter((r) => !known.has(r.id));
+    const extra = visibleToCustomers(serverMatches).filter((r) => !known.has(r.id));
     return extra.length ? [...listedRestaurants, ...extra] : listedRestaurants;
   }, [listedRestaurants, serverMatches]);
   const myProvince = selectedAddress ? addressProvince(selectedAddress.line2) : undefined;
@@ -137,8 +133,13 @@ function Restaurantes() {
       return byQuery && byNeighborhood && byDelivery;
     });
     const sorted = [...list];
-    if (sort === "proximidade") sorted.sort((a, b) => distanceKm(a) - distanceKm(b));
-    else if (sort === "avaliacao") sorted.sort((a, b) => b.rating - a.rating);
+    if (sort === "populares") sorted.sort(byPopularity);
+    else if (sort === "proximidade") {
+      // Sem distância conhecida vai para o fim; empate por popularidade.
+      sorted.sort(
+        (a, b) => (distanceKm(a) ?? Infinity) - (distanceKm(b) ?? Infinity) || byPopularity(a, b),
+      );
+    } else if (sort === "avaliacao") sorted.sort((a, b) => b.rating - a.rating);
     else sorted.sort((a, b) => a.name.localeCompare(b.name, "pt"));
     // Fechados não interessam agora — ficam sempre depois dos abertos,
     // qualquer que seja o critério de ordenação escolhido acima (a ordem
@@ -254,7 +255,16 @@ function Restaurantes() {
                 {t("restaurantes.viewMap")}
               </button>
             </div>
-            <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
+            <Select
+              value={sort}
+              onValueChange={(v) => {
+                setSort(v as typeof sort);
+                // Proximidade sem localização não ordena nada — pede-a logo.
+                if (v === "proximidade" && !deviceCoords && deviceLocationStatus !== "loading") {
+                  requestDeviceLocation();
+                }
+              }}
+            >
               <SelectTrigger className="w-44 rounded-xl" aria-label={t("common.sortLabel")}>
                 <SelectValue />
               </SelectTrigger>
@@ -330,10 +340,12 @@ function Restaurantes() {
                     </div>
                     <p className="truncate text-sm text-muted-foreground">{r.cuisine}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {distanceKm(r)} km
-                      </span>
+                      {distanceKm(r) != null && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {distanceKm(r)} km
+                        </span>
+                      )}
                       {r.isDeliveryAvailable ? (
                         <span className="flex items-center gap-1">
                           <Bike className="h-3.5 w-3.5" />

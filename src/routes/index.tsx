@@ -17,11 +17,13 @@ import { getRestaurant } from "@/data/helpers";
 import { useMenuItems } from "@/data/use-menu-items";
 import { usePackageTypesWithOffers } from "@/data/use-package-types-query";
 import { useAuth } from "@/lib/auth";
-import { personalizedRestaurantDistanceKm } from "@/lib/delivery-eval";
+import { distanceFromDeviceKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
 import { usePreferences } from "@/lib/preferences";
-import { buildRecommendedDishes } from "@/lib/recommend-dishes";
-import { useTranslation } from "@/i18n";
+import { byDishPopularity, topCategories } from "@/lib/popularity";
+import { buildRecommendedDishes, diversifyByKey } from "@/lib/recommend-dishes";
+import { translateMenuCategory, useTranslation, type Locale } from "@/i18n";
+import type { MenuItem } from "@/data/types";
 import { useLiveCatalogVersion } from "@/data/live-catalog";
 
 export const Route = createFileRoute("/")({
@@ -173,7 +175,7 @@ function SectionHeading({
 }
 
 function HomeLoggedIn() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { items } = useMenuItems();
   // Restaurantes/pratos reais chegam da API depois do 1º render — os
   // helpers síncronos (getRestaurant...) leem-nos de live-catalog.
@@ -185,18 +187,28 @@ function HomeLoggedIn() {
     favoriteDishIds,
     favoriteIngredients,
   } = usePreferences();
-  const { selected: selectedAddress } = useLocation();
+  // "Perto de si" só existe com a localização do aparelho autorizada —
+  // sem ela a linha de restaurantes é "Populares" e a distância não entra
+  // nas recomendações (antes usava uma distância inventada).
+  const { deviceCoords } = useLocation();
   const { data: packageTypes = [] } = usePackageTypesWithOffers();
 
-  // Derivados da lista efetiva de pratos (reativa a criações/edições no
-  // painel do restaurante) — não do seed estático diretamente.
-  const fastFoodItems = useMemo(() => items.filter((m) => m.category === "Fast-Food"), [items]);
-  const grelhadosItems = useMemo(() => items.filter((m) => m.category === "Grelhados"), [items]);
-  const trendingItems = useMemo(
+  // Secções de categoria: as que têm mais pratos (não fixas), cada uma com
+  // os mais pedidos primeiro e sem vários seguidos do mesmo restaurante.
+  // Os pratos de restaurantes inativos já vêm de fora (useMenuItems).
+  const categorySections = useMemo(
     () =>
-      [...items]
-        .filter((m) => m.isTrending || (m.orderCount ?? 0) > 0)
-        .sort((a, b) => (b.orderCount ?? 0) - (a.orderCount ?? 0)),
+      topCategories(items).map((category) => ({
+        category,
+        items: diversifyByKey(
+          items.filter((m) => m.category === category).sort(byDishPopularity),
+          (m) => m.restaurantId,
+        ),
+      })),
+    [items],
+  );
+  const trendingItems = useMemo(
+    () => items.filter((m) => m.isTrending || (m.orderCount ?? 0) > 0).sort(byDishPopularity),
     [items],
   );
   // "Recomendações": perto do usuário + cozinhas que ele prefere, evitando
@@ -208,14 +220,8 @@ function HomeLoggedIn() {
       buildRecommendedDishes({
         items,
         getCuisine: (restaurantId) => getRestaurant(restaurantId)?.cuisine,
-        distanceKmOf: (restaurantId) => {
-          const restaurant = getRestaurant(restaurantId);
-          return personalizedRestaurantDistanceKm(
-            restaurantId,
-            selectedAddress,
-            restaurant?.distanceKm ?? 0,
-          );
-        },
+        distanceKmOf: (restaurantId) =>
+          distanceFromDeviceKm(deviceCoords, getRestaurant(restaurantId)),
         cuisinePreferences,
         excludedIngredients,
         dietaryRestrictions,
@@ -227,7 +233,7 @@ function HomeLoggedIn() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogVersion: getRestaurant() lê o catálogo real, que chega depois
     [
       items,
-      selectedAddress,
+      deviceCoords,
       cuisinePreferences,
       excludedIngredients,
       dietaryRestrictions,
@@ -254,9 +260,12 @@ function HomeLoggedIn() {
         <PromoCarousel />
       </section>
 
-      {/* Restaurantes próximos */}
+      {/* Restaurantes: "Perto de si" com localização, "Populares" sem ela */}
       <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
-        <SectionHeading title={t("home.restaurantsNearYou")} to="/restaurantes" />
+        <SectionHeading
+          title={deviceCoords ? t("home.restaurantsNearYou") : t("home.popularRestaurants")}
+          to="/restaurantes"
+        />
         <div className="mt-5">
           <RestaurantAvatarRow />
         </div>
@@ -281,6 +290,11 @@ function HomeLoggedIn() {
         </section>
       )}
 
+      {/* A maior categoria entre Pacotes e Categorias; as restantes depois */}
+      {categorySections.slice(0, 1).map((section) => (
+        <CategorySection key={section.category} {...section} locale={locale} />
+      ))}
+
       {/* Categorias */}
       <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
         <SectionHeading title={t("home.categories")} />
@@ -289,43 +303,45 @@ function HomeLoggedIn() {
         </div>
       </section>
 
-      {/* Fast-food */}
-      {fastFoodItems.length > 0 && (
-        <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
-          <SectionHeading
-            title={t("home.fastFood")}
-            to="/cardapio"
-            search={{ categoria: "Fast-Food" }}
-          />
-          <div className="mt-5">
-            <DishRecommendationRow items={fastFoodItems} />
-          </div>
-        </section>
-      )}
+      {categorySections.slice(1).map((section) => (
+        <CategorySection key={section.category} {...section} locale={locale} />
+      ))}
 
-      {/* Grelhados */}
-      {grelhadosItems.length > 0 && (
-        <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
-          <SectionHeading
-            title={t("home.grilled")}
-            to="/cardapio"
-            search={{ categoria: "Grelhados" }}
-          />
-          <div className="mt-5">
-            <DishRecommendationRow items={grelhadosItems} />
-          </div>
-        </section>
-      )}
-
-      {/* Em alta */}
+      {/* Em alta — só com pedidos reais (orderCount vem do catálogo da API) */}
       {trendingItems.length > 0 && (
-        <section className="mx-auto mb-12 mt-12 max-w-6xl px-4 md:px-6">
+        <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
           <SectionHeading title={t("home.trending")} to="/cardapio" />
           <div className="mt-5">
             <DishRecommendationRow items={trendingItems} />
           </div>
         </section>
       )}
+      <div className="mb-12" />
     </PageShell>
+  );
+}
+
+/** Secção de uma categoria de pratos na home (as que têm mais pratos — ver
+ * `topCategories`), com "ver mais" para o cardápio já filtrado. */
+function CategorySection({
+  category,
+  items,
+  locale,
+}: {
+  category: string;
+  items: MenuItem[];
+  locale: Locale;
+}) {
+  return (
+    <section className="mx-auto mt-12 max-w-6xl px-4 md:px-6">
+      <SectionHeading
+        title={translateMenuCategory(category, locale)}
+        to="/cardapio"
+        search={{ categoria: category }}
+      />
+      <div className="mt-5">
+        <DishRecommendationRow items={items} />
+      </div>
+    </section>
   );
 }

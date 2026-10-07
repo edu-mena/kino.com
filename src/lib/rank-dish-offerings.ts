@@ -9,11 +9,13 @@ export type DishOffering = {
 
 /** Ordena as ofertas do mesmo prato em restaurantes diferentes pelas
  * preferências do usuário — cozinha favorita e conflitos com restrições
- * alimentares primeiro, depois distância, com preço como último
- * desempate. Usada em `/pratos/$dishName` (visão geral de um prato). */
+ * alimentares primeiro, depois distância REAL (só com localização
+ * autorizada — `distanceKmOf` devolve `undefined` sem ela, e aí não
+ * conta), com preço como último desempate. Usada em `/pratos/$dishName`. */
 export function rankDishOfferings(
   offerings: DishOffering[],
   cuisinePreferences: string[],
+  distanceKmOf: (o: DishOffering) => number | undefined = () => undefined,
 ): DishOffering[] {
   const score = (o: DishOffering) => {
     let s = 0;
@@ -25,9 +27,9 @@ export function rankDishOfferings(
   return [...offerings].sort((a, b) => {
     const diff = score(b) - score(a);
     if (diff !== 0) return diff;
-    if (a.restaurant.distanceKm !== b.restaurant.distanceKm) {
-      return a.restaurant.distanceKm - b.restaurant.distanceKm;
-    }
+    const kmA = distanceKmOf(a) ?? Infinity;
+    const kmB = distanceKmOf(b) ?? Infinity;
+    if (kmA !== kmB) return kmA - kmB;
     return (a.item.price ?? 0) - (b.item.price ?? 0);
   });
 }

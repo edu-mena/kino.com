@@ -25,7 +25,9 @@ export function diversifyByKey<T>(itemsByScoreDesc: T[], keyOf: (item: T) => str
 type RecommendInput = {
   items: MenuItem[];
   getCuisine: (restaurantId: string) => string | undefined;
-  distanceKmOf: (restaurantId: string) => number;
+  /** Distância real ao restaurante, ou `undefined` sem localização
+   * autorizada — aí a proximidade simplesmente não conta. */
+  distanceKmOf: (restaurantId: string) => number | undefined;
   cuisinePreferences: string[];
   excludedIngredients: string[];
   dietaryRestrictions: string[];
@@ -117,7 +119,7 @@ function scoreDish(item: MenuItem, input: RecommendInput, profile: TasteProfile)
 
   let score = 0;
   if (likesCuisine) score += 30;
-  score += Math.max(0, 20 - km); // mais perto, mais pontos (satura aos 20km)
+  if (km != null) score += Math.max(0, 20 - km); // mais perto, mais pontos (satura aos 20km)
   score += Math.min(10, (item.orderCount ?? 0) / 5);
   if (item.isTrending) score += 3;
   score += tasteAffinity(item, profile);

@@ -38,6 +38,27 @@ export async function openAppSettings(): Promise<boolean> {
   }
 }
 
+/**
+ * A localização JÁ está autorizada? Nunca mostra o pedido de permissão —
+ * só pergunta o estado ao SO/browser. Serve para obter a posição sozinha ao
+ * abrir a app quando o utilizador já disse que sim antes (o "Perto de si"
+ * só existe com localização), sem incomodar quem nunca autorizou.
+ */
+export async function hasLocationPermission(): Promise<boolean> {
+  try {
+    if (isNativeApp()) {
+      const { Geolocation } = await import("@capacitor/geolocation");
+      const perm = await Geolocation.checkPermissions();
+      return perm.location === "granted" || perm.coarseLocation === "granted";
+    }
+    if (typeof navigator === "undefined" || !navigator.permissions?.query) return false;
+    const status = await navigator.permissions.query({ name: "geolocation" });
+    return status.state === "granted";
+  } catch {
+    return false;
+  }
+}
+
 export type DevicePositionResult =
   | { ok: true; coords: [number, number] }
   /** `denied` = sem permissão; `unavailable` = GPS desligado/timeout; `unsupported` = sem API. */

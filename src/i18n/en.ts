@@ -114,6 +114,7 @@ export const en: Dictionary = {
     filters: "Filters",
     resultsSuffix: "restaurants",
     noResults: "No restaurants found. Try another search.",
+    sortPopular: "Most popular",
     sortProximity: "Closest",
     sortRating: "Top rated",
     sortName: "Name (A-Z)",
@@ -409,6 +410,7 @@ export const en: Dictionary = {
   },
   home: {
     restaurantsNearYou: "Restaurants near you",
+    popularRestaurants: "Popular restaurants",
     seeMore: "See more",
     recommendedForYou: "Recommended for you",
     fastFood: "Fast food",
