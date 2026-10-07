@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api-client";
 import type {
+  GuestContent,
   SiteContent,
   SiteFaq,
   SiteStats,
@@ -33,6 +34,12 @@ type SettingsInput = {
    * `accept="media"`); vídeo passa por transcodificação assíncrona no
    * backend, mesmo pipeline de Offer. */
   heroMedia?: { dataUrl: string; mediaType: "image" | "video" };
+  /** Textos/imagens das páginas para visitantes — parcial, por chave. */
+  guestContent?: Partial<GuestContent>;
+  /** Novo vídeo da página Luku (data URL) — processado no servidor. */
+  lukuVideoDataUrl?: string;
+  /** Volta ao vídeo original que vem com o site. */
+  lukuVideoReset?: boolean;
 };
 
 export async function updateApiSiteSettings(input: SettingsInput, token: string) {
@@ -45,6 +52,13 @@ export async function updateApiSiteSettings(input: SettingsInput, token: string)
   if (input.aboutTitle !== undefined) body.append("about_title", input.aboutTitle);
   if (input.aboutDescription !== undefined)
     body.append("about_description", input.aboutDescription);
+  // Só as chaves enviadas mudam no servidor; texto vazio volta ao original.
+  if (input.guestContent) body.append("guest_content", JSON.stringify(input.guestContent));
+  if (input.lukuVideoDataUrl) {
+    const { dataUrlToFile } = await import("@/lib/api-upload");
+    body.append("luku_video", dataUrlToFile(input.lukuVideoDataUrl, "luku-video.mp4"));
+  }
+  if (input.lukuVideoReset) body.append("luku_video_reset", "1");
   if (input.heroMedia) {
     const { dataUrlToFile } = await import("@/lib/api-upload");
     const ext = input.heroMedia.mediaType === "video" ? "mp4" : "jpg";

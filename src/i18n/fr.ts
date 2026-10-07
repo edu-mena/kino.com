@@ -1338,6 +1338,43 @@ export const fr: Dictionary = {
       tabTeam: "Équipe",
       tabTestimonials: "Témoignages",
       tabFaqs: "FAQ",
+      tabPages: "Pages publiques",
+      pagesIntro:
+        "Textes, images et vidéo des pages que les visiteurs voient sans compte. Un champ vide affiche le texte d'origine (traduit) ; ce que vous écrivez apparaît dans toutes les langues.",
+      pageHome: "Accueil",
+      pageLuku: "Luku",
+      pageSobre: "À propos",
+      pageContacto: "Contact",
+      secHomeHero: "Haut de la page",
+      secHomeCards: "Cartes",
+      secLukuHero: "Haut et vidéo",
+      secLukuMenu: "Menu numérique",
+      secLukuCta: "Appels à l'action",
+      secLukuCtaNote: "Ces textes apparaissent aussi à la fin de la page À propos.",
+      secLukuFeatures: "Fonctionnalités",
+      secSobreHeadings: "Titres des sections",
+      secSobreNote:
+        "Le titre, la description et l'image du haut de cette page se trouvent dans l'onglet Général.",
+      secSobreStats: "Chiffres (les valeurs sont calculées automatiquement)",
+      secContacto: "Textes de la page",
+      roleTitle: "Titre",
+      roleText: "Texte",
+      roleButton: "Bouton",
+      roleItem: "Élément de liste",
+      roleAlt: "Description de l'image (accessibilité)",
+      imageLabel: "Image",
+      imageHelp: "Remplace l'image d'origine dans cette section.",
+      imageReset: "Rétablir l'image d'origine",
+      videoLabel: "Vidéo de la page",
+      videoHelp:
+        "Jusqu'à 60 secondes. Elle est traitée sur le serveur avant d'apparaître sur la page.",
+      videoNotVideo: "Choisissez un fichier vidéo.",
+      videoProcessing:
+        "La nouvelle vidéo est en cours de traitement — elle apparaîtra sur la page une fois terminée.",
+      videoFailed: "Le traitement de la vidéo a échoué. Envoyez-la à nouveau.",
+      videoReset: "Rétablir la vidéo d'origine",
+      videoResetPending: "À l'enregistrement, la vidéo d'origine revient.",
+      savePage: "Enregistrer cette page",
 
       contactSectionTitle: "Contact",
       contactEmailLabel: "Email",
@@ -2626,6 +2663,8 @@ export const fr: Dictionary = {
     hintGallery: "Gardez le sujet centré, sans coupes importantes sur les bords.",
     hintPromo:
       "Laissez le centre dégagé et sans détail — le titre et le bouton de la promo s'affichent par-dessus l'image.",
+    hintIllustration:
+      "Illustration sur fond transparent (PNG). Centrez le dessin et laissez une marge autour.",
     hintStory:
       "Format vertical de téléphone. Laissez de l'air en haut et en bas, où se trouvent les contrôles du story. Avec une photo horizontale, dézoomez pour la montrer entière — le reste du cadre reste noir.",
   },

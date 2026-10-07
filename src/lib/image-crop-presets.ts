@@ -12,6 +12,9 @@ export type CropPreset = {
   aspect: number;
   maxDimension: number;
   hintKey: string;
+  /** "png" mantém a transparência (ilustrações); por omissão JPEG, mais
+   * leve para fotografias. */
+  format?: "jpeg" | "png";
 };
 
 export const CROP_PRESETS = {
@@ -23,6 +26,13 @@ export const CROP_PRESETS = {
   gallery: { aspect: 16 / 9, maxDimension: 1280, hintKey: "imageCropper.hintGallery" },
   /** Imagem de promoção — panorâmica (título e botão sobrepõem-se). */
   promo: { aspect: 16 / 9, maxDimension: 1400, hintKey: "imageCropper.hintPromo" },
+  /** Ilustração com fundo transparente (página Luku) — PNG, quadrada. */
+  illustration: {
+    aspect: 1,
+    maxDimension: 600,
+    hintKey: "imageCropper.hintIllustration",
+    format: "png",
+  },
   /** Story — vertical, formato ecrã de telemóvel. */
   story: { aspect: 9 / 16, maxDimension: 1280, hintKey: "imageCropper.hintStory" },
 } as const satisfies Record<string, CropPreset>;

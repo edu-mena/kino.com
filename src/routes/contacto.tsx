@@ -20,7 +20,7 @@ import { PageHeading, PageShell, SiteHeader } from "@/components/site-shell";
 import { sendApiContactMessage } from "@/data/api-contact";
 import { useTranslation } from "@/i18n";
 import { hasRealBackend } from "@/lib/api-client";
-import { useSiteContentPublic } from "@/lib/site-content";
+import { useGuestContent, useSiteContentPublic } from "@/lib/site-content";
 
 export const Route = createFileRoute("/contacto")({
   head: () => ({
@@ -55,6 +55,8 @@ function Contacto() {
   const { t } = useTranslation();
   const [sending, setSending] = useState(false);
   const { content } = useSiteContentPublic();
+  // Textos editáveis em /sistema/conteudo → "Páginas públicas".
+  const { text: gt } = useGuestContent();
   const settings = content?.settings;
   const contactEmail = settings?.contactEmail || FALLBACK_CONTACT_EMAIL;
 
@@ -105,7 +107,7 @@ function Contacto() {
     const email = String(data.get("email") ?? "");
     const subjectValue = String(data.get("subject") ?? "");
     const subjectLabel =
-      subjects.find((s) => s.value === subjectValue)?.label ?? t("contacto.eyebrow");
+      subjects.find((s) => s.value === subjectValue)?.label ?? gt("contacto.eyebrow");
     const message = String(data.get("message") ?? "");
 
     // Com backend real, a mensagem é enviada de facto por email (ver
@@ -138,9 +140,9 @@ function Contacto() {
   return (
     <PageShell header={<SiteHeader variant="guestHome" />} footer={null} showMobileTabBar={false}>
       <PageHeading
-        eyebrow={t("contacto.eyebrow")}
-        title={t("contacto.title")}
-        description={t("contacto.description")}
+        eyebrow={gt("contacto.eyebrow")}
+        title={gt("contacto.title")}
+        description={gt("contacto.description")}
       />
 
       {/* Contact info */}
@@ -169,8 +171,8 @@ function Contacto() {
               className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-primary p-5 text-center text-primary-foreground transition-opacity hover:opacity-90"
             >
               <WhatsAppIcon className="h-8 w-8" />
-              <h3 className="mt-3 font-display text-base font-bold">{t("contacto.whatsapp")}</h3>
-              <p className="text-sm text-primary-foreground/85">{t("contacto.whatsappHint")}</p>
+              <h3 className="mt-3 font-display text-base font-bold">{gt("contacto.whatsapp")}</h3>
+              <p className="text-sm text-primary-foreground/85">{gt("contacto.whatsappHint")}</p>
             </a>
           )}
         </div>
@@ -179,7 +181,7 @@ function Contacto() {
       {/* Form */}
       <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
         <div className="rounded-[2rem] border border-border bg-card p-6 sm:p-10">
-          <h2 className="text-2xl font-extrabold text-primary">{t("contacto.formTitle")}</h2>
+          <h2 className="text-2xl font-extrabold text-primary">{gt("contacto.formTitle")}</h2>
           <form onSubmit={handleSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
             <input
               required
@@ -236,7 +238,7 @@ function Contacto() {
 
       {/* FAQ */}
       <section className="mx-auto mb-20 mt-14 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">{t("contacto.faqTitle")}</h2>
+        <h2 className="text-2xl font-extrabold text-primary">{gt("contacto.faqTitle")}</h2>
         <Accordion type="single" collapsible className="mt-5 space-y-3">
           {faqs.map((faq, i) => (
             <AccordionItem

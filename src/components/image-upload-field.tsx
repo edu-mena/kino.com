@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { VideoTrimmer } from "@/components/video-trimmer";
 import { useTranslation } from "@/i18n";
 import { uploadImageDataUrl, type UploadPurpose } from "@/lib/api-upload";
-import { CROP_PRESETS, type CropPresetName } from "@/lib/image-crop-presets";
+import { CROP_PRESETS, type CropPreset, type CropPresetName } from "@/lib/image-crop-presets";
 import { fileToResizedDataUrl, getVideoDurationSec } from "@/lib/image-upload";
 
 /** Janela mínima aceite pelo controlador de corte. */
@@ -135,7 +135,7 @@ export function ImageUploadField({
     }
   };
 
-  const preset = crop ? CROP_PRESETS[crop] : null;
+  const preset: CropPreset | null = crop ? CROP_PRESETS[crop] : null;
 
   const isUploaded = value.startsWith("data:");
   const showVideo = mediaType === "video";
@@ -220,6 +220,7 @@ export function ImageUploadField({
           aspect={preset.aspect}
           maxDimension={preset.maxDimension}
           hint={t(preset.hintKey)}
+          {...(preset.format ? { format: preset.format } : {})}
           onConfirm={(dataUrl) => {
             setCropFile(null);
             setUploading(true);

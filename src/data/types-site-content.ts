@@ -14,6 +14,20 @@ export type SiteSettings = {
   aboutHeroMediaType: "image" | "video";
   aboutHeroThumbnailUrl: string | null;
   processingStatus: string;
+  /** Páginas para visitantes (início, Luku, Sobre, Contacto): textos e
+   * imagens que substituem os originais, por chave de tradução (ex.
+   * `luku.bentoTitle`) — em todas as línguas. Ausente = original. */
+  guestContent: GuestContent;
+  /** Vídeo da página Luku enviado em /sistema/conteudo (processado no
+   * servidor); `null` = o vídeo original que vem com o site. */
+  lukuVideoUrl: string | null;
+  lukuVideoPosterUrl: string | null;
+  lukuVideoStatus: string;
+};
+
+export type GuestContent = {
+  texts: Record<string, string>;
+  media: Record<string, string>;
 };
 
 export type SiteTeamMember = {

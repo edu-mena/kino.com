@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { fetchApiSiteContent, fetchApiSiteStats } from "@/data/api-site-content";
 import type { SiteContent, SiteStats } from "@/data/types-site-content";
+import { safeLocalStorageSet } from "@/data/safe-storage";
+import { STORAGE_KEYS } from "@/data/storage-keys";
+import { useTranslation } from "@/i18n";
 import { hasRealBackend } from "@/lib/api-client";
 
 /** Sem backend real (demo em `*.vercel.app`) — mesmo texto que já estava
@@ -22,6 +25,10 @@ const MOCK_CONTENT: SiteContent = {
     aboutHeroMediaType: "image",
     aboutHeroThumbnailUrl: null,
     processingStatus: "ready",
+    guestContent: { texts: {}, media: {} },
+    lukuVideoUrl: null,
+    lukuVideoPosterUrl: null,
+    lukuVideoStatus: "ready",
   },
   team: [
     {
@@ -117,34 +124,97 @@ const MOCK_STATS: SiteStats = {
   averageRating: 4.8,
 };
 
-/** Conteúdo institucional público (contacto/"Sobre nós"/equipa/testemunhos/
- * FAQ) — consumido por /sobre e /contacto. Editado em /sistema/conteudo (ver
- * `useSiteContentAdmin`, montado só dentro de OperatorProviders); esta
- * leitura é pública e não precisa de nenhum contexto/token, por isso é só um
- * hook simples (mesmo padrão de `useDeliveryPolicy`), não um provider — os
- * dois únicos consumidores (`/sobre`, `/contacto`) não vivem debaixo de
- * nenhum provider comum que faça sentido partilhar. */
+/*
+ * Conteúdo institucional público (contacto, "Sobre nós", equipa,
+ * testemunhos, FAQ e os textos/imagens/vídeo das páginas para visitantes),
+ * editado em /sistema/conteudo. Um só pedido por sessão, partilhado por
+ * todas as páginas (antes cada página pedia o seu ao abrir), e uma cópia
+ * neste aparelho: numa visita seguinte os textos editados aparecem logo,
+ * em vez de surgirem por cima dos originais ~1s depois. A cópia é só um
+ * atalho — a versão do servidor substitui-a assim que chega.
+ */
+let current: SiteContent | null = null;
+let fetchedThisSession = false;
+let inflight: Promise<void> | null = null;
+const contentListeners = new Set<() => void>();
+
+function notifyContent() {
+  for (const listener of contentListeners) listener();
+}
+
+function contentSnapshot(): SiteContent | null {
+  if (!hasRealBackend) return MOCK_CONTENT;
+  if (current || typeof window === "undefined") return current;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEYS.siteContent);
+    if (raw) current = JSON.parse(raw) as SiteContent;
+  } catch {
+    current = null;
+  }
+  return current;
+}
+
+function fetchContent(): Promise<void> {
+  if (!hasRealBackend || typeof window === "undefined") return Promise.resolve();
+  inflight ??= fetchApiSiteContent()
+    .then((data) => {
+      current = data;
+      fetchedThisSession = true;
+      safeLocalStorageSet(STORAGE_KEYS.siteContent, JSON.stringify(data));
+      notifyContent();
+    })
+    .catch(() => {})
+    .finally(() => {
+      inflight = null;
+    });
+  return inflight;
+}
+
+/** Volta a pedir o conteúdo — depois de o admin guardar, para as páginas
+ * públicas abertas neste browser mostrarem logo a versão nova. */
+export function refreshSiteContentPublic(): Promise<void> {
+  return fetchContent();
+}
+
 export function useSiteContentPublic(): { content: SiteContent | null; loading: boolean } {
-  const [content, setContent] = useState<SiteContent | null>(hasRealBackend ? null : MOCK_CONTENT);
-  const [loading, setLoading] = useState(hasRealBackend);
+  const content = useSyncExternalStore(
+    (listener) => {
+      contentListeners.add(listener);
+      return () => contentListeners.delete(listener);
+    },
+    contentSnapshot,
+    // SSR / hidratação: sem a cópia do aparelho (o HTML tem de bater).
+    () => (hasRealBackend ? null : MOCK_CONTENT),
+  );
 
   useEffect(() => {
-    if (!hasRealBackend) return;
-    let cancelled = false;
-    fetchApiSiteContent()
-      .then((data) => {
-        if (!cancelled) setContent(data);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+    if (!fetchedThisSession) void fetchContent();
   }, []);
 
-  return { content, loading };
+  return { content, loading: hasRealBackend && content === null };
+}
+
+/**
+ * Textos/imagens/vídeo das páginas para visitantes, com o que foi editado
+ * em /sistema/conteudo por cima do original: `text("luku.bentoTitle")` é o
+ * texto editado (em todas as línguas) ou, sem edição, a tradução de sempre;
+ * `media("luku.heroImage", original)` idem para imagens.
+ */
+export function useGuestContent() {
+  const { t } = useTranslation();
+  const { content } = useSiteContentPublic();
+  const settings = content?.settings;
+  const texts = settings?.guestContent?.texts ?? {};
+  const media = settings?.guestContent?.media ?? {};
+  return {
+    text: (key: string): string => texts[key]?.trim() || t(key),
+    media: (key: string, fallback: string): string => media[key] || fallback,
+    /** Vídeo enviado e já processado; `null` = o original do site. */
+    lukuVideo:
+      settings?.lukuVideoUrl && settings.lukuVideoStatus === "ready"
+        ? { src: settings.lukuVideoUrl, poster: settings.lukuVideoPosterUrl }
+        : null,
+  };
 }
 
 /** Números "automáticos" de /sobre — sempre calculados a partir dos dados

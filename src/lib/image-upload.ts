@@ -117,7 +117,11 @@ export function croppedImageToDataUrl(
   src: { x: number; y: number; w: number; h: number },
   out: { width: number; height: number },
   quality = 0.82,
+  /** "png" mantém a transparência: sem fundo preto, sem JPEG. */
+  format: "jpeg" | "png" = "jpeg",
 ): string {
+  const encode = (canvas: HTMLCanvasElement) =>
+    format === "png" ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", quality);
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
 
@@ -127,15 +131,17 @@ export function croppedImageToDataUrl(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("O navegador não suporta o processamento de imagens.");
   ctx.imageSmoothingQuality = "high";
-  ctx.fillStyle = "#000";
-  ctx.fillRect(0, 0, out.width, out.height);
+  if (format === "jpeg") {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, out.width, out.height);
+  }
 
   // Só a parte da janela pedida que existe mesmo na imagem.
   const sx = Math.max(0, src.x);
   const sy = Math.max(0, src.y);
   const sw = Math.min(src.x + src.w, iw) - sx;
   const sh = Math.min(src.y + src.h, ih) - sy;
-  if (sw <= 0 || sh <= 0) return canvas.toDataURL("image/jpeg", quality); // nada a desenhar (não devia acontecer)
+  if (sw <= 0 || sh <= 0) return encode(canvas); // nada a desenhar (não devia acontecer)
 
   // Mesma escala pedida (janela → saída), aplicada só a essa parte real —
   // é o que posiciona a imagem no sítio certo dentro da saída, com as
@@ -148,7 +154,7 @@ export function croppedImageToDataUrl(
   const dh = sh * scaleY;
 
   ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-  return canvas.toDataURL("image/jpeg", quality);
+  return encode(canvas);
 }
 
 /** Duração (segundos) de um ficheiro de vídeo, lida dos metadados. */

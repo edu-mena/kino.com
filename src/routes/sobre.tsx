@@ -4,7 +4,7 @@ import icon from "@/assets/icon.png";
 import { PageHeading, PageShell, SiteHeader } from "@/components/site-shell";
 import { useTranslation } from "@/i18n";
 import { formatCount } from "@/lib/format";
-import { useSiteContentPublic, useSiteStats } from "@/lib/site-content";
+import { useGuestContent, useSiteContentPublic, useSiteStats } from "@/lib/site-content";
 
 export const Route = createFileRoute("/sobre")({
   head: () => ({
@@ -40,6 +40,8 @@ const partners = [
 function Sobre() {
   const { t } = useTranslation();
   const { content } = useSiteContentPublic();
+  // Títulos/botões editáveis em /sistema/conteudo → "Páginas públicas".
+  const { text: gt } = useGuestContent();
   const stats = useSiteStats();
 
   const settings = content?.settings;
@@ -53,19 +55,19 @@ function Sobre() {
         {
           icon: Users,
           value: formatCount(stats.activeCustomers),
-          label: t("sobre.statActiveCustomers"),
+          label: gt("sobre.statActiveCustomers"),
         },
         {
           icon: Store,
           value: formatCount(stats.partnerRestaurants),
-          label: t("sobre.statPartnerRestaurants"),
+          label: gt("sobre.statPartnerRestaurants"),
         },
         {
           icon: UtensilsCrossed,
           value: formatCount(stats.menuDishes),
-          label: t("sobre.statMenuDishes"),
+          label: gt("sobre.statMenuDishes"),
         },
-        { icon: Star, value: stats.averageRating.toFixed(1), label: t("sobre.statAverageRating") },
+        { icon: Star, value: stats.averageRating.toFixed(1), label: gt("sobre.statAverageRating") },
       ]
     : [];
 
@@ -103,7 +105,7 @@ function Sobre() {
       {/* Team */}
       {team.length > 0 && (
         <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
-          <h2 className="text-2xl font-extrabold text-primary">{t("sobre.teamHeading")}</h2>
+          <h2 className="text-2xl font-extrabold text-primary">{gt("sobre.teamHeading")}</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {team.map((person) => (
               <div
@@ -149,7 +151,7 @@ function Sobre() {
 
       {/* Partners marquee */}
       <section className="mx-auto mt-14 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">{t("sobre.partnersHeading")}</h2>
+        <h2 className="text-2xl font-extrabold text-primary">{gt("sobre.partnersHeading")}</h2>
       </section>
       <div className="relative mt-5 overflow-hidden py-2 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
         <div className="flex w-max animate-marquee gap-4">
@@ -167,7 +169,9 @@ function Sobre() {
       {/* Testimonials */}
       {testimonials.length > 0 && (
         <section className="mx-auto mb-20 mt-14 max-w-6xl px-4 md:px-6">
-          <h2 className="text-2xl font-extrabold text-primary">{t("sobre.testimonialsHeading")}</h2>
+          <h2 className="text-2xl font-extrabold text-primary">
+            {gt("sobre.testimonialsHeading")}
+          </h2>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {testimonials.map((item) => (
               <div
@@ -202,29 +206,29 @@ function Sobre() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-surface p-8 sm:p-10">
             <h2 className="font-display text-2xl font-extrabold text-primary sm:text-3xl">
-              {t("luku.ctaRestaurantTitle")}
+              {gt("luku.ctaRestaurantTitle")}
             </h2>
-            <p className="max-w-sm text-muted-foreground">{t("luku.ctaRestaurantDescription")}</p>
+            <p className="max-w-sm text-muted-foreground">{gt("luku.ctaRestaurantDescription")}</p>
             <Link
               to="/parceiros"
               className="mt-2 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
             >
-              {t("sobre.becomePartner")}
+              {gt("sobre.becomePartner")}
             </Link>
           </div>
 
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
             <h2 className="font-display text-2xl font-extrabold sm:text-3xl">
-              {t("luku.ctaCustomerTitle")}
+              {gt("luku.ctaCustomerTitle")}
             </h2>
             <p className="max-w-sm text-primary-foreground/85">
-              {t("luku.ctaCustomerDescription")}
+              {gt("luku.ctaCustomerDescription")}
             </p>
             <Link
               to="/entrar"
               className="mt-2 rounded-full bg-background px-6 py-3 text-sm font-semibold text-primary transition-opacity hover:opacity-90"
             >
-              {t("luku.login")}
+              {gt("luku.login")}
             </Link>
           </div>
         </div>

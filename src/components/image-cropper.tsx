@@ -38,6 +38,7 @@ export function ImageCropper({
   aspect,
   maxDimension,
   hint,
+  format = "jpeg",
   onConfirm,
 }: {
   file: File | null;
@@ -47,6 +48,8 @@ export function ImageCropper({
   maxDimension: number;
   /** Texto de orientação já traduzido (ex.: "centre o prato…"). */
   hint: string;
+  /** "png" mantém a transparência (ver preset `illustration`). */
+  format?: "jpeg" | "png";
   onConfirm: (dataUrl: string) => void;
 }) {
   const { t } = useTranslation();
@@ -182,7 +185,13 @@ export function ImageCropper({
         w: vp.w / scale,
         h: vp.h / scale,
       };
-      const dataUrl = croppedImageToDataUrl(img, src, cropOutputSize(aspect, maxDimension));
+      const dataUrl = croppedImageToDataUrl(
+        img,
+        src,
+        cropOutputSize(aspect, maxDimension),
+        undefined,
+        format,
+      );
       onConfirm(dataUrl);
       onOpenChange(false);
     } catch {

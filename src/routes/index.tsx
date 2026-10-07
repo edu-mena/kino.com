@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Armchair, ArrowRight, Tag } from "lucide-react";
 import { useMemo } from "react";
 import { useTapSequence } from "@/lib/use-tap-sequence";
-import heroBg from "@/assets/hero.webp";
 import icon from "@/assets/icon.png";
 import { CategoryShortcutRow } from "@/components/category-shortcut-row";
 import { DietaryOnboardingPopup } from "@/components/dietary-onboarding-popup";
@@ -13,6 +12,8 @@ import { PackageTypeShortcutRow } from "@/components/package-type-shortcut-row";
 import { PromoCarousel } from "@/components/promo-carousel";
 import { RestaurantAvatarRow } from "@/components/restaurant-avatar-row";
 import { PageShell, SiteHeader } from "@/components/site-shell";
+import { GUEST_MEDIA_DEFAULTS } from "@/lib/guest-content-fields";
+import { useGuestContent } from "@/lib/site-content";
 import { getRestaurant } from "@/data/helpers";
 import { useMenuItems } from "@/data/use-menu-items";
 import { usePackageTypesWithOffers } from "@/data/use-package-types-query";
@@ -68,8 +69,10 @@ function Home() {
 }
 
 function HomeNotLoggedIn() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
+  // Textos/imagem editáveis em /sistema/conteudo → "Páginas públicas";
+  // sem edição fica o original (ver useGuestContent).
+  const { text: gt, media } = useGuestContent();
   // Gesto escondido: 7 toques seguidos no card "Menus e novidades" abrem o
   // login de sistema (/sistema/entrar) — de propósito nunca linkado na UI
   // (ver sistema_.entrar.tsx). Ver use-tap-sequence.ts para o porquê do
@@ -78,7 +81,7 @@ function HomeNotLoggedIn() {
   return (
     <PageShell header={<SiteHeader variant="guestHome" />} footer={null} showMobileTabBar={false}>
       <img
-        src={heroBg}
+        src={media("homeGuest.heroImage", GUEST_MEDIA_DEFAULTS["homeGuest.heroImage"])}
         alt=""
         aria-hidden
         fetchPriority="high"
@@ -89,14 +92,14 @@ function HomeNotLoggedIn() {
       <section className="mx-auto max-w-6xl px-4 pt-4 md:px-6 md:pt-4">
         <div className="max-w-xl mt-30 md:mt-0">
           <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] text-primary sm:text-5xl lg:text-6xl">
-            {t("homeGuest.heroLine1")}
+            {gt("homeGuest.heroLine1")}
             <br />
-            <span className="text-brand">{t("homeGuest.heroLine2")}</span>
+            <span className="text-brand">{gt("homeGuest.heroLine2")}</span>
           </h1>
           <p className="mt-4 text-[1.1rem] max-w-md text-muted-foreground">
-            {t("homeGuest.subtitle")}
+            {gt("homeGuest.subtitle")}
             <br />
-            {t("homeGuest.subtitleBrandPrefix")}{" "}
+            {gt("homeGuest.subtitleBrandPrefix")}{" "}
             <Link to="/luku" viewTransition className="font-semibold text-brand hover:underline">
               Luku.com
             </Link>
@@ -108,14 +111,14 @@ function HomeNotLoggedIn() {
               to="/cadastro"
               className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
-              {t("homeGuest.login")}
+              {gt("homeGuest.login")}
             </Link>
             <Link
               to="/luku"
               viewTransition
               className="rounded-full border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-primary"
             >
-              {t("homeGuest.whatIsLuku")}
+              {gt("homeGuest.whatIsLuku")}
             </Link>
           </div>
         </div>
@@ -127,14 +130,14 @@ function HomeNotLoggedIn() {
             {
               id: "reserve",
               icon: Armchair,
-              title: t("homeGuest.reserveTitle"),
-              text: t("homeGuest.reserveText"),
+              title: gt("homeGuest.reserveTitle"),
+              text: gt("homeGuest.reserveText"),
             },
             {
               id: "offers",
               icon: Tag,
-              title: t("homeGuest.offersTitle"),
-              text: t("homeGuest.offersText"),
+              title: gt("homeGuest.offersTitle"),
+              text: gt("homeGuest.offersText"),
             },
           ].map((item) => (
             <div

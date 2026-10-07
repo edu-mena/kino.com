@@ -18,12 +18,9 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import icon from "@/assets/icon.png";
-import chiefIllustration from "@/assets/luku/chief.png";
-import dateIllustration from "@/assets/luku/date.png";
-import lukuHero from "@/assets/luku/hero.webp";
-import menuIllustration from "@/assets/luku/menu.png";
-import lukuVideo from "@/assets/luku/video.mp4";
 import { PageShell, SiteHeader } from "@/components/site-shell";
+import { GUEST_MEDIA_DEFAULTS, LUKU_VIDEO_DEFAULT } from "@/lib/guest-content-fields";
+import { useGuestContent } from "@/lib/site-content";
 import {
   Dialog,
   DialogContent,
@@ -102,22 +99,28 @@ function Luku() {
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const { t } = useTranslation();
+  // Textos/imagens/vídeo editáveis em /sistema/conteudo → "Páginas
+  // públicas"; sem edição fica o original (ver useGuestContent).
+  const { text: gt, media, lukuVideo: customVideo } = useGuestContent();
+  const heroImage = media("luku.heroImage", GUEST_MEDIA_DEFAULTS["luku.heroImage"]);
+  const videoSrc = customVideo?.src ?? LUKU_VIDEO_DEFAULT;
+  const videoPoster = customVideo?.poster ?? heroImage;
 
   const forCustomers = [
-    { icon: MapPin, text: t("luku.forCustomer1") },
-    { icon: BookOpen, text: t("luku.forCustomer2") },
-    { icon: CalendarCheck, text: t("luku.forCustomer3") },
-    { icon: Bike, text: t("luku.forCustomer4") },
-    { icon: SlidersHorizontal, text: t("luku.forCustomer5") },
-    { icon: Bell, text: t("luku.forCustomer6") },
+    { icon: MapPin, text: gt("luku.forCustomer1") },
+    { icon: BookOpen, text: gt("luku.forCustomer2") },
+    { icon: CalendarCheck, text: gt("luku.forCustomer3") },
+    { icon: Bike, text: gt("luku.forCustomer4") },
+    { icon: SlidersHorizontal, text: gt("luku.forCustomer5") },
+    { icon: Bell, text: gt("luku.forCustomer6") },
   ];
 
   const forRestaurants = [
-    { icon: QrCode, text: t("luku.forRestaurant1") },
-    { icon: UtensilsCrossed, text: t("luku.forRestaurant2") },
-    { icon: CalendarCheck, text: t("luku.forRestaurant3") },
-    { icon: Megaphone, text: t("luku.forRestaurant4") },
-    { icon: Users, text: t("luku.forRestaurant5") },
+    { icon: QrCode, text: gt("luku.forRestaurant1") },
+    { icon: UtensilsCrossed, text: gt("luku.forRestaurant2") },
+    { icon: CalendarCheck, text: gt("luku.forRestaurant3") },
+    { icon: Megaphone, text: gt("luku.forRestaurant4") },
+    { icon: Users, text: gt("luku.forRestaurant5") },
   ];
 
   useEffect(() => {
@@ -186,7 +189,7 @@ function Luku() {
               className="group min-h-0 flex-1"
             >
               <img
-                src={lukuHero}
+                src={heroImage}
                 alt="Ilustração Luku.com"
                 className="h-full w-full object-cover"
               />
@@ -200,38 +203,38 @@ function Luku() {
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15">
                 <MapPin className="h-5 w-5" />
               </span>
-              <h3 className="mt-4 font-display text-xl font-bold">{t("luku.nearYouTitle")}</h3>
+              <h3 className="mt-4 font-display text-xl font-bold">{gt("luku.nearYouTitle")}</h3>
               <p className="mt-2 text-sm text-primary-foreground/80">
-                {t("luku.nearYouDescription")}
+                {gt("luku.nearYouDescription")}
               </p>
             </button>
           </div>
 
           <div className="col-span-2 flex flex-col justify-center rounded-[2rem] border border-border bg-card p-6">
-            <h3 className="font-display text-xl font-bold text-primary">{t("luku.bentoTitle")}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">{t("luku.bentoDescription")}</p>
+            <h3 className="font-display text-xl font-bold text-primary">{gt("luku.bentoTitle")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">{gt("luku.bentoDescription")}</p>
           </div>
 
           <ExpandableIllustration
-            src={dateIllustration}
-            alt={t("luku.illustration1Alt")}
-            title={t("luku.illustration1Title")}
-            description={t("luku.illustration1Description")}
+            src={media("luku.illustration1Image", GUEST_MEDIA_DEFAULTS["luku.illustration1Image"])}
+            alt={gt("luku.illustration1Alt")}
+            title={gt("luku.illustration1Title")}
+            description={gt("luku.illustration1Description")}
             className="col-span-1 row-span-1"
           />
           <ExpandableIllustration
-            src={menuIllustration}
-            alt={t("luku.illustration2Alt")}
-            title={t("luku.illustration2Title")}
-            description={t("luku.illustration2Description")}
+            src={media("luku.illustration2Image", GUEST_MEDIA_DEFAULTS["luku.illustration2Image"])}
+            alt={gt("luku.illustration2Alt")}
+            title={gt("luku.illustration2Title")}
+            description={gt("luku.illustration2Description")}
             className="col-span-1 row-span-1"
           />
 
           <ExpandableIllustration
-            src={chiefIllustration}
-            alt={t("luku.illustration3Alt")}
-            title={t("luku.illustration3Title")}
-            description={t("luku.illustration3Description")}
+            src={media("luku.illustration3Image", GUEST_MEDIA_DEFAULTS["luku.illustration3Image"])}
+            alt={gt("luku.illustration3Alt")}
+            title={gt("luku.illustration3Title")}
+            description={gt("luku.illustration3Description")}
             className="col-span-2 row-span-1"
           />
         </div>
@@ -242,38 +245,38 @@ function Luku() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-surface p-8 sm:p-10">
             <h2 className="font-display text-2xl font-extrabold text-primary sm:text-3xl">
-              {t("luku.ctaRestaurantTitle")}
+              {gt("luku.ctaRestaurantTitle")}
             </h2>
-            <p className="max-w-sm text-muted-foreground">{t("luku.ctaRestaurantDescription")}</p>
+            <p className="max-w-sm text-muted-foreground">{gt("luku.ctaRestaurantDescription")}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <Link
                 to="/parceiros"
                 className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
               >
-                {t("luku.restaurantLogin")}
+                {gt("luku.restaurantLogin")}
               </Link>
             </div>
           </div>
 
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
             <h2 className="font-display text-2xl font-extrabold sm:text-3xl">
-              {t("luku.ctaCustomerTitle")}
+              {gt("luku.ctaCustomerTitle")}
             </h2>
             <p className="max-w-sm text-primary-foreground/85">
-              {t("luku.ctaCustomerDescription")}
+              {gt("luku.ctaCustomerDescription")}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <Link
                 to="/entrar"
                 className="rounded-full bg-background px-6 py-3 text-sm font-semibold text-primary transition-opacity hover:opacity-90"
               >
-                {t("luku.login")}
+                {gt("luku.login")}
               </Link>
               <Link
                 to="/cardapio"
                 className="rounded-full border border-primary-foreground/30 px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:border-primary-foreground"
               >
-                {t("luku.seeMenu")}
+                {gt("luku.seeMenu")}
               </Link>
             </div>
           </div>
@@ -282,12 +285,12 @@ function Luku() {
 
       {/* Features */}
       <section className="mx-auto mt-16 max-w-6xl px-4 md:px-6">
-        <h2 className="text-2xl font-extrabold text-primary">{t("luku.featuresTitle")}</h2>
+        <h2 className="text-2xl font-extrabold text-primary">{gt("luku.featuresTitle")}</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <div className="grid gap-4">
             <div className="flex flex-col rounded-[2rem] border border-border bg-card p-6 sm:p-8">
               <h3 className="font-display text-lg font-bold text-primary">
-                {t("luku.forCustomersTitle")}
+                {gt("luku.forCustomersTitle")}
               </h3>
               <ul className="mt-4 space-y-3">
                 {forCustomers.map((item) => (
@@ -303,13 +306,13 @@ function Luku() {
                 to="/entrar"
                 className="mt-6 inline-flex items-center gap-1 self-start rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
-                {t("luku.login")} <ArrowRight className="h-4 w-4" />
+                {gt("luku.login")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
             <div className="flex flex-col rounded-[2rem] border border-border bg-card p-6 sm:p-8">
               <h3 className="font-display text-lg font-bold text-primary">
-                {t("luku.forRestaurantsTitle")}
+                {gt("luku.forRestaurantsTitle")}
               </h3>
               <ul className="mt-4 space-y-3">
                 {forRestaurants.map((item) => (
@@ -325,7 +328,7 @@ function Luku() {
                 to="/parceiros"
                 className="mt-6 inline-flex items-center gap-1 self-start rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
               >
-                {t("luku.restaurantLogin")} <ArrowRight className="h-4 w-4" />
+                {gt("luku.restaurantLogin")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -342,12 +345,12 @@ function Luku() {
             >
               <video
                 ref={videoRef}
-                src={lukuVideo}
+                src={videoSrc}
                 loop
                 muted={muted}
                 playsInline
                 preload="none"
-                poster={lukuHero}
+                poster={videoPoster}
                 className="h-full w-full object-cover"
               />
               {!playing && (

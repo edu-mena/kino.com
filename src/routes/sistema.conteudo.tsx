@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { GuestPagesEditor } from "@/components/guest-pages-editor";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { SystemPageHeading } from "@/components/system-shell";
 import {
@@ -70,11 +71,13 @@ function SistemaConteudo() {
 
       <div className="mx-auto mt-8 max-w-4xl px-4 md:px-6">
         <Tabs defaultValue="general">
-          <TabsList>
+          {/* 5 separadores: num telemóvel quebram linha em vez de sair do ecrã. */}
+          <TabsList className="h-auto flex-wrap">
             <TabsTrigger value="general">{t("sistema.conteudo.tabGeneral")}</TabsTrigger>
             <TabsTrigger value="team">{t("sistema.conteudo.tabTeam")}</TabsTrigger>
             <TabsTrigger value="testimonials">{t("sistema.conteudo.tabTestimonials")}</TabsTrigger>
             <TabsTrigger value="faqs">{t("sistema.conteudo.tabFaqs")}</TabsTrigger>
+            <TabsTrigger value="pages">{t("sistema.conteudo.tabPages")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
@@ -92,6 +95,9 @@ function SistemaConteudo() {
           </TabsContent>
           <TabsContent value="faqs">
             <FaqsTab faqs={content?.faqs ?? []} token={token} onChanged={refetch} />
+          </TabsContent>
+          <TabsContent value="pages">
+            <GuestPagesEditor content={content} token={token} onSaved={refetch} />
           </TabsContent>
         </Tabs>
       </div>
