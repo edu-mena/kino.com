@@ -33,6 +33,7 @@ type ApiRestaurant = {
   rating: number | null;
   reviewCount: number;
   followersCount?: number;
+  recentOrdersCount?: number;
   address: string | null;
   neighborhood: string | null;
   city: string | null;
@@ -92,6 +93,8 @@ type ApiMenuItem = {
   isPromoted: boolean;
   promotionLabel: string | null;
   isBuffetOnly?: boolean;
+  /** Pedidos dos últimos 30 dias — só no catálogo público (`/menu-items`). */
+  orderCount?: number;
   ingredients: { id: string; name: string; removable: boolean; extraPrice?: number }[];
 };
 
@@ -122,9 +125,10 @@ export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
     rating: r.rating ?? 0,
     reviewCount: r.reviewCount,
     ...(r.followersCount != null ? { followersCount: r.followersCount } : {}),
-    // Sem valor "de seed" para a distância (ao contrário do mock) — quem
-    // usa isto sempre recalcula a distância real a partir da morada/GPS do
-    // cliente (ver personalizedRestaurantDistanceKm), este é só o fallback.
+    ...(r.recentOrdersCount != null ? { recentOrdersCount: r.recentOrdersCount } : {}),
+    // Sem valor "de seed" para a distância (ao contrário do mock) — as
+    // listagens de cliente calculam a real a partir do GPS
+    // (`distanceFromDeviceKm`, @/lib/geo) ou não mostram distância nenhuma.
     distanceKm: 0,
     address: r.address ?? `${r.neighborhood ?? ""}, ${r.city ?? ""}`,
     neighborhood: r.neighborhood ?? "",
@@ -189,6 +193,7 @@ export function mapApiMenuItem(m: ApiMenuItem, restaurantId?: string): MenuItem 
     isPromoted: m.isPromoted,
     ...(m.promotionLabel ? { promotionLabel: m.promotionLabel } : {}),
     ...(m.isBuffetOnly ? { isBuffetOnly: true } : {}),
+    ...(m.orderCount != null ? { orderCount: m.orderCount } : {}),
     ingredients: m.ingredients.map(mapIngredient),
   };
 }
@@ -236,11 +241,23 @@ export async function fetchApiRestaurant(id: string): Promise<Restaurant | undef
   }
 }
 
+const MAX_MENU_ITEM_PAGES = 20;
+
+/** Pratos de UM restaurante, todas as páginas (a API pagina por cursor) —
+ * antes só vinha a 1ª página (30 pratos) e o resto nunca aparecia. */
 export async function fetchApiMenuItems(restaurantId: string): Promise<MenuItem[]> {
-  const { data } = await apiFetch<{ data: ApiMenuItem[] }>(
-    `/restaurants/${restaurantId}/menu-items`,
-  );
-  const items = data.map((m) => mapApiMenuItem(m, restaurantId));
+  const items: MenuItem[] = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < MAX_MENU_ITEM_PAGES; page += 1) {
+    const query: string = cursor ? `&cursor=${encodeURIComponent(cursor)}` : "";
+    const { data, meta } = await apiFetch<{
+      data: ApiMenuItem[];
+      meta?: { next_cursor?: string | null };
+    }>(`/restaurants/${restaurantId}/menu-items?per_page=100${query}`);
+    items.push(...data.map((m) => mapApiMenuItem(m, restaurantId)));
+    cursor = meta?.next_cursor ?? null;
+    if (!cursor) break;
+  }
   rememberMenuItems(items);
   return items;
 }
@@ -259,26 +276,23 @@ export async function fetchApiMenuItem(id: string): Promise<MenuItem | undefined
   }
 }
 
-/** Todos os pratos de todos os restaurantes — não há endpoint global no
- * backend (só por restaurante), por isso agrega aqui: lista restaurantes e
- * pede o cardápio de cada um em paralelo. Usado pela busca global
- * (`/cardapio`) e por widgets tipo "Tendências" da home, quando há backend
- * real e nenhum `restaurantId` específico foi pedido. */
+/** Todos os pratos visíveis a clientes, de todos os restaurantes — o
+ * catálogo público (`GET /menu-items`) num só pedido, com `orderCount`
+ * (popularidade). Antes eram 1 + N pedidos (lista de restaurantes, depois
+ * um por restaurante), cada um a ~1s de rede a partir de Angola. A lista de
+ * restaurantes vai em paralelo só para os helpers síncronos (nome, cozinha,
+ * localização de cada prato) a terem já em memória. O catálogo já deixa de
+ * fora os restaurantes inativos. Usado pela busca global (`/cardapio`), a
+ * home e `/pratos/$nome`. */
 export async function fetchApiAllMenuItems(): Promise<MenuItem[]> {
-  const restaurants = await fetchApiRestaurants();
-  let complete = true;
-  const perRestaurant = await Promise.all(
-    restaurants.map((r) =>
-      fetchApiMenuItems(r.id).catch(() => {
-        complete = false;
-        return [];
-      }),
-    ),
-  );
-  // Só conta como "cardápio completo em memória" se nenhum restaurante
-  // falhou — senão `/pratos/$nome` podia abrir sem os desse restaurante.
-  if (complete) markFullMenuCatalog();
-  return perRestaurant.flat();
+  const [, { data }] = await Promise.all([
+    fetchApiRestaurants(),
+    apiFetch<{ data: ApiMenuItem[] }>("/menu-items"),
+  ]);
+  const items = data.map((m) => mapApiMenuItem(m));
+  rememberMenuItems(items);
+  markFullMenuCatalog();
+  return items;
 }
 
 function mapApiHours(days: NonNullable<ApiRestaurant["hours"]>): WeeklyHours {

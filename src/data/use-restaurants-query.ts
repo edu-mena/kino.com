@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { fetchApiMenus } from "./api-menus";
 import { fetchApiRestaurantPackages } from "./api-restaurant-packages";
 import {
@@ -7,7 +8,12 @@ import {
   fetchApiRestaurants,
   searchApiRestaurants,
 } from "./api-restaurants";
-import { getAllRestaurants, getMenuItemsByRestaurant, getRestaurant } from "./helpers";
+import {
+  getAllRestaurants,
+  getMenuItemsByRestaurant,
+  getRestaurant,
+  visibleToCustomers,
+} from "./helpers";
 import { getMenusByRestaurant } from "./menus-store";
 import { getRestaurantPackagesByRestaurant } from "./restaurant-packages-store";
 import type { MenuItem, Restaurant, RestaurantMenu, RestaurantPackage } from "./types";
@@ -32,6 +38,18 @@ export function useRestaurants() {
     queryFn: () => (hasRealBackend ? fetchApiRestaurants() : Promise.resolve(getAllRestaurants())),
     staleTime: 30_000,
   });
+}
+
+/** Restaurantes das listagens de CLIENTE: sem os inativos (subscrição
+ * suspensa, ver `visibleToCustomers`). O painel do sistema usa
+ * `useRestaurants()` direto, que mostra todos. */
+export function useCustomerRestaurants() {
+  const query = useRestaurants();
+  const data = useMemo(
+    () => (query.data ? visibleToCustomers(query.data) : undefined),
+    [query.data],
+  );
+  return { ...query, data };
 }
 
 /** Resultados da pesquisa no servidor (ver `searchApiRestaurants`) — só

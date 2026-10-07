@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchApiAllMenuItems, fetchApiMenuItems } from "./api-restaurants";
+import { dishesVisibleToCustomers } from "./helpers";
 import { getEffectiveMenuItems } from "./menu-store";
 import { INITIAL_MENU_ITEMS } from "./mockData";
 import type { MenuItem } from "./types";
@@ -24,6 +25,11 @@ import { hasRealBackend } from "@/lib/api-client";
  * detalhe do restaurante). Sem `restaurantId` (busca global,
  * `/cardapio`) ou sem backend real (demo), comportamento inalterado.
  *
+ * Sem `restaurantId` (descoberta: home, pesquisa, `/cardapio`), tira os
+ * pratos de restaurantes inativos (subscrição suspensa) — ver
+ * `dishesVisibleToCustomers`. Com `restaurantId` (a página do próprio
+ * restaurante) não filtra: ela mostra o estado "indisponível".
+ *
  * `loading`: com backend real, `items` começa vazio até o pedido resolver
  * (SSR nunca corre o `useEffect`, por isso a 1ª renderização — incl. o HTML
  * que o servidor manda) fica sempre sem pratos nenhum). Sem `loading`
@@ -41,13 +47,16 @@ export function useMenuItems(restaurantId?: string): { items: MenuItem[]; loadin
       setLoading(true);
       const fetcher = restaurantId ? fetchApiMenuItems(restaurantId) : fetchApiAllMenuItems();
       fetcher
-        .then(setItems)
+        .then((list) => setItems(restaurantId ? list : dishesVisibleToCustomers(list)))
         .catch(() => setItems([]))
         .finally(() => setLoading(false));
       return;
     }
 
-    const sync = () => setItems(getEffectiveMenuItems());
+    const sync = () => {
+      const all = getEffectiveMenuItems();
+      setItems(restaurantId ? all : dishesVisibleToCustomers(all));
+    };
     sync();
     window.addEventListener("luku:menu-changed", sync);
     window.addEventListener("storage", sync);

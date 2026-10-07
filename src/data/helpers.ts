@@ -53,6 +53,37 @@ export function isRestaurantSuspended(restaurantId: string): boolean {
   return suspendedRestaurantIds().has(restaurantId);
 }
 
+/**
+ * Inativo para o cliente = subscrição suspensa (API: `isSuspended`; demo:
+ * store de subscrições). Diferente de fechado (fora de horário) ou com
+ * pedidos pausados: esses continuam a aparecer, com o aviso; um inativo
+ * desaparece das listagens, ele e os pratos. A página dele continua a abrir
+ * por link direto, com o estado "indisponível".
+ */
+export function isRestaurantInactive(restaurant: Pick<Restaurant, "id" | "isSuspended">): boolean {
+  return !!restaurant.isSuspended || suspendedRestaurantIds().has(restaurant.id);
+}
+
+export function visibleToCustomers<T extends Pick<Restaurant, "id" | "isSuspended">>(
+  restaurants: T[],
+): T[] {
+  const suspended = suspendedRestaurantIds();
+  return restaurants.filter((r) => !r.isSuspended && !suspended.has(r.id));
+}
+
+/** Pratos sem os de restaurantes inativos. Prato de um restaurante que
+ * ainda não está em memória fica (não há como saber; o catálogo da API já
+ * os tira na origem). */
+export function dishesVisibleToCustomers<T extends Pick<MenuItem, "restaurantId">>(
+  items: T[],
+): T[] {
+  const suspended = suspendedRestaurantIds();
+  return items.filter((item) => {
+    if (suspended.has(item.restaurantId)) return false;
+    return !getRestaurant(item.restaurantId)?.isSuspended;
+  });
+}
+
 /*
  * Fonte dos helpers síncronos abaixo. Com backend real, o catálogo REAL que
  * a API já devolveu (`@/data/live-catalog`) — nunca o mock: era daí que
