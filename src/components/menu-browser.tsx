@@ -201,17 +201,22 @@ export function MenuBrowser({
 
   // Se a categoria escolhida deixar de existir (ex: trocou de restaurante e
   // ele não tem essa categoria), volta pra "Todos" em vez de ficar preso
-  // num filtro que não bate com nenhum chip visível.
+  // num filtro que não bate com nenhum chip visível. Nunca enquanto os
+  // pratos carregam: aí ainda não há categoria nenhuma, e a do URL
+  // (`?categoria=`, ex. vinda da home) era descartada antes de os pratos
+  // chegarem — a página abria sempre em "Todos".
   useEffect(() => {
+    if (itemsLoading) return;
     if (active === "todos" || active === BUFFET_FILTER_ID) return;
     if (!categories.some((c) => c.id === active)) setActive("todos");
-  }, [categories, active]);
+  }, [categories, active, itemsLoading]);
 
   // Idem, mas para o chip "Buffet": se deixar de haver pratos de buffet
   // (ex: trocou de restaurante), sai desse filtro.
   useEffect(() => {
+    if (itemsLoading) return;
     if (active === BUFFET_FILTER_ID && !hasBuffetItems) setActive("todos");
-  }, [active, hasBuffetItems]);
+  }, [active, hasBuffetItems, itemsLoading]);
 
   const filtered = useMemo(() => {
     // Prato de buffet não tem preço — nunca é excluído pelo filtro de preço
