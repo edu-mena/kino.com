@@ -25,6 +25,8 @@ export const STORAGE_KEYS = {
   customerNotes: "luku_customer_notes",
   profileViews: "luku_profile_views_v1",
   follows: "luku_follows_v1",
+  // "Algoritmo Luku": sinais de gosto deste aparelho (ver @/lib/taste-signals).
+  tasteSignals: "luku_taste_signals_v1",
 } as const;
 
 /** Evento disparado por todas as stores puras quando escrevem — os

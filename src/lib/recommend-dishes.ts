@@ -41,6 +41,9 @@ type RecommendInput = {
    * passa uma lista já filtrada (pesquisa/categoria) dá aqui a completa,
    * para um favorito fora do filtro continuar a contar. */
   profileItems?: MenuItem[];
+  /** Pontos extra por prato — o "algoritmo Luku" (histórico deste cliente
+   * + variação do dia, ver `@/lib/personalize`). Ausente = 0. */
+  extraScore?: (item: MenuItem) => number;
   limit?: number;
 };
 
@@ -123,6 +126,7 @@ function scoreDish(item: MenuItem, input: RecommendInput, profile: TasteProfile)
   score += Math.min(10, (item.orderCount ?? 0) / 5);
   if (item.isTrending) score += 3;
   score += tasteAffinity(item, profile);
+  score += input.extraScore?.(item) ?? 0;
   if (conflicts.length > 0) score -= 100; // continua na lista, mas lá pro fim.
   return score;
 }
