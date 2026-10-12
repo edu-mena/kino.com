@@ -27,6 +27,8 @@ class RestaurantResource extends JsonResource
             'email' => $this->email,
             'coverImageUrl' => $this->cover_image_url,
             'wallpaperUrl' => $this->wallpaper_url,
+            // Logótipo (cartões QR impressos e página do cardápio da mesa).
+            'logoUrl' => $this->logo_url,
             'galleryImages' => $this->whenLoaded('galleryImages', fn () => $this->galleryImages->map(fn ($g) => [
                 'id' => $g->id,
                 'url' => $g->url,

@@ -6,7 +6,13 @@
  * ultrapassa a quota do browser (~5-10MB por origem, para TODOS os dados da
  * app), por isso o redimensionamento aqui não é opcional.
  */
-export function fileToResizedDataUrl(file: File, maxDimension = 800): Promise<string> {
+export function fileToResizedDataUrl(
+  file: File,
+  maxDimension = 800,
+  /** `image/png` mantém a transparência — p.ex. logótipos, que vão por cima
+   * de fundos de cor nos cartões QR. */
+  type: "image/jpeg" | "image/png" = "image/jpeg",
+): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith("image/")) {
       reject(new Error("O ficheiro escolhido não é uma imagem."));
@@ -29,7 +35,9 @@ export function fileToResizedDataUrl(file: File, maxDimension = 800): Promise<st
           return;
         }
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.75));
+        resolve(
+          type === "image/png" ? canvas.toDataURL("image/png") : canvas.toDataURL(type, 0.75),
+        );
       };
       img.src = reader.result as string;
     };

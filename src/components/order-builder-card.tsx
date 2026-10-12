@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
+  Armchair,
   Bike,
   Building2,
   ChevronDown,
@@ -46,6 +47,7 @@ import { formatKz } from "@/lib/format";
 import { useLocation } from "@/lib/location";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantStatus } from "@/lib/restaurant-status";
+import { clearTableSession, useTableSession } from "@/lib/table-session";
 import { useDeliveryPolicy } from "@/lib/use-platform-settings";
 
 /**
@@ -104,6 +106,9 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
   const { companies } = useCompanies();
   const { reservations } = useReservations();
   const status = useRestaurantStatus(restaurantId ?? "");
+  // Mesa lida pelo QR (`/q/$code`) neste restaurante — o pedido começa em
+  // "No local" e chega ao painel com a mesa (ver @/lib/table-session).
+  const tableSession = useTableSession(restaurantId);
   // Real-aware (`useRestaurantDetail`/`useRestaurantMenuItems`) em vez do
   // `getRestaurant`/`getMenuItem` síncronos de `@/data/helpers` — esses só
   // conhecem o mock local e devolviam sempre `undefined` para um restaurante
@@ -194,7 +199,9 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
   const mode: FulfillmentType =
     modeOverride && availableModes.includes(modeOverride)
       ? modeOverride
-      : (availableModes[0] ?? "dinein");
+      : tableSession && availableModes.includes("dinein")
+        ? "dinein"
+        : (availableModes[0] ?? "dinein");
 
   const total = lines.reduce(
     (sum, l) => sum + billLineUnitPrice(l, menuItemsById.get(l.menuItemId)) * l.qty,
@@ -291,7 +298,13 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
           ? { type: "takeaway", pickupAsap: true }
           : { type: "takeaway", pickupAsap: false, pickupAt: toPickupIso(pickupTime) };
     } else {
-      fulfillment = { type: "dinein", partySize };
+      fulfillment = {
+        type: "dinein",
+        partySize,
+        ...(tableSession
+          ? { tableId: tableSession.tableId, tableName: tableSession.tableName }
+          : {}),
+      };
     }
 
     if (wantsNifInvoice && !companyId) {
@@ -618,6 +631,21 @@ export function OrderBuilderCard({ aboveTabBar = false }: { aboveTabBar?: boolea
 
                 {mode === "dinein" && (
                   <>
+                    {tableSession && (
+                      <div className="mt-2 flex items-center gap-2 rounded-xl bg-brand/20 px-3 py-2 text-sm">
+                        <Armchair className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+                        <span className="min-w-0 flex-1 truncate font-bold">
+                          {t("orderBuilderCard.tableFromQr", { table: tableSession.tableName })}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearTableSession}
+                          className="shrink-0 text-[11px] text-primary-foreground/70 underline-offset-2 hover:underline"
+                        >
+                          {t("orderBuilderCard.notThisTable")}
+                        </button>
+                      </div>
+                    )}
                     <div className="mt-2 flex items-center justify-between rounded-xl bg-white/5 px-3 py-2">
                       <Users className="h-4 w-4 text-primary-foreground/60" aria-hidden />
                       <QtyStepper

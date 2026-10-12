@@ -15,6 +15,7 @@ use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\Reservation;
 use App\Models\Restaurant;
+use App\Models\RestaurantTable;
 use App\Models\SavedAddress;
 use App\Services\MediaUploadService;
 use App\Services\OrderPricingService;
@@ -128,6 +129,14 @@ class OrderController extends Controller
             ? Reservation::query()->where('uuid', $data['reservation_id'])->first()
             : null;
 
+        // Mesa do QR — o nome fica gravado (`table_label`) como estava no
+        // momento do pedido; se a mesa estiver junta a outras hoje, o staff
+        // vê a junção inteira ("Mesa 3 + Mesa 4").
+        $table = ! empty($data['table_id'])
+            ? $restaurant->tables()->where('uuid', $data['table_id'])->first()
+            : null;
+        $tableLabel = $table ? $this->tableLabel($table) : null;
+
         $priced = $pricing->price(
             $lineInputs,
             $restaurant,
@@ -137,7 +146,7 @@ class OrderController extends Controller
             $reservation,
         );
 
-        $order = DB::transaction(function () use ($restaurant, $data, $user, $deliverySnapshot, $companySnapshot, $priced, $reservation) {
+        $order = DB::transaction(function () use ($restaurant, $data, $user, $deliverySnapshot, $companySnapshot, $priced, $reservation, $table, $tableLabel) {
             $order = $restaurant->orders()->create([
                 'user_id' => $user?->id,
                 'reservation_id' => $reservation?->id,
@@ -149,6 +158,8 @@ class OrderController extends Controller
                 'pickup_asap' => $data['pickup_asap'] ?? null,
                 'pickup_at' => $data['pickup_at'] ?? null,
                 'party_size' => $data['party_size'] ?? null,
+                'restaurant_table_id' => $table?->id,
+                'table_label' => $tableLabel,
                 'status' => 'pending',
                 'estimated_minutes' => $restaurant->estimated_delivery_minutes ?? 30,
                 'note' => $data['note'] ?? null,
@@ -276,5 +287,21 @@ class OrderController extends Controller
         $uploads->deleteDocument($previous);
 
         return new OrderResource($order);
+    }
+
+    /** "Mesa 4", ou "Mesa 3 + Mesa 4" quando está junta a outras hoje
+     * (junções são por dia, ver TableCombination). */
+    private function tableLabel(RestaurantTable $table): string
+    {
+        $combination = $table->combinations()
+            ->wherePivot('date', now('Africa/Luanda')->toDateString())
+            ->with('tables')
+            ->first();
+
+        $label = $combination
+            ? ($combination->label ?: $combination->tables->pluck('name')->join(' + '))
+            : $table->name;
+
+        return mb_substr($label, 0, 80);
     }
 }

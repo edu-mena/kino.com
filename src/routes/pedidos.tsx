@@ -393,6 +393,7 @@ function OrderViewer({ order, onBack }: { order: CartOrder; onBack: () => void }
   // "Take away · Assim que estiver pronto", "Entrega · ~12:30".
   const modeLine = [
     t(`fulfillment.${order.fulfillmentType}`),
+    order.fulfillmentType === "dinein" && order.tableName ? order.tableName : null,
     order.fulfillmentType === "dinein" && order.partySize
       ? t("entrega.partySize", { count: order.partySize })
       : order.fulfillmentType === "takeaway"

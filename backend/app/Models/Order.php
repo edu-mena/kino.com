@@ -21,6 +21,7 @@ class Order extends Model
         'restaurant_id', 'user_id', 'guest_token', 'fulfillment_type',
         'customer_name', 'customer_phone', 'customer_email',
         'delivery_address_snapshot', 'pickup_asap', 'pickup_at', 'party_size',
+        'restaurant_table_id', 'table_label',
         'status', 'estimated_minutes', 'delivered_at',
         'payment_method_code', 'caution_required', 'note',
         'promo_code', 'promo_label', 'promo_percent_off', 'promo_free_delivery',
@@ -76,6 +77,13 @@ class Order extends Model
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(Reservation::class);
+    }
+
+    /** Mesa de onde o pedido "no local" foi feito (QR da mesa). O nome
+     * mostrado vem de `table_label` — fotografia do momento do pedido. */
+    public function table(): BelongsTo
+    {
+        return $this->belongsTo(RestaurantTable::class, 'restaurant_table_id');
     }
 
     /** Estafeta a caminho com este pedido — inverso de

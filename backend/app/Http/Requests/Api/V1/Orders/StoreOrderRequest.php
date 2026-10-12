@@ -83,6 +83,10 @@ class StoreOrderRequest extends FormRequest
 
             // dinein
             'party_size' => ['required_if:fulfillment_type,dinein', 'integer', 'min:1', 'max:50'],
+            // Mesa do QR lido pelo cliente (luku.ao/q/{code}) — só no local,
+            // só mesas DESTE restaurante. Valida pelo `uuid` exposto.
+            'table_id' => ['sometimes', 'nullable', 'string', 'prohibited_unless:fulfillment_type,dinein',
+                Rule::exists('restaurant_tables', 'uuid')->where('restaurant_id', $restaurant->id)],
 
             'note' => ['sometimes', 'nullable', 'string', 'max:500'],
             'promo_code' => ['sometimes', 'nullable', 'string', 'max:40'],

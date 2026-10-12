@@ -25,8 +25,16 @@ class MenuItemController extends Controller
      * tem o id do prato, nunca o do restaurante. Carrega `restaurant`
      * (sem isto `MenuItemResource.restaurantId` vem vazio, ver
      * `whenLoaded`) além do que `index` já carrega. */
-    public function show(MenuItem $menuItem): MenuItemResource
+    public function show(Request $request, MenuItem $menuItem): MenuItemResource
     {
+        // Prato de um restaurante pré-cadastrado (por ativar) não existe
+        // para o público — mesma regra do binding de `{restaurant}`.
+        abort_if(
+            $menuItem->restaurant && ! $menuItem->restaurant->is_published
+                && ! $request->user('sanctum')?->isSystemOperator(),
+            404,
+        );
+
         return new MenuItemResource($menuItem->load(['restaurant', 'menu', 'ingredients']));
     }
 

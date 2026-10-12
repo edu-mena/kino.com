@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Restaurant;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,6 +26,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // `{restaurant}` em QUALQUER rota: um restaurante pré-cadastrado
+        // (importado, ainda não ativado — ver RestaurantImport) não existe
+        // para ninguém além dos operadores de sistema. Um só sítio em vez de
+        // um `abort` em cada controller (perfil, cardápio, avaliações,
+        // seguir, reservas, pedidos...).
+        Route::bind('restaurant', function (string $value) {
+            $restaurant = Restaurant::query()->where('uuid', $value)->firstOrFail();
+            abort_if(
+                ! $restaurant->is_published && ! auth('sanctum')->user()?->isSystemOperator(),
+                404,
+            );
+
+            return $restaurant;
+        });
+
         // A API não tem UI própria de "definir senha" — aponta o link do
         // email de reset para a página correspondente no frontend (staff/
         // operator), não para uma rota Laravel inexistente.

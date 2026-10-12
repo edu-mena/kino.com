@@ -55,10 +55,12 @@ import { Route as MenuRestaurantIdRouteImport } from './routes/menu.$restaurantI
 import { Route as PacotesPackageTypeIdRouteImport } from './routes/pacotes_.$packageTypeId'
 import { Route as PratoDishIdRouteImport } from './routes/prato.$dishId'
 import { Route as PratosDishNameRouteImport } from './routes/pratos.$dishName'
+import { Route as QCodeRouteImport } from './routes/q.$code'
 import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
 import { Route as SistemaIndexRouteImport } from './routes/sistema.index'
 import { Route as SistemaConteudoRouteImport } from './routes/sistema.conteudo'
 import { Route as SistemaDenunciasRouteImport } from './routes/sistema.denuncias'
+import { Route as SistemaImportadosRouteImport } from './routes/sistema.importados'
 import { Route as SistemaOperacaoRouteImport } from './routes/sistema.operacao'
 import { Route as SistemaPacotesRouteImport } from './routes/sistema.pacotes'
 import { Route as SistemaParceirosRouteImport } from './routes/sistema.parceiros'
@@ -298,6 +300,11 @@ const PratosDishNameRoute = PratosDishNameRouteImport.update({
   path: '/pratos/$dishName',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QCodeRoute = QCodeRouteImport.update({
+  id: '/q/$code',
+  path: '/q/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RestaurantesIdRoute = RestaurantesIdRouteImport.update({
   id: '/restaurantes_/$id',
   path: '/restaurantes/$id',
@@ -316,6 +323,11 @@ const SistemaConteudoRoute = SistemaConteudoRouteImport.update({
 const SistemaDenunciasRoute = SistemaDenunciasRouteImport.update({
   id: '/denuncias',
   path: '/denuncias',
+  getParentRoute: () => SistemaRoute,
+} as any)
+const SistemaImportadosRoute = SistemaImportadosRouteImport.update({
+  id: '/importados',
+  path: '/importados',
   getParentRoute: () => SistemaRoute,
 } as any)
 const SistemaOperacaoRoute = SistemaOperacaoRouteImport.update({
@@ -405,9 +417,11 @@ export interface FileRoutesByFullPath {
   '/pacotes/$packageTypeId': typeof PacotesPackageTypeIdRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
+  '/q/$code': typeof QCodeRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
   '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/denuncias': typeof SistemaDenunciasRoute
+  '/sistema/importados': typeof SistemaImportadosRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
@@ -463,9 +477,11 @@ export interface FileRoutesByTo {
   '/pacotes/$packageTypeId': typeof PacotesPackageTypeIdRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
+  '/q/$code': typeof QCodeRoute
   '/restaurantes/$id': typeof RestaurantesIdRoute
   '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/denuncias': typeof SistemaDenunciasRoute
+  '/sistema/importados': typeof SistemaImportadosRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
@@ -524,9 +540,11 @@ export interface FileRoutesById {
   '/pacotes_/$packageTypeId': typeof PacotesPackageTypeIdRoute
   '/prato/$dishId': typeof PratoDishIdRoute
   '/pratos/$dishName': typeof PratosDishNameRoute
+  '/q/$code': typeof QCodeRoute
   '/restaurantes_/$id': typeof RestaurantesIdRoute
   '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/denuncias': typeof SistemaDenunciasRoute
+  '/sistema/importados': typeof SistemaImportadosRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
   '/sistema/parceiros': typeof SistemaParceirosRoute
@@ -586,9 +604,11 @@ export interface FileRouteTypes {
     | '/pacotes/$packageTypeId'
     | '/prato/$dishId'
     | '/pratos/$dishName'
+    | '/q/$code'
     | '/restaurantes/$id'
     | '/sistema/conteudo'
     | '/sistema/denuncias'
+    | '/sistema/importados'
     | '/sistema/operacao'
     | '/sistema/pacotes'
     | '/sistema/parceiros'
@@ -644,9 +664,11 @@ export interface FileRouteTypes {
     | '/pacotes/$packageTypeId'
     | '/prato/$dishId'
     | '/pratos/$dishName'
+    | '/q/$code'
     | '/restaurantes/$id'
     | '/sistema/conteudo'
     | '/sistema/denuncias'
+    | '/sistema/importados'
     | '/sistema/operacao'
     | '/sistema/pacotes'
     | '/sistema/parceiros'
@@ -704,9 +726,11 @@ export interface FileRouteTypes {
     | '/pacotes_/$packageTypeId'
     | '/prato/$dishId'
     | '/pratos/$dishName'
+    | '/q/$code'
     | '/restaurantes_/$id'
     | '/sistema/conteudo'
     | '/sistema/denuncias'
+    | '/sistema/importados'
     | '/sistema/operacao'
     | '/sistema/pacotes'
     | '/sistema/parceiros'
@@ -752,6 +776,7 @@ export interface RootRouteChildren {
   PacotesPackageTypeIdRoute: typeof PacotesPackageTypeIdRoute
   PratoDishIdRoute: typeof PratoDishIdRoute
   PratosDishNameRoute: typeof PratosDishNameRoute
+  QCodeRoute: typeof QCodeRoute
   RestaurantesIdRoute: typeof RestaurantesIdRoute
   SistemaEntrarRoute: typeof SistemaEntrarRoute
 }
@@ -1080,6 +1105,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PratosDishNameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/q/$code': {
+      id: '/q/$code'
+      path: '/q/$code'
+      fullPath: '/q/$code'
+      preLoaderRoute: typeof QCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/restaurantes_/$id': {
       id: '/restaurantes_/$id'
       path: '/restaurantes/$id'
@@ -1106,6 +1138,13 @@ declare module '@tanstack/react-router' {
       path: '/denuncias'
       fullPath: '/sistema/denuncias'
       preLoaderRoute: typeof SistemaDenunciasRouteImport
+      parentRoute: typeof SistemaRoute
+    }
+    '/sistema/importados': {
+      id: '/sistema/importados'
+      path: '/importados'
+      fullPath: '/sistema/importados'
+      preLoaderRoute: typeof SistemaImportadosRouteImport
       parentRoute: typeof SistemaRoute
     }
     '/sistema/operacao': {
@@ -1206,6 +1245,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface SistemaRouteChildren {
   SistemaConteudoRoute: typeof SistemaConteudoRoute
   SistemaDenunciasRoute: typeof SistemaDenunciasRoute
+  SistemaImportadosRoute: typeof SistemaImportadosRoute
   SistemaOperacaoRoute: typeof SistemaOperacaoRoute
   SistemaPacotesRoute: typeof SistemaPacotesRoute
   SistemaParceirosRoute: typeof SistemaParceirosRoute
@@ -1219,6 +1259,7 @@ interface SistemaRouteChildren {
 const SistemaRouteChildren: SistemaRouteChildren = {
   SistemaConteudoRoute: SistemaConteudoRoute,
   SistemaDenunciasRoute: SistemaDenunciasRoute,
+  SistemaImportadosRoute: SistemaImportadosRoute,
   SistemaOperacaoRoute: SistemaOperacaoRoute,
   SistemaPacotesRoute: SistemaPacotesRoute,
   SistemaParceirosRoute: SistemaParceirosRoute,
@@ -1265,6 +1306,7 @@ const rootRouteChildren: RootRouteChildren = {
   PacotesPackageTypeIdRoute: PacotesPackageTypeIdRoute,
   PratoDishIdRoute: PratoDishIdRoute,
   PratosDishNameRoute: PratosDishNameRoute,
+  QCodeRoute: QCodeRoute,
   RestaurantesIdRoute: RestaurantesIdRoute,
   SistemaEntrarRoute: SistemaEntrarRoute,
 }

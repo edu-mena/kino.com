@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ExternalLink, Printer } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
 import { useMemo } from "react";
 import icon from "@/assets/icon.png";
 import logo from "@/assets/logo.png";
 import { MenuDocument } from "@/components/menu-document";
+import { QrMenuExperience } from "@/components/qr-menu-experience";
 import { defaultMenuId } from "@/data/menus-store";
 import {
   useRestaurantDetail,
@@ -12,7 +13,15 @@ import {
 } from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
 
+/**
+ * `/menu/$restaurantId` — cardápio por link (e o destino dos QR impressos
+ * antes dos códigos curtos `/q/$code`, que continuam a funcionar). Abre a
+ * mesma experiência do QR, sem mesa; `?imprimir=1` mostra a versão A4
+ * para imprimir que esta página era antes.
+ */
 export const Route = createFileRoute("/menu/$restaurantId")({
+  validateSearch: (s: Record<string, unknown>): { imprimir?: 1 } =>
+    s["imprimir"] === 1 || s["imprimir"] === "1" ? { imprimir: 1 } : {},
   head: () => ({
     meta: [
       { title: "Cardápio — Luku.com" },
@@ -25,6 +34,17 @@ export const Route = createFileRoute("/menu/$restaurantId")({
 
 function PublicMenu() {
   const { restaurantId } = Route.useParams();
+  const { imprimir } = Route.useSearch();
+  if (imprimir === 1) return <PrintableMenu restaurantId={restaurantId} />;
+  return (
+    <QrMenuExperience
+      restaurantId={restaurantId}
+      printHref={{ to: "/menu/$restaurantId", params: { restaurantId } }}
+    />
+  );
+}
+
+function PrintableMenu({ restaurantId }: { restaurantId: string }) {
   const { t, locale } = useTranslation();
 
   // Ligado à API real quando disponível (`useRestaurantDetail`/
@@ -45,10 +65,6 @@ function PublicMenu() {
     { day: "2-digit", month: "long", year: "numeric" },
   );
 
-  // Espera a resposta da API antes de decidir "não encontrado" — sem isto,
-  // um restaurante real (que só resolve depois do fetch) mostrava sempre
-  // esta mensagem por um instante, e em conexões lentas até substituía o
-  // cardápio real por engano.
   if (restaurantLoading) {
     return (
       <div className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-4 px-6 text-center">
@@ -70,11 +86,6 @@ function PublicMenu() {
     );
   }
 
-  // Sem porta de entrada — ver o cardápio pelo QR code não exige conta Luku
-  // (só pediria login mais à frente, se o cliente tentar algo que precise de
-  // conta, ex: pedir/favoritar; nada nesta página exige isso). Antes disto
-  // era exigido login com Google logo ao abrir, o que matava a experiência
-  // de quem só queria ver o cardápio estando já no restaurante.
   return (
     <div className="min-h-screen bg-neutral-100 py-8 print:bg-white print:py-0">
       <style>{`
@@ -91,11 +102,11 @@ function PublicMenu() {
       {/* Barra de ações — escondida na impressão */}
       <div className="pm-toolbar mx-auto mb-6 flex max-w-[210mm] flex-wrap items-center justify-between gap-3 px-4">
         <Link
-          to="/restaurantes/$id"
-          params={{ id: restaurantId }}
+          to="/menu/$restaurantId"
+          params={{ restaurantId }}
           className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2 text-sm font-bold text-foreground transition-colors hover:border-primary"
         >
-          <ExternalLink className="h-4 w-4" /> {t("publicMenu.visitRestaurant")}
+          <ArrowLeft className="h-4 w-4" /> {t("publicMenu.backToMenu")}
         </Link>
         <button
           type="button"
@@ -113,17 +124,6 @@ function PublicMenu() {
         title={t("cardapioPdf.documentTitle")}
         subtitle={t("cardapioPdf.generatedOn", { date: today })}
       />
-
-      {/* CTA cliente — repetido no fim, escondido na impressão */}
-      <div className="pm-toolbar mx-auto mt-6 max-w-[210mm] px-4">
-        <Link
-          to="/restaurantes/$id"
-          params={{ id: restaurantId }}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground hover:opacity-90"
-        >
-          <ExternalLink className="h-4 w-4" /> {t("publicMenu.visitRestaurant")}
-        </Link>
-      </div>
     </div>
   );
 }

@@ -51,6 +51,7 @@ import { useRestaurantLoyalty } from "@/lib/use-loyalty";
 import { fileToDocumentDataUrl, isPdfDataUrl } from "@/lib/image-upload";
 import { useReservations } from "@/lib/reservations";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
+import { buildDayUnits, unitKeyFor, unitOfTable } from "@/lib/table-layout";
 import { useTables } from "@/lib/tables";
 import { parseIsoDate, recencyBucket } from "@/lib/recency-groups";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
@@ -119,7 +120,12 @@ function AdminReservas() {
   const loyaltyOf = useRestaurantLoyalty(restaurant?.id);
   const { reservations, updateReservationStatus, setInvoice, confirmCaution, assignTable } =
     useReservations();
-  const { tablesByRestaurant, totalSeats: totalSeatsOf, tableCount: tableCountOf } = useTables();
+  const {
+    tablesByRestaurant,
+    totalSeats: totalSeatsOf,
+    tableCount: tableCountOf,
+    combinations,
+  } = useTables();
   const { t, locale } = useTranslation();
 
   const [query, setQuery] = useState("");
@@ -204,6 +210,12 @@ function AdminReservas() {
   const tableCount = restaurant ? tableCountOf(restaurant.id) : 0;
   const slotMin = restaurant?.reservationSlotMinutes ?? DEFAULT_SLOT_MIN;
   const tableName = (id?: string) => tables.find((tbl) => tbl.id === id)?.name ?? "";
+  // Junções de mesas são por dia (ver @/lib/table-layout): uma reserva numa
+  // mesa junta ocupa a junção inteira nesse dia, e o choque de mesa
+  // compara unidades, não mesas soltas.
+  const unitsOn = (date: string) => buildDayUnits(tables, combinations, dayOf(date));
+  const unitKey = (r: { tableId?: string | undefined; date: string }) =>
+    r.tableId ? unitKeyFor(r.tableId, dayOf(r.date), combinations) : null;
 
   // "Hoje" = data real do dispositivo. Uma reserva com data anterior a hoje
   // está no passado (fica "Inativa" e sem ações), independentemente do estado.
@@ -350,7 +362,7 @@ function AdminReservas() {
         }
       }
       const seats = group.reduce((s, r) => s + r.peopleCount, 0);
-      const usedTables = group.map((r) => r.tableId).filter(Boolean) as string[];
+      const usedTables = group.map(unitKey).filter(Boolean) as string[];
       const tableClash = new Set(usedTables).size !== usedTables.length;
       const overCapacity =
         (totalSeats > 0 && seats > totalSeats) || (tableCount > 0 && group.length > tableCount);
@@ -371,7 +383,8 @@ function AdminReservas() {
       (a, b) => toTime(`${a[0]!.date}T${a[0]!.time}`) - toTime(`${b[0]!.date}T${b[0]!.time}`),
     );
     return { conflicts: map, conflictClusters: problemGroups };
-  }, [mine, todayStr, slotMin, totalSeats, tableCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mine, todayStr, slotMin, totalSeats, tableCount, combinations]);
 
   /** Ocupação da janela de uma reserva: quantas reservas, quantos lugares
    * pedidos, e se há choque de mesa. Base do bloco no card de detalhe. */
@@ -381,7 +394,7 @@ function AdminReservas() {
         OCCUPYING.has(x.status) && dayOf(x.date) >= todayStr && (x.id === r.id || overlaps(r, x)),
     );
     const seats = windowSet.reduce((s, x) => s + x.peopleCount, 0);
-    const used = windowSet.map((x) => x.tableId).filter(Boolean) as string[];
+    const used = windowSet.map(unitKey).filter(Boolean) as string[];
     return {
       parties: windowSet.length,
       seats,
@@ -391,7 +404,8 @@ function AdminReservas() {
     };
   };
 
-  /** Mesa livre mais pequena que caiba em `pax` na janela de `r`. */
+  /** Mesa (ou junção do dia) livre mais pequena que caiba em `pax` na
+   * janela de `r` — devolve a mesa onde gravar (a âncora, numa junção). */
   const suggestTable = (r: (typeof mine)[number]) => {
     const taken = new Set(
       mine
@@ -403,12 +417,12 @@ function AdminReservas() {
             overlaps(r, x) &&
             x.tableId,
         )
-        .map((x) => x.tableId),
+        .map(unitKey),
     );
     return (
-      tables
-        .filter((tbl) => !taken.has(tbl.id) && tbl.seats >= r.peopleCount)
-        .sort((a, b) => a.seats - b.seats)[0]?.id ?? ""
+      unitsOn(r.date)
+        .filter((u) => !taken.has(u.key) && u.seats >= r.peopleCount)
+        .sort((a, b) => a.seats - b.seats)[0]?.anchorTableId ?? ""
     );
   };
 
@@ -980,21 +994,38 @@ function AdminReservas() {
                                         <span className="text-xs font-medium text-muted-foreground">
                                           {t("adminReservas.tableLabel")}
                                         </span>
-                                        <select
-                                          value={active.tableId ?? ""}
-                                          onChange={(e) =>
-                                            assignTable(active.id, e.target.value || undefined)
-                                          }
-                                          className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-primary"
-                                        >
-                                          <option value="">{t("adminReservas.tableNone")}</option>
-                                          {tables.map((tbl) => (
-                                            <option key={tbl.id} value={tbl.id}>
-                                              {tbl.name} ·{" "}
-                                              {t("adminReservas.tableSeats", { count: tbl.seats })}
-                                            </option>
-                                          ))}
-                                        </select>
+                                        {(() => {
+                                          const units = unitsOn(active.date);
+                                          const current = unitOfTable(units, active.tableId);
+                                          return (
+                                            <select
+                                              value={current?.anchorTableId ?? active.tableId ?? ""}
+                                              onChange={(e) =>
+                                                assignTable(active.id, e.target.value || undefined)
+                                              }
+                                              className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-primary"
+                                            >
+                                              <option value="">
+                                                {t("adminReservas.tableNone")}
+                                              </option>
+                                              {/* Mesa já fora de serviço continua visível
+                                                  enquanto estiver atribuída. */}
+                                              {active.tableId && !current && (
+                                                <option value={active.tableId}>
+                                                  {tableName(active.tableId)}
+                                                </option>
+                                              )}
+                                              {units.map((u) => (
+                                                <option key={u.key} value={u.anchorTableId}>
+                                                  {u.name} ·{" "}
+                                                  {t("adminReservas.tableSeats", {
+                                                    count: u.seats,
+                                                  })}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          );
+                                        })()}
                                         {!active.tableId && suggestTable(active) && (
                                           <button
                                             type="button"
@@ -1004,7 +1035,11 @@ function AdminReservas() {
                                             className="mt-1.5 text-xs font-semibold text-primary hover:underline"
                                           >
                                             {t("adminReservas.tableSuggest", {
-                                              name: tableName(suggestTable(active)),
+                                              name:
+                                                unitOfTable(
+                                                  unitsOn(active.date),
+                                                  suggestTable(active),
+                                                )?.name ?? tableName(suggestTable(active)),
                                             })}
                                           </button>
                                         )}
@@ -1250,6 +1285,7 @@ function AdminReservas() {
               <ReservationFloorPlan
                 reservations={mine}
                 tables={tables}
+                combinations={combinations}
                 slotMin={slotMin}
                 totalSeats={totalSeats}
                 onAssign={assignTable}

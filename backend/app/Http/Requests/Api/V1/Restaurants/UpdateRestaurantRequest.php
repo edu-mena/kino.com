@@ -50,6 +50,7 @@ class UpdateRestaurantRequest extends FormRequest
             'email' => ['sometimes', 'nullable', 'email'],
             'cover_image_url' => ['sometimes', 'nullable', 'string', 'max:2048'],
             'wallpaper_url' => ['sometimes', 'nullable', 'string', 'max:2048'],
+            'logo_url' => ['sometimes', 'nullable', 'string', 'max:2048'],
             'is_delivery_available' => ['sometimes', 'boolean'],
             'fulfillment_modes' => ['sometimes', 'array'],
             'fulfillment_modes.*' => ['in:delivery,takeaway,dinein'],

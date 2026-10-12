@@ -36,6 +36,9 @@ class OrderResource extends JsonResource
             'pickupAsap' => $this->pickup_asap,
             'pickupAt' => $this->pickup_at?->toIso8601String(),
             'partySize' => $this->party_size,
+            // Mesa de onde o pedido foi feito (QR da mesa) — nome tal como
+            // estava no momento do pedido.
+            'tableName' => $this->table_label,
             'status' => $this->status,
             'estimatedMinutes' => $this->estimated_minutes,
             'deliveredAt' => $this->delivered_at?->toIso8601String(),

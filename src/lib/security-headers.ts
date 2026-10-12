@@ -44,6 +44,10 @@ export function contentSecurityPolicy(env: Env): string {
     "https://router.project-osrm.org",
     "https://accounts.google.com",
     "https://*.googleapis.com",
+    // PNG dos cartões QR (/admin/mesas): fontes e logótipo do restaurante
+    // são lidos para dentro do SVG antes de passar a canvas.
+    "https://fonts.gstatic.com",
+    "https://*.fly.storage.tigris.dev",
   ].filter(Boolean);
 
   return [

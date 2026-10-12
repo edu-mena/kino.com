@@ -26,7 +26,7 @@ class MediaUploadService
 {
     // Os 5 presets já usados no crop client-side (ver plano) — "story" aqui
     // é só a variante imagem (vídeo de story vai por storeRawVideo).
-    private const IMAGE_PURPOSES = ['dish', 'cover', 'wallpaper', 'gallery', 'promo', 'story', 'partner', 'site'];
+    private const IMAGE_PURPOSES = ['dish', 'cover', 'wallpaper', 'logo', 'gallery', 'promo', 'story', 'partner', 'site'];
 
     /** Aceitam imagem OU PDF (ver storeDocument). "invoice" = fatura emitida
      * pelo restaurante; "payment-proof" = comprovativo de pagamento anexado
@@ -173,8 +173,12 @@ class MediaUploadService
                 } finally {
                     $bytes = (string) ob_get_clean();
                 }
+                imagedestroy($thumb);
                 $this->putPublic(self::thumbnailPath($path, $target), $bytes);
             }
+            // Fotos grandes ocupam dezenas de MB descomprimidas — liberta já
+            // (importações em lote geram milhares seguidas).
+            imagedestroy($source);
 
             return true;
         } catch (Throwable $e) {

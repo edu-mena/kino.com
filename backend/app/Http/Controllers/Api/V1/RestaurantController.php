@@ -59,6 +59,8 @@ class RestaurantController extends Controller
                     'followers',
                     'orders as recent_orders_count' => fn ($q) => Popularity::recentOrders($q),
                 ])
+                // Pré-cadastrados (por ativar) nunca aparecem, nem pelo nome.
+                ->where('is_published', true)
                 ->where(fn ($q) => $q->where('is_demo', false)->when(
                     $exactSearch !== '',
                     fn ($q) => $q->orWhereRaw('lower(name) = ?', [$exactSearch]),

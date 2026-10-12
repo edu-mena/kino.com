@@ -112,6 +112,8 @@ export type CartOrder = {
   pickupAt?: string;
   /** `dinein`: nº de pessoas à mesa. */
   partySize?: number;
+  /** `dinein` pelo QR de uma mesa: a mesa ("Mesa 5", "Mesa 3 + Mesa 4"). */
+  tableName?: string;
   status: CartOrderStatus;
   /** Estimativa (minutos) capturada do restaurante no momento do pedido. */
   estimatedMinutes: number;
@@ -196,7 +198,13 @@ export type NewCartLine = {
 export type OrderFulfillment =
   | { type: "delivery"; deliveryAddress: SavedAddress }
   | { type: "takeaway"; pickupAsap: boolean; pickupAt?: string }
-  | { type: "dinein"; partySize: number };
+  | {
+      type: "dinein";
+      partySize: number;
+      /** Mesa do QR lido (`/q/$code`) — ver @/lib/table-session. */
+      tableId?: string;
+      tableName?: string;
+    };
 
 type CartValue = {
   orders: CartOrder[];
@@ -845,6 +853,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 }
               : {}),
             ...(fulfillment.type === "dinein" ? { partySize: fulfillment.partySize } : {}),
+            ...(fulfillment.type === "dinein" && fulfillment.tableName
+              ? { tableName: fulfillment.tableName }
+              : {}),
             status: "pending",
             estimatedMinutes: getRestaurant(restaurantId)?.estimatedDeliveryMinutes ?? 30,
             ...(note?.trim() ? { note: note.trim() } : {}),

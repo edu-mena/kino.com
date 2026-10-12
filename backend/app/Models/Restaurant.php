@@ -17,7 +17,7 @@ class Restaurant extends Model
 
     protected $fillable = [
         'name', 'description', 'cuisine', 'address', 'neighborhood', 'city',
-        'lat', 'lng', 'phone', 'email', 'cover_image_url', 'wallpaper_url',
+        'lat', 'lng', 'phone', 'email', 'cover_image_url', 'wallpaper_url', 'logo_url',
         'is_delivery_available', 'fulfillment_modes', 'accepted_payment_methods',
         'caution_modes_for_orders', 'delivery_zones', 'delivery_fee',
         'estimated_delivery_minutes', 'caution_amount', 'caution_policy_notice',
@@ -48,6 +48,8 @@ class Restaurant extends Model
             'caution_amount' => 'decimal:2',
             'buffet_price' => 'decimal:2',
             'rating' => 'decimal:1',
+            'qr_style' => 'array',
+            'is_published' => 'boolean',
         ];
     }
 
@@ -65,7 +67,9 @@ class Restaurant extends Model
      */
     public function scopeListed(Builder $query): Builder
     {
-        return $query->where('is_demo', false);
+        // Pré-cadastrados (importados do menus.ao, ver RestaurantImport)
+        // também ficam de fora até um operador os ativar.
+        return $query->where('is_demo', false)->where('is_published', true);
     }
 
     /**
@@ -119,6 +123,23 @@ class Restaurant extends Model
     public function reservations(): HasMany
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    /** Origem de um restaurante pré-cadastrado (menus.ao). */
+    public function import(): HasOne
+    {
+        return $this->hasOne(RestaurantImport::class);
+    }
+
+    /** Mesas juntas por dia — ver TableCombination. */
+    public function tableCombinations(): HasMany
+    {
+        return $this->hasMany(TableCombination::class);
+    }
+
+    public function qrCodes(): HasMany
+    {
+        return $this->hasMany(QrCode::class);
     }
 
     public function orders(): HasMany

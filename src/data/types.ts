@@ -47,6 +47,10 @@ export interface Restaurant {
    * mostrado bem subtil atrás do conteúdo (ver `restaurantes_.$id.tsx`).
    * Ausente = fundo normal, sem imagem nenhuma. */
   wallpaper?: string;
+  /** Logótipo do restaurante — cartões QR impressos (`/admin/mesas`, separador
+   * "Códigos QR") e página do cardápio aberta pelo QR (`/q/$code`).
+   * Ausente = mostra-se o nome/iniciais. */
+  logo?: string;
   isDeliveryAvailable: boolean;
   /** Modos de pedido que o restaurante oferece. Ausente = derivado:
    * `delivery` só se `isDeliveryAvailable`, mais `takeaway` e `dinein`

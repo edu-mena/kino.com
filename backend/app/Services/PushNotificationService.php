@@ -306,6 +306,9 @@ class PushNotificationService
         $orderDetail = $snapshot
             ? sprintf('%d item(ns) · %s Kz', $snapshot['itemCount'] ?? 0, number_format((float) ($snapshot['total'] ?? 0), 0, ',', ' '))
             : null;
+        if ($orderDetail && ! empty($snapshot['tableName'])) {
+            $orderDetail = "{$snapshot['tableName']} · {$orderDetail}";
+        }
         $reservationDetail = $snapshot
             ? sprintf('%d pessoa(s) · %s', $snapshot['peopleCount'] ?? '?', $snapshot['time'] ?? '')
             : null;

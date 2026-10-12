@@ -6,11 +6,7 @@ use App\Models\PartnerApplication;
 use App\Models\Restaurant;
 use App\Models\RestaurantMenu;
 use App\Models\RestaurantSubscription;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
 
 /**
  * Aprovar uma candidatura (ver mock, sistema.parceiros.tsx `onboard()`) cria
@@ -25,7 +21,9 @@ use Illuminate\Support\Str;
  */
 class ApprovePartnerApplication
 {
-    private const TRIAL_DAYS = 60;
+    public const TRIAL_DAYS = 60;
+
+    public function __construct(private readonly FindOrCreateRestaurantOwner $owners) {}
 
     public function handle(PartnerApplication $application): Restaurant
     {
@@ -63,7 +61,7 @@ class ApprovePartnerApplication
                 'is_active' => true,
             ]);
 
-            $owner = $this->findOrCreateOwner($application);
+            $owner = $this->owners->handle($application->owner_name, $application->email, $application->phone);
             $restaurant->staff()->attach($owner->id, ['role_in_restaurant' => 'owner']);
 
             $application->update([
@@ -75,56 +73,5 @@ class ApprovePartnerApplication
         });
 
         return $restaurant;
-    }
-
-    /**
-     * O mesmo email já pode ter uma conta de staff de outro restaurante
-     * (dono com vários locais candidatando-se de novo) — nesse caso liga a
-     * conta existente em vez de duplicar/falhar por email único, e não
-     * reenvia convite (já sabe entrar).
-     *
-     * `email` é único GLOBALMENTE na tabela `users`, independente de `role`
-     * — se o candidato já tiver conta de cliente (ou, mais raro, de
-     * operador) com este mesmo email, a query abaixo (antes filtrada só por
-     * `role = restaurant_staff`) não encontrava essa conta e a seguir tentava
-     * CRIAR outra com o mesmo email, rebentando com uma violação de
-     * constraint única (500 cru, sem mensagem nenhuma para o operador —
-     * bug real, encontrado ao aprovar uma candidatura a sério em produção).
-     * `role` é exclusivo por design (uma conta é OU cliente OU staff OU
-     * operador, nunca duas ao mesmo tempo), por isso não dá para "juntar"
-     * as duas contas aqui sem risco — falha alto e cedo com uma mensagem
-     * clara em vez de tentar adivinhar o que o operador queria.
-     */
-    private function findOrCreateOwner(PartnerApplication $application): User
-    {
-        $existing = User::query()->where('email', $application->email)->first();
-
-        if ($existing && $existing->role === 'restaurant_staff') {
-            return $existing;
-        }
-
-        if ($existing) {
-            $roleLabel = match ($existing->role) {
-                'customer' => 'cliente',
-                'system_operator' => 'operador de sistema',
-                default => $existing->role,
-            };
-
-            abort(422, "Este email já pertence a uma conta de {$roleLabel} — não é possível usá-lo para o dono do restaurante. Peça ao candidato um email diferente, ou mude o role dessa conta manualmente antes de aprovar de novo.");
-        }
-
-        $user = User::query()->create([
-            'role' => 'restaurant_staff',
-            'name' => $application->owner_name,
-            'email' => $application->email,
-            'phone' => $application->phone,
-            // Senha aleatória, nunca comunicada — o dono define a própria a
-            // seguir, pelo link enviado por Password::sendResetLink().
-            'password' => Hash::make(Str::random(40)),
-        ]);
-
-        Password::sendResetLink(['email' => $user->email]);
-
-        return $user;
     }
 }

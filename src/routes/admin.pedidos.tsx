@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  Armchair,
   BarChart3,
   Bike,
   ChevronLeft,
@@ -791,7 +792,9 @@ function AdminPedidos() {
                                     ) : (
                                       <>
                                         <Package className="h-3 w-3 shrink-0" />
-                                        {t(`fulfillment.${o.fulfillmentType}`)}
+                                        {o.tableName
+                                          ? `${t(`fulfillment.${o.fulfillmentType}`)} · ${o.tableName}`
+                                          : t(`fulfillment.${o.fulfillmentType}`)}
                                       </>
                                     )}
                                   </span>
@@ -799,6 +802,11 @@ function AdminPedidos() {
                                     <span className="rounded-full bg-surface px-1.5 py-0.5 text-muted-foreground">
                                       {t(`fulfillment.${o.fulfillmentType}`)}
                                     </span>
+                                    {o.tableName && (
+                                      <span className="rounded-full bg-brand/10 px-1.5 py-0.5 font-semibold text-brand">
+                                        {o.tableName}
+                                      </span>
+                                    )}
                                     {o.fulfillmentType === "delivery" &&
                                       (() => {
                                         const a = assessDelivery(o);
@@ -1013,6 +1021,9 @@ function AdminPedidos() {
                                           ? ` · ${active.partySize}`
                                           : ""}
                                       </DetailChip>
+                                      {active.tableName && (
+                                        <DetailChip icon={Armchair}>{active.tableName}</DetailChip>
+                                      )}
                                     </>
                                   }
                                   status={

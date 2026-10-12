@@ -61,6 +61,7 @@ type ApiRestaurant = {
   ordersPausedManually: boolean;
   isSuspended: boolean;
   wallpaperUrl?: string | null;
+  logoUrl?: string | null;
   galleryImages?: { id: number; url: string }[];
   hours?: {
     weekday: number;
@@ -142,6 +143,7 @@ export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
     galleryImages: (r.galleryImages ?? []).map((g) => g.url),
     ...(r.galleryImages ? { galleryImageIds: r.galleryImages.map((g) => g.id) } : {}),
     ...(r.wallpaperUrl ? { wallpaper: r.wallpaperUrl } : {}),
+    ...(r.logoUrl ? { logo: r.logoUrl } : {}),
     ...(r.hours ? { hours: mapApiHours(r.hours) } : {}),
     isDeliveryAvailable: r.isDeliveryAvailable,
     fulfillmentModes: r.fulfillmentModes as FulfillmentType[],
@@ -325,6 +327,7 @@ export type RestaurantPatchPayload = Partial<{
   email: string;
   coverImage: string;
   wallpaper: string;
+  logo: string;
   isDeliveryAvailable: boolean;
   fulfillmentModes: FulfillmentType[];
   acceptedPaymentMethods: string[];
@@ -361,6 +364,7 @@ export async function updateApiRestaurant(
   if (patch.email !== undefined) body["email"] = patch.email;
   if (patch.coverImage !== undefined) body["cover_image_url"] = patch.coverImage;
   if (patch.wallpaper !== undefined) body["wallpaper_url"] = patch.wallpaper;
+  if (patch.logo !== undefined) body["logo_url"] = patch.logo || null;
   if (patch.isDeliveryAvailable !== undefined) {
     body["is_delivery_available"] = patch.isDeliveryAvailable;
   }

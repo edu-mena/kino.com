@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
@@ -39,7 +39,6 @@ import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Switch } from "@/components/ui/switch";
 import { DishFormDialog } from "@/components/dish-form-dialog";
-import { MenuQrDialog } from "@/components/menu-qr-dialog";
 import { fetchApiMenus } from "@/data/api-menus";
 import { updateApiRestaurant, type RestaurantPatchPayload } from "@/data/api-restaurants";
 import { INGREDIENT_CATALOG } from "@/data/ingredient-catalog";
@@ -78,6 +77,7 @@ const INGREDIENT_OPTIONS = INGREDIENT_CATALOG.map((name) => ({ value: name, labe
 
 function AdminCardapio() {
   const { restaurant } = useRestaurantAdmin();
+  const navigate = useNavigate();
   const { items, isAvailable, toggleAvailability, createItem, updateItem, deleteItem } =
     useMenuAdmin();
   const { t, locale } = useTranslation();
@@ -87,7 +87,6 @@ function AdminCardapio() {
   const [formKind, setFormKind] = useState<"dish" | "drink">("dish");
   const [editingDish, setEditingDish] = useState<MenuItem | null>(null);
   const [deletingDish, setDeletingDish] = useState<MenuItem | null>(null);
-  const [qrOpen, setQrOpen] = useState(false);
   // Com backend real, o cardápio "sintético" (defaultMenuId) não existe —
   // busca o cardápio de verdade do restaurante (criado na aprovação, ver
   // ApprovePartnerApplication). Sem backend, mantém-se o sintético de sempre.
@@ -346,7 +345,11 @@ function AdminCardapio() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setQrOpen(true)}>
+              {/* Os QR (um por mesa + o geral) vivem no estúdio da sala —
+                  impressos a partir da organização das mesas. */}
+              <DropdownMenuItem
+                onSelect={() => void navigate({ to: "/admin/mesas", search: { tab: "qr" } })}
+              >
                 <QrCode className="h-4 w-4" /> {t("adminCardapio.qrCode")}
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -863,13 +866,6 @@ function AdminCardapio() {
         onSave={async (restaurantId, input, editingId) =>
           editingId ? updateItem(editingId, input) : (await createItem(restaurantId, input)).ok
         }
-      />
-
-      <MenuQrDialog
-        open={qrOpen}
-        onOpenChange={setQrOpen}
-        restaurantId={restaurant.id}
-        restaurantName={restaurant.name}
       />
 
       <AlertDialog open={!!deletingDish} onOpenChange={(open) => !open && setDeletingDish(null)}>

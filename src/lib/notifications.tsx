@@ -44,6 +44,14 @@ type TFn = (path: string, vars?: Record<string, string | number>) => string;
  * sítio (não duplicado no sino/lista/toast) para nunca divergir. */
 export function notificationText(t: TFn, n: LukuNotification, name: string): string {
   const s = n.snapshot;
+  if (n.event === "orderNew" && s?.itemCount != null && s.total != null && s.tableName) {
+    return t("notifications.orderNewAtTable", {
+      name,
+      table: s.tableName,
+      itemCount: s.itemCount,
+      total: formatKz(s.total),
+    });
+  }
   if (n.event === "orderNew" && s?.itemCount != null && s.total != null) {
     return t("notifications.orderNewDetailed", {
       name,
@@ -91,6 +99,8 @@ export function notificationText(t: TFn, n: LukuNotification, name: string): str
 export type NotificationSnapshot = {
   itemCount?: number;
   total?: number;
+  /** Pedido feito pelo QR de uma mesa ("Mesa 5"). */
+  tableName?: string | null;
   peopleCount?: number;
   date?: string;
   time?: string;

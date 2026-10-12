@@ -19,7 +19,7 @@ class StoreUploadRequest extends FormRequest
     {
         return [
             'file' => ['required', 'file', 'image', 'max:8192'],
-            'purpose' => ['required', 'string', 'in:dish,cover,wallpaper,gallery,promo,story,site'],
+            'purpose' => ['required', 'string', 'in:dish,cover,wallpaper,logo,gallery,promo,story,site'],
         ];
     }
 }

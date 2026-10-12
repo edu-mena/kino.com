@@ -52,6 +52,7 @@ type ApiOrder = {
   pickupAsap: boolean | null;
   pickupAt: string | null;
   partySize: number | null;
+  tableName?: string | null;
   status: string;
   estimatedMinutes: number;
   deliveredAt: string | null;
@@ -144,6 +145,7 @@ function mapApiOrder(o: ApiOrder, ownerKey: string): CartOrder {
     ...(o.pickupAsap != null ? { pickupAsap: o.pickupAsap } : {}),
     ...(o.pickupAt ? { pickupAt: o.pickupAt } : {}),
     ...(o.partySize != null ? { partySize: o.partySize } : {}),
+    ...(o.tableName ? { tableName: o.tableName } : {}),
     status: STATUS_FROM_API[o.status] ?? "pending",
     estimatedMinutes: o.estimatedMinutes,
     ...(o.deliveredAt ? { deliveredAt: o.deliveredAt } : {}),
@@ -227,6 +229,7 @@ export async function createApiOrder(
     if (fulfillment.pickupAt) body["pickup_at"] = fulfillment.pickupAt;
   } else {
     body["party_size"] = fulfillment.partySize;
+    if (fulfillment.tableId) body["table_id"] = fulfillment.tableId;
   }
 
   const { data } = await apiFetch<{ data: ApiOrder }>(`/restaurants/${restaurantId}/orders`, {

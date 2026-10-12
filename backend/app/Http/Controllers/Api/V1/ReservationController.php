@@ -263,8 +263,10 @@ class ReservationController extends Controller
         ReservationOccupancyService $occupancy,
     ): void {
         $slotMin = $restaurant->reservation_slot_minutes;
-        $totalSeats = (int) $restaurant->tables()->sum('seats');
-        $tableCount = $restaurant->tables()->count();
+        // Só mesas em serviço contam para a lotação.
+        $totalSeats = (int) $restaurant->tables()->where('is_active', true)->sum('seats');
+        $tableCount = $restaurant->tables()->where('is_active', true)->count();
+        $unitMap = $occupancy->unitMap($restaurant, now()->toDateString());
 
         // Universo de "reservas que ocupam sala, futuras" para calcular
         // sobreposição — precisa de TODAS as reservas do restaurante nessa
@@ -277,7 +279,7 @@ class ReservationController extends Controller
 
         foreach ($reservations as $reservation) {
             $reservation->occupancy = $occupancy->windowOccupancy(
-                $reservation, $future, $slotMin, $totalSeats, $tableCount,
+                $reservation, $future, $slotMin, $totalSeats, $tableCount, $unitMap,
             );
         }
     }

@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PackageTypeController;
 use App\Http\Controllers\Api\V1\PartnerApplicationController;
 use App\Http\Controllers\Api\V1\ProfileViewController;
+use App\Http\Controllers\Api\V1\QrCodeController;
 use App\Http\Controllers\Api\V1\ReservationController;
 use App\Http\Controllers\Api\V1\RestaurantController;
 use App\Http\Controllers\Api\V1\RestaurantMenuController;
@@ -34,7 +35,9 @@ use App\Http\Controllers\Api\V1\StoryController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupportTicketController;
 use App\Http\Controllers\Api\V1\SystemAccessController;
+use App\Http\Controllers\Api\V1\SystemImportedRestaurantController;
 use App\Http\Controllers\Api\V1\SystemStatsController;
+use App\Http\Controllers\Api\V1\TableCombinationController;
 use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\UploadController;
 use App\Http\Controllers\Api\V1\UserBlockController;
@@ -133,6 +136,8 @@ Route::get('restaurants/{restaurant}/menu-items', [MenuItemController::class, 'i
 // Catálogo público num só pedido (home, pesquisa, /cardapio) — ver catalog().
 Route::get('menu-items', [MenuItemController::class, 'catalog']);
 Route::get('menu-items/{menuItem}', [MenuItemController::class, 'show']);
+// QR impresso (`luku.ao/q/{code}`) — público, é o telemóvel do cliente.
+Route::get('qr/{code}', [QrCodeController::class, 'resolve'])->where('code', '[A-Za-z0-9]{4,16}');
 
 // Escrita — sempre autenticada; autorização fina fica nas Policies/FormRequests
 // (ver RestaurantPolicy — staff só mexe no PRÓPRIO restaurante).
@@ -285,6 +290,13 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('partner-applications/{application}/reject', [PartnerApplicationController::class, 'reject']);
     Route::delete('partner-applications/{application}', [PartnerApplicationController::class, 'destroy']);
 
+    // Restaurantes pré-cadastrados (importados do menus.ao) — só operadores.
+    Route::get('system/imported-restaurants', [SystemImportedRestaurantController::class, 'index']);
+    Route::get('system/imported-restaurants/{restaurant}', [SystemImportedRestaurantController::class, 'show']);
+    Route::post('system/imported-restaurants/{restaurant}/activate', [SystemImportedRestaurantController::class, 'activate']);
+    Route::delete('system/imported-restaurants/{restaurant}', [SystemImportedRestaurantController::class, 'destroy']);
+    Route::post('system/imported-restaurants/{uuid}/restore', [SystemImportedRestaurantController::class, 'restore']);
+
     Route::get('subscriptions', [SubscriptionController::class, 'index']);
     Route::get('system/customers-count', [SystemStatsController::class, 'customersCount']);
     Route::get('restaurants/{restaurant}/subscription', [SubscriptionController::class, 'show']);
@@ -418,8 +430,20 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
 
     Route::get('restaurants/{restaurant}/tables', [RestaurantTableController::class, 'index']);
     Route::post('restaurants/{restaurant}/tables', [RestaurantTableController::class, 'store']);
+    Route::post('restaurants/{restaurant}/tables/bulk', [RestaurantTableController::class, 'bulkStore']);
+    Route::put('restaurants/{restaurant}/tables/order', [RestaurantTableController::class, 'reorder']);
     Route::patch('tables/{table}', [RestaurantTableController::class, 'update']);
     Route::delete('tables/{table}', [RestaurantTableController::class, 'destroy']);
+
+    // Mesas juntas por dia (ver TableCombination).
+    Route::get('restaurants/{restaurant}/table-combinations', [TableCombinationController::class, 'index']);
+    Route::post('restaurants/{restaurant}/table-combinations', [TableCombinationController::class, 'store']);
+    Route::patch('table-combinations/{combination}', [TableCombinationController::class, 'update']);
+    Route::delete('table-combinations/{combination}', [TableCombinationController::class, 'destroy']);
+
+    // QR impressos: código geral do restaurante + estilo de impressão.
+    Route::get('restaurants/{restaurant}/qr-codes', [QrCodeController::class, 'index']);
+    Route::put('restaurants/{restaurant}/qr-style', [QrCodeController::class, 'updateStyle']);
 
     Route::post('restaurants/{restaurant}/packages', [RestaurantPackageController::class, 'store']);
     Route::patch('restaurant-packages/{restaurantPackage}', [RestaurantPackageController::class, 'update']);

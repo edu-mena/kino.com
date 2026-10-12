@@ -16,7 +16,7 @@ class UpdateRestaurantTableRequest extends FormRequest
         return [
             'name' => ['sometimes', 'string', 'max:80'],
             'seats' => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'area' => ['sometimes', 'nullable', 'string', 'max:80'],
+            ...StoreRestaurantTableRequest::layoutRules(),
         ];
     }
 }

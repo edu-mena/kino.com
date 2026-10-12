@@ -29,6 +29,7 @@ export type RestaurantProfileEdit = Partial<
     | "coverImage"
     | "galleryImages"
     | "wallpaper"
+    | "logo"
     | "isDeliveryAvailable"
     | "fulfillmentModes"
     | "acceptedPaymentMethods"

@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Activity,
   CreditCard,
+  DownloadCloud,
   FileText,
   Flag,
   Inbox,
@@ -23,6 +24,7 @@ import { useSystemAdmin } from "@/lib/system-admin";
 const navItems = [
   { to: "/sistema", labelKey: "overview", icon: LayoutGrid },
   { to: "/sistema/restaurantes", labelKey: "restaurants", icon: Store },
+  { to: "/sistema/importados", labelKey: "imported", icon: DownloadCloud },
   { to: "/sistema/operacao", labelKey: "operations", icon: Activity },
   { to: "/sistema/subscricoes", labelKey: "subscriptions", icon: CreditCard },
   { to: "/sistema/parceiros", labelKey: "partners", icon: Inbox },

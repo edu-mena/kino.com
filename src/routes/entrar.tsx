@@ -8,6 +8,7 @@ import { Logo } from "@/components/logo";
 import { useTranslation } from "@/i18n";
 import { ApiError, useAuth } from "@/lib/auth";
 import { isAppleSignInAvailable } from "@/lib/apple-identity";
+import { consumePostLoginRedirect } from "@/lib/post-login-redirect";
 
 export const Route = createFileRoute("/entrar")({
   head: () => ({
@@ -66,13 +67,20 @@ function Entrar() {
   const { loginWithGoogle, loginWithApple } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  // Volta para onde estava (ex.: a mesa do QR, a meio de um pedido) — ver
+  // @/lib/post-login-redirect; sem destino guardado, a página inicial.
+  const goAfterLogin = () => {
+    const back = consumePostLoginRedirect();
+    if (back) void navigate({ href: back });
+    else void navigate({ to: "/" });
+  };
 
   const handleAppleAuth = async () => {
     setLoading(true);
     try {
       await loginWithApple();
       toast.success(t("entrar.loggedInToast"));
-      navigate({ to: "/" });
+      goAfterLogin();
     } catch (error) {
       // Cancelar a folha nativa da Apple não é um erro a mostrar.
       const code = (error as { code?: string; message?: string } | null) ?? {};
@@ -90,7 +98,7 @@ function Entrar() {
     try {
       await loginWithGoogle();
       toast.success(t("entrar.loggedInToast"));
-      navigate({ to: "/" });
+      goAfterLogin();
     } catch (error) {
       // Utilizador fechou o popup (web) ou cancelou o ecrã nativo de
       // sign-in (app) não é bem um "erro" a mostrar — o resto (rede em

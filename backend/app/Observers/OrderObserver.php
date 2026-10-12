@@ -115,6 +115,9 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
             'status' => $order->status,
             'itemCount' => $order->lines()->count(),
             'total' => (float) $order->total,
+            // Pedido feito pelo QR de uma mesa — o staff sabe logo a que
+            // mesa levar, sem abrir o pedido.
+            'tableName' => $order->table_label,
         ], JSON_THROW_ON_ERROR);
     }
 

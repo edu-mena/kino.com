@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Reservation;
+use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Porte 1:1 de `src/lib/reservation-occupancy.ts` — decisão de produto
@@ -42,10 +44,50 @@ class ReservationOccupancyService
     }
 
     /**
+     * Mesas juntas por dia → "unidade" que uma reserva ocupa: uma reserva
+     * na Mesa 3 num dia em que a 3 está junta à 4 ocupa a junção inteira,
+     * por isso outra reserva na 4 à mesma hora é choque de mesa. Chave
+     * "Y-m-d|table_id" → "c{combination_id}"; sem junção, a própria mesa.
+     *
+     * @return array<string, string>
+     */
+    public function unitMap(Restaurant $restaurant, string $fromDate): array
+    {
+        $rows = DB::table('table_combination_table')
+            ->join('table_combinations', 'table_combinations.id', '=', 'table_combination_table.table_combination_id')
+            ->where('table_combinations.restaurant_id', $restaurant->id)
+            ->whereDate('table_combination_table.date', '>=', $fromDate)
+            ->get([
+                'table_combination_table.restaurant_table_id as table_id',
+                'table_combination_table.date as date',
+                'table_combination_table.table_combination_id as combination_id',
+            ]);
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[substr((string) $row->date, 0, 10).'|'.$row->table_id] = 'c'.$row->combination_id;
+        }
+
+        return $map;
+    }
+
+    /** @param  array<string, string>  $unitMap */
+    private function unitOf(Reservation $reservation, array $unitMap): ?string
+    {
+        if ($reservation->table_id === null) {
+            return null;
+        }
+
+        return $unitMap[substr((string) $reservation->date, 0, 10).'|'.$reservation->table_id]
+            ?? 't'.$reservation->table_id;
+    }
+
+    /**
      * Ocupação da janela de `$reservation` (inclui-a) dentro de `$future`
      * (já filtrado para reservas que ocupam sala, data >= hoje).
      *
      * @param  Collection<int, Reservation>  $future
+     * @param  array<string, string>  $unitMap  ver unitMap()
      * @return array{parties: int, seats: int, seatsOver: bool, partiesOver: bool, tableClash: bool, overbooked: bool}
      */
     public function windowOccupancy(
@@ -54,12 +96,13 @@ class ReservationOccupancyService
         int $slotMin,
         int $totalSeats,
         int $tableCount,
+        array $unitMap = [],
     ): array {
         $inWindow = $future->filter(fn (Reservation $x) => $x->id === $reservation->id
             || $this->overlaps($reservation, $x, $slotMin));
 
         $seats = $inWindow->sum('people_count');
-        $used = $inWindow->pluck('table_id')->filter()->values();
+        $used = $inWindow->map(fn (Reservation $x) => $this->unitOf($x, $unitMap))->filter()->values();
         $seatsOver = $totalSeats > 0 && $seats > $totalSeats;
         $partiesOver = $tableCount > 0 && $inWindow->count() > $tableCount;
         $tableClash = $used->unique()->count() !== $used->count();
