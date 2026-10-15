@@ -6,3 +6,6 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+
+# HTML real do menus.ao guardado tal como veio (testes da importação)
+backend/tests/fixtures/
