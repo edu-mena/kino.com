@@ -2360,6 +2360,7 @@ export const fr: Dictionary = {
     titlePrefix: "Bienvenue sur",
     description: "Connectez-vous ou créez votre compte en un clic — sans mot de passe à retenir.",
     continueWithGoogle: "Continuer avec Google",
+    continueWithApple: "Continuer avec Apple",
     loggingIn: "Connexion...",
     termsNoticeLead: "En continuant, vous acceptez nos",
     termsLabel: "Conditions",

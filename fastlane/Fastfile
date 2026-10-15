@@ -1,0 +1,75 @@
+# Build e envio da app iOS (Capacitor) para o TestFlight / App Store.
+#
+# A chave da API do App Store Connect fica FORA do repo, em
+#   ~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8
+# e os IDs vêm do ambiente (ver fastlane/.env.example):
+#   ASC_KEY_ID, ASC_ISSUER_ID
+#
+#   npx fastlane ios beta     # sync com produção + build + TestFlight
+#   fastlane ios beta         # (com o fastlane do Homebrew)
+
+default_platform(:ios)
+
+PROD_URL = "https://luku.ao"
+XCODEPROJ = "ios/App/App.xcodeproj"
+
+platform :ios do
+  private_lane :asc_key do
+    key_id = ENV.fetch("ASC_KEY_ID")
+    app_store_connect_api_key(
+      key_id: key_id,
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_filepath: File.expand_path("~/.appstoreconnect/private_keys/AuthKey_#{key_id}.p8"),
+    )
+  end
+
+  desc "Aponta a app à produção, compila e envia para o TestFlight"
+  lane :beta do
+    asc_key
+
+    # O build tem de carregar a produção — nunca o servidor de dev da LAN.
+    sh("cd .. && CAP_SERVER_URL=#{PROD_URL} npx cap sync ios")
+
+    # Perfil App Store atualizado (inclui Push + Sign in with Apple).
+    sigh(app_identifier: "ao.luku.app", force: true)
+    update_code_signing_settings(
+      path: XCODEPROJ,
+      targets: ["App"],
+      build_configurations: ["Release"],
+      use_automatic_signing: false,
+      team_id: "THDQBLQK7L",
+      code_sign_identity: "Apple Distribution",
+      profile_name: lane_context[SharedValues::SIGH_NAME],
+    )
+
+    # Número de build sempre acima do último enviado.
+    increment_build_number(
+      xcodeproj: XCODEPROJ,
+      build_number: latest_testflight_build_number(app_identifier: "ao.luku.app") + 1,
+    )
+
+    build_app(
+      project: XCODEPROJ,
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build/ios",
+    )
+
+    upload_to_testflight(skip_waiting_for_build_processing: true)
+  end
+
+  desc "Substitui as capturas da loja pelas de fastlane/screenshots/<locale>/"
+  lane :screenshots do
+    asc_key
+    deliver(
+      skip_binary_upload: true,
+      skip_metadata: true,
+      skip_app_version_update: true,
+      overwrite_screenshots: true,
+      screenshots_path: "fastlane/screenshots",
+      force: true,
+      run_precheck_before_submit: false,
+    )
+  end
+end

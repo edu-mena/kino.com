@@ -19,7 +19,7 @@ const serverUrl = process.env.CAP_SERVER_URL?.trim();
 const isDevHttpServer = !!serverUrl?.startsWith("http://");
 
 const config: CapacitorConfig = {
-  appId: "com.luku.app",
+  appId: "ao.luku.app",
   appName: "Luku",
   webDir: "capacitor/www",
   android: {

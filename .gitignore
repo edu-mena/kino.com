@@ -43,3 +43,16 @@ dist-ssr
 # aplicada como secret FIREBASE_CREDENTIALS no Fly, ver capacitor/README.md.
 *firebase-adminsdk*.json
 google-services.json
+
+# Variáveis de ambiente locais
+.env
+
+# fastlane — IDs da chave ASC e artefactos de build locais
+fastlane/.env
+fastlane/report.xml
+fastlane/README.md
+/build
+*.mobileprovision
+*.ipa
+*.dSYM.zip
+fastlane/screenshots/

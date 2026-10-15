@@ -2318,6 +2318,7 @@ export const en: Dictionary = {
     titlePrefix: "Welcome to",
     description: "Sign in or create your account with a single tap — no passwords to remember.",
     continueWithGoogle: "Continue with Google",
+    continueWithApple: "Continue with Apple",
     loggingIn: "Signing in...",
     termsNoticeLead: "By continuing, you agree to our",
     termsLabel: "Terms",

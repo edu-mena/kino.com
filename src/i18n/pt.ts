@@ -2335,6 +2335,7 @@ export const pt = {
     description:
       "Entre ou crie a sua conta com um único toque — sem palavras-passe para memorizar.",
     continueWithGoogle: "Continuar com Google",
+    continueWithApple: "Continuar com a Apple",
     loggingIn: "A entrar...",
     termsNoticeLead: "Ao continuar, concorda com os nossos",
     termsLabel: "Termos",
