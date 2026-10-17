@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["THDQBLQK7L.ao.luku.app"],
+        "components": [
+          { "/": "/sistema*", "exclude": true, "comment": "painel de sistema: só no browser" },
+          { "/": "/.well-known/*", "exclude": true },
+          { "/": "/*" }
+        ]
+      }
+    ]
+  }
+}

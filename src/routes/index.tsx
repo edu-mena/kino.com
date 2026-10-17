@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Armchair, ArrowRight, Tag } from "lucide-react";
 import { useMemo } from "react";
+import { isIosApp } from "@/lib/platform";
 import { useTapSequence } from "@/lib/use-tap-sequence";
 import icon from "@/assets/icon.png";
 import { CategoryShortcutRow } from "@/components/category-shortcut-row";
@@ -142,7 +143,10 @@ function HomeNotLoggedIn() {
           ].map((item) => (
             <div
               key={item.id}
-              onClick={item.id === "offers" ? handleSystemLoginTap : undefined}
+              // Nunca na app iOS: a App Store proíbe funcionalidades
+              // escondidas (diretriz 2.5.19, out/2026). Os operadores
+              // entram pelo site.
+              onClick={item.id === "offers" && !isIosApp() ? handleSystemLoginTap : undefined}
               className="rounded-2xl border border-border bg-card p-5 text-left"
             >
               <span className="grid h-11 w-11 place-items-center rounded-full border border-border bg-background text-brand">

@@ -146,6 +146,24 @@ function RootComponent() {
   }, [router]);
 
   useEffect(() => {
+    // Universal Links (iOS) / App Links (Android): um link luku.ao aberto
+    // noutra app (câmara, WhatsApp, email) abre a app — navega para a
+    // página certa. No-op na web. Ver src/lib/deep-links.ts.
+    let stop: (() => void) | undefined;
+    let cancelled = false;
+    void import("../lib/deep-links").then(({ listenForAppLinks }) =>
+      listenForAppLinks((path) => router.history.push(path)).then((cleanup) => {
+        if (cancelled) cleanup();
+        else stop = cleanup;
+      }),
+    );
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [router]);
+
+  useEffect(() => {
     // Na app nativa (Android/iOS), o WebView por definição desenha por
     // baixo da barra de estado/notificações (edge-to-edge) — sem isto o
     // conteúdo fica escondido atrás do relógio/ícones do telemóvel.

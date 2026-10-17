@@ -2,6 +2,17 @@ import type { Dictionary } from "./index";
 
 /** English — mirrors the exact shape of `pt.ts`. */
 export const en: Dictionary = {
+  qrScan: {
+    button: "Scan QR code",
+    instructions: "Point at the table or restaurant QR code",
+    cancel: "Close scanner",
+    torchOn: "Turn on flashlight",
+    torchOff: "Turn off flashlight",
+    notLuku: "This QR code isn't from LUKU.",
+    permissionDenied: "To scan QR codes, allow camera access.",
+    openSettings: "Settings",
+    error: "Could not read the code. Please try again.",
+  },
   status: {
     eyebrow: "Transparency",
     title: "Service status",

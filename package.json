@@ -26,6 +26,8 @@
     "ios:run": "cap run ios"
   },
   "dependencies": {
+    "@capacitor/app": "8.1.2",
+    "@capacitor/barcode-scanner": "3.1.2",
     "@capacitor/core": "^8.5.1",
     "@capacitor/geolocation": "^8.2.2",
     "@capacitor/push-notifications": "^8.1.2",

@@ -9,6 +9,17 @@
  * usuário (alias de endereço, pedidos especiais).
  */
 export const pt = {
+  qrScan: {
+    button: "Ler código QR",
+    instructions: "Aponte para o código QR da mesa ou do restaurante",
+    cancel: "Fechar leitor",
+    torchOn: "Ligar lanterna",
+    torchOff: "Desligar lanterna",
+    notLuku: "Este código QR não é da LUKU.",
+    permissionDenied: "Para ler códigos QR, permita o acesso à câmara.",
+    openSettings: "Definições",
+    error: "Não foi possível ler o código. Tente de novo.",
+  },
   status: {
     eyebrow: "Transparência",
     title: "Estado dos serviços",

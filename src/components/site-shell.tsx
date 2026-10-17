@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { LeftSidebar, tabs } from "./left-sidebar";
+import { QrScanButton } from "./qr-scan-button";
 import { Logo } from "./logo";
 import { NavBadge } from "./nav-badge";
 import { NotificationsBell } from "./notifications-bell";
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLocation } from "@/lib/location";
+import { isNativeApp } from "@/lib/native-permissions";
 import { useAuth } from "@/lib/auth";
 import { useUnreadByKind } from "@/lib/notifications";
 import { usePreferences } from "@/lib/preferences";
@@ -186,6 +188,11 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
   const { isLoggedIn, user, logout } = useAuth();
   const unread = useUnreadByKind("client");
   const navigate = useNavigate();
+  // Na app nativa o atalho de entregas dá lugar ao leitor de QR (os pedidos
+  // continuam no separador "Pedidos"). Decidido depois de montar: o HTML
+  // vem do servidor, que não sabe se é a app — evita o erro de hidratação.
+  const [nativeApp, setNativeApp] = useState(false);
+  useEffect(() => setNativeApp(isNativeApp()), []);
   const { t } = useTranslation();
   const isGuestHome = variant === "guestHome";
   // Logged-in users get the brand-colored "all links" panel button, but only
@@ -296,7 +303,7 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
           <div className="flex shrink-0 items-center gap-2 justify-self-end">
             {!isGuestHome && <LocationSelect />}
             {!isGuestHome && <NotificationsBell scope="client" />}
-            {!isGuestHome && <CartButton />}
+            {!isGuestHome && (nativeApp ? <QrScanButton /> : <CartButton />)}
 
             {isFixedDashboardHeader && (
               <Link
