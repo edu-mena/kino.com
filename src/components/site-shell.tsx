@@ -17,6 +17,7 @@ import {
   User,
   X,
 } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 import { useEffect, useState, type ReactNode } from "react";
 import { LeftSidebar, tabs } from "./left-sidebar";
 import { QrScanButton } from "./qr-scan-button";
@@ -192,7 +193,13 @@ export function SiteHeader({ variant = "default" }: { variant?: "default" | "gue
   // continuam no separador "Pedidos"). Decidido depois de montar: o HTML
   // vem do servidor, que não sabe se é a app — evita o erro de hidratação.
   const [nativeApp, setNativeApp] = useState(false);
-  useEffect(() => setNativeApp(isNativeApp()), []);
+  // Só com o plugin da câmara presente: versões da app compiladas antes do
+  // leitor de QR (ex.: iOS build ≤6) carregam este mesmo site e mostravam um
+  // botão que só dava erro.
+  useEffect(
+    () => setNativeApp(isNativeApp() && Capacitor.isPluginAvailable("CapacitorBarcodeScanner")),
+    [],
+  );
   const { t } = useTranslation();
   const isGuestHome = variant === "guestHome";
   // Logged-in users get the brand-colored "all links" panel button, but only
