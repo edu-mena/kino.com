@@ -1847,6 +1847,7 @@ export const fr: Dictionary = {
     missingImageError: "Choisissez d'abord une image.",
     saveFailedError:
       "Impossible d'enregistrer — le stockage du navigateur est plein. Essayez une image plus légère ou libérez de l'espace.",
+    saveFailedErrorGeneric: "Impossible de publier la story. Réessayez.",
     createdToast: "Story publiée.",
     deletedToast: "Story supprimée.",
     deleteFailedError: "Impossible de supprimer le story. Réessayez.",

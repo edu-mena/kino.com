@@ -75,6 +75,11 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   const payload = isJson ? await response.json().catch(() => null) : null;
 
   if (!response.ok) {
+    // 413 vem do nginx (HTML, não JSON) — sem isto o utilizador só via um
+    // erro genérico ao enviar um vídeo/foto acima do limite.
+    if (response.status === 413) {
+      throw new ApiError(413, "O ficheiro é demasiado grande (máximo 50 MB). Tente um mais leve.");
+    }
     throw new ApiError(
       response.status,
       (payload?.message as string | undefined) ?? "Ocorreu um erro. Tenta novamente.",

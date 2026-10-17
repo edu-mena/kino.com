@@ -8,7 +8,7 @@ import {
 } from "@/data/stories-store";
 import { INITIAL_STORIES } from "@/data/mockData";
 import type { RestaurantStory } from "@/data/types";
-import { hasRealBackend } from "@/lib/api-client";
+import { ApiError, hasRealBackend } from "@/lib/api-client";
 import { getAdminToken, useRestaurantAdmin } from "@/lib/restaurant-admin";
 
 type StoryOpts = {
@@ -28,7 +28,7 @@ type StoriesAdminValue = {
     restaurantId: string,
     src: string,
     opts?: StoryOpts,
-  ) => Promise<{ story: RestaurantStory | null; ok: boolean }>;
+  ) => Promise<{ story: RestaurantStory | null; ok: boolean; error?: string }>;
   deleteStory: (id: string) => Promise<boolean>;
 };
 
@@ -90,7 +90,13 @@ export function StoriesAdminProvider({ children }: { children: ReactNode }) {
             const story = await createApiStory(restaurantId, { image: src, ...opts }, token);
             refetchApi();
             return { story, ok: true };
-          } catch {
+          } catch (error) {
+            // O motivo real (ficheiro grande, formato, validação) — antes
+            // perdia-se e o painel dizia sempre "armazenamento cheio".
+            if (error instanceof ApiError) {
+              const first = error.errors ? Object.values(error.errors)[0]?.[0] : undefined;
+              return { story: null, ok: false, error: first ?? error.message };
+            }
             return { story: null, ok: false };
           }
         },

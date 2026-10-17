@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { STORY_VIDEO_MAX_SEC } from "@/data/stories-store";
 import type { RestaurantStory } from "@/data/types";
 import { useTranslation } from "@/i18n";
+import { hasRealBackend } from "@/lib/api-client";
 import { useFirstUseHint } from "@/lib/first-use-hints";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
 import { useStoriesAdmin } from "@/lib/stories-admin";
@@ -169,13 +170,20 @@ function AdminStories() {
       toast.error(t("adminStories.linkInvalidError"));
       return;
     }
-    const { ok } = await createStory(restaurant.id, image.trim(), {
+    const { ok, error } = await createStory(restaurant.id, image.trim(), {
       ...media,
       text: text.trim(),
       link: trimmedLink,
     });
     if (!ok) {
-      toast.error(t("adminStories.saveFailedError"));
+      // Com backend real, o motivo vem da API; a mensagem de "armazenamento
+      // cheio" só faz sentido no modo demo (localStorage).
+      toast.error(
+        error ||
+          t(
+            hasRealBackend ? "adminStories.saveFailedErrorGeneric" : "adminStories.saveFailedError",
+          ),
+      );
       return;
     }
     toast.success(t("adminStories.createdToast"));

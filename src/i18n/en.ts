@@ -1823,6 +1823,7 @@ export const en: Dictionary = {
     missingImageError: "Choose an image first.",
     saveFailedError:
       "Couldn't save — the browser's storage is full. Try a smaller image or free up space.",
+    saveFailedErrorGeneric: "Could not publish the story. Please try again.",
     createdToast: "Story published.",
     deletedToast: "Story removed.",
     deleteFailedError: "Couldn't remove the story. Try again.",

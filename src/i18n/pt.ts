@@ -1832,6 +1832,7 @@ export const pt = {
     missingImageError: "Escolha uma imagem primeiro.",
     saveFailedError:
       "Não foi possível guardar — o armazenamento do navegador está cheio. Tente uma imagem mais leve ou liberte espaço.",
+    saveFailedErrorGeneric: "Não foi possível publicar o story. Tente novamente.",
     createdToast: "Story publicado.",
     deletedToast: "Story removido.",
     deleteFailedError: "Não foi possível remover o story. Tente novamente.",
