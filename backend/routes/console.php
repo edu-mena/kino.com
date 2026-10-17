@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Services\AccountDeletionService;
+use App\Services\Engagement\EngagementNotifier;
 use App\Services\MediaUploadService;
 use App\Services\PushNotificationService;
 use Illuminate\Foundation\Inspiring;
@@ -245,3 +246,20 @@ Artisan::command('privacy:anonymize-guests {--dry-run : Só conta o que seria an
 })->purpose('Anonimizar dados de convidados em pedidos/reservas antigos (retenção)');
 
 Schedule::command('privacy:anonymize-guests')->dailyAt('03:45')->onOneServer();
+
+// Lembretes e reconquista "à Duolingo" (ver EngagementNotifier — limites de
+// frequência e horas de silêncio estão lá dentro, não aqui).
+Schedule::call(fn () => app(EngagementNotifier::class)->sendMealSuggestions('lunch'))
+    ->name('engagement:lunch')->dailyAt('11:30')->timezone('Africa/Luanda')->onOneServer();
+Schedule::call(fn () => app(EngagementNotifier::class)->sendMealSuggestions('dinner'))
+    ->name('engagement:dinner')->dailyAt('18:30')->timezone('Africa/Luanda')->onOneServer();
+Schedule::call(fn () => app(EngagementNotifier::class)->sendReservationReminders())
+    ->name('engagement:reservation-reminders')->everyFifteenMinutes()->onOneServer();
+Schedule::call(fn () => app(EngagementNotifier::class)->sendReviewRequests())
+    ->name('engagement:review-requests')->everyThirtyMinutes()->onOneServer();
+Schedule::call(fn () => app(EngagementNotifier::class)->sendWinBack())
+    ->name('engagement:win-back')->dailyAt('17:00')->timezone('Africa/Luanda')->onOneServer();
+
+// Página de estado: o agregado diário não precisa de mais de 120 dias.
+Schedule::call(fn () => DB::table('status_daily')->where('date', '<', now()->subDays(120)->toDateString())->delete())
+    ->name('status:prune-daily')->dailyAt('03:50')->onOneServer();

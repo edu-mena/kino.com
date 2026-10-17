@@ -81,12 +81,13 @@ return [
             'driver' => 'background',
         ],
 
+        // Produção (QUEUE_CONNECTION=failover): Redis (Horizon) e, se ele
+        // cair, a tabela `jobs` — processada pelo `queue:work database` no
+        // ciclo do processo `scheduler` (ver fly.toml), para os trabalhos
+        // nunca ficarem parados à espera do Redis.
         'failover' => [
             'driver' => 'failover',
-            'connections' => [
-                'database',
-                'deferred',
-            ],
+            'connections' => array_values(array_filter(explode(',', (string) env('QUEUE_FAILOVER_CONNECTIONS', 'redis,database')))),
         ],
 
     ],

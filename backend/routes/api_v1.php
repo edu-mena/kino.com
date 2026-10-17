@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\V1\SavedAddressController;
 use App\Http\Controllers\Api\V1\SiteContentController;
 use App\Http\Controllers\Api\V1\StaffTwoFactorController;
+use App\Http\Controllers\Api\V1\StatusController;
 use App\Http\Controllers\Api\V1\StoryController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupportTicketController;
@@ -222,6 +223,21 @@ Route::get('restaurants/{restaurant}/offers', [OfferController::class, 'indexFor
 // restaurantes/pratos) ficam em SystemStatsController::siteStats, calculadas
 // a partir dos dados reais, nunca escritas à mão.
 Route::get('site/content', [SiteContentController::class, 'show']);
+
+// Página de estado (/estado) e faixa de incidente da app — ver
+// StatusController. A inscrição nos avisos tem o mesmo limite anti-spam
+// dos outros formulários públicos.
+Route::get('status', [StatusController::class, 'show']);
+Route::post('status/subscribe', [StatusController::class, 'subscribe'])->middleware('throttle:public-forms');
+// Token de 48 caracteres aleatórios — o limite geral da API chega.
+Route::post('status/confirm', [StatusController::class, 'confirm']);
+Route::post('status/unsubscribe', [StatusController::class, 'unsubscribe']);
+Route::middleware(['auth:sanctum', 'throttle:writes'])->prefix('system/status')->group(function () {
+    Route::get('/', [StatusController::class, 'systemIndex']);
+    Route::post('check', [StatusController::class, 'systemCheck']);
+    Route::patch('incidents/{incident}', [StatusController::class, 'systemUpdateIncident']);
+    Route::post('incidents/{incident}/resolve', [StatusController::class, 'systemResolveIncident']);
+});
 Route::get('system/site-stats', [SystemStatsController::class, 'siteStats']);
 
 Route::middleware(['auth:sanctum', 'throttle:uploads'])->group(function () {

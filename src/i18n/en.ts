@@ -2,6 +2,128 @@ import type { Dictionary } from "./index";
 
 /** English — mirrors the exact shape of `pt.ts`. */
 export const en: Dictionary = {
+  status: {
+    eyebrow: "Transparency",
+    title: "Service status",
+    description:
+      "See in real time whether LUKU is working as it should. When something fails we'll tell you here — and when it's back to normal too.",
+    loading: "Checking…",
+    unreachable:
+      "We can't get the status right now. The technical team has already been alerted and is on it.",
+    refresh: "Refresh",
+    updatedAt: "Updated at {time}",
+    overall: {
+      operational: "All services are working",
+      incident: "Some services are having problems",
+      recovering: "Services recovered — monitoring",
+    },
+    incident: {
+      investigating: "Fixing",
+      monitoring: "Monitoring",
+      since: "since {time}",
+      affected: "Affected services:",
+    },
+    componentsTitle: "Services",
+    last90Days: "Last 90 days",
+    daysAgo: "{days} days ago",
+    today: "Today",
+    uptime: "{value}% available",
+    noData: "No data",
+    components: {
+      app: "App and website",
+      menus: "Restaurants and menus",
+      orders: "Orders and reservations",
+      accounts: "Login and accounts",
+      notifications: "Notifications",
+    },
+    componentHints: {
+      app: "Opening LUKU on your phone and browser",
+      menus: "Searching restaurants, viewing menus and prices",
+      orders: "Placing and tracking orders and reservations",
+      accounts: "Signing in, creating an account and preferences",
+      notifications: "Order, reservation and news alerts",
+    },
+    componentStatus: {
+      operational: "Working",
+      outage: "Having problems",
+      recovering: "Monitoring",
+    },
+    legend: {
+      ok: "No failures",
+      partial: "Short failures",
+      outage: "Long failures",
+      noData: "No data",
+    },
+    historyTitle: "Recent incidents",
+    noIncidents: "No incidents in the last 30 days. 🎉",
+    commitment:
+      "Our team is always working to do better. Every failure is analysed so it doesn't happen again — thank you for your trust and preference.",
+    timezoneNote: "Times in Luanda time (WAT).",
+    periodSameDay: "from {from} to {to}",
+    periodMultiDay: "from {from} to {to}",
+    banner: {
+      incidentTitle: "Oops, something went wrong.",
+      incidentBody:
+        "You may have trouble using some LUKU features. The technical team is already working on a fix. Thank you for your patience and preference.",
+      resolvedTitle: "After the angels come the engineers! 😄",
+      resolvedBody:
+        "Our technical team fixed the problem that happened {period}, caused by {cause}. Thank you for your patience and preference!",
+      more: "View status",
+      dismiss: "Close notice",
+    },
+    subscribe: {
+      title: "Get alerts by email",
+      description:
+        "We'll tell you when a service has problems and when it's back to normal. That's all — no advertising.",
+      placeholder: "Your email",
+      submit: "Notify me",
+      sending: "Sending…",
+      checkEmail: "Almost there! We sent you an email to confirm.",
+      error: "Could not subscribe. Please try again.",
+      confirmed: "Subscription confirmed — you'll get alerts by email.",
+      cancelled: "Done, you won't receive these alerts anymore.",
+      invalidLink: "This link is no longer valid.",
+    },
+  },
+  sistemaEstado: {
+    eyebrow: "Monitoring",
+    title: "Service status",
+    description:
+      "Real-time checks and incidents with the technical error. Users only see the public version at /estado.",
+    openIncidents: "Open incidents",
+    openHint: "Opened and closed automatically by the monitor",
+    subscribers: "Alert subscribers",
+    subscribersHint: "Confirmed emails on /estado",
+    checksTitle: "Checks now",
+    checkNow: "Check now",
+    checking: "Checking…",
+    publicPage: "Public page",
+    checks: {
+      database: "Database",
+      cache: "Cache (Redis, with database fallback)",
+      queue: "Job queue (Horizon)",
+      web: "Website and app (luku.ao)",
+      api: "Public API",
+    },
+    incidentsTitle: "Incidents",
+    noIncidents: "No incidents recorded.",
+    incidentStatus: {
+      investigating: "Ongoing",
+      monitoring: "Monitoring",
+      resolved: "Resolved",
+    },
+    usersNotified: "users notified",
+    usersNotNotified: "users not notified (short failure)",
+    causeLabel: 'Cause shown to users ("…caused by ___")',
+    causeHint: "No technical details. Empty = default text.",
+    saveCause: "Save cause",
+    resolve: "Mark as resolved",
+    causeSaved: "Cause saved.",
+    resolvedToast: "Incident resolved.",
+    loadError: "Could not load incidents.",
+    checkError: "Could not run the checks.",
+    saveError: "Could not save.",
+  },
   offlineBanner: {
     offline: "No internet connection — some actions won't work until it's back.",
     restored: "Connection restored.",
@@ -331,6 +453,12 @@ export const en: Dictionary = {
     savedCompanies: "Saved companies",
     addCompany: "Add company",
     logout: "Log out",
+    engagement: {
+      label: "Reminders and suggestions",
+      description:
+        "Suggestions at lunch and dinner time, asking for your review, and a nudge when you haven't visited in a while.",
+      error: "Could not save. Please try again.",
+    },
     profileVisits: {
       label: "Show my name to restaurants I visit",
       description:
@@ -1001,6 +1129,7 @@ export const en: Dictionary = {
       overview: "Overview",
       restaurants: "Restaurants",
       operations: "Operations",
+      status: "Status",
       subscriptions: "Subscriptions",
       partners: "Applications",
       promotions: "Luku promos",
@@ -2118,6 +2247,7 @@ export const en: Dictionary = {
     copyright: "Luku.com · Demo with fictional data",
     terms: "Terms",
     privacy: "Privacy",
+    status: "Service status",
   },
   guestNav: {
     home: "Home",

@@ -2,6 +2,128 @@ import type { Dictionary } from "./index";
 
 /** Français — suit exactement la même structure que `pt.ts`. */
 export const fr: Dictionary = {
+  status: {
+    eyebrow: "Transparence",
+    title: "État des services",
+    description:
+      "Suivez en temps réel si LUKU fonctionne comme il faut. Quand quelque chose tombe en panne, nous le disons ici — et quand tout revient à la normale aussi.",
+    loading: "Vérification…",
+    unreachable:
+      "Impossible d'obtenir l'état pour le moment. L'équipe technique a déjà été alertée et s'en occupe.",
+    refresh: "Actualiser",
+    updatedAt: "Mis à jour à {time}",
+    overall: {
+      operational: "Tous les services fonctionnent",
+      incident: "Certains services rencontrent des problèmes",
+      recovering: "Services rétablis — sous surveillance",
+    },
+    incident: {
+      investigating: "En cours de résolution",
+      monitoring: "Sous surveillance",
+      since: "depuis {time}",
+      affected: "Services concernés :",
+    },
+    componentsTitle: "Services",
+    last90Days: "90 derniers jours",
+    daysAgo: "Il y a {days} jours",
+    today: "Aujourd'hui",
+    uptime: "{value} % disponible",
+    noData: "Pas de données",
+    components: {
+      app: "Application et site",
+      menus: "Restaurants et menus",
+      orders: "Commandes et réservations",
+      accounts: "Connexion et comptes",
+      notifications: "Notifications",
+    },
+    componentHints: {
+      app: "Ouvrir LUKU sur le téléphone et le navigateur",
+      menus: "Chercher des restaurants, voir menus et prix",
+      orders: "Passer et suivre commandes et réservations",
+      accounts: "Se connecter, créer un compte et préférences",
+      notifications: "Alertes de commandes, réservations et nouveautés",
+    },
+    componentStatus: {
+      operational: "Opérationnel",
+      outage: "En difficulté",
+      recovering: "Sous surveillance",
+    },
+    legend: {
+      ok: "Aucune panne",
+      partial: "Pannes courtes",
+      outage: "Pannes longues",
+      noData: "Pas de données",
+    },
+    historyTitle: "Incidents récents",
+    noIncidents: "Aucun incident ces 30 derniers jours. 🎉",
+    commitment:
+      "Notre équipe travaille sans cesse pour faire mieux. Chaque panne est analysée pour qu'elle ne se reproduise pas — merci pour votre confiance et votre préférence.",
+    timezoneNote: "Heures de Luanda (WAT).",
+    periodSameDay: "de {from} à {to}",
+    periodMultiDay: "du {from} au {to}",
+    banner: {
+      incidentTitle: "Oups, une erreur s'est produite.",
+      incidentBody:
+        "Vous pourriez avoir du mal à utiliser certaines fonctionnalités de LUKU. L'équipe technique travaille déjà sur une solution. Merci pour votre patience et votre préférence.",
+      resolvedTitle: "Après les anges, les ingénieurs ! 😄",
+      resolvedBody:
+        "Notre équipe technique a corrigé le problème survenu {period}, dû à {cause}. Merci pour votre patience et votre préférence !",
+      more: "Voir l'état",
+      dismiss: "Fermer l'avis",
+    },
+    subscribe: {
+      title: "Recevoir les alertes par email",
+      description:
+        "Nous vous prévenons quand un service a des problèmes et quand il revient à la normale. C'est tout — pas de publicité.",
+      placeholder: "Votre email",
+      submit: "Me prévenir",
+      sending: "Envoi…",
+      checkEmail: "Presque ! Nous vous avons envoyé un email de confirmation.",
+      error: "Inscription impossible. Réessayez.",
+      confirmed: "Inscription confirmée — vous recevrez les alertes par email.",
+      cancelled: "C'est fait, vous ne recevrez plus ces alertes.",
+      invalidLink: "Ce lien n'est plus valide.",
+    },
+  },
+  sistemaEstado: {
+    eyebrow: "Surveillance",
+    title: "État des services",
+    description:
+      "Vérifications en temps réel et incidents avec l'erreur technique. Les utilisateurs ne voient que la version publique sur /estado.",
+    openIncidents: "Incidents ouverts",
+    openHint: "Ouverts et fermés automatiquement par le moniteur",
+    subscribers: "Abonnés aux alertes",
+    subscribersHint: "Emails confirmés sur /estado",
+    checksTitle: "Vérifications maintenant",
+    checkNow: "Vérifier maintenant",
+    checking: "Vérification…",
+    publicPage: "Page publique",
+    checks: {
+      database: "Base de données",
+      cache: "Cache (Redis, avec repli sur la base de données)",
+      queue: "File de tâches (Horizon)",
+      web: "Site et application (luku.ao)",
+      api: "API publique",
+    },
+    incidentsTitle: "Incidents",
+    noIncidents: "Aucun incident enregistré.",
+    incidentStatus: {
+      investigating: "En cours",
+      monitoring: "Sous surveillance",
+      resolved: "Résolu",
+    },
+    usersNotified: "utilisateurs prévenus",
+    usersNotNotified: "utilisateurs non prévenus (panne courte)",
+    causeLabel: "Cause affichée aux utilisateurs (« …dû à ___ »)",
+    causeHint: "Pas de détails techniques. Vide = texte par défaut.",
+    saveCause: "Enregistrer la cause",
+    resolve: "Marquer comme résolu",
+    causeSaved: "Cause enregistrée.",
+    resolvedToast: "Incident résolu.",
+    loadError: "Impossible de charger les incidents.",
+    checkError: "Impossible de lancer les vérifications.",
+    saveError: "Impossible d'enregistrer.",
+  },
   offlineBanner: {
     offline:
       "Pas de connexion internet — certaines actions ne fonctionneront pas avant son retour.",
@@ -335,6 +457,12 @@ export const fr: Dictionary = {
     savedCompanies: "Entreprises enregistrées",
     addCompany: "Ajouter une entreprise",
     logout: "Se déconnecter",
+    engagement: {
+      label: "Rappels et suggestions",
+      description:
+        "Suggestions à l'heure du déjeuner et du dîner, demande d'avis et un petit mot quand vous ne nous avez pas rendu visite depuis longtemps.",
+      error: "Impossible d'enregistrer. Réessayez.",
+    },
     profileVisits: {
       label: "Afficher mon nom aux restaurants que je visite",
       description:
@@ -1016,6 +1144,7 @@ export const fr: Dictionary = {
       overview: "Vue d'ensemble",
       restaurants: "Restaurants",
       operations: "Opérations",
+      status: "État",
       subscriptions: "Abonnements",
       partners: "Candidatures",
       promotions: "Promos Luku",
@@ -2156,6 +2285,7 @@ export const fr: Dictionary = {
     copyright: "Luku.com · Démonstration avec des données fictives",
     terms: "Conditions",
     privacy: "Confidentialité",
+    status: "État des services",
   },
   guestNav: {
     home: "Accueil",

@@ -14,6 +14,7 @@ class UserPreference extends Model
     protected $fillable = [
         'user_id', 'dietary_restrictions', 'language', 'notifications_enabled',
         'tutorial_seen_at', 'dietary_onboarding_seen_at', 'share_name_on_profile_visits',
+        'engagement_notifications',
     ];
 
     protected function casts(): array
@@ -22,6 +23,7 @@ class UserPreference extends Model
             'dietary_restrictions' => 'array',
             'notifications_enabled' => 'boolean',
             'share_name_on_profile_visits' => 'boolean',
+            'engagement_notifications' => 'boolean',
             'tutorial_seen_at' => 'datetime',
             'dietary_onboarding_seen_at' => 'datetime',
         ];

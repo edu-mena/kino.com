@@ -35,6 +35,7 @@ import { TablesProvider } from "../lib/tables";
 import { TutorialProvider } from "../lib/tutorial";
 import { LiveCatalogLoader } from "../components/live-catalog-loader";
 import { OfflineBanner } from "../components/offline-banner";
+import { IncidentBanner } from "../components/incident-banner";
 import { NavigationProgress } from "../components/navigation-progress";
 import { Toaster } from "../components/ui/sonner";
 import { RouteErrorBoundary } from "../components/route-error";
@@ -197,6 +198,7 @@ function RootComponent() {
                                         <PendingShareDialog />
                                         <LiveCatalogLoader />
                                         <OfflineBanner />
+                                        <IncidentBanner />
                                         <NavigationProgress />
                                         <Toaster />
                                       </TutorialProvider>

@@ -97,12 +97,13 @@ return [
             'driver' => 'octane',
         ],
 
+        // Produção (CACHE_STORE=failover): Redis e, se ele cair, a base de
+        // dados — sem isto o limitador de pedidos da API (que usa a cache)
+        // derrubava TODOS os endpoints com 500 quando o Redis caía (incidente
+        // de 16/10/2026).
         'failover' => [
             'driver' => 'failover',
-            'stores' => [
-                'database',
-                'array',
-            ],
+            'stores' => array_values(array_filter(explode(',', (string) env('CACHE_FAILOVER_STORES', 'redis,database')))),
         ],
 
     ],

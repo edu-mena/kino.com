@@ -15,7 +15,14 @@ primary_region = 'jnb'
 [processes]
   app = 'supervisord -c /etc/supervisor/conf.d/supervisord.conf'
   reverb = 'php artisan reverb:start --host=0.0.0.0 --port=8081'
-  scheduler = 'sh -c "while true; do php artisan schedule:run; sleep 60; done"'
+  # Dois ciclos independentes no mesmo processo:
+  # - monitor de estado (~1x/minuto) + trabalhos que caíram na fila da base
+  #   de dados com o Redis em baixo (QUEUE_CONNECTION=failover). Fora do
+  #   schedule:run de propósito: esse depende da cache e falhava inteiro
+  #   quando o Redis caía (incidente de 16/10/2026);
+  # - a agenda normal, exatamente 1x/minuto (como antes — correr
+  #   schedule:run mais vezes repetiria as tarefas).
+  scheduler = 'sh -c "(while true; do php artisan status:check --quiet; php artisan queue:work database --stop-when-empty --max-time=30 --quiet; sleep 45; done) & while true; do php artisan schedule:run; sleep 60; done"'
   worker = 'php artisan horizon'
 
 [http_service]
@@ -25,6 +32,17 @@ primary_region = 'jnb'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
+
+  # O Fly tira de serviço (e reinicia) uma máquina da API que deixe de
+  # responder. /up só confirma que a app arranca — de propósito não depende
+  # da base de dados/Redis: se esses falharem, reiniciar a API não resolve
+  # e só a tirava do ar (ver status:check para essas falhas).
+  [[http_service.checks]]
+    grace_period = '30s'
+    interval = '15s'
+    method = 'GET'
+    path = '/up'
+    timeout = '5s'
 
 # Expõe o processo `reverb` publicamente, numa porta própria (6001) — o
 # `[http_service]` acima só cobre o processo `app`, então o browser nunca

@@ -20,6 +20,7 @@ import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
 import { Route as EliminarContaRouteImport } from './routes/eliminar-conta'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as EntregaRouteImport } from './routes/entrega'
+import { Route as EstadoRouteImport } from './routes/estado'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as LukuRouteImport } from './routes/luku'
 import { Route as NotificacoesRouteImport } from './routes/notificacoes'
@@ -60,6 +61,7 @@ import { Route as RestaurantesIdRouteImport } from './routes/restaurantes_.$id'
 import { Route as SistemaIndexRouteImport } from './routes/sistema.index'
 import { Route as SistemaConteudoRouteImport } from './routes/sistema.conteudo'
 import { Route as SistemaDenunciasRouteImport } from './routes/sistema.denuncias'
+import { Route as SistemaEstadoRouteImport } from './routes/sistema.estado'
 import { Route as SistemaImportadosRouteImport } from './routes/sistema.importados'
 import { Route as SistemaOperacaoRouteImport } from './routes/sistema.operacao'
 import { Route as SistemaPacotesRouteImport } from './routes/sistema.pacotes'
@@ -123,6 +125,11 @@ const EntrarRoute = EntrarRouteImport.update({
 const EntregaRoute = EntregaRouteImport.update({
   id: '/entrega',
   path: '/entrega',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EstadoRoute = EstadoRouteImport.update({
+  id: '/estado',
+  path: '/estado',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FavoritosRoute = FavoritosRouteImport.update({
@@ -325,6 +332,11 @@ const SistemaDenunciasRoute = SistemaDenunciasRouteImport.update({
   path: '/denuncias',
   getParentRoute: () => SistemaRoute,
 } as any)
+const SistemaEstadoRoute = SistemaEstadoRouteImport.update({
+  id: '/estado',
+  path: '/estado',
+  getParentRoute: () => SistemaRoute,
+} as any)
 const SistemaImportadosRoute = SistemaImportadosRouteImport.update({
   id: '/importados',
   path: '/importados',
@@ -383,6 +395,7 @@ export interface FileRoutesByFullPath {
   '/eliminar-conta': typeof EliminarContaRoute
   '/entrar': typeof EntrarRoute
   '/entrega': typeof EntregaRoute
+  '/estado': typeof EstadoRoute
   '/favoritos': typeof FavoritosRoute
   '/luku': typeof LukuRoute
   '/notificacoes': typeof NotificacoesRoute
@@ -421,6 +434,7 @@ export interface FileRoutesByFullPath {
   '/restaurantes/$id': typeof RestaurantesIdRoute
   '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/denuncias': typeof SistemaDenunciasRoute
+  '/sistema/estado': typeof SistemaEstadoRoute
   '/sistema/importados': typeof SistemaImportadosRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
@@ -444,6 +458,7 @@ export interface FileRoutesByTo {
   '/eliminar-conta': typeof EliminarContaRoute
   '/entrar': typeof EntrarRoute
   '/entrega': typeof EntregaRoute
+  '/estado': typeof EstadoRoute
   '/favoritos': typeof FavoritosRoute
   '/luku': typeof LukuRoute
   '/notificacoes': typeof NotificacoesRoute
@@ -481,6 +496,7 @@ export interface FileRoutesByTo {
   '/restaurantes/$id': typeof RestaurantesIdRoute
   '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/denuncias': typeof SistemaDenunciasRoute
+  '/sistema/estado': typeof SistemaEstadoRoute
   '/sistema/importados': typeof SistemaImportadosRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
@@ -506,6 +522,7 @@ export interface FileRoutesById {
   '/eliminar-conta': typeof EliminarContaRoute
   '/entrar': typeof EntrarRoute
   '/entrega': typeof EntregaRoute
+  '/estado': typeof EstadoRoute
   '/favoritos': typeof FavoritosRoute
   '/luku': typeof LukuRoute
   '/notificacoes': typeof NotificacoesRoute
@@ -544,6 +561,7 @@ export interface FileRoutesById {
   '/restaurantes_/$id': typeof RestaurantesIdRoute
   '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/denuncias': typeof SistemaDenunciasRoute
+  '/sistema/estado': typeof SistemaEstadoRoute
   '/sistema/importados': typeof SistemaImportadosRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
@@ -570,6 +588,7 @@ export interface FileRouteTypes {
     | '/eliminar-conta'
     | '/entrar'
     | '/entrega'
+    | '/estado'
     | '/favoritos'
     | '/luku'
     | '/notificacoes'
@@ -608,6 +627,7 @@ export interface FileRouteTypes {
     | '/restaurantes/$id'
     | '/sistema/conteudo'
     | '/sistema/denuncias'
+    | '/sistema/estado'
     | '/sistema/importados'
     | '/sistema/operacao'
     | '/sistema/pacotes'
@@ -631,6 +651,7 @@ export interface FileRouteTypes {
     | '/eliminar-conta'
     | '/entrar'
     | '/entrega'
+    | '/estado'
     | '/favoritos'
     | '/luku'
     | '/notificacoes'
@@ -668,6 +689,7 @@ export interface FileRouteTypes {
     | '/restaurantes/$id'
     | '/sistema/conteudo'
     | '/sistema/denuncias'
+    | '/sistema/estado'
     | '/sistema/importados'
     | '/sistema/operacao'
     | '/sistema/pacotes'
@@ -692,6 +714,7 @@ export interface FileRouteTypes {
     | '/eliminar-conta'
     | '/entrar'
     | '/entrega'
+    | '/estado'
     | '/favoritos'
     | '/luku'
     | '/notificacoes'
@@ -730,6 +753,7 @@ export interface FileRouteTypes {
     | '/restaurantes_/$id'
     | '/sistema/conteudo'
     | '/sistema/denuncias'
+    | '/sistema/estado'
     | '/sistema/importados'
     | '/sistema/operacao'
     | '/sistema/pacotes'
@@ -755,6 +779,7 @@ export interface RootRouteChildren {
   EliminarContaRoute: typeof EliminarContaRoute
   EntrarRoute: typeof EntrarRoute
   EntregaRoute: typeof EntregaRoute
+  EstadoRoute: typeof EstadoRoute
   FavoritosRoute: typeof FavoritosRoute
   LukuRoute: typeof LukuRoute
   NotificacoesRoute: typeof NotificacoesRoute
@@ -858,6 +883,13 @@ declare module '@tanstack/react-router' {
       path: '/entrega'
       fullPath: '/entrega'
       preLoaderRoute: typeof EntregaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/estado': {
+      id: '/estado'
+      path: '/estado'
+      fullPath: '/estado'
+      preLoaderRoute: typeof EstadoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/favoritos': {
@@ -1140,6 +1172,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SistemaDenunciasRouteImport
       parentRoute: typeof SistemaRoute
     }
+    '/sistema/estado': {
+      id: '/sistema/estado'
+      path: '/estado'
+      fullPath: '/sistema/estado'
+      preLoaderRoute: typeof SistemaEstadoRouteImport
+      parentRoute: typeof SistemaRoute
+    }
     '/sistema/importados': {
       id: '/sistema/importados'
       path: '/importados'
@@ -1245,6 +1284,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface SistemaRouteChildren {
   SistemaConteudoRoute: typeof SistemaConteudoRoute
   SistemaDenunciasRoute: typeof SistemaDenunciasRoute
+  SistemaEstadoRoute: typeof SistemaEstadoRoute
   SistemaImportadosRoute: typeof SistemaImportadosRoute
   SistemaOperacaoRoute: typeof SistemaOperacaoRoute
   SistemaPacotesRoute: typeof SistemaPacotesRoute
@@ -1259,6 +1299,7 @@ interface SistemaRouteChildren {
 const SistemaRouteChildren: SistemaRouteChildren = {
   SistemaConteudoRoute: SistemaConteudoRoute,
   SistemaDenunciasRoute: SistemaDenunciasRoute,
+  SistemaEstadoRoute: SistemaEstadoRoute,
   SistemaImportadosRoute: SistemaImportadosRoute,
   SistemaOperacaoRoute: SistemaOperacaoRoute,
   SistemaPacotesRoute: SistemaPacotesRoute,
@@ -1285,6 +1326,7 @@ const rootRouteChildren: RootRouteChildren = {
   EliminarContaRoute: EliminarContaRoute,
   EntrarRoute: EntrarRoute,
   EntregaRoute: EntregaRoute,
+  EstadoRoute: EstadoRoute,
   FavoritosRoute: FavoritosRoute,
   LukuRoute: LukuRoute,
   NotificacoesRoute: NotificacoesRoute,

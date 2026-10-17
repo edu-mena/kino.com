@@ -19,6 +19,7 @@ import { AccountDataActions } from "@/components/account-data-actions";
 import { BlockedUsers } from "@/components/blocked-users";
 import { CompanyFormDialog } from "@/components/company-form-dialog";
 import { OwnPremiumRestaurants } from "@/components/loyalty-badge";
+import { EngagementToggle } from "@/components/engagement-toggle";
 import { ProfileVisitPrivacy } from "@/components/profile-visit-privacy";
 import { PageShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
@@ -289,6 +290,7 @@ function Perfil() {
                       />
                     </div>
                   ))}
+                  <EngagementToggle />
                 </div>
               </DialogContent>
             </Dialog>

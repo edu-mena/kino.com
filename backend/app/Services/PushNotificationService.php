@@ -138,12 +138,32 @@ class PushNotificationService
     private function doSendForNotification(User $user, Notification $notification): void
     {
         [$title, $body] = $this->textFor($notification);
+        $data = [
+            'kind' => $notification->kind,
+            'refId' => (string) $notification->ref_id,
+            'url' => $this->urlFor($notification),
+        ];
 
-        $this->sendWeb($user, $notification, $title, $body);
-        $this->sendNative($user, $notification, $title, $body);
+        $this->sendWeb($user, $title, $body, $data);
+        $this->sendNative($user, $title, $body, $data);
     }
 
-    private function sendWeb(User $user, Notification $notification, string $title, string $body): void
+    /** Push sem `Notification` persistida por trás — avisos de incidente e
+     * lembretes (ver StatusMonitor / EngagementNotifier). Mesma garantia de
+     * `sendForNotification`: nunca lança. */
+    public function sendMessage(User $user, string $title, string $body, string $url, string $kind = 'system'): void
+    {
+        try {
+            $data = ['kind' => $kind, 'refId' => '', 'url' => $url];
+            $this->sendWeb($user, $title, $body, $data);
+            $this->sendNative($user, $title, $body, $data);
+        } catch (Throwable $e) {
+            Log::warning('push: envio de mensagem falhou', ['user_id' => $user->id, 'kind' => $kind, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /** @param array{kind: string, refId: string, url: string} $data */
+    private function sendWeb(User $user, string $title, string $body, array $data): void
     {
         $client = $this->client();
         if (! $client) {
@@ -158,11 +178,7 @@ class PushNotificationService
         $payload = json_encode([
             'title' => $title,
             'body' => $body,
-            'data' => [
-                'kind' => $notification->kind,
-                'refId' => $notification->ref_id,
-                'url' => $this->urlFor($notification),
-            ],
+            'data' => $data,
         ], JSON_THROW_ON_ERROR);
 
         $subscriptionsByEndpoint = [];
@@ -203,7 +219,8 @@ class PushNotificationService
      * utilizador de uma vez (`sendMulticast`) — o próprio relatório já diz
      * quais tokens ficaram inválidos/desconhecidos (app desinstalada, etc.),
      * apagados a seguir, mesmo espírito do 410/404 do Web Push acima. */
-    private function sendNative(User $user, Notification $notification, string $title, string $body): void
+    /** @param array{kind: string, refId: string, url: string} $data */
+    private function sendNative(User $user, string $title, string $body, array $data): void
     {
         $client = $this->fcmClient();
         if (! $client) {
@@ -217,11 +234,7 @@ class PushNotificationService
 
         $message = CloudMessage::new()
             ->withNotification(FcmNotification::create($title, $body))
-            ->withData([
-                'kind' => $notification->kind,
-                'refId' => (string) $notification->ref_id,
-                'url' => $this->urlFor($notification),
-            ])
+            ->withData($data)
             // Canal com som próprio (Fase N5) — o id e o ficheiro (res/raw/,
             // sem extensão) têm de bater certo com LukuApplication.java e o
             // recurso .wav lá colocado. Android 8+ usa sempre o som do

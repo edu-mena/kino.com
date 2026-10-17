@@ -15,6 +15,8 @@ class UserPreferenceResource extends JsonResource
             'dietaryRestrictions' => $this->dietary_restrictions ?? [],
             'language' => $this->language,
             'notificationsEnabled' => $this->notifications_enabled ?? true,
+            // Lembretes e reconquista (EngagementNotifier) — ligado por omissão.
+            'engagementNotifications' => (bool) ($this->engagement_notifications ?? true),
             // Deixa os restaurantes cujo perfil visita verem o seu nome em
             // "Quem viu o seu perfil" — desligado por omissão (ver
             // ProfileViewController::index).

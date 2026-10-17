@@ -9,6 +9,128 @@
  * usuário (alias de endereço, pedidos especiais).
  */
 export const pt = {
+  status: {
+    eyebrow: "Transparência",
+    title: "Estado dos serviços",
+    description:
+      "Acompanhe em tempo real se a LUKU está a funcionar como deve. Quando algo falha, avisamos aqui — e quando voltar ao normal também.",
+    loading: "A verificar…",
+    unreachable:
+      "Não conseguimos obter o estado agora. A equipa técnica já foi avisada e está a tratar do assunto.",
+    refresh: "Atualizar",
+    updatedAt: "Atualizado às {time}",
+    overall: {
+      operational: "Todos os serviços estão a funcionar",
+      incident: "Alguns serviços estão com problemas",
+      recovering: "Serviços recuperados — em observação",
+    },
+    incident: {
+      investigating: "A resolver",
+      monitoring: "Em observação",
+      since: "desde {time}",
+      affected: "Serviços afetados:",
+    },
+    componentsTitle: "Serviços",
+    last90Days: "Últimos 90 dias",
+    daysAgo: "Há {days} dias",
+    today: "Hoje",
+    uptime: "{value}% disponível",
+    noData: "Sem dados",
+    components: {
+      app: "Aplicação e site",
+      menus: "Restaurantes e cardápios",
+      orders: "Pedidos e reservas",
+      accounts: "Login e contas",
+      notifications: "Notificações",
+    },
+    componentHints: {
+      app: "Abrir a LUKU no telemóvel e no browser",
+      menus: "Pesquisar restaurantes, ver cardápios e preços",
+      orders: "Fazer e acompanhar pedidos e reservas",
+      accounts: "Entrar, criar conta e preferências",
+      notifications: "Avisos de pedidos, reservas e novidades",
+    },
+    componentStatus: {
+      operational: "A funcionar",
+      outage: "Com problemas",
+      recovering: "Em observação",
+    },
+    legend: {
+      ok: "Sem falhas",
+      partial: "Falhas curtas",
+      outage: "Falhas longas",
+      noData: "Sem dados",
+    },
+    historyTitle: "Incidentes recentes",
+    noIncidents: "Nenhum incidente nos últimos 30 dias. 🎉",
+    commitment:
+      "A nossa equipa está sempre a trabalhar para fazer melhor. Cada falha é analisada para não se repetir — obrigado pela confiança e preferência.",
+    timezoneNote: "Horas em hora de Luanda (WAT).",
+    periodSameDay: "das {from} às {to}",
+    periodMultiDay: "de {from} a {to}",
+    banner: {
+      incidentTitle: "Ups, aconteceu um erro.",
+      incidentBody:
+        "Pode ter problemas ao aceder a algumas funcionalidades da LUKU. A equipa técnica já está a trabalhar na solução. Agradecemos a sua paciência e preferência.",
+      resolvedTitle: "Depois dos anjos estão os engenheiros! 😄",
+      resolvedBody:
+        "A nossa equipa técnica conseguiu corrigir o problema que aconteceu {period} devido a {cause}. Obrigado pela paciência e preferência!",
+      more: "Ver estado",
+      dismiss: "Fechar aviso",
+    },
+    subscribe: {
+      title: "Receber avisos por email",
+      description:
+        "Avisamos quando algum serviço tiver problemas e quando voltar ao normal. Só isso — nada de publicidade.",
+      placeholder: "O seu email",
+      submit: "Avisar-me",
+      sending: "A enviar…",
+      checkEmail: "Quase! Enviámos um email para confirmar a inscrição.",
+      error: "Não foi possível fazer a inscrição. Tente de novo.",
+      confirmed: "Inscrição confirmada — vai receber os avisos por email.",
+      cancelled: "Pronto, já não vai receber estes avisos.",
+      invalidLink: "Este link já não é válido.",
+    },
+  },
+  sistemaEstado: {
+    eyebrow: "Monitorização",
+    title: "Estado dos serviços",
+    description:
+      "Verificações em tempo real e incidentes com o erro técnico. Os utilizadores só veem a versão pública em /estado.",
+    openIncidents: "Incidentes abertos",
+    openHint: "Abertos e fechados sozinhos pelo monitor",
+    subscribers: "Inscritos nos avisos",
+    subscribersHint: "Emails confirmados em /estado",
+    checksTitle: "Verificações agora",
+    checkNow: "Verificar agora",
+    checking: "A verificar…",
+    publicPage: "Página pública",
+    checks: {
+      database: "Base de dados",
+      cache: "Cache (Redis, com reserva na base de dados)",
+      queue: "Fila de trabalhos (Horizon)",
+      web: "Site e app (luku.ao)",
+      api: "API pública",
+    },
+    incidentsTitle: "Incidentes",
+    noIncidents: "Nenhum incidente registado.",
+    incidentStatus: {
+      investigating: "Em curso",
+      monitoring: "Em observação",
+      resolved: "Resolvido",
+    },
+    usersNotified: "utilizadores avisados",
+    usersNotNotified: "utilizadores não avisados (falha curta)",
+    causeLabel: 'Causa mostrada aos utilizadores ("…devido a ___")',
+    causeHint: "Sem detalhes técnicos. Vazio = texto por omissão.",
+    saveCause: "Guardar causa",
+    resolve: "Dar por resolvido",
+    causeSaved: "Causa guardada.",
+    resolvedToast: "Incidente resolvido.",
+    loadError: "Não foi possível carregar os incidentes.",
+    checkError: "Não foi possível correr as verificações.",
+    saveError: "Não foi possível guardar.",
+  },
   offlineBanner: {
     offline: "Sem ligação à internet — algumas ações não vão funcionar até voltar.",
     restored: "Ligação restabelecida.",
@@ -338,6 +460,12 @@ export const pt = {
     savedCompanies: "Empresas guardadas",
     addCompany: "Adicionar empresa",
     logout: "Terminar sessão",
+    engagement: {
+      label: "Lembretes e sugestões",
+      description:
+        "Sugestões à hora do almoço e do jantar, pedir a sua avaliação e um toque quando estiver há muito tempo sem nos visitar.",
+      error: "Não foi possível guardar. Tente de novo.",
+    },
     profileVisits: {
       label: "Mostrar o meu nome aos restaurantes que visito",
       description:
@@ -1006,6 +1134,7 @@ export const pt = {
       overview: "Visão geral",
       restaurants: "Restaurantes",
       operations: "Operação",
+      status: "Estado",
       subscriptions: "Subscrições",
       partners: "Candidaturas",
       promotions: "Promoções Luku",
@@ -2131,6 +2260,7 @@ export const pt = {
     copyright: "Luku.com · Demonstração com dados fictícios",
     terms: "Termos",
     privacy: "Privacidade",
+    status: "Estado dos serviços",
   },
   guestNav: {
     home: "Início",

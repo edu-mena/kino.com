@@ -569,6 +569,9 @@ export function SiteFooter() {
           <Link to="/privacidade" className="hover:text-primary">
             {t("siteFooter.privacy")}
           </Link>
+          <Link to="/estado" className="hover:text-primary">
+            {t("siteFooter.status")}
+          </Link>
         </span>
       </div>
     </footer>
