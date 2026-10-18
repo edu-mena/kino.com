@@ -227,3 +227,23 @@ test('reset de senha com token inválido não devolve role nenhum', function () 
     $response->assertStatus(422);
     expect($response->json('role'))->toBeNull();
 });
+
+test('cadastro com Google de um email que já é de uma conta de restaurante: mensagem clara, nunca "Server Error"', function () {
+    User::factory()->create(['email' => 'dono@gmail.com', 'role' => 'restaurant_staff']);
+    $idToken = googleIdToken(['sub' => 'google-dono', 'email' => 'dono@gmail.com', 'name' => 'Dono']);
+
+    $this->postJson('/api/v1/auth/google/callback', ['id_token' => $idToken])
+        ->assertStatus(409)
+        ->assertJsonPath('message', fn (string $m) => str_contains($m, 'conta de restaurante'));
+    expect(User::query()->where('email', 'dono@gmail.com')->count())->toBe(1);
+});
+
+test('cadastro com Google de uma conta desativada: avisa em vez de rebentar', function () {
+    $user = User::factory()->create(['email' => 'antiga@gmail.com']);
+    $user->delete();
+    $idToken = googleIdToken(['sub' => 'google-antiga', 'email' => 'antiga@gmail.com', 'name' => 'Antiga']);
+
+    $this->postJson('/api/v1/auth/google/callback', ['id_token' => $idToken])
+        ->assertStatus(403)
+        ->assertJsonPath('message', fn (string $m) => str_contains($m, 'desativada'));
+});

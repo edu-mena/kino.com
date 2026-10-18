@@ -16,6 +16,7 @@ use App\Services\GoogleOAuthService;
 use App\Services\SystemSecurityMonitor;
 use App\Services\TwoFactorService;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -52,14 +53,21 @@ class AuthController extends Controller
         }
 
         if (! $user) {
-            $user = User::query()->create([
-                'role' => 'customer',
-                'name' => $profile['name'],
-                'email' => $profile['email'],
-                'google_id' => $profile['sub'],
-                'avatar_url' => $profile['picture'],
-                'email_verified_at' => now(),
-            ]);
+            if ($conflict = $this->socialSignUpConflict($profile['email'], 'google_id', $profile['sub'])) {
+                return $conflict;
+            }
+            try {
+                $user = User::query()->create([
+                    'role' => 'customer',
+                    'name' => $profile['name'],
+                    'email' => $profile['email'],
+                    'google_id' => $profile['sub'],
+                    'avatar_url' => $profile['picture'],
+                    'email_verified_at' => now(),
+                ]);
+            } catch (QueryException $e) {
+                return $this->signUpFailed($e, 'google');
+            }
         } elseif (! $user->google_id) {
             $user->update(['google_id' => $profile['sub']]);
         }
@@ -95,14 +103,21 @@ class AuthController extends Controller
                 return response()->json(['message' => 'A Apple não partilhou um email verificado. Tenta novamente.'], 422);
             }
 
+            if ($conflict = $this->socialSignUpConflict($profile['email'], 'apple_id', $profile['sub'])) {
+                return $conflict;
+            }
             $name = trim($request->input('given_name', '').' '.$request->input('family_name', ''));
-            $user = User::query()->create([
-                'role' => 'customer',
-                'name' => $name !== '' ? $name : Str::before($profile['email'], '@'),
-                'email' => $profile['email'],
-                'apple_id' => $profile['sub'],
-                'email_verified_at' => now(),
-            ]);
+            try {
+                $user = User::query()->create([
+                    'role' => 'customer',
+                    'name' => $name !== '' ? $name : Str::before($profile['email'], '@'),
+                    'email' => $profile['email'],
+                    'apple_id' => $profile['sub'],
+                    'email_verified_at' => now(),
+                ]);
+            } catch (QueryException $e) {
+                return $this->signUpFailed($e, 'apple');
+            }
         }
 
         // Guarda o refresh token (só se a chave .p8 estiver configurada) —
@@ -292,5 +307,43 @@ class AuthController extends Controller
         static $hash = null;
 
         return $hash ??= Hash::make('luku-dummy-password-for-constant-time');
+    }
+
+    /**
+     * Antes de criar uma conta de cliente com Google/Apple: o email (ou o id
+     * do provedor) pode já pertencer a uma conta de restaurante/sistema ou a
+     * uma conta desativada — criar dava violação de chave única e o cliente
+     * via "Server Error" (bug de 18/10/2026). Mensagem clara em vez disso.
+     */
+    private function socialSignUpConflict(?string $email, string $providerColumn, string $sub): ?JsonResponse
+    {
+        $existing = User::withTrashed()
+            ->where(fn ($q) => $q->where($providerColumn, $sub)->when($email, fn ($q) => $q->orWhere('email', $email)))
+            ->first();
+        if (! $existing) {
+            return null;
+        }
+
+        if ($existing->trashed()) {
+            return response()->json([
+                'message' => 'Esta conta foi desativada. Fale connosco em luku.ao/contacto para a recuperar.',
+            ], 403);
+        }
+
+        return response()->json([
+            'message' => 'Este email já está associado a uma conta de restaurante na LUKU. Para entrar como cliente, use outra conta — ou toque em "Aceder ao painel" para gerir o restaurante.',
+        ], 409);
+    }
+
+    /** Rede de segurança: qualquer outro conflito ao criar a conta nunca
+     * chega ao cliente como "Server Error". */
+    private function signUpFailed(QueryException $e, string $provider): JsonResponse
+    {
+        report($e);
+
+        return response()->json([
+            'message' => 'Não foi possível criar a conta com este email. Tente de novo ou fale connosco em luku.ao/contacto.',
+            'provider' => $provider,
+        ], 409);
     }
 }
