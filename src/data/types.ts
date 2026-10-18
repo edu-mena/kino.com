@@ -36,6 +36,9 @@ export interface Restaurant {
   email: string;
   openingHours: string;
   coverImage: string;
+  /** `false` = sem foto de capa própria (a `coverImage` é a capa ilustrada
+   * gerada, ver @/lib/restaurant-cover). Ausente no mock (têm foto). */
+  hasCover?: boolean;
   galleryImages: string[];
   /** Ids reais (PK interna, não uuid) de cada entrada de `galleryImages`,
    * na mesma ordem — só presente com backend real (ver `mapApiRestaurant`

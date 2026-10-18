@@ -1,4 +1,5 @@
 import { DISH_PLACEHOLDER } from "@/lib/dish-photo";
+import { generatedRestaurantCover } from "@/lib/restaurant-cover";
 import { apiFetch } from "@/lib/api-client";
 import { markFullMenuCatalog, rememberMenuItems, rememberRestaurants } from "./live-catalog";
 import type {
@@ -100,11 +101,9 @@ type ApiMenuItem = {
   ingredients: { id: string; name: string; removable: boolean; extraPrice?: number }[];
 };
 
-// Sem foto própria ainda (restaurantes de demonstração, ver
-// backend/database/seeders/DemoRestaurantSeeder.php) — mesma convenção de
-// imagens de food-photography que o mock já usa em toda a parte.
-const FALLBACK_COVER_IMAGE =
-  "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200&auto=format&fit=crop";
+// Sem foto própria: capa ilustrada por cozinha (@/lib/restaurant-cover) e
+// ícone de prato (@/lib/dish-photo) — nunca uma foto genérica que pareça o
+// espaço ou o prato real.
 
 export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
   return {
@@ -138,7 +137,8 @@ export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
     phone: r.phone ?? "",
     email: r.email ?? "",
     openingHours: "",
-    coverImage: r.coverImageUrl ?? FALLBACK_COVER_IMAGE,
+    coverImage: r.coverImageUrl ?? generatedRestaurantCover(r.name, r.cuisine ?? ""),
+    hasCover: !!r.coverImageUrl,
     galleryImages: (r.galleryImages ?? []).map((g) => g.url),
     ...(r.galleryImages ? { galleryImageIds: r.galleryImages.map((g) => g.id) } : {}),
     ...(r.wallpaperUrl ? { wallpaper: r.wallpaperUrl } : {}),

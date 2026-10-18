@@ -3,7 +3,7 @@ import { DISH_PLACEHOLDER, hasRealPhoto, photosFirst } from "./dish-photo";
 
 const dish = (id: string, hasPhoto?: boolean) => ({
   id,
-  hasPhoto,
+  ...(hasPhoto === undefined ? {} : { hasPhoto }),
   image: hasPhoto === false ? DISH_PLACEHOLDER : `https://cdn.luku.ao/${id}.webp`,
 });
 

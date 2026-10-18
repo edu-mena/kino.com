@@ -21,13 +21,23 @@ export function adjustedRating(r: Pick<Restaurant, "rating" | "reviewCount">): n
 
 type PopularityFields = Pick<
   Restaurant,
-  "name" | "rating" | "reviewCount" | "followersCount" | "recentOrdersCount"
+  "name" | "rating" | "reviewCount" | "followersCount" | "recentOrdersCount" | "hasCover"
 >;
 
+/** Foto de capa própria ≈ 1,5★ de avaliação a mais — quem mostra o espaço
+ * real aparece primeiro (e é incentivo para os restaurantes a carregarem). */
+const REAL_COVER_BONUS = 15;
+
 /** Pedidos recentes pesam mais (gente a comprar agora), depois
- * seguidores, depois a avaliação ajustada (×10 ≈ 0–50 pontos). */
+ * seguidores, depois a avaliação ajustada (×10 ≈ 0–50 pontos) e a foto de
+ * capa própria. */
 export function restaurantPopularity(r: PopularityFields): number {
-  return (r.recentOrdersCount ?? 0) * 3 + (r.followersCount ?? 0) + adjustedRating(r) * 10;
+  return (
+    (r.recentOrdersCount ?? 0) * 3 +
+    (r.followersCount ?? 0) +
+    adjustedRating(r) * 10 +
+    (r.hasCover === false ? 0 : REAL_COVER_BONUS)
+  );
 }
 
 /** Comparador: mais popular primeiro; empate por nome (ordem estável). */
