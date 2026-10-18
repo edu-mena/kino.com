@@ -1,3 +1,4 @@
+import { DISH_PLACEHOLDER } from "@/lib/dish-photo";
 import { apiFetch } from "@/lib/api-client";
 import { markFullMenuCatalog, rememberMenuItems, rememberRestaurants } from "./live-catalog";
 import type {
@@ -104,8 +105,6 @@ type ApiMenuItem = {
 // imagens de food-photography que o mock já usa em toda a parte.
 const FALLBACK_COVER_IMAGE =
   "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200&auto=format&fit=crop";
-const FALLBACK_DISH_IMAGE =
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop";
 
 export function mapApiRestaurant(r: ApiRestaurant): Restaurant {
   return {
@@ -188,7 +187,8 @@ export function mapApiMenuItem(m: ApiMenuItem, restaurantId?: string): MenuItem 
     // fosse um prato normal a Kz 0.
     price: m.price == null ? null : Number(m.price),
     category: m.category,
-    image: m.imageUrl ?? FALLBACK_DISH_IMAGE,
+    image: m.imageUrl ?? DISH_PLACEHOLDER,
+    hasPhoto: !!m.imageUrl,
     isAvailable: m.isAvailable,
     portionInfo: m.portionInfo ?? "",
     prepTimeMinutes: m.prepTimeMinutes ?? 0,

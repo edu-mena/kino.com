@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Prato sem foto">
+  <rect width="400" height="300" fill="#F4EFE6"/>
+  <g fill="none" stroke="#1F4D3A" stroke-linecap="round" stroke-linejoin="round" opacity="0.55">
+    <!-- prato -->
+    <circle cx="200" cy="150" r="72" stroke-width="7"/>
+    <circle cx="200" cy="150" r="48" stroke-width="4" opacity="0.6"/>
+    <!-- garfo -->
+    <path d="M100 92v40a10 10 0 0 0 10 10M120 92v40a10 10 0 0 1-10 10M110 92v120" stroke-width="7"/>
+    <!-- faca -->
+    <path d="M300 212V92c-14 8-20 26-20 50 0 10 6 16 20 16" stroke-width="7"/>
+  </g>
+</svg>

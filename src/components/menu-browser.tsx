@@ -1,3 +1,4 @@
+import { photosFirst } from "@/lib/dish-photo";
 import { Link } from "@tanstack/react-router";
 import { LayoutGrid, List, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -239,13 +240,14 @@ export function MenuBrowser({
     }
     if (sort === "populares") {
       // `orderCount` = pedidos dos últimos 30 dias (catálogo da API).
-      return [...byPrice].sort(byDishPopularity);
+      return photosFirst([...byPrice].sort(byDishPopularity));
     }
     // "Relevância" (default): perto do usuário + preferências de cozinha e
     // restrições, sem amontoar vários pratos seguidos do mesmo restaurante
     // (ver `buildRecommendedDishes`). Preso a UM restaurante (menu próprio,
     // ou `?restaurante=`), tudo já é a mesma "key" — mantém a ordem crua.
-    if (effectiveRestaurantId) return byPrice;
+    // Dentro de um restaurante: mesma ordem, com os pratos com foto à frente.
+    if (effectiveRestaurantId) return photosFirst(byPrice);
     return buildRecommendedDishes({
       items: byPrice,
       getCuisine: (restaurantId) => getRestaurant(restaurantId)?.cuisine,

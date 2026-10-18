@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Armchair, ArrowRight, Tag } from "lucide-react";
 import { useMemo } from "react";
+import { photosFirst } from "@/lib/dish-photo";
 import { isIosApp } from "@/lib/platform";
 import { useTapSequence } from "@/lib/use-tap-sequence";
 import icon from "@/assets/icon.png";
@@ -231,7 +232,10 @@ function HomeLoggedIn() {
     [items, profile, seed, catalogVersion],
   );
   const trendingItems = useMemo(
-    () => items.filter((m) => m.isTrending || (m.orderCount ?? 0) > 0).sort(byDishPopularity),
+    () =>
+      photosFirst(
+        items.filter((m) => m.isTrending || (m.orderCount ?? 0) > 0).sort(byDishPopularity),
+      ),
     [items],
   );
   // "Recomendações": perto do usuário + cozinhas que ele prefere, evitando

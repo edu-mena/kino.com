@@ -176,6 +176,9 @@ export interface MenuItem {
   price: number | null;
   category: string;
   image: string;
+  /** `false` = o restaurante não tem foto deste prato (a `image` é o ícone
+   * genérico, ver @/lib/dish-photo). Ausente nos pratos do mock (têm foto). */
+  hasPhoto?: boolean;
   isAvailable: boolean;
   portionInfo: string;
   prepTimeMinutes: number;

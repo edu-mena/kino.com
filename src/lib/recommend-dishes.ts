@@ -1,3 +1,4 @@
+import { hasRealPhoto, REAL_PHOTO_SCORE } from "@/lib/dish-photo";
 import type { MenuItem } from "@/data/types";
 import { computeDishConflicts } from "@/lib/use-dish-conflicts";
 
@@ -125,6 +126,9 @@ function scoreDish(item: MenuItem, input: RecommendInput, profile: TasteProfile)
   if (km != null) score += Math.max(0, 20 - km); // mais perto, mais pontos (satura aos 20km)
   score += Math.min(10, (item.orderCount ?? 0) / 5);
   if (item.isTrending) score += 3;
+  // Foto do próprio prato: destaque claro (nesta escala, mais do que estar
+  // 10 km mais perto), sem passar à frente da cozinha preferida.
+  if (hasRealPhoto(item)) score += REAL_PHOTO_SCORE * 2;
   score += tasteAffinity(item, profile);
   score += input.extraScore?.(item) ?? 0;
   if (conflicts.length > 0) score -= 100; // continua na lista, mas lá pro fim.

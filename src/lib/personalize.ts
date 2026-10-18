@@ -1,3 +1,4 @@
+import { hasRealPhoto, REAL_PHOTO_SCORE } from "@/lib/dish-photo";
 import { useMemo } from "react";
 import { getRestaurant } from "@/data/helpers";
 import type { MenuItem, Restaurant } from "@/data/types";
@@ -126,6 +127,7 @@ export function rankSectionDishes(
   const score = (item: MenuItem) =>
     Math.log2(1 + (item.orderCount ?? 0)) * 6 +
     (item.isPromoted ? 2 : 0) +
+    (hasRealPhoto(item) ? REAL_PHOTO_SCORE : 0) +
     dishBehaviorScore(item, profile, getCuisine) * 0.5 +
     rotationJitter(seed, item.id) * 4;
   const scored = items.map((item) => ({ item, score: score(item) }));
