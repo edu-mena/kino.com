@@ -2,6 +2,50 @@ import type { Dictionary } from "./index";
 
 /** Français — suit exactement la même structure que `pt.ts`. */
 export const fr: Dictionary = {
+  sistemaGerados: {
+    eyebrow: "Restaurants",
+    title: "Restaurants générés",
+    description:
+      "Restaurants créés en lot pour remplir l'application. Désactivez, réactivez ou supprimez-les définitivement — les vrais restaurants ne sont jamais touchés.",
+    total: "Restaurants générés",
+    totalHint: "Créés par la commande restaurants:seed-demo",
+    active: "Visibles dans l'app",
+    activeHint: "Les désactivés sont masqués, données conservées",
+    provinces: "Provinces",
+    accessNote:
+      "Chaque restaurant a un compte propriétaire (email ci-dessous) avec le mot de passe défini à la génération du lot. Connexion sur /admin/entrar, accès à son seul restaurant.",
+    filterProvince: "Filtrer par province",
+    allProvinces: "Toutes les provinces",
+    selected: "{count} sélectionné(s)",
+    selectAll: "Tout sélectionner (visibles)",
+    deactivate: "Désactiver",
+    activate: "Réactiver",
+    delete: "Supprimer définitivement",
+    deactivateAll: "Tout désactiver",
+    activateAll: "Tout réactiver",
+    deleteAll: "Tout supprimer définitivement",
+    statusActive: "Visible",
+    statusInactive: "Désactivé",
+    items: "{count} plats",
+    modes: {
+      delivery: "Livraison",
+      takeaway: "À emporter",
+      dinein: "Sur place",
+      reservations: "Réservations",
+    },
+    loading: "Chargement…",
+    empty: "Aucun restaurant généré.",
+    loadError: "Impossible de charger les restaurants générés.",
+    actionError: "Impossible de terminer l'action.",
+    activatedToast: "{count} restaurant(s) réactivé(s).",
+    deactivatedToast: "{count} restaurant(s) désactivé(s).",
+    deletedToast: "{count} restaurant(s) supprimé(s) définitivement.",
+    confirmTitle: "Supprimer définitivement {count} restaurant(s) ?",
+    confirmDescription:
+      "Supprime le restaurant, le menu, les tables, les commandes et réservations et les comptes d'accès. Action irréversible.",
+    cancel: "Annuler",
+    confirmDelete: "Supprimer définitivement",
+  },
   qrScan: {
     button: "Scanner un code QR",
     instructions: "Visez le code QR de la table ou du restaurant",
@@ -1164,6 +1208,7 @@ export const fr: Dictionary = {
       content: "Contenu",
       moderation: "Signalements",
       imported: "Importés",
+      generated: "Générés",
     },
     importados: {
       ingredients: "Ingrédients",

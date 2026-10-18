@@ -62,6 +62,7 @@ import { Route as SistemaIndexRouteImport } from './routes/sistema.index'
 import { Route as SistemaConteudoRouteImport } from './routes/sistema.conteudo'
 import { Route as SistemaDenunciasRouteImport } from './routes/sistema.denuncias'
 import { Route as SistemaEstadoRouteImport } from './routes/sistema.estado'
+import { Route as SistemaGeradosRouteImport } from './routes/sistema.gerados'
 import { Route as SistemaImportadosRouteImport } from './routes/sistema.importados'
 import { Route as SistemaOperacaoRouteImport } from './routes/sistema.operacao'
 import { Route as SistemaPacotesRouteImport } from './routes/sistema.pacotes'
@@ -337,6 +338,11 @@ const SistemaEstadoRoute = SistemaEstadoRouteImport.update({
   path: '/estado',
   getParentRoute: () => SistemaRoute,
 } as any)
+const SistemaGeradosRoute = SistemaGeradosRouteImport.update({
+  id: '/gerados',
+  path: '/gerados',
+  getParentRoute: () => SistemaRoute,
+} as any)
 const SistemaImportadosRoute = SistemaImportadosRouteImport.update({
   id: '/importados',
   path: '/importados',
@@ -435,6 +441,7 @@ export interface FileRoutesByFullPath {
   '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/denuncias': typeof SistemaDenunciasRoute
   '/sistema/estado': typeof SistemaEstadoRoute
+  '/sistema/gerados': typeof SistemaGeradosRoute
   '/sistema/importados': typeof SistemaImportadosRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
@@ -497,6 +504,7 @@ export interface FileRoutesByTo {
   '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/denuncias': typeof SistemaDenunciasRoute
   '/sistema/estado': typeof SistemaEstadoRoute
+  '/sistema/gerados': typeof SistemaGeradosRoute
   '/sistema/importados': typeof SistemaImportadosRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
@@ -562,6 +570,7 @@ export interface FileRoutesById {
   '/sistema/conteudo': typeof SistemaConteudoRoute
   '/sistema/denuncias': typeof SistemaDenunciasRoute
   '/sistema/estado': typeof SistemaEstadoRoute
+  '/sistema/gerados': typeof SistemaGeradosRoute
   '/sistema/importados': typeof SistemaImportadosRoute
   '/sistema/operacao': typeof SistemaOperacaoRoute
   '/sistema/pacotes': typeof SistemaPacotesRoute
@@ -628,6 +637,7 @@ export interface FileRouteTypes {
     | '/sistema/conteudo'
     | '/sistema/denuncias'
     | '/sistema/estado'
+    | '/sistema/gerados'
     | '/sistema/importados'
     | '/sistema/operacao'
     | '/sistema/pacotes'
@@ -690,6 +700,7 @@ export interface FileRouteTypes {
     | '/sistema/conteudo'
     | '/sistema/denuncias'
     | '/sistema/estado'
+    | '/sistema/gerados'
     | '/sistema/importados'
     | '/sistema/operacao'
     | '/sistema/pacotes'
@@ -754,6 +765,7 @@ export interface FileRouteTypes {
     | '/sistema/conteudo'
     | '/sistema/denuncias'
     | '/sistema/estado'
+    | '/sistema/gerados'
     | '/sistema/importados'
     | '/sistema/operacao'
     | '/sistema/pacotes'
@@ -1179,6 +1191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SistemaEstadoRouteImport
       parentRoute: typeof SistemaRoute
     }
+    '/sistema/gerados': {
+      id: '/sistema/gerados'
+      path: '/gerados'
+      fullPath: '/sistema/gerados'
+      preLoaderRoute: typeof SistemaGeradosRouteImport
+      parentRoute: typeof SistemaRoute
+    }
     '/sistema/importados': {
       id: '/sistema/importados'
       path: '/importados'
@@ -1285,6 +1304,7 @@ interface SistemaRouteChildren {
   SistemaConteudoRoute: typeof SistemaConteudoRoute
   SistemaDenunciasRoute: typeof SistemaDenunciasRoute
   SistemaEstadoRoute: typeof SistemaEstadoRoute
+  SistemaGeradosRoute: typeof SistemaGeradosRoute
   SistemaImportadosRoute: typeof SistemaImportadosRoute
   SistemaOperacaoRoute: typeof SistemaOperacaoRoute
   SistemaPacotesRoute: typeof SistemaPacotesRoute
@@ -1300,6 +1320,7 @@ const SistemaRouteChildren: SistemaRouteChildren = {
   SistemaConteudoRoute: SistemaConteudoRoute,
   SistemaDenunciasRoute: SistemaDenunciasRoute,
   SistemaEstadoRoute: SistemaEstadoRoute,
+  SistemaGeradosRoute: SistemaGeradosRoute,
   SistemaImportadosRoute: SistemaImportadosRoute,
   SistemaOperacaoRoute: SistemaOperacaoRoute,
   SistemaPacotesRoute: SistemaPacotesRoute,

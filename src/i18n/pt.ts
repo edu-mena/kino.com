@@ -9,6 +9,50 @@
  * usuário (alias de endereço, pedidos especiais).
  */
 export const pt = {
+  sistemaGerados: {
+    eyebrow: "Restaurantes",
+    title: "Restaurantes gerados",
+    description:
+      "Restaurantes criados em lote para encher a app. Desative, reative ou apague de vez — nunca afeta restaurantes reais.",
+    total: "Restaurantes gerados",
+    totalHint: "Criados pelo comando restaurants:seed-demo",
+    active: "Visíveis na app",
+    activeHint: "Desativados ficam escondidos, com os dados guardados",
+    provinces: "Províncias",
+    accessNote:
+      "Cada restaurante tem uma conta de dono (email abaixo) com a senha definida ao gerar o lote. Entram em /admin/entrar e só veem o próprio restaurante.",
+    filterProvince: "Filtrar por província",
+    allProvinces: "Todas as províncias",
+    selected: "{count} selecionado(s)",
+    selectAll: "Selecionar todos (visíveis)",
+    deactivate: "Desativar",
+    activate: "Reativar",
+    delete: "Apagar de vez",
+    deactivateAll: "Desativar todos",
+    activateAll: "Reativar todos",
+    deleteAll: "Apagar todos de vez",
+    statusActive: "Visível",
+    statusInactive: "Desativado",
+    items: "{count} pratos",
+    modes: {
+      delivery: "Entrega",
+      takeaway: "Levantar",
+      dinein: "No local",
+      reservations: "Reservas",
+    },
+    loading: "A carregar…",
+    empty: "Nenhum restaurante gerado.",
+    loadError: "Não foi possível carregar os restaurantes gerados.",
+    actionError: "Não foi possível concluir a ação.",
+    activatedToast: "{count} restaurante(s) reativado(s).",
+    deactivatedToast: "{count} restaurante(s) desativado(s).",
+    deletedToast: "{count} restaurante(s) apagado(s) de vez.",
+    confirmTitle: "Apagar {count} restaurante(s) de vez?",
+    confirmDescription:
+      "Apaga o restaurante, o cardápio, as mesas, os pedidos e reservas e as contas de acesso. Não há volta atrás.",
+    cancel: "Cancelar",
+    confirmDelete: "Apagar de vez",
+  },
   qrScan: {
     button: "Ler código QR",
     instructions: "Aponte para o código QR da mesa ou do restaurante",
@@ -1154,6 +1198,7 @@ export const pt = {
       content: "Conteúdo",
       moderation: "Denúncias",
       imported: "Importados",
+      generated: "Gerados",
     },
     importados: {
       ingredients: "Ingredientes",

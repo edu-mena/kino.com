@@ -2,6 +2,50 @@ import type { Dictionary } from "./index";
 
 /** English — mirrors the exact shape of `pt.ts`. */
 export const en: Dictionary = {
+  sistemaGerados: {
+    eyebrow: "Restaurants",
+    title: "Generated restaurants",
+    description:
+      "Restaurants created in bulk to fill the app. Deactivate, reactivate or delete them for good — real restaurants are never affected.",
+    total: "Generated restaurants",
+    totalHint: "Created by the restaurants:seed-demo command",
+    active: "Visible in the app",
+    activeHint: "Deactivated ones are hidden, data kept",
+    provinces: "Provinces",
+    accessNote:
+      "Each restaurant has an owner account (email below) with the password set when the batch was generated. They sign in at /admin/entrar and only see their own restaurant.",
+    filterProvince: "Filter by province",
+    allProvinces: "All provinces",
+    selected: "{count} selected",
+    selectAll: "Select all (visible)",
+    deactivate: "Deactivate",
+    activate: "Reactivate",
+    delete: "Delete for good",
+    deactivateAll: "Deactivate all",
+    activateAll: "Reactivate all",
+    deleteAll: "Delete all for good",
+    statusActive: "Visible",
+    statusInactive: "Deactivated",
+    items: "{count} dishes",
+    modes: {
+      delivery: "Delivery",
+      takeaway: "Pickup",
+      dinein: "Dine-in",
+      reservations: "Reservations",
+    },
+    loading: "Loading…",
+    empty: "No generated restaurants.",
+    loadError: "Could not load the generated restaurants.",
+    actionError: "Could not complete the action.",
+    activatedToast: "{count} restaurant(s) reactivated.",
+    deactivatedToast: "{count} restaurant(s) deactivated.",
+    deletedToast: "{count} restaurant(s) deleted for good.",
+    confirmTitle: "Delete {count} restaurant(s) for good?",
+    confirmDescription:
+      "Deletes the restaurant, menu, tables, orders and reservations and the access accounts. This can't be undone.",
+    cancel: "Cancel",
+    confirmDelete: "Delete for good",
+  },
   qrScan: {
     button: "Scan QR code",
     instructions: "Point at the table or restaurant QR code",
@@ -1149,6 +1193,7 @@ export const en: Dictionary = {
       content: "Content",
       moderation: "Reports",
       imported: "Imported",
+      generated: "Generated",
     },
     importados: {
       ingredients: "Ingredients",

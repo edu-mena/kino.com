@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupportTicketController;
 use App\Http\Controllers\Api\V1\SystemAccessController;
 use App\Http\Controllers\Api\V1\SystemImportedRestaurantController;
+use App\Http\Controllers\Api\V1\SystemSeededRestaurantController;
 use App\Http\Controllers\Api\V1\SystemStatsController;
 use App\Http\Controllers\Api\V1\TableCombinationController;
 use App\Http\Controllers\Api\V1\TwoFactorController;
@@ -312,6 +313,12 @@ Route::middleware(['auth:sanctum', 'throttle:writes'])->group(function () {
     Route::post('system/imported-restaurants/{restaurant}/activate', [SystemImportedRestaurantController::class, 'activate']);
     Route::delete('system/imported-restaurants/{restaurant}', [SystemImportedRestaurantController::class, 'destroy']);
     Route::post('system/imported-restaurants/{uuid}/restore', [SystemImportedRestaurantController::class, 'restore']);
+
+    // Restaurantes gerados em lote (restaurants:seed-demo) — só operadores.
+    Route::get('system/seeded-restaurants', [SystemSeededRestaurantController::class, 'index']);
+    Route::post('system/seeded-restaurants/activate', [SystemSeededRestaurantController::class, 'activate']);
+    Route::post('system/seeded-restaurants/deactivate', [SystemSeededRestaurantController::class, 'deactivate']);
+    Route::post('system/seeded-restaurants/delete', [SystemSeededRestaurantController::class, 'destroy']);
 
     Route::get('subscriptions', [SubscriptionController::class, 'index']);
     Route::get('system/customers-count', [SystemStatsController::class, 'customersCount']);

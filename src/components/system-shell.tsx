@@ -14,6 +14,7 @@ import {
   Menu,
   PartyPopper,
   ShieldCheck,
+  Sparkles,
   Store,
   X,
 } from "lucide-react";
@@ -26,6 +27,7 @@ const navItems = [
   { to: "/sistema", labelKey: "overview", icon: LayoutGrid },
   { to: "/sistema/restaurantes", labelKey: "restaurants", icon: Store },
   { to: "/sistema/importados", labelKey: "imported", icon: DownloadCloud },
+  { to: "/sistema/gerados", labelKey: "generated", icon: Sparkles },
   { to: "/sistema/operacao", labelKey: "operations", icon: Activity },
   { to: "/sistema/estado", labelKey: "status", icon: HeartPulse },
   { to: "/sistema/subscricoes", labelKey: "subscriptions", icon: CreditCard },
