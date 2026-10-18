@@ -175,7 +175,7 @@ export const pt = {
       resolved: "Resolvido",
     },
     usersNotified: "utilizadores avisados",
-    usersNotNotified: "utilizadores não avisados (falha curta)",
+    usersNotNotified: "utilizadores ainda não avisados",
     causeLabel: 'Causa mostrada aos utilizadores ("…devido a ___")',
     causeHint: "Sem detalhes técnicos. Vazio = texto por omissão.",
     saveCause: "Guardar causa",
@@ -185,6 +185,11 @@ export const pt = {
     loadError: "Não foi possível carregar os incidentes.",
     checkError: "Não foi possível correr as verificações.",
     saveError: "Não foi possível guardar.",
+    announceHint:
+      "Os utilizadores só são avisados com a sua autorização (push + email a inscritos e a quem tem pedido/reserva em curso).",
+    announceStarted: 'Avisar os utilizadores ("Ups…")',
+    announceResolved: 'Enviar "Depois dos anjos…"',
+    announcedToast: "Aviso enviado aos utilizadores.",
   },
   offlineBanner: {
     offline: "Sem ligação à internet — algumas ações não vão funcionar até voltar.",

@@ -66,7 +66,7 @@ return [
     // Developer, com "\n" escapados) só são precisos para revogar o acesso
     // quando um cliente apaga a conta — sem eles o login funciona na mesma.
     'apple' => [
-        'client_ids' => env('APPLE_CLIENT_IDS', 'com.luku.app'),
+        'client_ids' => env('APPLE_CLIENT_IDS', 'ao.luku.app,com.luku.app'),
         'team_id' => env('APPLE_TEAM_ID'),
         'key_id' => env('APPLE_KEY_ID'),
         'private_key' => env('APPLE_PRIVATE_KEY'),

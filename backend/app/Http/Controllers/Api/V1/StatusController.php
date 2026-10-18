@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\View\View;
 use Throwable;
 
 /**
@@ -45,9 +46,9 @@ class StatusController extends Controller
 
         $incidents = StatusIncident::query()
             ->where('started_at', '>=', now()->subDays(30))
-            // Falhas de 1-2 minutos que ninguém chegou a notar não são
-            // "incidentes" para o público (o operador vê-as no painel).
-            ->where(fn ($q) => $q->whereNull('resolved_at')->orWhereNotNull('users_notified_at')->orWhereNotNull('resolution_notified_at'))
+            // Só os que o operador decidiu comunicar — o resto (falhas curtas,
+            // falsos alarmes) fica só no painel de sistema.
+            ->where(fn ($q) => $q->whereNotNull('users_notified_at')->orWhereNotNull('resolution_notified_at'))
             ->latest('started_at')
             ->limit(20)
             ->get()
@@ -56,9 +57,9 @@ class StatusController extends Controller
         return response()->json(['data' => [
             'status' => $overall,
             'components' => $components,
-            'activeIncident' => $open && ($open->users_notified_at || $open->recovering_since === null && $this->longEnough($open))
-                ? $this->publicIncident($open)
-                : null,
+            // Faixa da app e incidente em destaque: só depois de o operador
+            // autorizar o aviso (ver IncidentNotifier::announce).
+            'activeIncident' => $open?->users_notified_at ? $this->publicIncident($open) : null,
             'incidents' => $incidents,
             'generatedAt' => now()->toIso8601String(),
         ]])->header('Cache-Control', 'public, max-age=30');
@@ -100,7 +101,7 @@ class StatusController extends Controller
     }
 
     /** Painel de sistema: incidentes com o erro técnico. */
-    public function systemIndex(Request $request): JsonResponse
+    public function systemIndex(Request $request, IncidentNotifier $notifier): JsonResponse
     {
         $this->assertOperator($request);
 
@@ -112,6 +113,8 @@ class StatusController extends Controller
                 'defaultCause' => config('status.default_public_cause'),
                 'usersNotifiedAt' => $i->users_notified_at?->toIso8601String(),
                 'resolutionNotifiedAt' => $i->resolution_notified_at?->toIso8601String(),
+                'canAnnounceStarted' => $notifier->canAnnounce($i, 'started'),
+                'canAnnounceResolved' => $notifier->canAnnounce($i, 'resolved'),
             ]);
 
         return response()->json(['data' => [
@@ -140,18 +143,48 @@ class StatusController extends Controller
 
     /** Fecha à mão um incidente (ex.: falso alarme, ou já resolvido e não
      * se quer esperar pelos minutos de estabilidade). */
-    public function systemResolveIncident(Request $request, StatusIncident $incident, IncidentNotifier $notifier): JsonResponse
+    public function systemResolveIncident(Request $request, StatusIncident $incident): JsonResponse
     {
         $this->assertOperator($request);
         abort_if($incident->resolved_at !== null, 422, 'O incidente já está resolvido.');
 
+        // A mensagem de resolução NÃO sai sozinha — ver systemAnnounce.
         $incident->update(['resolved_at' => now(), 'recovering_since' => $incident->recovering_since ?? now()]);
-        if ($incident->users_notified_at !== null) {
-            $incident->update(['resolution_notified_at' => now()]);
-            $notifier->notify($incident, 'resolved');
-        }
 
         return response()->json(['data' => $this->publicIncident($incident->fresh())]);
+    }
+
+    /** Painel de sistema: autorizar o aviso aos utilizadores. */
+    public function systemAnnounce(Request $request, StatusIncident $incident, IncidentNotifier $notifier): JsonResponse
+    {
+        $this->assertOperator($request);
+        $phase = $request->validate(['phase' => ['required', 'in:started,resolved']])['phase'];
+        abort_unless($notifier->announce($incident, $phase), 422, 'Este aviso já foi enviado ou já não se aplica.');
+
+        return response()->json(['data' => $this->publicIncident($incident->fresh())]);
+    }
+
+    /** Link do email de alerta (assinado): mostra a mensagem e pede
+     * confirmação — abrir o link nunca envia nada sozinho (os filtros de
+     * email abrem links para os verificar). */
+    public function announceConfirm(Request $request, StatusIncident $incident, string $phase, IncidentNotifier $notifier): View
+    {
+        abort_unless(in_array($phase, ['started', 'resolved'], true), 404);
+
+        return view('status.announce', [
+            'state' => $notifier->canAnnounce($incident, $phase) ? 'confirm' : 'unavailable',
+            'phase' => $phase,
+            'message' => $phase === 'started' ? IncidentMessages::started() : IncidentMessages::resolved($incident),
+            'actionUrl' => $request->fullUrl(),
+        ]);
+    }
+
+    public function announceFromEmail(StatusIncident $incident, string $phase, IncidentNotifier $notifier): View
+    {
+        abort_unless(in_array($phase, ['started', 'resolved'], true), 404);
+        $sent = $notifier->announce($incident, $phase);
+
+        return view('status.announce', ['state' => $sent ? 'sent' : 'unavailable', 'phase' => $phase]);
     }
 
     /**
@@ -209,11 +242,6 @@ class StatusController extends Controller
             'cause' => $resolved ? $incident->publicCause() : null,
             'message' => $resolved ? IncidentMessages::resolved($incident) : IncidentMessages::started(),
         ];
-    }
-
-    private function longEnough(StatusIncident $incident): bool
-    {
-        return $incident->started_at->diffInMinutes(now()) >= (int) config('status.notify_users_after_minutes', 3);
     }
 
     private function subscriberFromToken(Request $request): StatusSubscriber

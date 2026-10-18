@@ -5,15 +5,29 @@
 Desde **{{ $startedAt }}** (hora de Luanda) há serviços em falha:
 **{{ implode(', ', $components) }}**.
 
-Os utilizadores só são avisados se a falha durar mais de
-{{ config('status.notify_users_after_minutes') }} minutos.
+**Os utilizadores ainda não foram avisados** — só o são com a sua
+autorização. Se a falha estiver a afetar os clientes, use o botão abaixo
+(abre uma página de confirmação com a mensagem exata).
+
+@if($announceUrl)
+<x-mail::button :url="$announceUrl" color="error">
+Avisar os utilizadores ("Ups, aconteceu um erro…")
+</x-mail::button>
+@endif
 @else
 # ✅ Incidente resolvido
 
 Os serviços **{{ implode(', ', $components) }}** estão estáveis desde
 **{{ $resolvedAt }}** (falha desde {{ $startedAt }}, hora de Luanda).
 
-Pode ajustar a causa que os utilizadores leem em /sistema/estado.
+Ajuste primeiro a causa que os utilizadores vão ler em /sistema/estado
+("…devido a ___"). A mensagem de resolução só sai com a sua autorização:
+
+@if($announceUrl)
+<x-mail::button :url="$announceUrl" color="success">
+Enviar "Depois dos anjos estão os engenheiros!"
+</x-mail::button>
+@endif
 @endif
 
 ## Verificações

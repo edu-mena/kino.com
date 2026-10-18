@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { KpiTile } from "@/components/admin-stats";
 import { SystemPageHeading } from "@/components/system-shell";
 import {
+  announceIncident,
   fetchSystemStatus,
   resolveIncident,
   runSystemHealthChecks,
@@ -198,6 +199,20 @@ function IncidentCard({
     }
   };
 
+  const announce = async (phase: "started" | "resolved") => {
+    if (!token) return;
+    setSaving(true);
+    try {
+      await announceIncident(incident.id, phase, token);
+      toast.success(t("sistemaEstado.announcedToast"));
+      onChanged();
+    } catch {
+      toast.error(t("sistemaEstado.saveError"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const resolve = async () => {
     if (!token) return;
     setSaving(true);
@@ -275,6 +290,22 @@ function IncidentCard({
         )}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">{t("sistemaEstado.causeHint")}</p>
+
+      {(incident.canAnnounceStarted || incident.canAnnounceResolved) && (
+        <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">
+          <p className="text-xs">{t("sistemaEstado.announceHint")}</p>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => announce(incident.canAnnounceStarted ? "started" : "resolved")}
+            className="mt-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+          >
+            {incident.canAnnounceStarted
+              ? t("sistemaEstado.announceStarted")
+              : t("sistemaEstado.announceResolved")}
+          </button>
+        </div>
+      )}
     </li>
   );
 }

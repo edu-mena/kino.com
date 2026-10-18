@@ -33,9 +33,9 @@ test('GET /status nunca expõe o erro técnico do incidente', function () {
         ->toContain('Ups, aconteceu um erro');
 });
 
-test('falha de 1 minuto ainda não aparece como incidente público', function () {
+test('incidente que o operador ainda não autorizou comunicar não aparece ao público', function () {
     StatusIncident::create([
-        'components' => ['menus'], 'started_at' => now()->subMinute(), 'last_failure_at' => now(),
+        'components' => ['menus'], 'started_at' => now()->subMinutes(30), 'last_failure_at' => now(),
     ]);
 
     $this->getJson('/api/v1/status')->assertOk()->assertJsonPath('data.activeIncident', null);
@@ -83,4 +83,5 @@ test('painel de sistema: só operadores veem o erro técnico e editam a causa', 
         ->assertOk()
         ->assertJsonPath('data.status', 'resolved')
         ->assertJsonPath('data.cause', 'um pico de acessos');
+    expect($incident->fresh()->resolution_notified_at)->toBeNull(); // nunca sozinho
 });

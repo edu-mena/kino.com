@@ -168,7 +168,7 @@ export const en: Dictionary = {
       resolved: "Resolved",
     },
     usersNotified: "users notified",
-    usersNotNotified: "users not notified (short failure)",
+    usersNotNotified: "users not notified yet",
     causeLabel: 'Cause shown to users ("…caused by ___")',
     causeHint: "No technical details. Empty = default text.",
     saveCause: "Save cause",
@@ -178,6 +178,11 @@ export const en: Dictionary = {
     loadError: "Could not load incidents.",
     checkError: "Could not run the checks.",
     saveError: "Could not save.",
+    announceHint:
+      "Users are only notified with your approval (push + email to subscribers and people with an ongoing order/reservation).",
+    announceStarted: 'Notify users ("Oops…")',
+    announceResolved: 'Send "After the angels…"',
+    announcedToast: "Notice sent to users.",
   },
   offlineBanner: {
     offline: "No internet connection — some actions won't work until it's back.",

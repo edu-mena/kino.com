@@ -58,6 +58,9 @@ export type SystemIncident = StatusIncident & {
   defaultCause: string;
   usersNotifiedAt: string | null;
   resolutionNotifiedAt: string | null;
+  /** Os avisos aos utilizadores só saem com autorização do operador. */
+  canAnnounceStarted: boolean;
+  canAnnounceResolved: boolean;
 };
 
 export type HealthCheckResult = { ok: boolean; error: string | null; ms: number };
@@ -96,4 +99,18 @@ export async function updateIncidentCause(
 
 export async function resolveIncident(id: string, token: string): Promise<void> {
   await apiFetch(`/system/status/incidents/${id}/resolve`, { method: "POST", token });
+}
+
+/** Autoriza (e envia) o aviso aos utilizadores — "started" = "Ups…",
+ * "resolved" = "Depois dos anjos…". Cada um sai no máximo uma vez. */
+export async function announceIncident(
+  id: string,
+  phase: "started" | "resolved",
+  token: string,
+): Promise<void> {
+  await apiFetch(`/system/status/incidents/${id}/announce`, {
+    method: "POST",
+    token,
+    body: { phase },
+  });
 }

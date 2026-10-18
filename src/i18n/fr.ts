@@ -168,7 +168,7 @@ export const fr: Dictionary = {
       resolved: "Résolu",
     },
     usersNotified: "utilisateurs prévenus",
-    usersNotNotified: "utilisateurs non prévenus (panne courte)",
+    usersNotNotified: "utilisateurs pas encore prévenus",
     causeLabel: "Cause affichée aux utilisateurs (« …dû à ___ »)",
     causeHint: "Pas de détails techniques. Vide = texte par défaut.",
     saveCause: "Enregistrer la cause",
@@ -178,6 +178,11 @@ export const fr: Dictionary = {
     loadError: "Impossible de charger les incidents.",
     checkError: "Impossible de lancer les vérifications.",
     saveError: "Impossible d'enregistrer.",
+    announceHint:
+      "Les utilisateurs ne sont prévenus qu'avec votre accord (push + email aux abonnés et à ceux qui ont une commande/réservation en cours).",
+    announceStarted: "Prévenir les utilisateurs (« Oups… »)",
+    announceResolved: "Envoyer « Après les anges… »",
+    announcedToast: "Avis envoyé aux utilisateurs.",
   },
   offlineBanner: {
     offline:

@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 /**
- * Avisa os UTILIZADORES do início/fim de um incidente:
+ * Avisa os UTILIZADORES do início/fim de um incidente — só quando o operador
+ * autoriza (ver `announce`):
  *
  * - push a quem tem notificações ligadas (app e browser);
  * - email só a quem se inscreveu em /estado (confirmado) ou tem um pedido/
@@ -33,6 +34,33 @@ class IncidentNotifier
     private const ACTIVE_RESERVATION_STATUSES = ['pending', 'confirmed'];
 
     public function __construct(private readonly PushNotificationService $push) {}
+
+    /**
+     * Envia o aviso SÓ com autorização do operador (email de alerta ou
+     * /sistema/estado) — nunca sozinho. Cada fase sai no máximo uma vez:
+     * "started" só com o incidente ainda aberto; "resolved" só depois de
+     * resolvido. Devolve `false` se não for (ou já não for) altura.
+     *
+     * @param  'started'|'resolved'  $phase
+     */
+    public function announce(StatusIncident $incident, string $phase): bool
+    {
+        if (! $this->canAnnounce($incident, $phase)) {
+            return false;
+        }
+        $incident->update([$phase === 'started' ? 'users_notified_at' : 'resolution_notified_at' => now()]);
+        $this->notify($incident, $phase);
+
+        return true;
+    }
+
+    /** @param 'started'|'resolved' $phase */
+    public function canAnnounce(StatusIncident $incident, string $phase): bool
+    {
+        return $phase === 'started'
+            ? $incident->resolved_at === null && $incident->users_notified_at === null
+            : $incident->resolved_at !== null && $incident->resolution_notified_at === null;
+    }
 
     /** @param 'started'|'resolved' $phase */
     public function notify(StatusIncident $incident, string $phase): void

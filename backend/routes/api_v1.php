@@ -233,11 +233,18 @@ Route::post('status/subscribe', [StatusController::class, 'subscribe'])->middlew
 // Token de 48 caracteres aleatórios — o limite geral da API chega.
 Route::post('status/confirm', [StatusController::class, 'confirm']);
 Route::post('status/unsubscribe', [StatusController::class, 'unsubscribe']);
+// Botão do email de alerta (link assinado, sem sessão): GET mostra a
+// mensagem e pede confirmação; só o POST envia o aviso aos utilizadores.
+Route::get('status/incidents/{incident}/announce/{phase}', [StatusController::class, 'announceConfirm'])
+    ->middleware('signed')->name('status.announce');
+Route::post('status/incidents/{incident}/announce/{phase}', [StatusController::class, 'announceFromEmail'])
+    ->middleware('signed');
 Route::middleware(['auth:sanctum', 'throttle:writes'])->prefix('system/status')->group(function () {
     Route::get('/', [StatusController::class, 'systemIndex']);
     Route::post('check', [StatusController::class, 'systemCheck']);
     Route::patch('incidents/{incident}', [StatusController::class, 'systemUpdateIncident']);
     Route::post('incidents/{incident}/resolve', [StatusController::class, 'systemResolveIncident']);
+    Route::post('incidents/{incident}/announce', [StatusController::class, 'systemAnnounce']);
 });
 Route::get('system/site-stats', [SystemStatsController::class, 'siteStats']);
 

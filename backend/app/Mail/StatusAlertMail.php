@@ -29,6 +29,9 @@ class StatusAlertMail extends Mailable
         public readonly array $checks,
         public readonly string $startedAt,
         public readonly ?string $resolvedAt = null,
+        /** Link assinado para AUTORIZAR o aviso aos utilizadores (abre uma
+         * página de confirmação — nada é enviado só por abrir o link). */
+        public readonly ?string $announceUrl = null,
     ) {}
 
     public function envelope(): Envelope

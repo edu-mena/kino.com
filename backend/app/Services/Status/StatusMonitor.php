@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Throwable;
 
 /**
@@ -15,12 +16,14 @@ use Throwable;
  * incidente:
  *
  *   1.º minuto em falha  → abre o incidente e envia o alerta técnico ao
- *                          operador (com o erro exato);
- *   N minutos em falha   → avisa os utilizadores ("Ups, aconteceu um erro…");
- *   M minutos estável    → fecha o incidente, avisa o operador e — se os
- *                          utilizadores chegaram a ser avisados (ou a falha
- *                          durou o suficiente para a notarem) — envia o
- *                          "Depois dos anjos estão os engenheiros!".
+ *                          operador (com o erro exato e um botão para avisar
+ *                          os utilizadores);
+ *   M minutos estável    → fecha o incidente e avisa o operador (com um botão
+ *                          para enviar o "Depois dos anjos estão os
+ *                          engenheiros!").
+ *
+ * Os utilizadores NUNCA são avisados sozinhos — só quando o operador
+ * autoriza (IncidentNotifier::announce, pelo email ou por /sistema/estado).
  *
  * Não depende de Redis nem da fila (são justamente serviços que vigia). Se a
  * própria base de dados estiver em baixo, o início do incidente fica num
@@ -29,10 +32,7 @@ use Throwable;
  */
 class StatusMonitor
 {
-    public function __construct(
-        private readonly HealthChecks $checks,
-        private readonly IncidentNotifier $notifier,
-    ) {}
+    public function __construct(private readonly HealthChecks $checks) {}
 
     /** @return array<string, array{ok: bool, error: ?string, ms: int}> */
     public function tick(?CarbonImmutable $now = null): array
@@ -91,7 +91,7 @@ class StatusMonitor
                 ]);
                 // Já alertado por email quando a base de dados caiu.
                 if (! $fallback) {
-                    $this->alertOperator('started', $incident->components, $results, $incident->started_at);
+                    $this->alertOperator('started', $incident->components, $results, $incident->started_at, null, $incident);
                 }
             } else {
                 $incident->update([
@@ -102,11 +102,6 @@ class StatusMonitor
                 ]);
             }
             $this->clearFallback();
-
-            if ($incident->users_notified_at === null && $incident->started_at->diffInMinutes($now) >= $this->notifyAfter()) {
-                $incident->update(['users_notified_at' => $now]);
-                $this->safely(fn () => $this->notifier->notify($incident, 'started'));
-            }
 
             return;
         }
@@ -138,14 +133,7 @@ class StatusMonitor
         }
 
         $incident->update(['resolved_at' => $incident->recovering_since]);
-        $this->alertOperator('resolved', $incident->components, $results, $incident->started_at, $incident->resolved_at);
-
-        $usersNoticed = $incident->users_notified_at !== null
-            || $incident->started_at->diffInMinutes($incident->resolved_at) >= $this->notifyAfter();
-        if ($usersNoticed) {
-            $incident->update(['resolution_notified_at' => $now]);
-            $this->safely(fn () => $this->notifier->notify($incident, 'resolved'));
-        }
+        $this->alertOperator('resolved', $incident->components, $results, $incident->started_at, $incident->resolved_at, $incident);
     }
 
     /**
@@ -195,7 +183,7 @@ class StatusMonitor
      * @param  list<string>  $components
      * @param  array<string, array{ok: bool, error: ?string, ms: int}>  $results
      */
-    private function alertOperator(string $phase, array $components, array $results, \DateTimeInterface $startedAt, ?\DateTimeInterface $resolvedAt = null): void
+    private function alertOperator(string $phase, array $components, array $results, \DateTimeInterface $startedAt, ?\DateTimeInterface $resolvedAt = null, ?StatusIncident $incident = null): void
     {
         $to = config('status.alert_email');
         if (! $to) {
@@ -212,6 +200,8 @@ class StatusMonitor
             $results,
             $format($startedAt),
             $resolvedAt ? $format($resolvedAt) : null,
+            // Botão "avisar os utilizadores" — o aviso nunca sai sozinho.
+            $incident ? URL::temporarySignedRoute('status.announce', now()->addDays(3), ['incident' => $incident->uuid, 'phase' => $phase]) : null,
         )));
     }
 
@@ -222,11 +212,6 @@ class StatusMonitor
             ->reject(fn ($r) => $r['ok'])
             ->map(fn ($r, $name) => "{$name}: {$r['error']}")
             ->implode("\n");
-    }
-
-    private function notifyAfter(): int
-    {
-        return (int) config('status.notify_users_after_minutes', 3);
     }
 
     private function resolveAfter(): int
