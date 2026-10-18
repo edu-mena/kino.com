@@ -1,5 +1,7 @@
 import "./lib/error-capture";
 
+import * as startServerEntry from "@tanstack/react-start/server-entry";
+
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { withSecurityHeaders } from "./lib/security-headers";
@@ -8,15 +10,16 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
-let serverEntryPromise: Promise<ServerEntry> | undefined;
+// Import estático de propósito: com o `import()` dinâmico, o TanStack Start
+// ≥1.168.61 + Rolldown partiam o servidor em dois ficheiros que se importam
+// um ao outro, e em produção TODAS as páginas davam
+// "TypeError: __exportAll is not a function" (incidente de 18/10/2026).
+const serverEntry =
+  (startServerEntry as { default?: ServerEntry }).default ??
+  (startServerEntry as unknown as ServerEntry);
 
 async function getServerEntry(): Promise<ServerEntry> {
-  if (!serverEntryPromise) {
-    serverEntryPromise = import("@tanstack/react-start/server-entry").then(
-      (m) => (m.default ?? m) as ServerEntry,
-    );
-  }
-  return serverEntryPromise;
+  return serverEntry;
 }
 
 // h3 swallows in-handler throws into a normal 500 Response with body
