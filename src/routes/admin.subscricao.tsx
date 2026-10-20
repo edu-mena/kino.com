@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { CalendarClock, Check, CheckCircle2, CreditCard, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { AdminPageHeading } from "@/components/admin-shell";
@@ -32,10 +32,16 @@ const PLAN_PERK_KEYS: Record<SubscriptionPlan, string[]> = {
 
 export const Route = createFileRoute("/admin/subscricao")({
   head: () => ({ meta: [{ title: "Subscrição — Painel Luku.com" }] }),
-  component: AdminSubscricao,
+  component: AdminSubscricaoRoute,
 });
 
 const DAY = 86_400_000;
+
+/** App iOS: esta página não existe (App Store 3.1.1) — volta ao início do
+ * painel. A subscrição gere-se no site. */
+function AdminSubscricaoRoute() {
+  return isIosApp() ? <Navigate to="/admin" replace /> : <AdminSubscricao />;
+}
 
 function AdminSubscricao() {
   const { restaurant } = useRestaurantAdmin();

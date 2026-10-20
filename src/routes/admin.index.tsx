@@ -416,7 +416,8 @@ function AdminDashboard() {
 
           {(() => {
             const sub = hasRealBackend ? realSub.sub : subByRestaurant(restaurant.id);
-            if (!sub) return null;
+            // App iOS: sem cartão de subscrição/plano (App Store 3.1.1).
+            if (!sub || isIosApp()) return null;
             const tone =
               sub.status === "active" || sub.status === "trial"
                 ? "text-success"

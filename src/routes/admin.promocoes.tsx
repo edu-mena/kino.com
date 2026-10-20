@@ -52,6 +52,7 @@ import { sanitizePromoCode } from "@/data/offers-store";
 import { useRestaurantMenuItems } from "@/data/use-restaurants-query";
 import type { Offer } from "@/data/types";
 import { useTranslation } from "@/i18n";
+import { isIosApp } from "@/lib/platform";
 import { useFirstUseHint } from "@/lib/first-use-hints";
 import { useOffersAdmin } from "@/lib/offers-admin";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -301,7 +302,13 @@ function AdminPromocoes() {
               </select>
             </div>
 
-            {limits.offers !== null && (
+            {/* App iOS: sem "do seu plano"/upgrade — só o aviso neutro de limite. */}
+            {isIosApp() && atOfferCap && (
+              <p className="mt-3 text-xs font-medium text-muted-foreground">
+                {t("adminPromocoes.limitReachedIos")}
+              </p>
+            )}
+            {!isIosApp() && limits.offers !== null && (
               <p className="mt-3 text-xs font-medium text-muted-foreground">
                 {t("adminPromocoes.planUsage", { used: usage.offers, limit: limits.offers })}
                 {atOfferCap && (

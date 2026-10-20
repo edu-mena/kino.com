@@ -1870,6 +1870,7 @@ export const pt = {
     kpiPeopleHint: "média de {avg} por reserva",
   },
   adminStories: {
+    limitReachedIos: "Atingiu o número máximo de stories ativos. Apague um para publicar outro.",
     eyebrow: "Stories",
     title: "Os seus stories",
     description:
@@ -1929,6 +1930,7 @@ export const pt = {
     kpiLast: "Última publicação",
   },
   adminPromocoes: {
+    limitReachedIos: "Atingiu o número máximo de promoções ativas. Apague uma para criar outra.",
     eyebrow: "Promoções",
     title: "As suas promoções",
     description: "Aparecem em Ofertas e no carrossel da home, junto das promoções da Luku.",
@@ -3250,6 +3252,9 @@ export const pt = {
     },
   },
   adminSubscricao: {
+    bannerLockedIos:
+      "O painel deste restaurante está temporariamente inativo. Para mais informações, fale com a equipa Luku.",
+    gateBodyIos: "Para mais informações, fale com a equipa Luku em luku.ao/contacto.",
     managedOutsideApp: "A subscrição do restaurante é gerida pela equipa Luku, fora da app.",
     eyebrow: "Subscrição",
     title: "A sua subscrição",
@@ -3301,6 +3306,7 @@ export const pt = {
     gateSeeDetails: "Ver detalhes da subscrição",
   },
   adminPlanGate: {
+    unavailableIos: "Esta área não está disponível para este restaurante.",
     packagesTitle: "Pacotes é uma funcionalidade do Plano Plus",
     packagesBody:
       "Ofereça pacotes pré-definidos (Aniversário, Reunião, Amigos...) que os clientes reservam diretamente. Disponível no Plano Plus.",

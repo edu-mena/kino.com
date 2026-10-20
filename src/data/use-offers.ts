@@ -4,6 +4,7 @@ import { getEffectiveOffers } from "./offers-store";
 import { suspendedRestaurantIds } from "./helpers";
 import { INITIAL_OFFERS } from "./mockData";
 import { hasRealBackend } from "@/lib/api-client";
+import { isIosApp } from "@/lib/platform";
 import type { Offer } from "./types";
 
 /**
@@ -20,7 +21,10 @@ export function useOffers(): Offer[] {
     if (hasRealBackend) {
       const sync = () =>
         fetchApiOffers()
-          .then(setOffers)
+          // App iOS: sem as promoções globais da Luku — hoje anunciam a
+          // subscrição dos restaurantes (ex.: "2 meses de isenção"), que a
+          // App Store (3.1.1) não aceita promover dentro da app.
+          .then((all) => setOffers(isIosApp() ? all.filter((o) => o.restaurantId) : all))
           .catch(() => setOffers([]));
       sync();
       window.addEventListener("luku:menu-changed", sync);

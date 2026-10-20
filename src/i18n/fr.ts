@@ -1885,6 +1885,8 @@ export const fr: Dictionary = {
     kpiPeopleHint: "moyenne de {avg} par réservation",
   },
   adminStories: {
+    limitReachedIos:
+      "Vous avez atteint le nombre maximum de stories actives. Supprimez-en une pour en publier une autre.",
     eyebrow: "Stories",
     title: "Vos stories",
     description:
@@ -1945,6 +1947,8 @@ export const fr: Dictionary = {
     kpiLast: "Dernière publication",
   },
   adminPromocoes: {
+    limitReachedIos:
+      "Vous avez atteint le nombre maximum de promotions actives. Supprimez-en une pour en créer une autre.",
     eyebrow: "Promotions",
     title: "Vos promotions",
     description:
@@ -3282,6 +3286,9 @@ export const fr: Dictionary = {
     },
   },
   adminSubscricao: {
+    bannerLockedIos:
+      "Le panneau de ce restaurant est temporairement inactif. Pour plus d'informations, contactez l'équipe Luku.",
+    gateBodyIos: "Pour plus d'informations, contactez l'équipe Luku sur luku.ao/contacto.",
     managedOutsideApp:
       "L'abonnement du restaurant est géré par l'équipe Luku, en dehors de l'application.",
     eyebrow: "Abonnement",
@@ -3335,6 +3342,7 @@ export const fr: Dictionary = {
     gateSeeDetails: "Voir les détails de l'abonnement",
   },
   adminPlanGate: {
+    unavailableIos: "Cet espace n'est pas disponible pour ce restaurant.",
     packagesTitle: "Les forfaits sont une fonctionnalité du plan Plus",
     packagesBody:
       "Proposez des forfaits prédéfinis (Anniversaire, Réunion, Amis...) que les clients réservent directement. Disponible avec le plan Plus.",

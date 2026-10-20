@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { STORY_VIDEO_MAX_SEC } from "@/data/stories-store";
 import type { RestaurantStory } from "@/data/types";
 import { useTranslation } from "@/i18n";
+import { isIosApp } from "@/lib/platform";
 import { hasRealBackend } from "@/lib/api-client";
 import { useFirstUseHint } from "@/lib/first-use-hints";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -260,7 +261,13 @@ function AdminStories() {
               </select>
             </div>
 
-            {limits.stories !== null && (
+            {/* App iOS: sem "do seu plano"/upgrade — só o aviso neutro de limite. */}
+            {isIosApp() && atStoryCap && (
+              <p className="mt-3 text-xs font-medium text-muted-foreground">
+                {t("adminStories.limitReachedIos")}
+              </p>
+            )}
+            {!isIosApp() && limits.stories !== null && (
               <p className="mt-3 text-xs font-medium text-muted-foreground">
                 {t("adminStories.planUsage", { used: usage.stories, limit: limits.stories })}
                 {atStoryCap && (

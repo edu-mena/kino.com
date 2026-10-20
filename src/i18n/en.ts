@@ -1861,6 +1861,8 @@ export const en: Dictionary = {
     kpiPeopleHint: "avg {avg} per reservation",
   },
   adminStories: {
+    limitReachedIos:
+      "You've reached the maximum number of active stories. Delete one to post another.",
     eyebrow: "Stories",
     title: "Your stories",
     description:
@@ -1920,6 +1922,8 @@ export const en: Dictionary = {
     kpiLast: "Latest publication",
   },
   adminPromocoes: {
+    limitReachedIos:
+      "You've reached the maximum number of active promotions. Delete one to create another.",
     eyebrow: "Promotions",
     title: "Your promotions",
     description: "Shown in Offers and the home carousel, alongside Luku's own promotions.",
@@ -3236,6 +3240,9 @@ export const en: Dictionary = {
     },
   },
   adminSubscricao: {
+    bannerLockedIos:
+      "This restaurant's panel is temporarily inactive. For more information, contact the Luku team.",
+    gateBodyIos: "For more information, contact the Luku team at luku.ao/contacto.",
     managedOutsideApp:
       "The restaurant's subscription is managed by the Luku team, outside the app.",
     eyebrow: "Subscription",
@@ -3288,6 +3295,7 @@ export const en: Dictionary = {
     gateSeeDetails: "View subscription details",
   },
   adminPlanGate: {
+    unavailableIos: "This area isn't available for this restaurant.",
     packagesTitle: "Packages is a Plus plan feature",
     packagesBody:
       "Offer pre-set packages (Birthday, Business meeting, Friends...) that customers book directly. Available on the Plus plan.",

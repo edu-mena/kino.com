@@ -27,6 +27,7 @@ import { NavBadge } from "./nav-badge";
 import { NotificationsBell } from "./notifications-bell";
 import { AdminOnboardingTour, AdminTutorialHint } from "./admin-onboarding-tour";
 import { useTranslation } from "@/i18n";
+import { isIosApp } from "@/lib/platform";
 import { AdminTutorialProvider, useAdminTutorial } from "@/lib/admin-tutorial";
 import { hasRealBackend } from "@/lib/api-client";
 import { useUnreadByKind } from "@/lib/notifications";
@@ -74,6 +75,12 @@ const mobileTabRoutes = new Set([
  * ficam no painel "mais opções" do topo mobile, junto do logout. */
 const mobileTabItems = navItems.filter((item) => mobileTabRoutes.has(item.to));
 const mobileOverflowItems = navItems.filter((item) => !mobileTabRoutes.has(item.to));
+
+/** App iOS: nada sobre a subscrição do restaurante (planos, preços,
+ * pagamentos) — a App Store (3.1.1) não aceita serviços digitais pagos fora
+ * dela, nem chamadas para os pagar. Gerido só no site. */
+const withoutSubscription = <T extends { to: string }>(items: readonly T[]) =>
+  isIosApp() ? items.filter((item) => item.to !== "/admin/subscricao") : items;
 
 /**
  * Casca do painel do restaurante — equivalente ao `PageShell` do lado do
@@ -131,7 +138,7 @@ function AdminShellContent({ children }: { children: ReactNode }) {
         </Link>
 
         <nav className="flex flex-1 flex-col gap-2 overflow-y-auto">
-          {navItems.map((item) => (
+          {withoutSubscription(navItems).map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -202,7 +209,7 @@ function AdminShellContent({ children }: { children: ReactNode }) {
 
         {mobileOpen && (
           <div className="border-b border-border bg-card px-4 py-3 lg:hidden">
-            {mobileOverflowItems.map((item) => (
+            {withoutSubscription(mobileOverflowItems).map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -272,6 +279,15 @@ function SubscriptionBanner() {
   const access = useRestaurantAccess();
   if (!restaurant) return null;
 
+  // App iOS: sem avisos de pagamento nem links para a subscrição (3.1.1).
+  if (isIosApp()) {
+    return access.locked ? (
+      <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2.5 text-center text-xs font-semibold text-destructive md:px-6">
+        {t("adminSubscricao.bannerLockedIos")}
+      </div>
+    ) : null;
+  }
+
   if (access.locked) {
     return (
       <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2.5 text-center text-xs font-semibold text-destructive md:px-6">
@@ -316,6 +332,22 @@ export function RestaurantGate({ children }: { children: ReactNode }) {
   const { registerPayment } = useSubscriptions();
 
   if (!access.locked || !restaurant) return <>{children}</>;
+
+  if (isIosApp()) {
+    return (
+      <div className="mx-auto max-w-lg px-4 pt-16 md:px-6">
+        <div className="card-soft grid place-items-center gap-4 p-8 text-center">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-destructive/10 text-destructive">
+            <Lock className="h-6 w-6" />
+          </span>
+          <h2 className="font-display text-lg font-bold text-foreground">
+            {t("adminSubscricao.gateTitle")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("adminSubscricao.gateBodyIos")}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-lg px-4 pt-16 md:px-6">
@@ -367,6 +399,19 @@ export function PlanGate({
   const { allows } = usePlanFeatures();
 
   if (allows(feature)) return <>{children}</>;
+
+  if (isIosApp()) {
+    return (
+      <div className="mx-auto max-w-lg px-4 pt-16 md:px-6">
+        <div className="card-soft grid place-items-center gap-4 p-8 text-center">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <Lock className="h-6 w-6" />
+          </span>
+          <p className="text-sm text-muted-foreground">{t("adminPlanGate.unavailableIos")}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-lg px-4 pt-16 md:px-6">
