@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Store, Zap, Users } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { Logo } from "@/components/logo";
 import { useTranslation } from "@/i18n";
+import { useIsIosApp } from "@/lib/platform";
 
 export const Route = createFileRoute("/cadastro")({
   head: () => ({
@@ -21,8 +22,11 @@ export const Route = createFileRoute("/cadastro")({
 
 function Cadastro() {
   const { t } = useTranslation();
+  // App iOS: só a conta de cliente — o registo de restaurantes (serviço
+  // pago) faz-se no site, nunca dentro da app (App Store 3.1.1).
+  const iosApp = useIsIosApp();
 
-  const options = [
+  const allOptions = [
     {
       icon: Users,
       title: t("cadastro.customerTitle"),
@@ -38,6 +42,7 @@ function Cadastro() {
       cta: t("cadastro.restaurantCta"),
     },
   ];
+  const options = iosApp ? allOptions.filter((o) => o.to !== "/parceiros") : allOptions;
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-background px-5 py-12 sm:px-12">

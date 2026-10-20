@@ -6,6 +6,7 @@ import icon from "@/assets/icon.png";
 import { ForgotPasswordDialog } from "@/components/forgot-password-dialog";
 import { Logo } from "@/components/logo";
 import { useTranslation } from "@/i18n";
+import { useIsIosApp } from "@/lib/platform";
 import { ApiError } from "@/lib/api-client";
 import { OperatorProviders } from "@/lib/operator-providers";
 import { useRestaurantAdmin } from "@/lib/restaurant-admin";
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/admin_/entrar")({
 });
 
 function AdminEntrar() {
+  const iosApp = useIsIosApp();
   const { login, verifyTwoFactor } = useRestaurantAdmin();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -197,12 +199,15 @@ function AdminEntrar() {
           </>
         )}
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          {t("adminEntrar.notPartnerYet")}{" "}
-          <Link to="/parceiros" className="font-bold text-primary">
-            {t("adminEntrar.becomePartner")}
-          </Link>
-        </p>
+        {/* App iOS: sem "Torne-se parceiro" (registo de serviço pago, 3.1.1). */}
+        {!iosApp && (
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            {t("adminEntrar.notPartnerYet")}{" "}
+            <Link to="/parceiros" className="font-bold text-primary">
+              {t("adminEntrar.becomePartner")}
+            </Link>
+          </p>
+        )}
       </div>
       <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} />
     </div>

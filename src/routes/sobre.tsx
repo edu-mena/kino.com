@@ -3,6 +3,7 @@ import { Quote, Star, Store, UtensilsCrossed, Users } from "lucide-react";
 import icon from "@/assets/icon.png";
 import { PageHeading, PageShell, SiteHeader } from "@/components/site-shell";
 import { useTranslation } from "@/i18n";
+import { useIsIosApp } from "@/lib/platform";
 import { formatCount } from "@/lib/format";
 import { useGuestContent, useSiteContentPublic, useSiteStats } from "@/lib/site-content";
 
@@ -38,6 +39,7 @@ const partners = [
 ];
 
 function Sobre() {
+  const iosApp = useIsIosApp();
   const { t } = useTranslation();
   const { content } = useSiteContentPublic();
   // Títulos/botões editáveis em /sistema/conteudo → "Páginas públicas".
@@ -204,18 +206,23 @@ function Sobre() {
           em /luku (virar parceiro ou entrar como cliente). */}
       <section className="mx-auto mb-20 mt-14 max-w-6xl px-4 md:px-6">
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-surface p-8 sm:p-10">
-            <h2 className="font-display text-2xl font-extrabold text-primary sm:text-3xl">
-              {gt("luku.ctaRestaurantTitle")}
-            </h2>
-            <p className="max-w-sm text-muted-foreground">{gt("luku.ctaRestaurantDescription")}</p>
-            <Link
-              to="/parceiros"
-              className="mt-2 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
-            >
-              {gt("sobre.becomePartner")}
-            </Link>
-          </div>
+          {/* App iOS: sem convite a registar restaurantes (3.1.1). */}
+          {!iosApp && (
+            <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-surface p-8 sm:p-10">
+              <h2 className="font-display text-2xl font-extrabold text-primary sm:text-3xl">
+                {gt("luku.ctaRestaurantTitle")}
+              </h2>
+              <p className="max-w-sm text-muted-foreground">
+                {gt("luku.ctaRestaurantDescription")}
+              </p>
+              <Link
+                to="/parceiros"
+                className="mt-2 rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
+              >
+                {gt("sobre.becomePartner")}
+              </Link>
+            </div>
+          )}
 
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
             <h2 className="font-display text-2xl font-extrabold sm:text-3xl">

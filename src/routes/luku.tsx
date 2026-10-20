@@ -29,6 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useTranslation } from "@/i18n";
+import { useIsIosApp } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/luku")({
@@ -94,6 +95,7 @@ function ExpandableIllustration({
 }
 
 function Luku() {
+  const iosApp = useIsIosApp();
   const videoSectionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -243,20 +245,25 @@ function Luku() {
       {/* Call to action */}
       <section className="mx-auto mb-20 mt-16 max-w-6xl px-4 md:px-6">
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-surface p-8 sm:p-10">
-            <h2 className="font-display text-2xl font-extrabold text-primary sm:text-3xl">
-              {gt("luku.ctaRestaurantTitle")}
-            </h2>
-            <p className="max-w-sm text-muted-foreground">{gt("luku.ctaRestaurantDescription")}</p>
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <Link
-                to="/parceiros"
-                className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
-              >
-                {gt("luku.restaurantLogin")}
-              </Link>
+          {/* App iOS: sem convite a registar restaurantes (3.1.1). */}
+          {!iosApp && (
+            <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-surface p-8 sm:p-10">
+              <h2 className="font-display text-2xl font-extrabold text-primary sm:text-3xl">
+                {gt("luku.ctaRestaurantTitle")}
+              </h2>
+              <p className="max-w-sm text-muted-foreground">
+                {gt("luku.ctaRestaurantDescription")}
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <Link
+                  to="/parceiros"
+                  className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
+                >
+                  {gt("luku.restaurantLogin")}
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex flex-col items-start gap-4 rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
             <h2 className="font-display text-2xl font-extrabold sm:text-3xl">
@@ -324,12 +331,14 @@ function Luku() {
                   </li>
                 ))}
               </ul>
-              <Link
-                to="/parceiros"
-                className="mt-6 inline-flex items-center gap-1 self-start rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
-              >
-                {gt("luku.restaurantLogin")} <ArrowRight className="h-4 w-4" />
-              </Link>
+              {!iosApp && (
+                <Link
+                  to="/parceiros"
+                  className="mt-6 inline-flex items-center gap-1 self-start rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
+                >
+                  {gt("luku.restaurantLogin")} <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
             </div>
           </div>
 

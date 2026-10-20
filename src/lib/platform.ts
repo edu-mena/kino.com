@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { useEffect, useState } from "react";
 
 /**
  * `true` dentro da app iOS (Capacitor). Usado onde a App Store impõe regras
@@ -8,4 +9,13 @@ import { Capacitor } from "@capacitor/core";
  */
 export function isIosApp(): boolean {
   return Capacitor.getPlatform() === "ios";
+}
+
+/** Versão React de `isIosApp` para páginas geradas no servidor: começa
+ * `false` (o servidor não sabe se é a app) e só muda depois de montar —
+ * sem erro de hidratação. */
+export function useIsIosApp(): boolean {
+  const [ios, setIos] = useState(false);
+  useEffect(() => setIos(isIosApp()), []);
+  return ios;
 }

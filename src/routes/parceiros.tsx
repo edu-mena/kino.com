@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ArrowRight,
@@ -31,6 +31,7 @@ import { apiFetch, ApiError, hasRealBackend } from "@/lib/api-client";
 import type { LatLng } from "@/lib/maps";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
+import { useIsIosApp } from "@/lib/platform";
 
 export const Route = createFileRoute("/parceiros")({
   head: () => ({
@@ -45,7 +46,7 @@ export const Route = createFileRoute("/parceiros")({
       { property: "og:image", content: icon },
     ],
   }),
-  component: Parceiros,
+  component: ParceirosRoute,
 });
 
 const inputClass =
@@ -105,6 +106,13 @@ const EMPTY_FORM: FormState = {
   lng: DEFAULT_COORDS.lng,
   about: "",
 };
+
+/** App iOS: o registo de restaurantes (serviço pago) só existe no site —
+ * App Store 3.1.1. Quem chegar aqui na app volta ao início. */
+function ParceirosRoute() {
+  const iosApp = useIsIosApp();
+  return iosApp ? <Navigate to="/" replace /> : <Parceiros />;
+}
 
 function Parceiros() {
   const { t } = useTranslation();
