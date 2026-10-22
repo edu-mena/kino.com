@@ -99,15 +99,36 @@ test('apagar conta não notifica o restaurante (não é uma mudança de pedido)'
         ->and(Notification::query()->where('user_id', $user->id)->count())->toBe(0);
 });
 
-test('dono de restaurante e operador não apagam a conta por aqui', function () {
-    $restaurant = Restaurant::factory()->create();
-    $owner = ownerOf($restaurant);
+test('operador de sistema não apaga a conta por aqui', function () {
     $operator = User::factory()->systemOperator()->create();
 
-    $this->actingAs($owner, 'sanctum')->deleteJson('/api/v1/me', ['confirm' => true])->assertStatus(422);
     $this->actingAs($operator, 'sanctum')->deleteJson('/api/v1/me', ['confirm' => true])->assertForbidden();
 
-    expect(User::query()->whereIn('id', [$owner->id, $operator->id])->count())->toBe(2);
+    expect(User::query()->whereKey($operator->id)->exists())->toBeTrue();
+});
+
+test('dono único apaga a conta sozinho (Apple 5.1.1(v)) — o restaurante fica despublicado, os dados guardados', function () {
+    $restaurant = Restaurant::factory()->create(['is_published' => true]);
+    $owner = ownerOf($restaurant);
+
+    $this->actingAs($owner, 'sanctum')->deleteJson('/api/v1/me', ['confirm' => true])->assertOk();
+
+    expect(User::query()->whereKey($owner->id)->exists())->toBeFalse();
+    $restaurant->refresh();
+    expect($restaurant->is_published)->toBeFalse()
+        ->and($restaurant->orders_paused_manually)->toBeTrue();
+});
+
+test('dono com outro dono no restaurante: sai da equipa e o restaurante continua publicado', function () {
+    $restaurant = Restaurant::factory()->create(['is_published' => true]);
+    $owner = ownerOf($restaurant);
+    $partner = User::factory()->restaurantStaff()->create();
+    $restaurant->staff()->attach($partner->id, ['role_in_restaurant' => 'owner']);
+
+    $this->actingAs($owner, 'sanctum')->deleteJson('/api/v1/me', ['confirm' => true])->assertOk();
+
+    expect($restaurant->fresh()->is_published)->toBeTrue()
+        ->and($restaurant->staff()->pluck('users.id')->all())->toBe([$partner->id]);
 });
 
 test('staff que não é dono pode apagar a conta — sai da equipa', function () {

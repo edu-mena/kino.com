@@ -2091,7 +2091,7 @@ export const en: Dictionary = {
   },
   publicMenu: {
     eyebrow: "Digital menu",
-    gateText: "Sign in with your Google account to see this restaurant's menu.",
+    gateText: "Sign in to your account to see this restaurant's menu.",
     gateHint: "It's quick and free. Simulated in this demo.",
     continueWithGoogle: "Continue with Google",
     continueWithApple: "Continue with Apple",
@@ -2168,6 +2168,9 @@ export const en: Dictionary = {
     removeAria: "Remove",
   },
   adminPerfil: {
+    deleteAccount: "Delete my account",
+    deleteAccountWarning:
+      "Your panel account is permanently deleted. If you are the only owner, the restaurant stops appearing on Luku (the restaurant's data is kept).",
     twoFactor: {
       title: "Your account security",
       hint: "Two-step verification — it belongs to your personal account, not the restaurant.",
@@ -2504,7 +2507,7 @@ export const en: Dictionary = {
       "Choose the type of account you want to create — it's quick and you can change it later.",
     customerTitle: "I'm a customer",
     customerAdvantage: "Order in a few taps, no password to remember.",
-    customerCta: "Continue with Google",
+    customerCta: "Create a customer account",
     restaurantTitle: "I have a restaurant",
     restaurantAdvantage: "Digital menu, QR Code and table management ready in minutes.",
     restaurantCta: "Sign up restaurant",
@@ -2522,8 +2525,8 @@ export const en: Dictionary = {
     privacyLabel: "Privacy Policy",
     noAccountYet: "Don't have an account yet?",
     signUp: "Sign up",
-    loggedInToast: "Signed in with Google!",
-    errorToast: "Couldn't continue with Google. Please try again.",
+    loggedInToast: "Signed in!",
+    errorToast: "Couldn't sign in. Please try again.",
     restaurantOwnerNotice: "Own a restaurant?",
     restaurantOwnerCta: "Access the panel",
   },
@@ -2959,7 +2962,7 @@ export const en: Dictionary = {
     perkReserve: "Book a table without calling",
     perkOrder: "Order for delivery or pickup",
     perkLoyalty: "Earn loyal-guest status at your favourites",
-    createAccount: "Create a free account with Google",
+    createAccount: "Create a free account",
     discoverLuku: "Discover Luku",
     restaurantPage: "Restaurant page",
     moreRestaurants: "Discover more restaurants",
@@ -2967,7 +2970,7 @@ export const en: Dictionary = {
     printVersion: "Printable version",
     yourChoice: "Your selection",
     signInToOrder: "Sign in to order",
-    signInHint: "Sign in with Google in one tap — your selection is kept.",
+    signInHint: "Sign in with one tap — your choices are saved.",
     otherOptions: "Other options",
   },
   adminMesas: {

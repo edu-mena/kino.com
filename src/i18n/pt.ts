@@ -2098,7 +2098,7 @@ export const pt = {
   },
   publicMenu: {
     eyebrow: "Cardápio digital",
-    gateText: "Entre com a sua conta Google para ver o cardápio deste restaurante.",
+    gateText: "Entre na sua conta para ver o cardápio deste restaurante.",
     gateHint: "É rápido e gratuito. Simulado nesta demonstração.",
     continueWithGoogle: "Continuar com o Google",
     continueWithApple: "Continuar com a Apple",
@@ -2177,6 +2177,9 @@ export const pt = {
     removeAria: "Remover",
   },
   adminPerfil: {
+    deleteAccount: "Apagar a minha conta",
+    deleteAccountWarning:
+      "A sua conta de acesso ao painel é apagada de vez. Se for o único dono, o restaurante deixa de aparecer na Luku (os dados do restaurante ficam guardados).",
     twoFactor: {
       title: "Segurança da sua conta",
       hint: "Verificação em dois passos — é da sua conta pessoal, não do restaurante.",
@@ -2518,7 +2521,7 @@ export const pt = {
     description: "Escolha o tipo de conta que quer criar — é rápido e pode mudar depois.",
     customerTitle: "Sou cliente",
     customerAdvantage: "Peça em poucos toques, sem palavra-passe para memorizar.",
-    customerCta: "Continuar com Google",
+    customerCta: "Criar conta de cliente",
     restaurantTitle: "Tenho um restaurante",
     restaurantAdvantage: "Cardápio digital, QR Code e gestão de mesas prontos em minutos.",
     restaurantCta: "Cadastrar restaurante",
@@ -2537,8 +2540,8 @@ export const pt = {
     privacyLabel: "Política de Privacidade",
     noAccountYet: "Ainda não tem conta?",
     signUp: "Cadastre-se",
-    loggedInToast: "Sessão iniciada com a Google!",
-    errorToast: "Não foi possível continuar com o Google. Tenta novamente.",
+    loggedInToast: "Sessão iniciada!",
+    errorToast: "Não foi possível iniciar sessão. Tente novamente.",
     restaurantOwnerNotice: "É dono de um restaurante?",
     restaurantOwnerCta: "Aceder ao painel",
   },
@@ -2972,7 +2975,7 @@ export const pt = {
     perkReserve: "Reserve mesa sem telefonar",
     perkOrder: "Peça para entrega ou para levantar",
     perkLoyalty: "Ganhe estatuto de cliente fiel nos seus favoritos",
-    createAccount: "Criar conta grátis com Google",
+    createAccount: "Criar conta grátis",
     discoverLuku: "Conhecer a Luku",
     restaurantPage: "Página do restaurante",
     moreRestaurants: "Descobrir mais restaurantes",
@@ -2980,7 +2983,7 @@ export const pt = {
     printVersion: "Versão para imprimir",
     yourChoice: "A sua escolha",
     signInToOrder: "Entrar para pedir",
-    signInHint: "Entre com Google num toque — o que escolheu fica guardado.",
+    signInHint: "Entre num toque — o que escolheu fica guardado.",
     otherOptions: "Outras opções",
   },
   adminMesas: {

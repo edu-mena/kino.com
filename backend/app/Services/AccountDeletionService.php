@@ -6,8 +6,10 @@ use App\Models\CustomerNote;
 use App\Models\Order;
 use App\Models\ProfileView;
 use App\Models\Reservation;
+use App\Models\Restaurant;
 use App\Models\Review;
 use App\Models\User;
+use App\Support\RestaurantIndexCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -40,11 +42,14 @@ class AccountDeletionService
             throw new HttpException(403, 'Contas de sistema não podem ser apagadas por aqui.');
         }
 
-        if ($user->restaurantUsers()->where('role_in_restaurant', 'owner')->exists()) {
-            throw new HttpException(422, 'É dono de um restaurante na Luku — contacte o suporte para encerrar o restaurante e a conta.');
-        }
-
         DB::transaction(function () use ($user) {
+            // Dono de restaurante também pode apagar a conta sozinho (a Apple
+            // não aceita "contacte o suporte", guideline 5.1.1(v)). O
+            // restaurante não é dados pessoais dele: se era o único dono,
+            // fica despublicado (some da app, dados do negócio guardados para
+            // a Luku decidir); havendo outro dono, só sai da equipa (FK).
+            $this->releaseOwnedRestaurants($user);
+
             // Query builder (não save() por modelo): sem disparar Observers
             // de pedido/reserva, que notificariam o restaurante de uma
             // "mudança" que não é nenhuma.
@@ -98,6 +103,25 @@ class AccountDeletionService
             } catch (Throwable $e) {
                 Log::warning('apple: revogação falhou ao apagar conta', ['error' => $e->getMessage()]);
             }
+        }
+    }
+
+    private function releaseOwnedRestaurants(User $user): void
+    {
+        $owned = $user->restaurantUsers()->where('role_in_restaurant', 'owner')->pluck('restaurant_id');
+        foreach ($owned as $restaurantId) {
+            $otherOwners = DB::table('restaurant_users')
+                ->where('restaurant_id', $restaurantId)
+                ->where('role_in_restaurant', 'owner')
+                ->where('user_id', '!=', $user->id)
+                ->exists();
+            if (! $otherOwners) {
+                Restaurant::withTrashed()->whereKey($restaurantId)->update(['is_published' => false, 'orders_paused_manually' => true]);
+                Log::info('conta apagada: restaurante despublicado (era o único dono)', ['restaurant_id' => $restaurantId]);
+            }
+        }
+        if ($owned->isNotEmpty()) {
+            RestaurantIndexCache::forget();
         }
     }
 }

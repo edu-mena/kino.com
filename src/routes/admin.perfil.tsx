@@ -59,6 +59,7 @@ import { deriveRestaurantCoords } from "@/data/restaurant-coordinates";
 import { saveProfileEdits } from "@/data/restaurant-profile-store";
 import type { FulfillmentType, WeeklyHours } from "@/data/types";
 import { useProfileViewers } from "@/data/use-profile-viewers";
+import { AdminAccountDeletion } from "@/components/admin-account-deletion";
 import { useTranslation } from "@/i18n";
 import { formatKz } from "@/lib/format";
 import { paymentMethods } from "@/lib/mock-data";
@@ -1517,6 +1518,8 @@ function AdminPerfil() {
         >
           {t("adminPerfil.logout")}
         </button>
+
+        <AdminAccountDeletion />
       </div>
     </div>
   );

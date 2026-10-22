@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, Navigate, useNavigate } from "@tanstack/react-router";
 import {
   Armchair,
   Bike,
@@ -76,11 +76,22 @@ const mobileTabRoutes = new Set([
 const mobileTabItems = navItems.filter((item) => mobileTabRoutes.has(item.to));
 const mobileOverflowItems = navItems.filter((item) => !mobileTabRoutes.has(item.to));
 
-/** App iOS: nada sobre a subscrição do restaurante (planos, preços,
- * pagamentos) — a App Store (3.1.1) não aceita serviços digitais pagos fora
- * dela, nem chamadas para os pagar. Gerido só no site. */
-const withoutSubscription = <T extends { to: string }>(items: readonly T[]) =>
-  isIosApp() ? items.filter((item) => item.to !== "/admin/subscricao") : items;
+/** App iOS: o painel parece 100% gratuito — nada sobre a subscrição
+ * (planos, preços, pagamentos; App Store 3.1.1) e as áreas que o plano do
+ * restaurante não inclui simplesmente não aparecem (em vez de "bloqueadas").
+ * A Luku trata das subscrições diretamente com os restaurantes. */
+function useIosNavFilter() {
+  const { allows } = usePlanFeatures();
+  return <T extends { to: string }>(items: readonly T[]): readonly T[] =>
+    isIosApp()
+      ? items.filter(
+          (item) =>
+            item.to !== "/admin/subscricao" &&
+            !(item.to === "/admin/clientes" && !allows("customers")) &&
+            !(item.to === "/admin/estatisticas" && !allows("stats")),
+        )
+      : items;
+}
 
 /**
  * Casca do painel do restaurante — equivalente ao `PageShell` do lado do
@@ -111,6 +122,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 }
 
 function AdminShellContent({ children }: { children: ReactNode }) {
+  const withoutSubscription = useIosNavFilter();
   const { restaurant, logout } = useRestaurantAdmin();
   const navigate = useNavigate();
   const { mobileMenuOpen: mobileOpen, setMobileMenuOpen: setMobileOpen } = useAdminTutorial();
@@ -246,7 +258,7 @@ function AdminShellContent({ children }: { children: ReactNode }) {
       {/* Barra inferior — mobile */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         <div className="grid grid-cols-5">
-          {mobileTabItems.map((item) => (
+          {withoutSubscription(mobileTabItems).map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -400,17 +412,10 @@ export function PlanGate({
 
   if (allows(feature)) return <>{children}</>;
 
+  // App iOS: nada "bloqueado" — a área simplesmente não existe (a secção de
+  // pacotes some; as páginas voltam ao início do painel).
   if (isIosApp()) {
-    return (
-      <div className="mx-auto max-w-lg px-4 pt-16 md:px-6">
-        <div className="card-soft grid place-items-center gap-4 p-8 text-center">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary">
-            <Lock className="h-6 w-6" />
-          </span>
-          <p className="text-sm text-muted-foreground">{t("adminPlanGate.unavailableIos")}</p>
-        </div>
-      </div>
-    );
+    return feature === "packages" ? null : <Navigate to="/admin" replace />;
   }
 
   return (

@@ -21,6 +21,7 @@ import { OrderBuilderCard } from "@/components/order-builder-card";
 import { getRestaurantFulfillmentModes } from "@/data/helpers";
 import { useRestaurantDetail, useRestaurantMenuItems } from "@/data/use-restaurants-query";
 import { useTranslation } from "@/i18n";
+import { isIosApp } from "@/lib/platform";
 import { useAuth } from "@/lib/auth";
 import { billLineUnitPrice, useBill } from "@/lib/bill";
 import { formatKz } from "@/lib/format";
@@ -107,6 +108,12 @@ export function QrMenuExperience({
   }, [name, t]);
 
   const goLogin = async () => {
+    // App iOS: ecrã de login completo (Apple + Google) — a App Store (4.8)
+    // exige "Iniciar sessão com Apple" ao lado de qualquer login de terceiros.
+    if (isIosApp()) {
+      otherLoginOptions();
+      return;
+    }
     setLoggingIn(true);
     try {
       await loginWithGoogle();
