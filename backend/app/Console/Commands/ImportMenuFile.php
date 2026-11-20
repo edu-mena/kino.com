@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportMenuFile extends Command
 {
-    protected $signature = 'menu:import-file {restaurant : slug, id ou parte do nome} {file : caminho do JSON} {--dry-run}';
+    protected $signature = 'menu:import-file {restaurant : id ou parte do nome} {file : caminho do JSON} {--dry-run}';
 
     protected $description = 'Cadastra o cardápio de um restaurante a partir de um ficheiro JSON';
 
@@ -35,19 +35,19 @@ class ImportMenuFile extends Command
 
         $key = (string) $this->argument('restaurant');
         $matches = Restaurant::query()
-            ->where(fn ($q) => $q->where('slug', $key)->orWhere('id', ctype_digit($key) ? (int) $key : 0)->orWhere('name', 'ilike', "%{$key}%"))
+            ->where(fn ($q) => ctype_digit($key) ? $q->where('id', (int) $key) : $q->where('name', 'ilike', "%{$key}%"))
             ->get();
         if ($matches->count() !== 1) {
-            $this->error($matches->isEmpty() ? 'Nenhum restaurante encontrado.' : 'Vários restaurantes encontrados — usa o slug ou id:');
+            $this->error($matches->isEmpty() ? 'Nenhum restaurante encontrado.' : 'Vários restaurantes encontrados — usa o id:');
             foreach ($matches as $r) {
-                $this->line("  #{$r->id} {$r->slug} — {$r->name}");
+                $this->line("  #{$r->id} — {$r->name}");
             }
 
             return self::FAILURE;
         }
         /** @var Restaurant $restaurant */
         $restaurant = $matches->first();
-        $this->info("Restaurante: #{$restaurant->id} {$restaurant->name} ({$restaurant->slug}), criado em {$restaurant->created_at}");
+        $this->info("Restaurante: #{$restaurant->id} {$restaurant->name}, criado em {$restaurant->created_at}");
 
         $dry = (bool) $this->option('dry-run');
         $created = $skipped = $ingredients = 0;
