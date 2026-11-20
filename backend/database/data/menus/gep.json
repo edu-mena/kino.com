@@ -1,0 +1,107 @@
+{
+  "source": "Menu GEP.pdf (14 páginas)",
+  "skipped": [
+    "Moet Chandon Brut (sob consulta)",
+    "Moet Chandon Nectar (sob consulta)",
+    "Shots GEP Fogo (sem preço no menu)"
+  ],
+  "categories": [
+    { "name": "Entradas e Snacks", "items": [
+      ["Gambás Panadas", 14290], ["Gambás ao Alho", 18072], ["Gambás Natural", 15932],
+      ["Camarão Natural", 10582], ["Camarão com Molho de Queijo", 10890], ["Camarão ao Alho", 12722],
+      ["Tiras de Vitela ao Alho", 12890], ["Tiras de Picanha", 14862], ["Tiras de Carne", 13792],
+      ["Asinhas Bravas ao Molho de Barbecue", 7372], ["Frango a Passarinho", 7372], ["Pica Pau", 8590], ["Moelas Estufadas", 6923],
+      ["Dobradinha à Moda do Brasil", 6869], ["Peixe Dourado", 6923], ["Polvo Panado", 6955], ["Lulas Panada", 6314], ["Chouriço Caseiro", 6955], ["Choco", 7490],
+      ["Combinado do Americano", 6062], ["Francesinha", 8549], ["Burrito", 5890]
+    ]},
+    { "name": "Pequeno Almoço", "items": [
+      ["Omelete Composto", 3092], ["Prego no Prato", 10582], ["Bifanas no Prato", 10474],
+      ["Sopa de Feijão", 3092], ["Sopa de Legumes", 4269]
+    ]},
+    { "name": "Pratos de Carnes", "items": [
+      ["Tábua Supremo", 24492, "Entrecosto, febras, cachaço, entremeada, linguiça, coxa, feijão preto e arroz branco."],
+      ["Tábua Supremo à GEP", 31982, "Picanha, vazia, coxa, entremeada, linguiça, entrecosto, febras, cachaço e arroz de feijão."],
+      ["Bife à Milanesa", 13792, "Bife panado, salada à moda do chefe e arroz de cenoura."],
+      ["Bife à Roulé", 18072, "Bife de vaca recheado com ovo, arroz à grega e batata frita."],
+      ["Bife ao Guilho", 15932, "Bife grelhado com bacon, arroz, salada e batatas."],
+      ["Bife à Camões", 15932, "Bife, molho de casa, bacon, salada e arroz branco."],
+      ["Bife ao Molho de Camarão", 17002, "Bife, camarão, arroz branco e batata doce."],
+      ["Bifinhos de Vitela à Champion", 18072, "Bife, cogumelos, arroz de cenoura, salada e batatas fritas."],
+      ["Bifinhos de Frango à Keve", 13792, "Bife, molho de natas, arroz branco e salada."],
+      ["Lombinhos de Frutos do Mar", 26386, "Lombo, gambas, choco, salada de chefe e arroz congril."],
+      ["Bife à Portuguesa", 14862], ["Bitoque", 14862], ["Bifana no Prato", 10474],
+      ["Bife Grelhado com Gambas", 20255],
+      ["Picanha à Moda GEP", 15975, "Salada, arroz mineira e batata frita."],
+      ["Picanha Brasileira", 18072, "Arroz branco, feijão preto, banana frita, couve mineira, vinagrete, farofa e batata frita."],
+      ["Massa à GEP", 18072], ["Massa Carbonara", 14862], ["Massa com Todos", 14862],
+      ["Carne de Vazia Grelhada", 17002], ["Frango à GEP", 11652]
+    ]},
+    { "name": "Pratos de Peixe", "items": [
+      ["Bacalhau Grelhado", 14820], ["Choupa Grande", 13792], ["Choupa Média", 9459], ["Lagosta à GEP", 24492], ["Linguado Grelhado", 9829],
+      ["Massa de Peixe", 11577], ["Peixe Cherne", 12829], ["Posta de Corvina", 11021],
+      ["Prato do Chefe", 15932], ["Sopa de Peixe", 3092], ["Yakisoba", 18072]
+    ]},
+    { "name": "Outros", "items": [
+      ["Arroz de Marisco", 25780], ["Arroz Congriel", 22890], ["Risoto de Gambás", 19890], ["Arroz de Camarão", 13185]
+    ]},
+    { "name": "Águas", "items": [["Água", 980], ["Água com Gás", 1890], ["Água Grande", 1890]] },
+    { "name": "Cervejas Diversas", "items": [
+      ["Fino Normal", 1489], ["Lambreta", 1049], ["Lambreta Tango", 1284],
+      ["Canecão", 3520], ["Fino na Taça", 1890], ["Fino Tango", 2022],
+      ["Fino Caneca", 2022], ["Caneca Tango", 4590], ["Cuca", 1594],
+      ["Doppel", 1594], ["Eka", 1594], ["Corona", 3435], ["Booster", 1717],
+      ["Nocal", 1490], ["Torre de Fino", 26890], ["Panachê", 2022],
+      ["Savana", 3435], ["Sminorff", 2750], ["Hunter", 3210], ["Heineken", 4120]
+    ]},
+    { "name": "Café", "items": [["Café", 1257], ["Galão", 1500], ["Chá", 578], ["Café com Cheirinho", 2980]] },
+    { "name": "Champanhe", "items": [
+      ["Cristal Luís Roederer", 980000], ["Moet Chandon Ice", 203300],
+      ["Oro-Oro", 150000], ["Don Luciano", 18190],
+      ["Collection", 160000], ["Mumm", 120000], ["Moscato", 37450], ["Laço Vermelho", 24492]
+    ]},
+    { "name": "Sangrias Diversas", "items": [
+      ["Sangria Tinto", 19142], ["Sangria Espumante", 28772], ["Sangria Branca", 15932],
+      ["Sangria de Frutos Vermelhos", 29842], ["Sangria Sagrinha Azul", 24492], ["Sangria de Moscato", 44084]
+    ]},
+    { "name": "Licores", "items": [
+      ["Amarula Garrafa", 37450], ["Martini Rosso", 48150], ["Licor Beirão", 37450],
+      ["Kira Amarula", 30000], ["Beevock", 30000], ["Tequila", 32079]
+    ]},
+    { "name": "Cognacs", "items": [
+      ["1920", 5255], ["Antiqua", 8442], ["Courvoisier V.S", 13613], ["1920 Garrafa", 32100],
+      ["Hennessey", 14864], ["Martell", 13613], ["Remy Martiny", 15226]
+    ]},
+    { "name": "Shots", "items": [["Shots Especial", 2022], ["Tequila", 1584]] },
+    { "name": "Refrigerantes", "items": [
+      ["7UP", 1594], ["Sprite", 1594], ["Pepsi", 1594], ["Coca-Cola", 1594], ["Água Tónica", 1594],
+      ["Gingerel", 1594], ["Red Bull", 4152], ["Sumol", 1594],
+      ["Compal Lata", 1594], ["Fanta", 1594], ["Speed", 2119], ["Mirinda", 1594]
+    ]},
+    { "name": "Sumos Natural", "items": [
+      ["Maracujá", 3400], ["Ananás", 2806], ["Laranja", 3470], ["Limão", 2800], ["Tropical", 6399], ["Ananás Hortelã Gingebre", 3670]
+    ]},
+    { "name": "Whiskey Velho Dose", "items": [
+      ["Blue Label", 18890], ["Green Label", 18890], ["Gold Label", 17890],
+      ["Platino Label", 16890], ["Doublé Black", 11890], ["Jameson Black", 6999],
+      ["Chivas", 7129], ["Ballantines", 8920]
+    ]},
+    { "name": "Whiskey Novo", "items": [["Jameson", 5478], ["Red Label", 5230], ["Whiskey-Cola", 6270], ["Blonde", 5200]] },
+    { "name": "Vodka Gin", "items": [
+      ["Gordons", 4205], ["Hevelock", 4205], ["Bombay", 5810], ["Beefeater", 4911],
+      ["Bolldog", 9598], ["Hedrick", 9890], ["Kianda", 7372]
+    ]},
+    { "name": "Aguardente", "items": [
+      ["São Domingos", 27890], ["Tequila", 35000], ["Bombay", 45000], ["Gordons", 30000],
+      ["Kianda", 35000], ["Vodka", 27000], ["Hevelock", 25000], ["Havana Club", 30000], ["Beefeater", 45000]
+    ]},
+    { "name": "Vinho Tinto", "items": [
+      ["Cartuxa", 57119], ["Monte Velho", 18072], ["Palmela", 32045], ["Silk-Spice", 38509], ["Vinho da Casinha", 22000], ["Amicone", 66875],
+      ["Arcos do Marquês", 35000], ["Duas-Quinta", 45980], ["Esteva", 24493], ["Ferreira", 39980], ["Periquita", 24567], ["Vinho do Barril", 2119],
+      ["Mariana Tinto", 28664], ["Marquês de Borba", 32890], ["Nederburg", 25790], ["Papa Figo", 38402], ["Paulo Louriano", 23422]
+    ]},
+    { "name": "Vinho Branco Verde", "items": [
+      ["Mariana", 26789], ["Casal Garcia", 27499], ["Gazela", 24321], ["Planalto", 24492]
+    ]},
+    { "name": "Vinho Rosé", "items": [["Mateus Rosé", 20244], ["Quinta da Ferreira", 22340], ["Terra do Demo", 55000]] }
+  ]
+}
